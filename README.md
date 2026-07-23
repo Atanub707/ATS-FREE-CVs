@@ -1,20 +1,47 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ATS Job Search & CV Tailor
 
-# Run and deploy your AI Studio app
+ATS-optimized job matching and CV tailoring tool. Scrapes LinkedIn jobs, matches them against your profile, and generates tailored CVs in DOCX/PDF format.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/e6e6b95d-6abd-4b7d-ae2f-a2368f6f79f4
+- **LinkedIn Job Scraping** — Search and scrape live LinkedIn job listings
+- **ATS Matching** — Score jobs against your CV using AI
+- **CV Tailoring** — Generate ATS-optimized CVs tailored to specific job descriptions
+- **Multi-format Export** — Download tailored CVs as DOCX, PDF, or plain text
 
-## Run Locally
+## Quick Start
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+# Set your LLM provider API key (see below)
+npm run dev
+```
 
+Open http://localhost:3000
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## LLM Providers
+
+Bring your own API key. Supported providers:
+
+| Provider | Models |
+|----------|--------|
+| OpenCode Go | DeepSeek V4, Kimi, Qwen, Grok 4.5, etc. |
+| OpenRouter | 200+ models |
+| OpenAI | GPT-4o, GPT-4o-mini |
+| Google Gemini | Gemini 3.6 Flash, 2.5 Pro |
+| Anthropic | Claude Sonnet 4, Haiku |
+| NVIDIA (Free Tier) | DeepSeek V4, Llama 3.3, Mistral |
+
+Configure in Settings → LLM Provider.
+
+## Tech Stack
+
+- **Frontend:** React 19, Tailwind CSS v4, Lucide icons
+- **Backend:** Express 4, TypeScript
+- **Storage:** JSON file-based
+- **Scraping:** Native fetch + cheerio
+- **Documents:** docx, pdfkit
+
+## License
+
+MIT
