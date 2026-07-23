@@ -500,6 +500,30 @@ async function startServer() {
     }
   });
 
+  // Generic URL-based job description scraper
+  app.post('/api/scrape-full-text', async (req, res) => {
+    try {
+      const { jobUrl } = req.body;
+      if (!jobUrl || typeof jobUrl !== 'string') {
+        res.status(400).json({ error: 'jobUrl string is required.' });
+        return;
+      }
+
+      const { scrapeJobDescription } = await import('./server/scraper/genericScraper.js');
+      const result = await scrapeJobDescription(jobUrl);
+
+      if (!result) {
+        res.status(422).json({ error: 'Could not extract job description from the provided URL.' });
+        return;
+      }
+
+      res.json({ success: true, text: result.text, source: result.source });
+    } catch (err: any) {
+      console.error('Generic scrape error:', err);
+      res.status(500).json({ error: err.message || 'Scraping failed.' });
+    }
+  });
+
   // Get Jobs list with filters & pagination
   app.get('/api/jobs', (req, res) => {
     try {

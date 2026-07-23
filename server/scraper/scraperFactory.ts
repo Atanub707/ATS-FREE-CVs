@@ -1,5 +1,6 @@
 import { LinkedInScraper } from './linkedInScraper.js';
 import { AdzunaScraper } from './adzunaScraper.js';
+import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 import { loadConfig } from '../config.js';
 
@@ -24,6 +25,11 @@ export class ScraperFactory {
       if (source === 'Adzuna') {
         const adzuna = new AdzunaScraper();
         const jobs = await adzuna.scrape(enrichedParams);
+        allJobs.push(...jobs);
+      }
+      if (source === 'Arbeitnow') {
+        const arbeitnow = new ArbeitnowScraper();
+        const jobs = await arbeitnow.scrape(enrichedParams);
         allJobs.push(...jobs);
       }
     }

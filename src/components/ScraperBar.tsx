@@ -246,6 +246,19 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
             >
               Adzuna {selectedSources.includes('Adzuna') ? '✓' : ''}
             </button>
+
+            {/* Arbeitnow Toggle */}
+            <button
+              type="button"
+              onClick={() => toggleSource('Arbeitnow')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                selectedSources.includes('Arbeitnow')
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}
+            >
+              Arbeitnow {selectedSources.includes('Arbeitnow') ? '✓' : ''}
+            </button>
           </div>
 
           {/* Action Trigger */}
@@ -266,12 +279,12 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               {isLoading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Scraping LinkedIn Jobs...</span>
+                  <span>Searching jobs...</span>
                 </>
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Scrape LinkedIn Jobs</span>
+                  <span>Search Jobs</span>
                 </>
               )}
             </button>
