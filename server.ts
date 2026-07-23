@@ -321,6 +321,103 @@ async function startServer() {
     }
   });
 
+  // Skill Gaps - aggregate missing skills across all scored jobs
+  app.get('/api/cv/skill-gaps', (req, res) => {
+    try {
+      const allJobs = getAllJobs();
+      const scoredJobs = allJobs.filter((j) => j.gapAnalysis?.missingSkills?.length > 0);
+      const gapCounts: Record<string, { count: number; totalScored: number }> = {};
+
+      for (const job of scoredJobs) {
+        const allMissing = [
+          ...(job.gapAnalysis?.missingSkills || []),
+          ...(job.gapAnalysis?.missingKeywords || []),
+        ];
+        for (const skill of allMissing) {
+          const key = skill.toLowerCase().trim();
+          if (!key) continue;
+          if (!gapCounts[key]) gapCounts[key] = { count: 0, totalScored: scoredJobs.length };
+          gapCounts[key].count++;
+        }
+      }
+
+      const gaps = Object.entries(gapCounts)
+        .map(([skill, data]) => ({ skill, count: data.count, totalScored: data.totalScored }))
+        .sort((a, b) => b.count - a.count);
+
+      res.json({ gaps, totalScored: scoredJobs.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Download Master CV
+  app.get('/api/cv/master/download', async (req, res) => {
+    try {
+      const m = getMasterCv();
+      const format = ((req.query.format as string) || 'docx').toLowerCase();
+
+      const masterAsTailored = {
+        candidateName: m.fullName,
+        contactInfo: {
+          email: m.email,
+          phone: m.phone,
+          location: m.location,
+          linkedin: m.linkedin,
+          github: m.github,
+          website: m.website,
+        },
+        targetRole: '',
+        professionalSummary: m.summary,
+        coreCompetencies: m.skills.flatMap((s) => s.items),
+        workExperience: m.experiences.map((e) => ({
+          title: e.title,
+          company: e.company,
+          location: e.location,
+          dates: e.dates,
+          highlights: e.responsibilities,
+        })),
+        education: m.education.map((e) => ({
+          degree: e.degree,
+          institution: e.institution,
+          dates: e.dates,
+          details: e.details || '',
+        })),
+        technicalSkills: m.skills.map((s) => ({
+          category: s.category,
+          skills: s.items,
+        })),
+        projects: m.projects || [],
+        certifications: (m.certifications || []).map((c) =>
+          typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
+        ),
+      };
+
+      const safeName = m.fullName.replace(/ /g, '_');
+      const filename = `${safeName}_Master_CV`;
+
+      if (format === 'pdf') {
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
+        res.send(pdfBuffer);
+      } else if (format === 'txt') {
+        const textCv = generatePlainTextCv(masterAsTailored);
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.txt"`);
+        res.send(textCv);
+      } else {
+        const docxBuffer = await generateDocxBuffer(masterAsTailored);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.docx"`);
+        res.send(docxBuffer);
+      }
+    } catch (err: any) {
+      console.error('Master CV download error:', err);
+      res.status(500).json({ error: 'Failed to generate master CV document.' });
+    }
+  });
+
   app.post('/api/cv/parse-text', async (req, res) => {
     try {
       const { rawText } = req.body;

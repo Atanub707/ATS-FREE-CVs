@@ -19,6 +19,12 @@ import {
   Globe,
   Award,
   FolderGit2,
+  Download,
+  TrendingUp,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  FileDown,
 } from 'lucide-react';
 
 interface MasterCvDrawerProps {
@@ -47,10 +53,54 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [skillGaps, setSkillGaps] = useState<{ skill: string; count: number; totalScored: number }[]>([]);
+  const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
+  const [showGaps, setShowGaps] = useState(false);
+  const [gapsLoading, setGapsLoading] = useState(false);
 
   useEffect(() => {
     setFormData(masterCv);
   }, [masterCv]);
+
+  const fetchSkillGaps = async () => {
+    setGapsLoading(true);
+    try {
+      const res = await fetch('/api/cv/skill-gaps');
+      if (res.ok) {
+        const data = await res.json();
+        setSkillGaps(data.gaps || []);
+      }
+    } catch { /* ignore */ }
+    setGapsLoading(false);
+  };
+
+  const toggleGap = (skill: string) => {
+    setSelectedGaps((prev) => {
+      const next = new Set(prev);
+      if (next.has(skill)) next.delete(skill);
+      else next.add(skill);
+      return next;
+    });
+  };
+
+  const addSelectedGapsToCv = () => {
+    if (selectedGaps.size === 0) return;
+    const updated = { ...formData };
+    const newSkills: string[] = Array.from(selectedGaps);
+    const skillsCat = updated.skills.find((s) => s.category.toLowerCase().includes('skill') || s.category === 'Core Competencies');
+    if (skillsCat) {
+      for (const s of newSkills) {
+        const normalized = s.charAt(0).toUpperCase() + s.slice(1);
+        if (!skillsCat.items.some((i) => i.toLowerCase() === normalized.toLowerCase())) {
+          skillsCat.items.push(normalized);
+        }
+      }
+    } else {
+      updated.skills.push({ category: 'Core Competencies', items: newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1)) });
+    }
+    setFormData(updated);
+    setSelectedGaps(new Set());
+  };
 
   const handleParseRawText = async () => {
     if (!rawPasteText.trim()) return;
@@ -278,15 +328,25 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
               </span>
             )}
 
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              id="btn-save-master-cv"
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Saving...' : 'Save Profile'}</span>
-            </button>
+            <div className="flex items-center space-x-1.5">
+              <a
+                href="/api/cv/master/download?format=docx"
+                className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
+                title="Download Master CV as DOCX"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Download</span>
+              </a>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                id="btn-save-master-cv"
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSaving ? 'Saving...' : 'Save Profile'}</span>
+              </button>
+            </div>
 
             <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer">
               <X className="w-5 h-5" />
@@ -1013,6 +1073,79 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Skill Gaps Section */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                if (!showGaps) fetchSkillGaps();
+                setShowGaps(!showGaps);
+              }}
+              className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <span>Skill Gaps from Market</span>
+                {skillGaps.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 text-[10px] font-bold">
+                    {skillGaps.length}
+                  </span>
+                )}
+              </div>
+              {showGaps ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {showGaps && (
+              <div className="px-3.5 pb-3.5 space-y-2">
+                {gapsLoading ? (
+                  <div className="flex items-center space-x-2 text-xs text-slate-500 py-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Analyzing scored jobs...</span>
+                  </div>
+                ) : skillGaps.length === 0 ? (
+                  <div className="flex items-center space-x-2 text-xs text-slate-500 py-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <span>No scored jobs yet. Run match analysis on jobs first.</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-slate-500">
+                      Skills most frequently missing across {skillGaps[0]?.totalScored || 0} scored jobs. Check the ones you have and add them to your CV.
+                    </p>
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {skillGaps.map((gap) => (
+                        <label
+                          key={gap.skill}
+                          className="flex items-center space-x-2 px-2 py-1.5 rounded hover:bg-white cursor-pointer text-xs"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedGaps.has(gap.skill)}
+                            onChange={() => toggleGap(gap.skill)}
+                            className="rounded border-slate-300 cursor-pointer"
+                          />
+                          <span className="flex-1 font-medium text-slate-800">{gap.skill}</span>
+                          <span className="text-[10px] font-semibold text-slate-500">
+                            {gap.count}/{gap.totalScored} jobs
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedGaps.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={addSelectedGapsToCv}
+                        className="w-full px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                      >
+                        Add {selectedGaps.size} Skill{selectedGaps.size > 1 ? 's' : ''} to CV
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </form>
       </div>
