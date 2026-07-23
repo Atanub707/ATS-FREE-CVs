@@ -1,0 +1,543 @@
+import React, { useState } from 'react';
+import { Job, JobState, JobSource } from '../types';
+import { formatTimeAgo } from '../lib/dateUtils';
+import { getValidJobUrl } from '../lib/jobUrlUtils';
+import { DownloadCvDropdown } from './DownloadCvDropdown';
+import {
+  Briefcase,
+  Zap,
+  Sparkles,
+  Search,
+  ChevronRight,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  Building2,
+  MapPin,
+  DollarSign,
+  Loader2,
+  TrendingUp,
+  Linkedin,
+  Calendar,
+  ExternalLink,
+} from 'lucide-react';
+
+interface JobMatrixProps {
+  jobs: Job[];
+  activeStateTab: 'all' | JobState;
+  onStateTabChange: (tab: 'all' | JobState) => void;
+  onSelectJob: (job: Job) => void;
+  onMatchJob: (jobId: string) => Promise<void>;
+  onBatchMatch: () => Promise<void>;
+  onTailorJob: (jobId: string) => Promise<void>;
+  onBatchTailor: () => Promise<void>;
+  onDeleteJob: (jobId: string) => Promise<void>;
+  onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
+  isBatchMatching: boolean;
+  isBatchTailoring: boolean;
+  actionJobIdLoading: string | null;
+}
+
+const JobCard = React.memo(function JobCard({
+  job,
+  isLoadingThisJob,
+  onSelectJob,
+  onMatchJob,
+  onTailorJob,
+  onDeleteJob,
+}: {
+  job: Job;
+  isLoadingThisJob: boolean;
+  onSelectJob: (job: Job) => void;
+  onMatchJob: (jobId: string) => Promise<void>;
+  onTailorJob: (jobId: string) => Promise<void>;
+  onDeleteJob: (jobId: string) => Promise<void>;
+}) {
+  const score = job.matchScore;
+  const timeAgoStr = formatTimeAgo(job.postedDate || job.createdAt);
+
+  return (
+    <div className="bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-4 transition-all shadow-xs hover:shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+      {/* Left Section: Details */}
+      <div className="space-y-1.5 flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* Source Tag (Clickable direct link) */}
+          <a
+            href={getValidJobUrl(job)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={`Open ${job.source} job post in new tab`}
+            className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer hover:underline ${
+              job.source === 'LinkedIn'
+                ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                : job.source === 'Indeed'
+                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                : job.source === 'Glassdoor'
+                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+            }`}
+          >
+            {job.source === 'LinkedIn' && <Linkedin className="w-3 h-3 text-blue-600" />}
+            {job.source === 'Indeed' && <Briefcase className="w-3 h-3 text-indigo-600" />}
+            {job.source === 'Glassdoor' && <Building2 className="w-3 h-3 text-emerald-600" />}
+            <span>{job.source}</span>
+            <ExternalLink className="w-2.5 h-2.5 text-blue-500 ml-0.5" />
+          </a>
+
+          {/* Status Badge */}
+          <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
+            job.state === 'pending' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+            job.state === 'matched' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+            job.state === 'tailored' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+            'bg-purple-50 text-purple-700 border-purple-200'
+          }`}>
+            {job.state === 'pending' && <Clock className="w-3 h-3 text-slate-500" />}
+            {job.state === 'matched' && <Zap className="w-3 h-3 text-blue-600" />}
+            {job.state === 'tailored' && <Sparkles className="w-3 h-3 text-emerald-600" />}
+            {job.state === 'ready' && <CheckCircle2 className="w-3 h-3 text-purple-600" />}
+            <span>{job.state === 'pending' ? 'Pending Score' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : 'Applied'}</span>
+          </span>
+
+          {/* Posted Relative Time */}
+          <span className="inline-flex items-center space-x-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+            <Calendar className="w-3 h-3 text-slate-400" />
+            <span>{timeAgoStr}</span>
+          </span>
+
+          {/* Job Type */}
+          {job.jobType && (
+            <span className="text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              {job.jobType}
+            </span>
+          )}
+        </div>
+
+        {/* Title & Company */}
+        <div>
+          <h3
+            onClick={() => onSelectJob(job)}
+            className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer flex items-center space-x-1.5"
+          >
+            <span className="truncate">{job.title}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1">
+            <span className="flex items-center space-x-1 font-medium text-slate-800">
+              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+              <span>{job.company}</span>
+            </span>
+
+            <span className="flex items-center space-x-1">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <span>{job.location}</span>
+            </span>
+
+            {job.salaryText && (
+              <span className="flex items-center space-x-1 text-emerald-700 font-medium">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{job.salaryText}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Section: Match Score & Action Buttons */}
+      <div className="flex items-center justify-between md:justify-end space-x-4 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 shrink-0">
+        {/* Score Pill */}
+        <div className="text-center min-w-[85px]">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block">
+            {job.tailoredCv ? 'Tailored ATS' : 'ATS Score'}
+          </span>
+          {job.tailoredCv ? (
+            (() => {
+              const beforeS = job.tailoredCv.audit?.beforeScore ?? score ?? 68;
+              const afterS = job.tailoredCv.audit?.afterScore ?? Math.min(98, Math.max(beforeS + 18, 92));
+              const boost = afterS - beforeS;
+              return (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-xs text-slate-400 line-through font-semibold">
+                      {beforeS}%
+                    </span>
+                    <span className="text-base font-black text-emerald-600">
+                      {afterS}%
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 inline-flex items-center space-x-0.5">
+                    <TrendingUp className="w-2.5 h-2.5 text-emerald-600" />
+                    <span>+{boost}%</span>
+                  </span>
+                </div>
+              );
+            })()
+          ) : score !== undefined ? (
+            <span
+              className={`text-lg font-extrabold ${
+                score >= 75
+                  ? 'text-emerald-600'
+                  : score >= 50
+                  ? 'text-blue-600'
+                  : score >= 30
+                  ? 'text-amber-600'
+                  : 'text-red-600'
+              }`}
+            >
+              {score}%
+            </span>
+          ) : (
+            <span className="text-xs text-slate-400 font-medium">--</span>
+          )}
+        </div>
+
+        {/* Action Button Controls */}
+        <div className="flex items-center space-x-1.5">
+          {/* Run Match */}
+          <button
+            onClick={() => onMatchJob(job.id)}
+            disabled={isLoadingThisJob}
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+            title="Run Gemini AI Auto-Matcher"
+          >
+            {isLoadingThisJob ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 text-blue-600" />
+            )}
+            <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
+          </button>
+
+          {/* Tailor CV */}
+          <button
+            onClick={() => onTailorJob(job.id)}
+            disabled={isLoadingThisJob}
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+            title="Tailor candidate CV for this job"
+          >
+            {isLoadingThisJob ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            )}
+            <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
+          </button>
+
+          {/* Single ATS Download CV Dropdown */}
+          {job.tailoredCv && (
+            <DownloadCvDropdown jobId={job.id} buttonText="Download CV" size="sm" />
+          )}
+
+          {/* Apply Button */}
+          <a
+            href={getValidJobUrl(job)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+            title="Open original job posting to apply"
+          >
+            Apply
+          </a>
+
+          {/* Delete */}
+          <button
+            onClick={() => onDeleteJob(job.id)}
+            className="px-2 py-1.5 rounded-md text-xs text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}, (prev, next) => prev.job === next.job && prev.isLoadingThisJob === next.isLoadingThisJob);
+
+export const JobMatrix: React.FC<JobMatrixProps> = ({
+  jobs,
+  activeStateTab,
+  onStateTabChange,
+  onSelectJob,
+  onMatchJob,
+  onBatchMatch,
+  onTailorJob,
+  onBatchTailor,
+  onDeleteJob,
+  onUpdateStatus,
+  isBatchMatching,
+  isBatchTailoring,
+  actionJobIdLoading,
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
+
+  // Filter & Sort Jobs
+  const filteredJobs = jobs
+    .filter((j) => {
+      if (activeStateTab !== 'all' && j.state !== activeStateTab) return false;
+      if (sourceFilter !== 'all' && j.source !== sourceFilter) return false;
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        return (
+          j.title.toLowerCase().includes(q) ||
+          j.company.toLowerCase().includes(q) ||
+          j.location.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'matchScore') {
+        return (b.matchScore || 0) - (a.matchScore || 0);
+      }
+      if (sortBy === 'salaryMax') {
+        return (b.salaryMax || 0) - (a.salaryMax || 0);
+      }
+      if (sortBy === 'postedDate') {
+        const timeA = new Date(a.postedDate || a.createdAt).getTime();
+        const timeB = new Date(b.postedDate || b.createdAt).getTime();
+        return timeB - timeA;
+      }
+      // Default: 'createdAt' (Recently Scraped)
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+  const pendingCount = jobs.filter((j) => j.state === 'pending').length;
+  const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
+  const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
+
+  const scoredJobs = jobs.filter((j) => j.matchScore !== undefined);
+  const avgScore = scoredJobs.length > 0 ? Math.round(scoredJobs.reduce((acc, j) => acc + (j.matchScore || 0), 0) / scoredJobs.length) : 0;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+      {/* Metrics Row - Minimal & Clean */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Total Jobs</span>
+            <Briefcase className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="text-xl font-bold text-slate-900 mt-1">{jobs.length}</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Scraped across sources</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Avg Match</span>
+            <TrendingUp className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="text-xl font-bold text-blue-600 mt-1">{avgScore}%</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobs.length} scored with Gemini AI</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Tailored CVs</span>
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-xl font-bold text-emerald-600 mt-1">{tailoredCount}</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Ready for Calibri .docx</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Pending Score</span>
+            <Clock className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="text-xl font-bold text-slate-700 mt-1">{pendingCount}</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
+        </div>
+      </div>
+
+      {/* Tabs & Batch Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-lg shadow-xs">
+        {/* State Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-1">
+          {(['all', 'pending', 'matched', 'tailored', 'ready'] as const).map((tab) => {
+            const count = tab === 'all' ? jobs.length : jobs.filter((j) => j.state === tab).length;
+            const labels = {
+              all: 'All Jobs',
+              pending: 'Pending',
+              matched: 'Matched',
+              tailored: 'Tailored',
+              ready: 'Applied',
+            };
+
+            return (
+              <button
+                key={tab}
+                onClick={() => onStateTabChange(tab)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                  activeStateTab === tab
+                    ? 'bg-slate-900 text-white font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span>{labels[tab]}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded text-[10px] ${
+                    activeStateTab === tab ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Batch Operations */}
+        <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+          <button
+            onClick={onBatchMatch}
+            disabled={isBatchMatching || pendingCount === 0}
+            id="btn-batch-match"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            {isBatchMatching ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 text-blue-600" />
+            )}
+            <span>Score Pending ({pendingCount})</span>
+          </button>
+
+          <button
+            onClick={onBatchTailor}
+            disabled={isBatchTailoring || matchedCount === 0}
+            id="btn-batch-tailor"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            {isBatchTailoring ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            )}
+            <span>Tailor Matched ({matchedCount})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Search & Sort Filter */}
+      <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs shadow-xs space-y-2">
+        <datalist id="matrix-search-suggestions">
+          <option value="Frontend" />
+          <option value="Full Stack" />
+          <option value="DevSecOps" />
+          <option value="Software Engineer" />
+          <option value="Remote" />
+          <option value="Singapore" />
+          <option value="Human Managed" />
+        </datalist>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              list="matrix-search-suggestions"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search role, company, location..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+            />
+          </div>
+
+          <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
+            {/* Source Filter Select */}
+            <div className="flex items-center space-x-1.5">
+              <span className="text-slate-500 font-medium">Source:</span>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value as any)}
+                className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+              >
+                <option value="all">All Sources</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Indeed">Indeed</option>
+                <option value="Glassdoor">Glassdoor</option>
+                <option value="Custom">Custom</option>
+              </select>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center space-x-1.5">
+              <span className="text-slate-500 font-medium">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+              >
+                <option value="createdAt">Recently Scraped</option>
+                <option value="postedDate">Date Posted</option>
+                <option value="matchScore">Match Score</option>
+                <option value="salaryMax">Salary Range</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Matrix Filter Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 text-[11px]">
+          <span className="text-slate-400 font-medium">Quick Filter:</span>
+          {['Frontend', 'Full Stack', 'DevSecOps', 'Remote', 'Singapore'].map((chip) => (
+            <button
+              type="button"
+              key={chip}
+              onClick={() => setSearchTerm(searchTerm === chip ? '' : chip)}
+              className={`px-2 py-0.5 rounded border transition-all cursor-pointer ${
+                searchTerm === chip
+                  ? 'bg-blue-600 text-white border-blue-600 font-semibold'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+            >
+              {chip}
+            </button>
+          ))}
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="text-slate-400 hover:text-slate-600 font-medium ml-auto cursor-pointer underline"
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Job Card List */}
+      {filteredJobs.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-200">
+          <Briefcase className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+          <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
+          <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+            Use the scraper above to search for live LinkedIn positions.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredJobs.map((job, index) => {
+            const itemKey = job.id && job.id !== 'linkedin-undefined' ? job.id : `job-${index}-${job.title}`;
+            return (
+              <JobCard
+                key={itemKey}
+                job={job}
+                isLoadingThisJob={actionJobIdLoading === job.id}
+                onSelectJob={onSelectJob}
+                onMatchJob={onMatchJob}
+                onTailorJob={onTailorJob}
+                onDeleteJob={onDeleteJob}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};

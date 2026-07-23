@@ -1,0 +1,298 @@
+{
+  "fullName": "Atanu Biswas",
+  "email": "atanub707@gmail.com",
+  "phone": "+91 8420205661",
+  "location": "Kolkata, India",
+  "linkedin": "",
+  "github": "",
+  "website": "",
+  "summary": "DevSecOps Engineer with 3.5+ years of experience designing secure, scalable cloud-native infrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, and Azure, with expertise in DevSecOps automation, container security, and infrastructure as code. Proven track record in startup environments driving platform reliability, security compliance, and deployment automation across microservices architectures.",
+  "experiences": [
+    {
+      "id": "exp-1",
+      "title": "DevSecOps Engineer",
+      "company": "Human Managed",
+      "location": "Singapore, Remote",
+      "dates": "August 2024 – Present",
+      "responsibilities": [
+        "Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning, and Snyk & Gitlab into CI/CD pipelines for vulnerability assessment and application security; performed vulnerability management by assigning tickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.",
+        "Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.",
+        "Lead GitLab self-managed to SaaS migration (subgroup imports, CI/CD variable migration, GKE runner integration) and container registry migrations from JFrog Artifactory to Docker Hub and GitLab Container Registry across multiple microservices.",
+        "Implemented security compliance and governance controls including IAM authorization policies using Vanta Audits and automated Slack notifications tied to Gitlab security scan triggers.",
+        "Implemented alerting through Slack for CI/CD pipelines and conducted Root Cause Analysis (RCA) for post-incident reviews.",
+        "Contributing to ArgoCD deployment automation and Kubernetes upgrade activities across GKE/EKS environments; automating AWS cloud infrastructure workflows using GitLab CI/CD, Crossplane, GitOps, and Infrastructure as Code (IaC).",
+        "Collaborating and communicating with development teams on Agile SDLC workflows and code review; leveraging Artificial Intelligence (AI) and prompt engineering for workflow automation, continuous improvement, and technical documentation.",
+        "Worked in startup environments with cross-functional responsibilities, including developing and maintaining Airbyte connectors (both low-code and Python-based), packaging connectors as Docker images, managing versioning and continuous deployment pipelines, maintaining and enhancing the Dragster deployment flow while following established microservice architecture patterns, deploying and managing APIs with ArgoCD using a consistent microservice deployment strategy, and packaging applications using Helm Charts to ensure standardized, scalable, and reliable deployments across environments.",
+        "Continuously evaluated and improved security processes, tools, and practices to adapt to evolving threats and business needs."
+      ]
+    },
+    {
+      "id": "exp-2",
+      "title": "DevOps Engineer",
+      "company": "PearlThoughts",
+      "location": "India, Remote",
+      "dates": "March 2022 – June 2023",
+      "responsibilities": [
+        "Led execution on 6 Real-Time Projects: Mainland hellomainland.com, encompassing 1851franchise.com, stachcow.com, estatenvy.com, room1903.com, smw.com, and Schedula.in.",
+        "Developed and implemented a continuous integration and deployment (CI/CD) infrastructure pipeline for a new application, reducing deployment time and scalability by 70% and increasing team productivity by 45%.",
+        "Set up and maintained testing, development, staging, and production environments, ensuring seamless application deployment and improving overall system reliability through containerization of microservices including load balancing and clustering.",
+        "Collaborative with development teams to problem-solve, debug, and continuously improve software applications solutions, migrations and troubleshooting resulting in a 55% increase in user satisfaction and a 80% increase in revenue through proper teamwork using tools like PowerShell and VMware.",
+        "Maintained system documentation and provided trained new team members, improving onboarding time by 60%.",
+        "Monitored system logs and identified potential issues, resulting in a 50% reduction in system downtime and improved system performance."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu-1",
+      "degree": "B.Tech - Bachelor of Technology in Mechanical Engineering",
+      "institution": "Narula Institute of Technology",
+      "dates": "September 2019 – March 2022",
+      "details": "Kolkata, INDIA"
+    }
+  ],
+  "skills": [
+    {
+      "category": "Version Control & Scripting",
+      "items": [
+        "Git",
+        "Bash",
+        "Python"
+      ]
+    },
+    {
+      "category": "Source Code Management Tools",
+      "items": [
+        "Gitlab",
+        "GitHub",
+        "Bitbucket"
+      ]
+    },
+    {
+      "category": "Cloud Platforms",
+      "items": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ]
+    },
+    {
+      "category": "Containerization & Orchestration",
+      "items": [
+        "Docker",
+        "ECS",
+        "Kubernetes",
+        "EKS",
+        "Helm Charts"
+      ]
+    },
+    {
+      "category": "Infrastructure as Code & Configuration Management",
+      "items": [
+        "Terraform",
+        "Ansible",
+        "Chef",
+        "Puppet",
+        "CloudFormation",
+        "Crossplane"
+      ]
+    },
+    {
+      "category": "CI/CD Tools",
+      "items": [
+        "Jenkins",
+        "GitHub Action",
+        "GitLab CI",
+        "Circle CI",
+        "ArgoCD"
+      ]
+    },
+    {
+      "category": "Monitoring Tools",
+      "items": [
+        "Grafana",
+        "Prometheus",
+        "CloudWatch",
+        "ELK Stack",
+        "Datadog",
+        "New Relic",
+        "PagerDuty",
+        "Opentelemetry"
+      ]
+    },
+    {
+      "category": "Security Tools",
+      "items": [
+        "SonarQube",
+        "Trivy",
+        "Docker Scout",
+        "Snyk",
+        "Gitlab Scans"
+      ]
+    },
+    {
+      "category": "Operating Systems",
+      "items": [
+        "Linux",
+        "Unix",
+        "Linux/Unix",
+        "Ubuntu",
+        "Mac OS",
+        "Windows"
+      ]
+    },
+    {
+      "category": "Automated Testing Tools",
+      "items": [
+        "Selenium",
+        "JUnit",
+        "TestNG"
+      ]
+    },
+    {
+      "category": "Machine Learning Frameworks",
+      "items": [
+        "TensorFlow",
+        "PyTorch"
+      ]
+    },
+    {
+      "category": "Documentation Tools & Project Management Tools",
+      "items": [
+        "Confluence",
+        "Jira",
+        "coda.io",
+        "Click Up",
+        "Gitlab Issues"
+      ]
+    },
+    {
+      "category": "Web Frameworks",
+      "items": [
+        "Django",
+        "Flask",
+        "NextJs",
+        "Node Js",
+        "Express Js"
+      ]
+    },
+    {
+      "category": "Daily AI Stacks Uses",
+      "items": [
+        "Claude Code",
+        "Open Code",
+        "Cursor",
+        "MiniMax",
+        "GLM",
+        "Deepseek",
+        "Composer"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "On-Going SAAS Level Applications & Mobile apps",
+      "description": "Status In QA - Solo development Using all AI With Best alternative of anthropic with Cheaper and long run Options in the market.",
+      "technologies": [],
+      "link": "",
+      "dates": "2026 - Present"
+    },
+    {
+      "id": "proj-2",
+      "name": "Static Website CI/CD Pipeline",
+      "description": "Utilized GitHub Actions to deploy a static website to AWS S3 with HTTPS via CloudFront through a CI/CD pipeline.",
+      "technologies": [
+        "GitHub Actions",
+        "AWS S3",
+        "CloudFront"
+      ],
+      "link": "",
+      "dates": "2022"
+    },
+    {
+      "id": "proj-3",
+      "name": "MERN Stack Travel Blog on EKS",
+      "description": "Deployed a MERN stack travel blog website to EKS using GitHub Actions.",
+      "technologies": [
+        "MERN",
+        "EKS",
+        "GitHub Actions"
+      ],
+      "link": "",
+      "dates": "2022"
+    },
+    {
+      "id": "proj-4",
+      "name": "Reddit Clone on Kubernetes",
+      "description": "Implemented deployment of a Reddit clone on Kubernetes using GitHub Actions.",
+      "technologies": [
+        "Kubernetes",
+        "GitHub Actions"
+      ],
+      "link": "",
+      "dates": "2022"
+    },
+    {
+      "id": "proj-5",
+      "name": "Netflix Clone DevSecOps Pipeline",
+      "description": "Created a DevSecOps Argo CD pipeline to deploy a Netflix clone on Kubernetes and EKS.",
+      "technologies": [
+        "ArgoCD",
+        "Kubernetes",
+        "EKS"
+      ],
+      "link": "",
+      "dates": "2022"
+    },
+    {
+      "id": "proj-6",
+      "name": "Docker Environment Shell Script",
+      "description": "Developed a shell script to automate Docker environment setup.",
+      "technologies": [
+        "Shell",
+        "Docker"
+      ],
+      "link": "",
+      "dates": "2022"
+    }
+  ],
+  "certifications": [
+    {
+      "id": "cert-1",
+      "name": "Agile Methodology Virtual Experience Program",
+      "issuer": "COGNIZANT",
+      "date": "2023",
+      "link": ""
+    },
+    {
+      "id": "cert-2",
+      "name": "Serverless LLM Apps Amazon Bedrock",
+      "issuer": "DEEP LEARNING",
+      "date": "2024",
+      "link": ""
+    },
+    {
+      "id": "cert-3",
+      "name": "Generative Artificial Intelligence AI for DevOps",
+      "issuer": "TWS",
+      "date": "2024",
+      "link": ""
+    },
+    {
+      "id": "cert-4",
+      "name": "DevOps Training",
+      "issuer": "CLOUD TRAIN",
+      "date": "2022",
+      "link": ""
+    },
+    {
+      "id": "cert-5",
+      "name": "Cloud Computing",
+      "issuer": "INTERNSHALA",
+      "date": "2022",
+      "link": ""
+    }
+  ],
+  "rawText": "ATANU BISWAS\n+91 8420205661 | \tatanub707@gmail.com | \tLinkedIn | \tGitHub\nDevSecOps Engineer with 3.5+ years of experience designing secure, scalable cloud-native\ninfrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform,\nAWS, GCP, and Azure, with expertise in DevSecOps automation, container security, and infrastructure as\ncode. Proven track record in startup environments driving platform reliability, security compliance,\nand deployment automation across microservices architectures.\nSKILLS\n• \tVersion Control & Scripting: Git, Bash, Python.\n• \tSource Code Management Tools: Gitlab, GitHub, Bitbucket.\n• \tCloud Platforms: AWS, Azure, GCP.\n• \tContainerization & Orchestration: Docker, ECS, Kubernetes, EKS, Helm Charts.\n• \tInfrastructure as Code & Configuration Management: Terraform, Ansible, Chef, Puppet, CloudFormation & Crossplane.\n• \tCI/CD Tools: Jenkins, GitHub Action, GitLab CI, Circle CI, ArgoCD\n• \tMonitoring Tools: Grafana, Prometheus, CloudWatch, ELK Stack, Datadog, New Relic, PagerDuty, Opentelemetry\n• \tSecurity Tools: SonarQube, Trivy, Docker Scout, Snyk, Gitlab Scans\n• \tOperating Systems: Linux, Unix, Linux/Unix, Ubuntu, Mac OS, Windows.\n• \tAutomated Testing Tools: Selenium, JUnit, TestNG.\n• \tMachine Learning Frameworks: TensorFlow, PyTorch.\n• \tDocumentation Tools & Project Management Tools: Confluence, Jira, coda.io, Click Up & Gitlab Issues\n• \tWeb Frameworks: Django, Flask, NextJs, Node Js, Express Js\n• \tDaily AI Stacks Uses : Claude Code , Open Code , Cursor , MiniMax, GLM , Deepseek, Composer . Many More with Skill-Set and upskilling\nto build private projects.\nWORK EXPERIENCE\nHuman Managed: DevSecOps Engineer \tAugust 2024 – Present\nSingapore, Remote\n• \tEstablished an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by\n80%. Integrated SAST, DAST, IaC scanning, and Snyk & Gitlab into CI/CD pipelines for\nvulnerability assessment and application security; performed vulnerability management by assigning\ntickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.\n• \tDesigned and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and\nBuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube +\nBuildKit environments for non-privileged container builds.\n• \tLead GitLab self-managed to SaaS migration (subgroup imports, CI/CD variable migration, GKE runner\nintegration) and container registry migrations from JFrog Artifactory to Docker Hub and GitLab Container\nRegistry across multiple microservices.\n• \tImplemented security compliance and governance controls including IAM authorization policies\nusing Vanta Audits and automated Slack notifications tied to Gitlab security scan triggers.\n• \tImplemented alerting through Slack for CI/CD pipelines and conducted Root Cause Analysis (RCA) for\npost-incident reviews.\n• \tContributing to ArgoCD deployment automation and Kubernetes upgrade activities across GKE/EKS\nenvironments; automating AWS cloud infrastructure workflows using GitLab CI/CD, Crossplane, GitOps, and\nInfrastructure as Code (IaC).\n• \tCollaborating and communicating with development teams on Agile SDLC workflows and code review;\nleveraging Artificial Intelligence (AI) and prompt engineering for workflow automation, continuous\nimprovement, and technical documentation.\n• \tWorked in startup environments with cross-functional responsibilities, including developing and\nmaintaining Airbyte connectors (both low-code and Python-based), packaging connectors as\n\n-- 1 of 2 --\n\nDocker images, managing versioning and continuous deployment pipelines, maintaining and\nenhancing the Dragster deployment flow while following established microservice\narchitecture patterns, deploying and managing APIs with ArgoCD using a consistent\nmicroservice deployment strategy, and packaging applications using Helm Charts to ensure\nstandardized, scalable, and reliable deployments across environments.\n• \tContinuously evaluated and improved security processes, tools, and practices to adapt to evolving threats and\nbusiness needs.\nPearlThoughts: DevOps Engineer \tMarch 2022 – June 2023\nIndia, Remote\n• \tLed execution on 6 Real-Time Projects: Mainland hellomainland.com,encompassing 1851franchise.com,\nstachcow.com, estatenvy.com, room1903.com, smw.com, and Schedula.in.\n• \tDeveloped and implemented a continuous integration and deployment (CI/CD) infrastructure pipeline for a new\napplication, reducing deployment time and scalability by 70% and increasing team productivity by\n45%.\n• \tSet up and maintained testing, development, staging, and production environments, ensuring seamless\napplication deployment and improving overall system reliability through containerization of microservices\nincluding load balancing and clustering.\n• \tCollaborative with development teams to problem-solve, debug, and continuously improve software applications\nsolutions, migrations and troubleshooting resulting in a 55% increase in user satisfaction and a 80%\nincrease in revenue through proper teamwork using tools like PowerShell and VMware.\n• \tMaintained system documentation and provided trained new team members, improving onboarding time\nby 60%.\n• \tMonitored system logs and identified potential issues, resulting in a 50%reduction in system downtime\nand improved system performance.\nPROJECTS ( 2021 - 2022 )\n• \tOn-Going SAAS Level Applications & Mobile apps. Status In QA - Solo development Using all AI With Best\nalternative of anthropic with Cheaper and long run Options in the market. \t[2026 - Present]\n• \t[LINK] Utilized GitHub Actions to deploy a static website to AWS S3 with HTTPS via CloudFront\nthrough a CI/CD pipeline. \t[2022]\n• \t[LINK] Deployed a MERN stack travel blog website to EKS using GitHub Actions. \t[2022]\n•\n• \t[LINK] Implemented deployment of a Reddit clone on Kubernetes using GitHub Actions. \t[2022]\n• \t[LINK] Created a DevSecOps Argo CD pipeline to deploy a Netflix clone on Kubernetes and EKS. [2022]\n• \t[LINK] Developed a shell script to automate Docker environment setup. \t[2022]\nEDUCATION\nNarula Institute of Technology || Kolkata, INDIA \tSeptember 2019 – March 2022\nB.Tech - Bachelor of Technology in Mechanical Engineering\nCERTIFICATION\n• \tCOGNIZANT – Agile Methodology Virtual Experience Program (2023)\n• \tDEEP LEARNING - Serverless LLM Apps Amazon Bedrock (2024)\n• \tTWS – Generative Artificial Intelligence AI for DevOps (2024)\n• \tCLOUD TRAIN – DevOps Training (2022)\n• \tINTERNSHALA – Cloud Computing (2022)\n\n-- 2 of 2 --\n\n"
+}

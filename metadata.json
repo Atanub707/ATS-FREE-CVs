@@ -1,0 +1,6 @@
+{
+  "name": "ATS Job Search & CV Tailor",
+  "description": "AI-powered ATS job scraping, automated candidate match scoring, gap analysis, and tailored CV docx generator",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
