@@ -53,6 +53,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [downloadFilename, setDownloadFilename] = useState(masterCv.fullName.replace(/ /g, '_') + '_CV');
   const [skillGaps, setSkillGaps] = useState<{ skill: string; count: number; totalScored: number }[]>([]);
   const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
   const [showGaps, setShowGaps] = useState(false);
@@ -61,6 +62,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
 
   useEffect(() => {
     setFormData(masterCv);
+    setDownloadFilename(masterCv.fullName.replace(/ /g, '_') + '_CV');
   }, [masterCv]);
 
   const fetchSkillGaps = async () => {
@@ -334,22 +336,41 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             )}
 
             <div className="flex items-center space-x-1.5">
-              <a
-                href="/api/cv/master/download?format=docx"
+              <input
+                type="text"
+                value={downloadFilename}
+                onChange={(e) => setDownloadFilename(e.target.value.replace(/[^a-zA-Z0-9_\-]/g, ''))}
+                className="w-28 bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 font-mono"
+                title="Filename (without extension)"
+              />
+              <button
+                onClick={async () => {
+                  const res = await fetch('/api/cv/master/download?format=docx');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `${downloadFilename}.docx`;
+                  a.click(); URL.revokeObjectURL(url);
+                }}
                 className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
-                title="Download Master CV as DOCX"
               >
                 <FileDown className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">DOCX</span>
-              </a>
-              <a
-                href="/api/cv/master/download?format=pdf"
+              </button>
+              <button
+                onClick={async () => {
+                  const res = await fetch('/api/cv/master/download?format=pdf');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `${downloadFilename}.pdf`;
+                  a.click(); URL.revokeObjectURL(url);
+                }}
                 className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
-                title="Download Master CV as PDF"
               >
                 <FileDown className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">PDF</span>
-              </a>
+              </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
