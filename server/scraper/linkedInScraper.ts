@@ -47,6 +47,7 @@ export class LinkedInScraper extends BaseScraper {
             'Accept-Language': 'en-US,en;q=0.9',
             Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           },
+          signal: AbortSignal.timeout(15000),
         });
 
         if (!response.ok) break;
@@ -205,6 +206,7 @@ export class LinkedInScraper extends BaseScraper {
     const url = `https://www.linkedin.com/jobs/view/${jobId}`;
     const response = await fetch(url, {
       headers: this.getStealthHeaders(),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
