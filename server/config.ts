@@ -24,8 +24,9 @@ const DEFAULT_CONFIG: AppConfig = {
   },
   scraper: {
     stealthMode: true,
-    delayBetweenRequestsMs: 1200,
     maxRetries: 3,
+    adzunaAppId: '',
+    adzunaApiKey: '',
   },
 };
 
@@ -57,8 +58,9 @@ export function loadConfig(): AppConfig {
       },
       scraper: {
         stealthMode: parsed.scraper?.stealthMode === 'false' ? false : true,
-        delayBetweenRequestsMs: Number(parsed.scraper?.delayBetweenRequestsMs ?? DEFAULT_CONFIG.scraper.delayBetweenRequestsMs),
         maxRetries: Number(parsed.scraper?.maxRetries ?? DEFAULT_CONFIG.scraper.maxRetries),
+        adzunaAppId: parsed.scraper?.adzunaAppId ?? DEFAULT_CONFIG.scraper.adzunaAppId,
+        adzunaApiKey: parsed.scraper?.adzunaApiKey ?? DEFAULT_CONFIG.scraper.adzunaApiKey,
       },
     };
   } catch (err) {

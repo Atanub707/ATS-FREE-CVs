@@ -7,7 +7,6 @@ import {
   Play,
   Loader2,
   CheckCircle2,
-  Linkedin,
   ChevronDown,
   SlidersHorizontal,
   Tag,
@@ -33,6 +32,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
+  const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
+
+  const toggleSource = (source: JobSource) => {
+    setSelectedSources((prev) =>
+      prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +48,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
     const result = await onScrape({
       keywords,
       location,
-      sources: ['LinkedIn'],
+      sources: selectedSources,
       datePostedFilter,
       maxJobsPerSource,
     });
@@ -54,7 +60,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
         setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! (All ${result.skippedDuplicates} were already in your job list).`);
       }
     } else {
-      setScrapeSuccessMsg(`Searched live postings on LinkedIn (${maxJobsPerSource} target jobs)!`);
+      const srcList = selectedSources.join(' + ');
+      setScrapeSuccessMsg(`Searched ${srcList} (${maxJobsPerSource} target jobs each)!`);
     }
     setTimeout(() => setScrapeSuccessMsg(null), 7000);
   };
@@ -211,15 +218,34 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           <div className="flex items-center space-x-2">
             <span className="text-slate-500 font-semibold flex items-center space-x-1">
               <Globe className="w-3.5 h-3.5 text-slate-400" />
-              <span>Target Source:</span>
+              <span>Sources:</span>
             </span>
 
-            {/* LinkedIn Active Badge */}
-            <div className="px-2.5 py-1 rounded-md text-xs font-semibold border flex items-center space-x-1.5 bg-blue-50 text-blue-700 border-blue-300">
-              <Linkedin className="w-3.5 h-3.5 text-blue-600" />
-              <span>LinkedIn Live Jobs</span>
-              <CheckCircle2 className="w-3 h-3 text-blue-600 ml-0.5" />
-            </div>
+            {/* LinkedIn Toggle */}
+            <button
+              type="button"
+              onClick={() => toggleSource('LinkedIn')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                selectedSources.includes('LinkedIn')
+                  ? 'bg-blue-50 text-blue-700 border-blue-300'
+                  : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}
+            >
+              LinkedIn {selectedSources.includes('LinkedIn') ? '✓' : ''}
+            </button>
+
+            {/* Adzuna Toggle */}
+            <button
+              type="button"
+              onClick={() => toggleSource('Adzuna')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                selectedSources.includes('Adzuna')
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                  : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}
+            >
+              Adzuna {selectedSources.includes('Adzuna') ? '✓' : ''}
+            </button>
           </div>
 
           {/* Action Trigger */}
