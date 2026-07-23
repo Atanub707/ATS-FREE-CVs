@@ -20,7 +20,6 @@ import {
   TrendingUp,
   Mail,
   Phone,
-  Linkedin,
   Github,
   Globe,
   Award,
@@ -151,8 +150,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               rel="noopener noreferrer"
               className="px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center space-x-1.5 transition-colors"
             >
-              <Linkedin className="w-3.5 h-3.5 text-blue-600" />
-              <span>View Job on LinkedIn</span>
+              <span>View Original Posting</span>
               <ExternalLink className="w-3 h-3 text-blue-500" />
             </a>
             <button
@@ -599,7 +597,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                               className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
                               title="Open LinkedIn Profile"
                             >
-                              <Linkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+                              <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
                               <span>LinkedIn</span>
                               <ExternalLink className="w-2.5 h-2.5 text-blue-400" />
                             </a>

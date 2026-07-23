@@ -1,6 +1,6 @@
 {
-  "name": "ATS Job Search & CV Tailor",
-  "description": "AI-powered ATS job scraping, automated candidate match scoring, gap analysis, and tailored CV docx generator",
+  "name": "Open ATS CV Tailor",
+  "description": "Open-source ATS CV tailoring tool with job search, AI matching, and DOCX/PDF export",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

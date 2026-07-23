@@ -1,10 +1,16 @@
-# ATS Job Search & CV Tailor
+# Open ATS CV Tailor
 
-ATS-optimized job matching and CV tailoring tool. Scrapes LinkedIn jobs, matches them against your profile, and generates tailored CVs in DOCX/PDF format.
+> **⚠️ Legal Disclaimer**
+> This is an open-source, educational utility designed for personal productivity and job application tailoring.
+> - **Local Operation Only:** This tool runs entirely on your local machine. It does not collect, store, or transmit your personal data or scraped data to any third-party servers.
+> - **Public Data Only:** The tool only accesses publicly available data that is visible without authentication. It does not attempt to bypass security controls, firewalls, or user login screens.
+> - **Independent Project:** This project is independent and is not affiliated with, authorized, maintained, or endorsed by LinkedIn, Adzuna, or any other data source. Users assume all responsibility and risk regarding the compliance of their usage with third-party Terms of Service.
+
+ATS-optimized job matching and CV tailoring tool. Scrapes job listings from public sources, matches them against your profile, and generates tailored CVs in DOCX/PDF format.
 
 ## Features
 
-- **LinkedIn Job Scraping** — Search and scrape live LinkedIn job listings
+- **Job Search** — Search and scrape live job listings from public sources
 - **ATS Matching** — Score jobs against your CV using AI
 - **CV Tailoring** — Generate ATS-optimized CVs tailored to specific job descriptions
 - **Multi-format Export** — Download tailored CVs as DOCX, PDF, or plain text

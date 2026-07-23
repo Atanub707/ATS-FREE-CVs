@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Database, ShieldAlert, Sliders, Key, Cpu } from 'lucide-react';
+import { X, Save, Database, ShieldAlert, Sliders, Key, Cpu, Globe } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -265,6 +265,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-[10px] text-slate-500 block mt-0.5">Threshold for batch auto-tailoring</span>
               </div>
             </div>
+          </div>
+
+          {/* Adzuna API Config */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <Globe className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Adzuna Job Search API</span>
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">App ID</label>
+                <input
+                  type="text"
+                  value={formData.scraper.adzunaAppId}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      scraper: { ...formData.scraper, adzunaAppId: e.target.value },
+                    })
+                  }
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">API Key</label>
+                <input
+                  type="password"
+                  value={formData.scraper.adzunaApiKey}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      scraper: { ...formData.scraper, adzunaApiKey: e.target.value },
+                    })
+                  }
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
+                />
+              </div>
+            </div>
+            <span className="text-[10px] text-slate-500 block">Get yours free at <a href="https://developer.adzuna.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">developer.adzuna.com</a></span>
           </div>
 
           {/* Persistent Storage Config */}

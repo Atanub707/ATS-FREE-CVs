@@ -17,9 +17,9 @@ import {
   DollarSign,
   Loader2,
   TrendingUp,
-  Linkedin,
   Calendar,
   ExternalLink,
+  Globe,
 } from 'lucide-react';
 
 interface JobMatrixProps {
@@ -71,6 +71,8 @@ const JobCard = React.memo(function JobCard({
             className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer hover:underline ${
               job.source === 'LinkedIn'
                 ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                : job.source === 'Adzuna'
+                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
                 : job.source === 'Indeed'
                 ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
                 : job.source === 'Glassdoor'
@@ -78,10 +80,7 @@ const JobCard = React.memo(function JobCard({
                 : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
             }`}
           >
-            {job.source === 'LinkedIn' && <Linkedin className="w-3 h-3 text-blue-600" />}
-            {job.source === 'Indeed' && <Briefcase className="w-3 h-3 text-indigo-600" />}
-            {job.source === 'Glassdoor' && <Building2 className="w-3 h-3 text-emerald-600" />}
-            <span>{job.source}</span>
+            <span>Source: {job.source}</span>
             <ExternalLink className="w-2.5 h-2.5 text-blue-500 ml-0.5" />
           </a>
 

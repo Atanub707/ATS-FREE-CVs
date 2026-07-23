@@ -1,5 +1,5 @@
 export type JobState = 'pending' | 'matched' | 'tailored' | 'ready';
-export type JobSource = 'LinkedIn' | 'Indeed' | 'Glassdoor' | 'Custom';
+export type JobSource = 'LinkedIn' | 'Indeed' | 'Glassdoor' | 'Adzuna' | 'Custom';
 
 export interface Job {
   id: string;
@@ -152,6 +152,8 @@ export interface ScraperParams {
   datePostedFilter?: 'all' | '24h' | '7d' | '30d';
   minSalary?: number;
   maxJobsPerSource?: number;
+  adzunaAppId?: string;
+  adzunaApiKey?: string;
 }
 
 export type LlmProvider = 'opencode-go' | 'openrouter' | 'openai' | 'gemini' | 'anthropic' | 'nvidia';
@@ -175,8 +177,9 @@ export interface AppConfig {
   };
   scraper: {
     stealthMode: boolean;
-    delayBetweenRequestsMs: number;
     maxRetries: number;
+    adzunaAppId: string;
+    adzunaApiKey: string;
   };
 }
 
