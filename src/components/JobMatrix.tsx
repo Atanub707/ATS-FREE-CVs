@@ -77,7 +77,9 @@ const JobCard = React.memo(function JobCard({
                 ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
                 : job.source === 'Glassdoor'
                 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                : job.source === 'Arbeitnow'
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
             }`}
           >
             <span>Source: {job.source}</span>
@@ -331,7 +333,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <TrendingUp className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-xl font-bold text-blue-600 mt-1">{avgScore}%</div>
-          <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobs.length} scored with Gemini AI</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobs.length} scored with AI</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
@@ -458,6 +460,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               >
                 <option value="all">All Sources</option>
                 <option value="LinkedIn">LinkedIn</option>
+                <option value="Adzuna">Adzuna</option>
+                <option value="Arbeitnow">Arbeitnow</option>
                 <option value="Indeed">Indeed</option>
                 <option value="Glassdoor">Glassdoor</option>
                 <option value="Custom">Custom</option>
@@ -516,7 +520,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <Briefcase className="w-8 h-8 text-slate-400 mx-auto mb-2" />
           <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
           <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-            Use the scraper above to search for live LinkedIn positions.
+              Use the scraper above to search for live job listings.
           </p>
         </div>
       ) : (

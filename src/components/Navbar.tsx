@@ -27,14 +27,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-sm font-bold text-slate-900 tracking-tight font-sans">
-                Job Matrix & ATS CV Tailor
+                ATS CV Tailor
               </h1>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                LinkedIn Engine
+                Multi-Source
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
-              LinkedIn Job Scraper • Gemini AI ATS Alignment • Calibri .docx Export
+              Job Search • AI ATS Matching • CV Tailoring & Export
             </p>
           </div>
         </div>
