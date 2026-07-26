@@ -257,17 +257,6 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               </button>
             ))}
 
-            {selectedSources.includes('Dice') && (
-              <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded ml-1">
-                ⓘ Dice uses original posting dates — use "Anytime" for results
-              </span>
-            )}
-            {selectedSources.includes('Reed') && (
-              <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded ml-1">
-                ⓘ Reed uses original posting dates — use "Anytime" for results
-              </span>
-            )}
-
           </div>
 
           {/* Action Trigger */}
