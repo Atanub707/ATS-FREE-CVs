@@ -36,6 +36,8 @@ npm install
 
 ### Set Up Your LLM API Key
 
+> 🔑 **Bring Your Own Key** — no bundled API keys. You sign up with a provider and get your own.
+
 This app uses a **"bring your own key"** model — you need an API key from one of the supported providers. The key is stored locally in `config.ini` and never leaves your machine.
 
 **Option A — Use the Settings UI:**
@@ -70,10 +72,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Supported LLM Providers
 
+> 🔑 **Bring Your Own Key** — sign up with any provider below and use your own API key. The app stores it locally and never shares it.
+
 | Provider | Free Tier? | How to Get a Key |
 |---|---|---|
 | **Google Gemini** | ✅ Free (via Google) | Sign up at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — free quota included |
-| **NVIDIA (Free Tier)** | ✅ Free (via NVIDIA) | Select `NVIDIA` in Settings — uses NVIDIA's free API, no key needed |
+| **NVIDIA (Free Tier)** | ✅ Free, no key needed | Select `NVIDIA` in Settings — uses NVIDIA's free public endpoint |
 | **OpenAI** | ❌ Paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | **Anthropic (Claude)** | ❌ Paid | [console.anthropic.com](https://console.anthropic.com) |
 | **OpenRouter** | ❌ Paid | [openrouter.ai/keys](https://openrouter.ai/keys) (access to 200+ models) |
