@@ -72,13 +72,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Provider | Free Tier? | How to Get a Key |
 |---|---|---|
-| **Google Gemini** | ✅ Free quota | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **NVIDIA (Free Tier)** | ✅ Free | Select `NVIDIA` in Settings — pre-configured |
+| **Google Gemini** | ✅ Free (via Google) | Sign up at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — free quota included |
+| **NVIDIA (Free Tier)** | ✅ Free (via NVIDIA) | Select `NVIDIA` in Settings — uses NVIDIA's free API, no key needed |
 | **OpenAI** | ❌ Paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | **Anthropic (Claude)** | ❌ Paid | [console.anthropic.com](https://console.anthropic.com) |
 | **OpenRouter** | ❌ Paid | [openrouter.ai/keys](https://openrouter.ai/keys) (access to 200+ models) |
 
-**Recommended for first-time users:** Google Gemini — it offers a generous free tier and works out of the box with the default settings.
+> **All API keys are your own.** You sign up with the provider directly and get your own key. The app never shares or transmits your key anywhere — it's stored locally in `config.ini`. NVIDIA is the only exception — no key needed, just select it as your provider.
 
 ---
 
