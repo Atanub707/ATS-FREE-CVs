@@ -8,14 +8,8 @@ export class DiceScraper extends BaseScraper {
     const keywords = params.keywords.trim();
     const location = params.location?.trim() || '';
     const limit = params.maxJobsPerSource || 10;
-    const filter = params.datePostedFilter || 'all';
     const jobs: Job[] = [];
     const seenIds = new Set<string>();
-
-    let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
-    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
-    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
 
     try {
       const url = `https://www.dice.com/jobs?q=${encodeURIComponent(keywords)}${location ? `&location=${encodeURIComponent(location)}` : ''}`;
@@ -98,7 +92,6 @@ export class DiceScraper extends BaseScraper {
         for (const r of results) {
           if (r.status !== 'fulfilled' || !r.value) continue;
           const d = r.value;
-          if (d.postedDate.getTime() < Date.now() - maxAgeMs) continue;
           jobs.push({
             id: `dice-${d.uuid}`, title: d.title, company: d.company,
             location: d.location, source: 'Dice', description: d.description,

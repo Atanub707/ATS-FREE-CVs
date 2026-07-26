@@ -16,11 +16,6 @@ export class SimplyHiredScraper extends BaseScraper {
     const jobs: Job[] = [];
     const seenKeys = new Set<string>();
 
-    let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
-    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
-    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
-
     try {
       const url = `${SIMPLYHIRED_SEARCH}?q=${encodeURIComponent(keywords)}${location ? `&l=${encodeURIComponent(location)}` : ''}`;
       const response = await fetch(url, {
@@ -58,7 +53,6 @@ export class SimplyHiredScraper extends BaseScraper {
         seenKeys.add(key);
 
         const postedDate = item.dateOnIndeed ? new Date(item.dateOnIndeed) : new Date();
-        if (postedDate.getTime() < Date.now() - maxAgeMs) continue;
 
         const salaryText = item.salaryInfo || undefined;
         const jobTypes = Array.isArray(item.jobTypes) ? item.jobTypes.join(' · ') : 'Full-time';
