@@ -59,7 +59,7 @@ export async function scrapeJobDescription(jobUrl: string): Promise<{ text: stri
       });
     }
 
-    const cleaned = rawText.replace(/\s+/g, ' ').trim();
+    const cleaned = rawText.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').trim();
 
     if (cleaned.length < 150) {
       console.warn(`Generic scrape extracted too little text from ${jobUrl}`);

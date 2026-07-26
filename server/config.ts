@@ -27,6 +27,7 @@ const DEFAULT_CONFIG: AppConfig = {
     maxRetries: 3,
     adzunaAppId: '',
     adzunaApiKey: '',
+    indeedPublisherId: '',
   },
 };
 
@@ -61,6 +62,7 @@ export function loadConfig(): AppConfig {
         maxRetries: Number(parsed.scraper?.maxRetries ?? DEFAULT_CONFIG.scraper.maxRetries),
         adzunaAppId: parsed.scraper?.adzunaAppId ?? DEFAULT_CONFIG.scraper.adzunaAppId,
         adzunaApiKey: parsed.scraper?.adzunaApiKey ?? DEFAULT_CONFIG.scraper.adzunaApiKey,
+        indeedPublisherId: parsed.scraper?.indeedPublisherId ?? DEFAULT_CONFIG.scraper.indeedPublisherId,
       },
     };
   } catch (err) {

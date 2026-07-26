@@ -1,5 +1,5 @@
 export type JobState = 'pending' | 'matched' | 'tailored' | 'ready';
-export type JobSource = 'LinkedIn' | 'Indeed' | 'Glassdoor' | 'Adzuna' | 'Arbeitnow' | 'Custom';
+export type JobSource = 'LinkedIn' | 'Glassdoor' | 'Arbeitnow' | 'SimplyHired' | 'Dice' | 'Reed' | 'JapanDev' | 'Greenhouse' | 'Lever' | 'Custom';
 
 export interface Job {
   id: string;
@@ -40,6 +40,9 @@ export interface GapAnalysis {
   matchedKeywords: string[];
   missingKeywords: string[];
   summaryAnalysis: string;
+  yearsOfExperience?: number;
+  yearsRequired?: number;
+  booleanSearchResult?: 'pass' | 'borderline' | 'fail';
 }
 
 export interface TailoringAudit {
@@ -143,7 +146,10 @@ export interface MasterCv {
   projects?: ProjectItem[];
   certifications?: CertificationItem[];
   rawText?: string;
+  downloadFilename?: string;
 }
+
+export type ExperienceLevel = 'all' | 'entry' | 'mid' | 'senior' | 'lead';
 
 export interface ScraperParams {
   keywords: string;
@@ -152,8 +158,11 @@ export interface ScraperParams {
   datePostedFilter?: 'all' | '24h' | '7d' | '30d';
   minSalary?: number;
   maxJobsPerSource?: number;
+  jobTitle?: string;
+  experienceLevel?: ExperienceLevel;
   adzunaAppId?: string;
   adzunaApiKey?: string;
+  indeedPublisherId?: string;
 }
 
 export type LlmProvider = 'opencode-go' | 'openrouter' | 'openai' | 'gemini' | 'anthropic' | 'nvidia';
@@ -180,6 +189,7 @@ export interface AppConfig {
     maxRetries: number;
     adzunaAppId: string;
     adzunaApiKey: string;
+    indeedPublisherId: string;
   };
 }
 

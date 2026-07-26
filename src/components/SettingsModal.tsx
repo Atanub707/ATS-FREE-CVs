@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Database, ShieldAlert, Sliders, Key, Cpu, Globe } from 'lucide-react';
+import { X, Save, Sliders, Key, Cpu } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   config: AppConfig;
   onSaveConfig: (updated: AppConfig) => Promise<void>;
-  onRunMigration: (targetMode: 'sqlite' | 'json') => Promise<{ success: boolean; message: string; count: number }>;
 }
 
 const PROVIDER_LABELS: Record<LlmProvider, string> = {
@@ -54,13 +53,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   config,
   onSaveConfig,
-  onRunMigration,
 }) => {
   if (!isOpen) return null;
 
   const [formData, setFormData] = useState<AppConfig>(config);
   const [isSaving, setIsSaving] = useState(false);
-  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +65,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     await onSaveConfig(formData);
     setIsSaving(false);
     onClose();
-  };
-
-  const handleMigrate = async () => {
-    setMigrationStatus('Migrating storage engine...');
-    const target = formData.storage.mode;
-    const res = await onRunMigration(target);
-    setMigrationStatus(res.message);
   };
 
   const provider = formData.llm.provider || 'gemini';
@@ -199,153 +189,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Temperature: {formData.llm.temperature}</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={formData.llm.temperature}
-                  onChange={(e) =>
-                    setFormData({ ...formData, llm: { ...formData.llm, temperature: Number(e.target.value) } })
-                  }
-                  className="w-full cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Precise (0)</span>
-                  <span>Balanced (0.5)</span>
-                  <span>Creative (1)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Thresholds */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-              <span>Matching & Tailoring Thresholds</span>
-            </h3>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Early Block Threshold (%)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={formData.thresholds.earlyBlockThreshold}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      thresholds: { ...formData.thresholds, earlyBlockThreshold: Number(e.target.value) },
-                    })
-                  }
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900"
-                />
-                <span className="text-[10px] text-slate-500 block mt-0.5">Jobs below this score are flagged low match</span>
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Min Match for Tailoring (%)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={formData.thresholds.minMatchForTailor}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      thresholds: { ...formData.thresholds, minMatchForTailor: Number(e.target.value) },
-                    })
-                  }
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900"
-                />
-                <span className="text-[10px] text-slate-500 block mt-0.5">Threshold for batch auto-tailoring</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Adzuna API Config */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-              <Globe className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Adzuna Job Search API</span>
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">App ID</label>
-                <input
-                  type="text"
-                  value={formData.scraper.adzunaAppId}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      scraper: { ...formData.scraper, adzunaAppId: e.target.value },
-                    })
-                  }
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">API Key</label>
-                <input
-                  type="password"
-                  value={formData.scraper.adzunaApiKey}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      scraper: { ...formData.scraper, adzunaApiKey: e.target.value },
-                    })
-                  }
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
-                />
-              </div>
-            </div>
-            <span className="text-[10px] text-slate-500 block">Get yours free at <a href="https://developer.adzuna.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">developer.adzuna.com</a></span>
-          </div>
-
-          {/* Persistent Storage Config */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-              <Database className="w-3.5 h-3.5 text-blue-600" />
-              <span>Persistence Engine</span>
-            </h3>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Active Storage Driver</label>
-                <select
-                  value={formData.storage.mode}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      storage: { ...formData.storage, mode: e.target.value as 'sqlite' | 'json' },
-                    })
-                  }
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-semibold cursor-pointer"
-                >
-                  <option value="sqlite">SQLite Database Engine (Primary)</option>
-                  <option value="json">JSON File System Fallback (Portable)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={handleMigrate}
-                  className="px-3 py-1.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold transition-colors cursor-pointer"
-                >
-                  Migrate Records to {formData.storage.mode.toUpperCase()}
-                </button>
-
-                {migrationStatus && (
-                  <span className="text-[11px] text-blue-700 font-medium truncate max-w-[240px]">
-                    {migrationStatus}
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 

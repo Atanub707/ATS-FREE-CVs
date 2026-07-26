@@ -8,7 +8,6 @@ import {
   BorderStyle,
   UnderlineType,
   TabStopType,
-  TabStopPosition,
 } from 'docx';
 import PDFDocument from 'pdfkit';
 import { TailoredCv } from '../../src/types.js';

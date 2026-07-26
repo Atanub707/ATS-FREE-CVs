@@ -1,0 +1,169 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#334155" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="600" fill="url(#bg)"/>
+
+  <!-- Grid pattern -->
+  <g opacity="0.03">
+    <line x1="0" y1="100" x2="1200" y2="100" stroke="#fff" stroke-width="0.5"/>
+    <line x1="0" y1="200" x2="1200" y2="200" stroke="#fff" stroke-width="0.5"/>
+    <line x1="0" y1="300" x2="1200" y2="300" stroke="#fff" stroke-width="0.5"/>
+    <line x1="0" y1="400" x2="1200" y2="400" stroke="#fff" stroke-width="0.5"/>
+    <line x1="0" y1="500" x2="1200" y2="500" stroke="#fff" stroke-width="0.5"/>
+    <line x1="200" y1="0" x2="200" y2="600" stroke="#fff" stroke-width="0.5"/>
+    <line x1="400" y1="0" x2="400" y2="600" stroke="#fff" stroke-width="0.5"/>
+    <line x1="600" y1="0" x2="600" y2="600" stroke="#fff" stroke-width="0.5"/>
+    <line x1="800" y1="0" x2="800" y2="600" stroke="#fff" stroke-width="0.5"/>
+    <line x1="1000" y1="0" x2="1000" y2="600" stroke="#fff" stroke-width="0.5"/>
+  </g>
+
+  <!-- Left Panel - Dashboard Mockup -->
+  <g filter="url(#shadow)">
+    <rect x="60" y="80" width="520" height="440" rx="16" fill="url(#card1)" stroke="#334155" stroke-width="1"/>
+    
+    <!-- Dashboard Header -->
+    <rect x="60" y="80" width="520" height="56" rx="16" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+    <rect x="60" y="112" width="520" height="24" fill="#1e293b"/>
+    <circle cx="86" cy="108" r="14" fill="#3b82f6" opacity="0.8"/>
+    <rect x="110" y="101" width="100" height="6" rx="3" fill="#475569"/>
+    <rect x="110" y="113" width="60" height="4" rx="2" fill="#64748b"/>
+
+    <!-- Metric Cards -->
+    <rect x="80" y="152" width="150" height="72" rx="8" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="92" y="164" width="40" height="4" rx="2" fill="#64748b"/>
+    <rect x="92" y="178" width="24" height="24" rx="4" fill="#3b82f6" opacity="0.2"/>
+    <rect x="92" y="210" width="50" height="5" rx="2.5" fill="#3b82f6"/>
+    
+    <rect x="246" y="152" width="150" height="72" rx="8" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="258" y="164" width="50" height="4" rx="2" fill="#64748b"/>
+    <rect x="258" y="210" width="50" height="5" rx="2.5" fill="#8b5cf6"/>
+    
+    <rect x="412" y="152" width="150" height="72" rx="8" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="424" y="164" width="35" height="4" rx="2" fill="#64748b"/>
+    <rect x="424" y="210" width="50" height="5" rx="2.5" fill="#10b981"/>
+
+    <!-- Search bar -->
+    <rect x="80" y="244" width="482" height="36" rx="8" fill="#0f172a" stroke="#334155" stroke-width="0.5"/>
+    <circle cx="100" cy="262" r="4" fill="#475569"/>
+    <rect x="112" y="259" width="120" height="5" rx="2.5" fill="#334155"/>
+
+    <!-- Job List Items -->
+    <rect x="80" y="296" width="482" height="48" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+    <rect x="92" y="306" width="90" height="5" rx="2.5" fill="#3b82f6" opacity="0.6"/>
+    <rect x="92" y="316" width="200" height="5" rx="2.5" fill="#64748b"/>
+    <rect x="92" y="326" width="140" height="4" rx="2" fill="#475569"/>
+    <rect x="460" y="310" width="85" height="20" rx="6" fill="#3b82f6" opacity="0.15"/>
+    <rect x="472" y="314" width="60" height="12" rx="6" fill="#3b82f6"/>
+
+    <rect x="80" y="352" width="482" height="48" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+    <rect x="92" y="362" width="70" height="5" rx="2.5" fill="#10b981" opacity="0.6"/>
+    <rect x="92" y="372" width="220" height="5" rx="2.5" fill="#64748b"/>
+    <rect x="92" y="382" width="130" height="4" rx="2" fill="#475569"/>
+    <rect x="460" y="366" width="85" height="20" rx="6" fill="#10b981" opacity="0.15"/>
+    <rect x="472" y="370" width="60" height="12" rx="6" fill="#10b981"/>
+
+    <rect x="80" y="408" width="482" height="48" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+    <rect x="92" y="418" width="80" height="5" rx="2.5" fill="#8b5cf6" opacity="0.6"/>
+    <rect x="92" y="428" width="180" height="5" rx="2.5" fill="#64748b"/>
+    <rect x="92" y="438" width="100" height="4" rx="2" fill="#475569"/>
+    <rect x="460" y="422" width="85" height="20" rx="6" fill="#8b5cf6" opacity="0.15"/>
+    <rect x="472" y="426" width="60" height="12" rx="6" fill="#8b5cf6"/>
+
+    <!-- Pagination dots -->
+    <rect x="270" y="476" width="6" height="6" rx="3" fill="#3b82f6"/>
+    <rect x="284" y="476" width="6" height="6" rx="3" fill="#475569"/>
+    <rect x="298" y="476" width="6" height="6" rx="3" fill="#475569"/>
+    <rect x="312" y="476" width="6" height="6" rx="3" fill="#475569"/>
+  </g>
+
+  <!-- Right Panel - Content -->
+  <text x="640" y="148" fill="#3b82f6" font-family="monospace" font-size="14" font-weight="600" letter-spacing="2">ATS CV TAILOR</text>
+  
+  <text x="640" y="200" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="40" font-weight="700" letter-spacing="-0.5">
+    From Job Search
+  </text>
+  <text x="640" y="248" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="40" font-weight="700" letter-spacing="-0.5">
+    to Tailored CV
+  </text>
+
+  <rect x="640" y="275" width="60" height="4" rx="2" fill="url(#accent)"/>
+
+  <text x="640" y="310" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="15" line-height="1.6">
+    <tspan x="640" dy="0">Multi-source job scraper, AI-powered ATS matching,</tspan>
+    <tspan x="640" dy="24">and CV tailoring — all running locally on your machine.</tspan>
+  </text>
+
+  <!-- Feature blocks -->
+  <g>
+    <!-- Feature 1 -->
+    <rect x="640" y="350" width="240" height="64" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="656" y="362" width="28" height="28" rx="6" fill="#3b82f6" opacity="0.15"/>
+    <rect x="660" y="366" width="20" height="20" rx="4" fill="#3b82f6"/>
+    <text x="696" y="376" fill="#f1f5f9" font-family="system-ui" font-size="13" font-weight="600">8 Job Sources</text>
+    <text x="696" y="396" fill="#64748b" font-family="system-ui" font-size="11">LinkedIn · Dice · Reed · SimplyHired · more</text>
+
+    <!-- Feature 2 -->
+    <rect x="900" y="350" width="240" height="64" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="916" y="362" width="28" height="28" rx="6" fill="#10b981" opacity="0.15"/>
+    <rect x="920" y="366" width="20" height="20" rx="4" fill="#10b981"/>
+    <text x="956" y="376" fill="#f1f5f9" font-family="system-ui" font-size="13" font-weight="600">AI ATS Scoring</text>
+    <text x="956" y="396" fill="#64748b" font-family="system-ui" font-size="11">Smart matching against your profile</text>
+
+    <!-- Feature 3 -->
+    <rect x="640" y="430" width="240" height="64" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="656" y="442" width="28" height="28" rx="6" fill="#8b5cf6" opacity="0.15"/>
+    <rect x="660" y="446" width="20" height="20" rx="4" fill="#8b5cf6"/>
+    <text x="696" y="456" fill="#f1f5f9" font-family="system-ui" font-size="13" font-weight="600">CV Tailoring</text>
+    <text x="696" y="476" fill="#64748b" font-family="system-ui" font-size="11">ATS-optimized .docx · .pdf · .txt export</text>
+
+    <!-- Feature 4 -->
+    <rect x="900" y="430" width="240" height="64" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <rect x="916" y="442" width="28" height="28" rx="6" fill="#f59e0b" opacity="0.15"/>
+    <rect x="920" y="446" width="20" height="20" rx="4" fill="#f59e0b"/>
+    <text x="956" y="456" fill="#f1f5f9" font-family="system-ui" font-size="13" font-weight="600">Local & Private</text>
+    <text x="956" y="476" fill="#64748b" font-family="system-ui" font-size="11">Runs entirely on your machine</text>
+  </g>
+
+  <!-- Tech badges -->
+  <g transform="translate(640, 520)">
+    <rect x="0" y="0" width="72" height="22" rx="6" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <text x="36" y="15" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">React</text>
+    
+    <rect x="80" y="0" width="72" height="22" rx="6" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <text x="116" y="15" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">TS</text>
+    
+    <rect x="160" y="0" width="72" height="22" rx="6" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <text x="196" y="15" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">Express</text>
+
+    <rect x="240" y="0" width="72" height="22" rx="6" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <text x="276" y="15" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">Tailwind</text>
+    
+    <rect x="320" y="0" width="72" height="22" rx="6" fill="#1e293b" stroke="#334155" stroke-width="0.5"/>
+    <text x="356" y="15" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">Gemini</text>
+  </g>
+</svg>

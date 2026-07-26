@@ -226,7 +226,25 @@ export class LinkedInScraper extends BaseScraper {
 
         if (posting) {
           const description = posting.description || '';
-          const cleanDescription = description.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+          const cleanDescription = description
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<\/li>/gi, '\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<\/h[1-6]>/gi, '\n')
+            .replace(/<\/tr>/gi, '\n')
+            .replace(/<li[^>]*>/gi, '\n- ')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n[ \t]+/g, '\n')
+            .trim();
 
           let salaryMin: number | undefined;
           let salaryMax: number | undefined;
@@ -268,7 +286,25 @@ export class LinkedInScraper extends BaseScraper {
     for (const selector of descSelectors) {
       const el = $(selector);
       if (el.length > 0) {
-        const text = el.text().replace(/\s+/g, ' ').trim();
+        const rawHtml = el.html() || '';
+        const text = rawHtml
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<\/li>/gi, '\n')
+          .replace(/<\/div>/gi, '\n')
+          .replace(/<\/h[1-6]>/gi, '\n')
+          .replace(/<li[^>]*>/gi, '\n- ')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n[ \t]+/g, '\n')
+          .trim();
         if (text) {
           return {
             description: text,
