@@ -3,7 +3,6 @@ import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { SimplyHiredScraper } from './simplyHiredScraper.js';
 import { DiceScraper } from './diceScraper.js';
 import { ReedScraper } from './reedScraper.js';
-import { JapanDevScraper } from './japanDevScraper.js';
 import { CompanyPortalScraper } from './companyPortalScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
@@ -36,11 +35,6 @@ export class ScraperFactory {
       if (source === 'Reed') {
         const reed = new ReedScraper();
         const jobs = await reed.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'JapanDev') {
-        const jd = new JapanDevScraper();
-        const jobs = await jd.scrape(params);
         allJobs.push(...jobs);
       }
       if (source === 'Greenhouse' || source === 'Lever') {

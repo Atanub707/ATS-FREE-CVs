@@ -23,21 +23,14 @@ export function getValidJobUrl(job: { url?: string; title?: string; company?: st
     return `https://www.reed.co.uk/jobs/${encodeURIComponent(query.replace(/\s+/g, '-'))}-jobs`;
   }
 
-  // 4. Handle JapanDev jobs
-  if (job.source === 'JapanDev') {
-    if (url.startsWith('http') && url.includes('japan-dev.com/jobs/')) return url;
-    const query = [job.title, job.company].filter(Boolean).join(' ');
-    return `https://japan-dev.com/jobs?query=${encodeURIComponent(query)}`;
-  }
-
-  // 5. Handle Greenhouse / Lever jobs
+  // 4. Handle Glassdoor jobs
   if (job.source === 'Greenhouse' || job.source === 'Lever') {
     if (url.startsWith('http')) return url;
     const query = [job.title, job.company].filter(Boolean).join(' ');
     return `https://www.google.com/search?q=${encodeURIComponent(query + ' job')}`;
   }
 
-  // 6. Handle Glassdoor jobs
+  // 5. Handle Glassdoor jobs
   if (job.source === 'Glassdoor') {
     const query = [job.title, job.company].filter(Boolean).join(' ');
     return `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${encodeURIComponent(query)}`;
