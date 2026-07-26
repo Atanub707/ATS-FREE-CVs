@@ -17,7 +17,7 @@
 
 ## Overview
 
-ATS CV Tailor scrapes job listings from 8+ public sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine.
+ATS CV Tailor scrapes job listings from 7+ public sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine.
 
 ## Quick Start
 
@@ -112,7 +112,6 @@ This is the baseline CV that jobs will be scored and tailored against.
 | **SimplyHired** | Global | Good coverage |
 | **Dice** | US tech jobs | Use "Anytime" for date filter |
 | **Reed** | UK jobs | Use "Anytime" for date filter |
-| **JapanDev** | English-speaking jobs in Japan | |
 | **Greenhouse** | Direct from company career portals | Stripe, Airbnb, Shopify, etc. |
 | **Lever** | Direct from company career portals | Notion, Vercel, Figma, etc. |
 
@@ -157,7 +156,6 @@ Select **Greenhouse** or **Lever** as your source and type a job title — it se
 | SimplyHired | HTML parsing | Global | No |
 | Dice | HTML + JSON-LD | US/Global | No |
 | Reed | Next.js SSR | UK | No |
-| JapanDev | HTML + JSON-LD | Japan | No |
 | Greenhouse | REST API | Global | No |
 | Lever | REST API | Global | No |
 
