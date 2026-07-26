@@ -155,7 +155,7 @@ export function getAllJobs(): Job[] {
 
       const cleanText = (str?: string) => {
         if (!str) return '';
-        return str.split(/[\r\n]+/)[0].replace(/\s+/g, ' ').trim();
+        return str.replace(/\s+/g, ' ').trim();
       };
       const cleanUrl = (str?: string, title?: string, company?: string, source?: string) => {
         if (!str) return '';
@@ -300,6 +300,12 @@ export function deleteJobFromStorage(id: string): boolean {
     return true;
   }
   return false;
+}
+
+export function deleteAllJobs(): number {
+  const count = getAllJobs().length;
+  saveAllJobs([]);
+  return count;
 }
 
 export function queryJobs(params: JobFilterQueryParams) {

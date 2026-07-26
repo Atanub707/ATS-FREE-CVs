@@ -55,6 +55,7 @@ import {
   getJobById,
   updateJobInStorage,
   deleteJobFromStorage,
+  deleteAllJobs,
   queryJobs,
   saveNewJobs,
   runStorageMigration,
@@ -469,7 +470,7 @@ async function startServer() {
   // Scrape Jobs (LinkedIn & Indeed)
   app.post('/api/jobs/scrape', async (req, res) => {
     try {
-      const { keywords, location, sources, datePostedFilter, minSalary, maxJobsPerSource } = req.body;
+      const { keywords, location, sources, datePostedFilter, minSalary, maxJobsPerSource, jobTitle, experienceLevel } = req.body;
 
       if (!keywords || !keywords.trim()) {
         res.status(400).json({ error: 'Keywords parameter is required.' });
@@ -483,6 +484,8 @@ async function startServer() {
         datePostedFilter: datePostedFilter || 'all',
         minSalary: minSalary ? Number(minSalary) : undefined,
         maxJobsPerSource: maxJobsPerSource ? Number(maxJobsPerSource) : 15,
+        jobTitle: jobTitle?.trim() || undefined,
+        experienceLevel: experienceLevel || 'all',
       });
 
       const { added, skipped } = saveNewJobs(scrapedJobs);
@@ -733,6 +736,36 @@ async function startServer() {
     }
   });
 
+  // Create Job manually
+  app.post('/api/jobs', (req, res) => {
+    try {
+      const { title, company, location, description, url, source } = req.body;
+      if (!title || !title.trim()) {
+        res.status(400).json({ error: 'Title is required.' });
+        return;
+      }
+      const job: Job = {
+        id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title: title.trim(),
+        company: company?.trim() || 'Unknown Company',
+        location: location?.trim() || 'Remote',
+        source: source || 'Custom',
+        description: description?.trim() || '',
+        url: url?.trim() || '',
+        postedDate: new Date().toISOString(),
+        postedDateParsed: new Date().toISOString().split('T')[0],
+        jobType: 'Full-time',
+        state: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const [saved] = saveNewJobs([job]);
+      res.json({ success: true, job: saved || job });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Delete Job
   app.delete('/api/jobs/:id', (req, res) => {
     const deleted = deleteJobFromStorage(req.params.id);
@@ -741,6 +774,12 @@ async function startServer() {
       return;
     }
     res.json({ success: true });
+  });
+
+  // Clear All Jobs
+  app.delete('/api/jobs', (req, res) => {
+    const count = deleteAllJobs();
+    res.json({ success: true, deletedCount: count });
   });
 
   // Download ATS .docx CV
@@ -824,28 +863,6 @@ async function startServer() {
     } catch (err: any) {
       console.error('Download error:', err);
       res.status(500).json({ error: 'Failed to generate requested document.' });
-    }
-  });
-
-  // Download ATS plain text CV
-  app.get('/api/jobs/:id/download-txt', (req, res) => {
-    try {
-      const job = getJobById(req.params.id);
-      if (!job || !job.tailoredCv) {
-        res.status(400).json({ error: 'Job or tailored CV not available for download.' });
-        return;
-      }
-
-      const textCv = generatePlainTextCv(job.tailoredCv);
-      const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
-      const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${safeName}_${safeCompany}.txt`;
-
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(textCv);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
     }
   });
 

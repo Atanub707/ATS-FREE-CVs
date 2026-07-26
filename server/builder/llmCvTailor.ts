@@ -5,10 +5,28 @@ import { ask } from '../llm/llmAdapter.js';
 export class LlmCvTailor extends BaseCvBuilder {
   async tailorCv(job: Job, masterCv: MasterCv): Promise<TailoredCv> {
     const prompt = `You are an elite Executive Resume Writer and ATS Optimization Specialist.
-Your mission is to rephrase and optimize the candidate's Master CV specifically for the target job description.
+Your mission is to rewrite the candidate's Master CV so it ranks at the top of real ATS systems (Greenhouse, Workday, Lever, Taleo, iCIMS).
 
 STRICT RULE: NEVER FABRICATE OR INVENT NEW COMPANIES, DATES, DEGREES, OR WORK EXPERIENCE.
-ONLY REPHRASE, REORDER, AND EMBELLISH EXISTING RESPONSIBILITIES USING THE KEYWORDS AND ACTION VERBS FROM THE JOB DESCRIPTION.
+
+STEP 1 — GAP ANALYSIS (do this internally before writing):
+- Extract every hard skill, tool, certification, and technology from the job description.
+- Compare against the candidate's CV to identify what's present and what's missing.
+- Note which existing responsibilities can be rephrased to include missing keywords.
+
+STEP 2 — OPTIMIZE EACH SECTION using these real ATS rules:
+1. Professional Summary: Lead with the EXACT target job title. Include the top 3-4 hard skills from the JD in the first sentence. Use strong action verbs ("Architected", "Led", "Optimized", "Automated"). 2-3 sentences max.
+2. Work Experience: For each role, REORDER the bullet points so the most relevant to this JD come FIRST. Rephrase bullets to naturally incorporate JD keywords WITHOUT fabricating. Every bullet should include at minimum one hard skill keyword and ideally a quantified result.
+3. Skills/Core Competencies: FRONT-LOAD the category names and individual skills that match the JD. Move less relevant skills down. Use exact naming from the JD (e.g., if JD says "Terraform" not "IaC", use "Terraform").
+4. Keyword Density: Ensure the top 5 JD keywords appear at least 2-3 times across different sections (summary + experience + skills). Do NOT keyword-stuff — integrate naturally.
+5. Quantification: Rewrite every bullet to include metrics where possible: "%", "$", "x% faster", "reduced by", "managed N", "led team of N", "served N users".
+
+STEP 3 — FORMATTING RULES (ATS-friendly):
+- Use standard section headers ("Professional Summary", "Professional Experience", "Education", "Technical Skills", "Certifications")
+- No columns, tables, graphics, or unusual characters
+- Use standard fonts implicitly (Calibri, Arial, Times New Roman)
+- Dates must be in "Month YYYY — Month YYYY" format
+- Degree names should be spelled out
 
 CANDIDATE MASTER CV:
 Name: ${masterCv.fullName}
@@ -20,6 +38,8 @@ Education:
 ${JSON.stringify(masterCv.education, null, 2)}
 Skills:
 ${JSON.stringify(masterCv.skills, null, 2)}
+Certifications:
+${JSON.stringify((masterCv.certifications || []).map(c => typeof c === 'string' ? c : c.name + (c.issuer ? ' (' + c.issuer + ')' : '')), null, 2)}
 
 TARGET JOB DETAILS:
 Title: ${job.title}
@@ -27,25 +47,18 @@ Company: ${job.company}
 Location: ${job.location}
 Description: ${job.description}
 
-INSTRUCTIONS:
-1. Rephrase the Professional Summary to directly position the candidate for the target role "${job.title}" using strong impact verbs and job keywords.
-2. Rephrase each experience bullet point to emphasize tools, frameworks, metrics, and processes mentioned in the job description while retaining factual accuracy.
-3. Organize Core Competencies/Technical Skills to place the most relevant job requirements first.
-4. Extract 5-10 key job keywords incorporated into this tailored version.
-5. Estimate the new post-tailoring ATS Match Score (an integer from 88 to 98) and provide 3-5 concise bullet notes summarizing what was changed or added to bridge initial gaps.
-
-Return valid JSON only with these exact fields:
+Return valid JSON only with these exact fields — NO markdown, NO code fences, pure JSON:
 {
   "candidateName": string,
   "targetRole": string,
-  "professionalSummary": string,
-  "coreCompetencies": string[],
+  "professionalSummary": string (2-3 sentences, front-loaded with title + top hard skills),
+  "coreCompetencies": string[] (6-10 items, ordered by JD relevance),
   "workExperience": [{ "title": string, "company": string, "location": string, "dates": string, "highlights": string[] }],
   "education": [{ "degree": string, "institution": string, "dates": string, "details": string }],
   "technicalSkills": [{ "category": string, "skills": string[] }],
-  "keywordsIncorporated": string[],
-  "afterScore": number,
-  "auditNotes": string[]
+  "keywordsIncorporated": string[] (top 8-12 JD keywords woven into the CV),
+  "afterScore": number (estimated ATS match score 85-98),
+  "auditNotes": string[] (4-6 specific changes made: e.g. "Rephrased 4 bullets under Senior Engineer to include 'Kubernetes' and 'Terraform'", "Front-loaded 'AWS' into summary and first role", "Added quantified metrics to 3 bullets", "Reordered experience to prioritize DevOps responsibilities")
 }`;
 
     try {

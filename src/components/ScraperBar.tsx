@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Search,
   MapPin,
-  Calendar,
   Globe,
   Play,
   Loader2,
@@ -22,6 +21,7 @@ interface ScraperBarProps {
     datePostedFilter: 'all' | '24h' | '7d' | '30d';
     minSalary?: number;
     maxJobsPerSource?: number;
+    experienceLevel?: string;
   }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number } | void>;
   isLoading: boolean;
 }
@@ -30,6 +30,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
+  const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
@@ -46,11 +47,12 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
     setScrapeSuccessMsg(null);
     const result = await onScrape({
-      keywords,
+      keywords: keywords.trim(),
       location,
       sources: selectedSources,
       datePostedFilter,
       maxJobsPerSource,
+      experienceLevel,
     });
 
     if (result && result.scrapedTotal > 0) {
@@ -61,7 +63,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       }
     } else {
       const srcList = selectedSources.join(' + ');
-      setScrapeSuccessMsg(`Searched ${srcList} (${maxJobsPerSource} target jobs each)!`);
+      setScrapeSuccessMsg(`Searched ${srcList} — No results found. Try changing filters or keywords.`);
     }
     setTimeout(() => setScrapeSuccessMsg(null), 7000);
   };
@@ -107,7 +109,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           </div>
 
           {/* Location */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Location
             </label>
@@ -126,24 +128,39 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           </div>
 
           {/* Date Filter */}
-          <div className="lg:col-span-3">
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Date Posted
-            </label>
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Posted</label>
             <div className="relative">
-              <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
-                id="select-scrape-date"
                 value={datePostedFilter}
                 onChange={(e) => setDatePostedFilter(e.target.value as any)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all cursor-pointer appearance-none font-normal"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-2 pr-6 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all cursor-pointer appearance-none font-normal"
               >
-                <option value="24h">Past 24 Hours</option>
-                <option value="7d">Past 7 Days</option>
-                <option value="30d">Past 30 Days</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
                 <option value="all">Anytime</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Experience Level */}
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Level</label>
+            <div className="relative">
+              <select
+                value={experienceLevel}
+                onChange={(e) => setExperienceLevel(e.target.value as any)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-2 pr-6 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all cursor-pointer appearance-none font-normal"
+              >
+                <option value="all">Any</option>
+                <option value="entry">Junior</option>
+                <option value="mid">Mid</option>
+                <option value="senior">Senior</option>
+                <option value="lead">Lead</option>
+              </select>
+              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -221,44 +238,32 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <span>Sources:</span>
             </span>
 
-            {/* LinkedIn Toggle */}
-            <button
-              type="button"
-              onClick={() => toggleSource('LinkedIn')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                selectedSources.includes('LinkedIn')
-                  ? 'bg-blue-50 text-blue-700 border-blue-300'
+            {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'JapanDev', 'Greenhouse', 'Lever'] as const).map((src) => (
+              <button key={src} type="button"
+                onClick={() => toggleSource(src)}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
+                  selectedSources.includes(src)
+                  ? src === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-300'
+                  : src === 'Arbeitnow' ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : src === 'SimplyHired' ? 'bg-teal-50 text-teal-700 border-teal-300'
+                  : src === 'Dice' ? 'bg-purple-50 text-purple-700 border-purple-300'
+                  : src === 'Reed' ? 'bg-rose-50 text-rose-700 border-rose-300'
+                  : src === 'JapanDev' ? 'bg-cyan-50 text-cyan-700 border-cyan-300'
+                  : src === 'Greenhouse' ? 'bg-green-50 text-green-700 border-green-300'
+                  : 'bg-orange-50 text-orange-700 border-orange-300'
                   : 'bg-slate-100 text-slate-500 border-slate-200'
-              }`}
-            >
-              LinkedIn {selectedSources.includes('LinkedIn') ? '✓' : ''}
-            </button>
+                }`}
+              >
+                {src} {selectedSources.includes(src) ? '✓' : ''}
+              </button>
+            ))}
 
-            {/* Adzuna Toggle */}
-            <button
-              type="button"
-              onClick={() => toggleSource('Adzuna')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                selectedSources.includes('Adzuna')
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
-                  : 'bg-slate-100 text-slate-500 border-slate-200'
-              }`}
-            >
-              Adzuna {selectedSources.includes('Adzuna') ? '✓' : ''}
-            </button>
+            {selectedSources.includes('Dice') && (
+              <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded ml-1">
+                ⓘ Dice uses original posting dates — use "Anytime" for results
+              </span>
+            )}
 
-            {/* Arbeitnow Toggle */}
-            <button
-              type="button"
-              onClick={() => toggleSource('Arbeitnow')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                selectedSources.includes('Arbeitnow')
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-slate-100 text-slate-500 border-slate-200'
-              }`}
-            >
-              Arbeitnow {selectedSources.includes('Arbeitnow') ? '✓' : ''}
-            </button>
           </div>
 
           {/* Action Trigger */}

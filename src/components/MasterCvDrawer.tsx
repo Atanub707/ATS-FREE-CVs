@@ -19,7 +19,6 @@ import {
   Globe,
   Award,
   FolderGit2,
-  Download,
   TrendingUp,
   AlertTriangle,
   ChevronDown,
@@ -53,7 +52,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [downloadFilename, setDownloadFilename] = useState(masterCv.fullName.replace(/ /g, '_') + '_CV');
+  const [downloadFilename, setDownloadFilename] = useState(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
   const [skillGaps, setSkillGaps] = useState<{ skill: string; count: number; totalScored: number }[]>([]);
   const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
   const [showGaps, setShowGaps] = useState(false);
@@ -62,7 +61,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
 
   useEffect(() => {
     setFormData(masterCv);
-    setDownloadFilename(masterCv.fullName.replace(/ /g, '_') + '_CV');
+    setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
   }, [masterCv]);
 
   const fetchSkillGaps = async () => {
@@ -197,7 +196,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSaveMasterCv(formData);
+    await onSaveMasterCv({ ...formData, downloadFilename });
     setIsSaving(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);

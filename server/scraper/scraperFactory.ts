@@ -1,35 +1,51 @@
 import { LinkedInScraper } from './linkedInScraper.js';
-import { AdzunaScraper } from './adzunaScraper.js';
 import { ArbeitnowScraper } from './arbeitnowScraper.js';
+import { SimplyHiredScraper } from './simplyHiredScraper.js';
+import { DiceScraper } from './diceScraper.js';
+import { ReedScraper } from './reedScraper.js';
+import { JapanDevScraper } from './japanDevScraper.js';
+import { CompanyPortalScraper } from './companyPortalScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
-import { loadConfig } from '../config.js';
 
 export class ScraperFactory {
   static async runScrape(params: ScraperParams): Promise<Job[]> {
-    const config = loadConfig();
     const sources = params.sources || ['LinkedIn'];
     const allJobs: Job[] = [];
-
-    const enrichedParams: ScraperParams = {
-      ...params,
-      adzunaAppId: params.adzunaAppId || config.scraper.adzunaAppId,
-      adzunaApiKey: params.adzunaApiKey || config.scraper.adzunaApiKey,
-    };
 
     for (const source of sources) {
       if (source === 'LinkedIn') {
         const linkedin = new LinkedInScraper();
-        const jobs = await linkedin.scrape(enrichedParams);
-        allJobs.push(...jobs);
-      }
-      if (source === 'Adzuna') {
-        const adzuna = new AdzunaScraper();
-        const jobs = await adzuna.scrape(enrichedParams);
+        const jobs = await linkedin.scrape(params);
         allJobs.push(...jobs);
       }
       if (source === 'Arbeitnow') {
         const arbeitnow = new ArbeitnowScraper();
-        const jobs = await arbeitnow.scrape(enrichedParams);
+        const jobs = await arbeitnow.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'SimplyHired') {
+        const sh = new SimplyHiredScraper();
+        const jobs = await sh.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'Dice') {
+        const dice = new DiceScraper();
+        const jobs = await dice.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'Reed') {
+        const reed = new ReedScraper();
+        const jobs = await reed.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'JapanDev') {
+        const jd = new JapanDevScraper();
+        const jobs = await jd.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'Greenhouse' || source === 'Lever') {
+        const cp = new CompanyPortalScraper();
+        const jobs = await cp.scrape(params);
         allJobs.push(...jobs);
       }
     }

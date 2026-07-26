@@ -225,6 +225,19 @@ export default function App() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm('Clear all jobs? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/jobs', { method: 'DELETE' });
+      if (res.ok) {
+        setJobs([]);
+        setSelectedJob(null);
+      }
+    } catch (err) {
+      console.error('Clear all error:', err);
+    }
+  };
+
   // Save Master CV Handler
   const handleSaveMasterCv = async (updatedCv: MasterCv) => {
     try {
@@ -260,17 +273,6 @@ export default function App() {
       console.error('Save config error:', err);
     }
   };
-
-  // Run Storage Migration Handler
-  const handleRunMigration = async (targetMode: 'sqlite' | 'json') => {
-    const res = await fetch('/api/storage/migrate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetMode }),
-    });
-    return await res.json();
-  };
-
   const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
   const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
 
@@ -300,7 +302,7 @@ export default function App() {
           onTailorJob={handleTailorJob}
           onBatchTailor={handleBatchTailor}
           onDeleteJob={handleDeleteJob}
-          onUpdateStatus={handleUpdateStatus}
+          onClearAll={handleClearAll}
           isBatchMatching={isBatchMatching}
           isBatchTailoring={isBatchTailoring}
           actionJobIdLoading={actionJobIdLoading}
@@ -334,7 +336,6 @@ export default function App() {
           onClose={() => setIsSettingsOpen(false)}
           config={config}
           onSaveConfig={handleSaveConfig}
-          onRunMigration={handleRunMigration}
         />
       )}
     </div>

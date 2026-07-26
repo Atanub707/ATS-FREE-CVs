@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Job, JobState, JobSource } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
@@ -9,6 +9,7 @@ import {
   Sparkles,
   Search,
   ChevronRight,
+  ChevronLeft,
   Trash2,
   CheckCircle2,
   Clock,
@@ -19,7 +20,6 @@ import {
   TrendingUp,
   Calendar,
   ExternalLink,
-  Globe,
 } from 'lucide-react';
 
 interface JobMatrixProps {
@@ -32,7 +32,7 @@ interface JobMatrixProps {
   onTailorJob: (jobId: string) => Promise<void>;
   onBatchTailor: () => Promise<void>;
   onDeleteJob: (jobId: string) => Promise<void>;
-  onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
+  onClearAll: () => Promise<void>;
   isBatchMatching: boolean;
   isBatchTailoring: boolean;
   actionJobIdLoading: string | null;
@@ -265,7 +265,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   onTailorJob,
   onBatchTailor,
   onDeleteJob,
-  onUpdateStatus,
+  onClearAll,
   isBatchMatching,
   isBatchTailoring,
   actionJobIdLoading,
@@ -273,6 +273,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Filter & Sort Jobs
   const filteredJobs = jobs
@@ -306,6 +308,12 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       const timeB = new Date(b.createdAt || 0).getTime();
       return timeB - timeA;
     });
+
+  useEffect(() => { setPage(1); }, [searchTerm, sourceFilter, sortBy, activeStateTab, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginatedJobs = filteredJobs.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const pendingCount = jobs.filter((j) => j.state === 'pending').length;
   const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
@@ -421,6 +429,14 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             )}
             <span>Tailor Matched ({matchedCount})</span>
           </button>
+
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
+          >
+            Clear All
+          </button>
         </div>
       </div>
 
@@ -460,9 +476,13 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               >
                 <option value="all">All Sources</option>
                 <option value="LinkedIn">LinkedIn</option>
-                <option value="Adzuna">Adzuna</option>
                 <option value="Arbeitnow">Arbeitnow</option>
-                <option value="Indeed">Indeed</option>
+                <option value="SimplyHired">SimplyHired</option>
+                <option value="Dice">Dice</option>
+                <option value="Reed">Reed</option>
+                <option value="JapanDev">JapanDev</option>
+                <option value="Greenhouse">Greenhouse</option>
+                <option value="Lever">Lever</option>
                 <option value="Glassdoor">Glassdoor</option>
                 <option value="Custom">Custom</option>
               </select>
@@ -512,6 +532,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             </button>
           )}
         </div>
+
+
       </div>
 
       {/* Job Card List */}
@@ -525,7 +547,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredJobs.map((job, index) => {
+          {paginatedJobs.map((job, index) => {
             const itemKey = job.id && job.id !== 'linkedin-undefined' ? job.id : `job-${index}-${job.title}`;
             return (
               <JobCard
@@ -539,6 +561,80 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               />
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredJobs.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-xs text-xs">
+          <div className="flex items-center space-x-3 text-slate-600">
+            <span className="font-medium">{filteredJobs.length} jobs</span>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center space-x-1.5">
+              <span className="text-slate-500">Show</span>
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+              >
+                {[10, 25, 50].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <span className="text-slate-500">per page</span>
+            </div>
+            <span className="text-slate-300">|</span>
+            <span className="text-slate-600">
+              Page {safePage} of {totalPages}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => setPage(safePage - 1)}
+              disabled={safePage <= 1}
+              className="px-2.5 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {(() => {
+              const pages: (number | string)[] = [];
+              const range = 2;
+              for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= safePage - range && i <= safePage + range)) {
+                  pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                  pages.push('...');
+                }
+              }
+              return pages.map((p, i) =>
+                typeof p === 'number' ? (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
+                      p === safePage
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ) : (
+                  <span key={`ellipsis-${i}`} className="px-1.5 text-slate-400 select-none">...</span>
+                )
+              );
+            })()}
+
+            <button
+              onClick={() => setPage(safePage + 1)}
+              disabled={safePage >= totalPages}
+              className="px-2.5 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
     </div>
