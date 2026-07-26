@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/media/hero.svg" width="100%" alt="ATS CV Tailor Hero"/>
+  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/hero.svg?raw=true" width="100%" alt="ATS CV Tailor"/>
 </div>
 
 <p align="center">
