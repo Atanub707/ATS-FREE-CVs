@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="media/hero.svg" width="100%" alt="ATS CV Tailor Hero"/>
+  <img src="https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/media/hero.svg" width="100%" alt="ATS CV Tailor Hero"/>
 </div>
 
 <p align="center">
@@ -19,7 +19,7 @@
 ## Demo
 
 <p align="center">
-  <img src="media/screenshot.png" width="80%" alt="ATS CV Tailor Dashboard"/>
+  <img src="https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/media/screenshot.png" width="80%" alt="ATS CV Tailor Dashboard"/>
 </p>
 
 ## Features
