@@ -1,9 +1,11 @@
-<p align="center">
-  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="ATS CV Tailor"/>
-</p>
+<h1 align="center">ATS CV Tailor</h1>
 
 <p align="center">
   <strong>Multi-source job scraper · AI-powered ATS matching · CV tailoring — all running locally.</strong>
+</p>
+
+<p align="center">
+  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="ATS CV Tailor"/>
 </p>
 
 <p align="center">
