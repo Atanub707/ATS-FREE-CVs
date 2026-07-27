@@ -5,51 +5,57 @@ BOLD='\033[1m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${BLUE}║        ATS CV Tailor — Local Setup        ║${NC}"
+echo -e "${BOLD}${BLUE}║        ATS CV Tailor — One-Click Setup    ║${NC}"
 echo -e "${BOLD}${BLUE}╚════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Check Node.js
 if ! command -v node &> /dev/null; then
-  echo -e "${YELLOW}Node.js is not installed.${NC}"
-  echo "Download and install it from: https://nodejs.org/ (LTS version recommended)"
-  echo "After installing, close and reopen your terminal, then run this script again."
+  echo -e "${RED}Node.js is required but not installed.${NC}"
+  echo ""
+  echo -e "  ${BOLD}Download it here (free):${NC}"
+  echo -e "  ${BLUE}https://nodejs.org/${NC}"
+  echo ""
+  echo -e "  Click the big green button that says ${BOLD}\"LTS\"${NC}"
+  echo -e "  Install it like any other program (next → next → finish)."
+  echo ""
+  echo -e "  ${YELLOW}After installing, close this window and run this script again.${NC}"
+  echo ""
+  read -p "Press Enter to open the download page..." 
+  open https://nodejs.org/ 2>/dev/null || xdg-open https://nodejs.org/ 2>/dev/null || true
   exit 1
 fi
 
 NODE_VER=$(node -v | sed 's/v//' | cut -d. -f1)
-echo -e "✓ Node.js ${GREEN}$(node -v)${NC} detected"
+echo -e "✓ ${GREEN}Node.js $(node -v)${NC} — ready"
 
-# Clone or use existing
+# Download
 if [ -d "ATS-FREE-CVs" ]; then
   cd ATS-FREE-CVs
-  echo -e "✓ Using existing ${GREEN}ATS-FREE-CVs${NC} folder"
+  echo -e "✓ Using existing folder"
 else
   echo ""
-  echo -e "${BOLD}Step 1: Downloading the app...${NC}"
+  echo -e "Downloading..."
   if command -v git &> /dev/null; then
-    git clone https://github.com/Atanub707/ATS-FREE-CVs.git
-    cd ATS-FREE-CVs
+    git clone --depth=1 https://github.com/Atanub707/ATS-FREE-CVs.git 2>/dev/null
   else
-    echo -e "${YELLOW}git not found — downloading ZIP instead...${NC}"
     curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
-    unzip -q ats.zip
-    mv ATS-FREE-CVs-main ATS-FREE-CVs
-    rm ats.zip
-    cd ATS-FREE-CVs
+    unzip -q ats.zip && mv ATS-FREE-CVs-main ATS-FREE-CVs && rm ats.zip
   fi
+  cd ATS-FREE-CVs
   echo -e "✓ ${GREEN}Downloaded${NC}"
 fi
 
-# Install dependencies
+# Install
 echo ""
-echo -e "${BOLD}Step 2: Installing dependencies...${NC}"
-npm install --loglevel=error
-echo -e "✓ ${GREEN}Dependencies installed${NC}"
+echo -e "Installing dependencies..."
+npm install --loglevel=error 2>/dev/null
+echo -e "✓ ${GREEN}Ready${NC}"
 
 # Config
 if [ ! -f config.ini ]; then
@@ -76,21 +82,18 @@ maxRetries=3
 EOF
 fi
 
-# API key prompt
-echo ""
-echo -e "${BOLD}Step 3: API Key${NC}"
-echo -e "You need an LLM API key for ATS scoring and CV tailoring."
-echo ""
-echo -e "  ${BOLD}Recommended (free):${NC}"
-echo -e "  Google Gemini → https://aistudio.google.com/apikey"
-echo ""
-echo -e "  ${BOLD}Other options:${NC}"
-echo -e "  OpenAI        → https://platform.openai.com/api-keys"
-echo -e "  Anthropic     → https://console.anthropic.com"
-echo -e "  OpenRouter    → https://openrouter.ai/keys"
-echo ""
-
+# API Key
 if grep -q '^apiKey=$' config.ini; then
+  echo ""
+  echo -e "${BOLD}LLM API Key${NC}"
+  echo -e "This app needs an API key for AI features."
+  echo ""
+  echo -e "  ${BOLD}Free option — Google Gemini:${NC}"
+  echo -e "  1. Go to ${BLUE}https://aistudio.google.com/apikey${NC}"
+  echo -e "  2. Sign in with your Google account"
+  echo -e "  3. Click \"Create API key\""
+  echo -e "  4. Copy the key and paste it below"
+  echo ""
   read -p "Paste your API key (or press Enter to skip): " API_KEY
   if [ -n "$API_KEY" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -100,21 +103,18 @@ if grep -q '^apiKey=$' config.ini; then
     fi
     echo -e "✓ ${GREEN}API key saved${NC}"
   fi
-else
-  echo -e "✓ ${GREEN}API key already configured${NC}"
 fi
 
-# Summary
+# Start
 echo ""
 echo -e "${BOLD}${GREEN}════════════════════════════════════════════${NC}"
-echo -e "${BOLD}${GREEN}  Setup complete!                           ${NC}"
+echo -e "${BOLD}${GREEN}  Starting the app...                      ${NC}"
 echo -e "${BOLD}${GREEN}════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  Run this command to start:"
+echo -e "  Opening ${BLUE}http://localhost:3000${NC} in your browser..."
+echo -e "  ${YELLOW}Press Ctrl+C to stop the app when done.${NC}"
 echo ""
-echo -e "  ${BOLD}cd ATS-FREE-CVs && npm run dev${NC}"
-echo ""
-echo -e "  Then open: ${BOLD}http://localhost:3000${NC}"
-echo ""
-echo -e "  ${YELLOW}Tip:${NC} Set your provider in Settings → LLM Provider"
-echo ""
+
+sleep 2
+open http://localhost:3000 2>/dev/null || xdg-open http://localhost:3000 2>/dev/null || true
+npm run dev

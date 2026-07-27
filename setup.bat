@@ -11,9 +11,13 @@ echo.
 REM Check Node.js
 where node >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-  echo Node.js is not installed.
-  echo Download it from: https://nodejs.org/ (LTS version)
-  echo After installing, close and reopen this terminal, then run setup.bat again.
+  echo Node.js is required but not installed.
+  echo.
+  echo Download it from: https://nodejs.org/
+  echo Click the LTS button, install like any other program.
+  echo After installing, run this script again.
+  echo.
+  start https://nodejs.org/
   pause
   exit /b 1
 )
@@ -99,12 +103,11 @@ if %ERRORLEVEL% neq 0 (
 REM Done
 echo.
 echo ╔════════════════════════════════════════════╗
-echo ║  Setup complete!                           ║
+echo ║  Starting the app...                       ║
+echo ║  Opening http://localhost:3000             ║
+echo ║  Press Ctrl+C to stop                     ║
 echo ╚════════════════════════════════════════════╝
 echo.
-echo To start the app, run:
-echo   cd ATS-FREE-CVs ^&^& npm run dev
-echo.
-echo Then open http://localhost:3000 in your browser.
-echo.
+start http://localhost:3000
+call npm run dev
 pause
