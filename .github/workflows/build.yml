@@ -19,7 +19,7 @@ jobs:
       - run: npm install --loglevel=warn --no-audit --no-fund
       - run: npx vite build
       - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --outfile=dist/bundle.cjs 2>&1 || true
-      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas dist/ 2>/dev/null; true
+      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas dist/ 2>/dev/null || true
       - run: node --experimental-sea-config sea-config.json
       - run: |
           cp $(which node) dist/ats-cv-tailor-linux
@@ -41,6 +41,7 @@ jobs:
       - run: npm install --loglevel=warn --no-audit --no-fund
       - run: npx vite build
       - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --outfile=dist/bundle.cjs 2>&1 || true
+      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas dist/ 2>/dev/null || true
       - run: node --experimental-sea-config sea-config.json
       - run: |
           cp $(which node) dist/ats-cv-tailor-macos
