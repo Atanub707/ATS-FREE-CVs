@@ -8,15 +8,16 @@
 curl -sL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/setup.sh | bash
 ```
 
-**Windows:** Download `setup.bat` from the repo, double-click it.
+The script will:
+1. Check if Node.js is installed (if not, opens the download page)
+2. Download the app
+3. Install dependencies
+4. Ask for your API key (optional — can do it later in Settings)
+5. Start the app and open it in your browser
 
-The script installs everything and asks for your API key. After it finishes, run:
+**Windows:** Download `setup.bat` from the repo, double-click it, and follow the prompts.
 
-```bash
-cd ATS-FREE-CVs && npm run dev
-```
-
-Then open [http://localhost:3000](http://localhost:3000).
+> **Requirements:** Just a computer with internet. The script handles everything else.
 
 ---
 
