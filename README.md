@@ -2,6 +2,18 @@
 
 ## Quick Setup
 
+### 🐳 Docker (easiest — no Node.js needed)
+
+```bash
+curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
+unzip ats.zip && cd ATS-FREE-CVs-main
+docker compose up -d
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### 💻 Without Docker
+
 **Mac / Linux:** Open Terminal, paste this and press Enter:
 
 ```bash

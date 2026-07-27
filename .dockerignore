@@ -1,0 +1,9 @@
+node_modules
+.git
+data
+media
+screenshot.png
+*.png
+*.bat
+*.sh
+*.md
