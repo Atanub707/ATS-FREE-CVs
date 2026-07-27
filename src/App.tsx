@@ -5,6 +5,7 @@ import { JobMatrix } from './components/JobMatrix';
 import { JobDetailModal } from './components/JobDetailModal';
 import { MasterCvDrawer } from './components/MasterCvDrawer';
 import { SettingsModal } from './components/SettingsModal';
+import { ManualJdModal } from './components/ManualJdModal';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
   // Drawers and Modals
   const [isMasterCvOpen, setIsMasterCvOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isManualJdOpen, setIsManualJdOpen] = useState(false);
 
   // Loading states
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
@@ -282,6 +284,7 @@ export default function App() {
       <Navbar
         onOpenMasterCv={() => setIsMasterCvOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenManualJd={() => setIsManualJdOpen(true)}
         totalJobs={jobs.length}
         matchedCount={matchedCount}
         tailoredCount={tailoredCount}
@@ -338,6 +341,12 @@ export default function App() {
           onSaveConfig={handleSaveConfig}
         />
       )}
+
+      {/* Manual JD Modal */}
+      <ManualJdModal
+        isOpen={isManualJdOpen}
+        onClose={() => setIsManualJdOpen(false)}
+      />
     </div>
   );
 }
