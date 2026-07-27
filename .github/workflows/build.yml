@@ -26,7 +26,7 @@ jobs:
         shell: bash
 
       - name: Bundle server
-        run: npx esbuild server.ts --bundle --platform=node --format=cjs --packages=internal --outfile=dist/bundle.cjs 2>&1
+        run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs 2>&1
         shell: bash
 
       - name: Create SEA blob

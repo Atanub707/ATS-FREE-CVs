@@ -14,7 +14,7 @@ npx vite build
 
 # 3. Bundle server + all dependencies into one file
 echo "[3/5] Bundling server..."
-npx esbuild server.ts --bundle --platform=node --format=cjs --packages=internal --outfile=dist/bundle.cjs
+npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
 
 # 4. Create SEA blob
 echo "[4/5] Creating SEA blob..."
