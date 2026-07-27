@@ -8,9 +8,15 @@ export class ReedScraper extends BaseScraper {
     const keywords = params.keywords.trim();
     const location = params.location?.trim() || '';
     const limit = params.maxJobsPerSource || 10;
+    const filter = params.datePostedFilter || 'all';
 
     const jobs: Job[] = [];
     const seenIds = new Set<string>();
+
+    let maxAgeMs = Number.MAX_SAFE_INTEGER;
+    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
+    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
 
     try {
       const url = `https://www.reed.co.uk/jobs/${encodeURIComponent(keywords.toLowerCase().replace(/\s+/g, '-'))}-jobs${location ? `?location=${encodeURIComponent(location)}` : ''}`;
@@ -36,6 +42,7 @@ export class ReedScraper extends BaseScraper {
 
         const dateStr = detail.displayDate || detail.dateCreated;
         const postedDate = dateStr ? new Date(dateStr) : new Date();
+        if (postedDate.getTime() < Date.now() - maxAgeMs) continue;
 
         const jobType = [detail.isFullTime ? 'Full-time' : '', detail.isPartTime ? 'Part-time' : '', detail.remoteWorkingOption].filter(Boolean).join(' · ') || 'Full-time';
 
