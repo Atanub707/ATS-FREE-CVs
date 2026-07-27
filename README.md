@@ -1,3 +1,25 @@
+
+
+## Quick Setup (No Terminal Skills Needed)
+
+**Mac / Linux:** Open Terminal, paste this and press Enter:
+
+```bash
+curl -sL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/setup.sh | bash
+```
+
+**Windows:** Download `setup.bat` from the repo, double-click it.
+
+The script installs everything and asks for your API key. After it finishes, run:
+
+```bash
+cd ATS-FREE-CVs && npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+---
+
 <h1 align="center">ATS CV Tailor</h1>
 
 <p align="center">
