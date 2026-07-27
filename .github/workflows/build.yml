@@ -23,13 +23,12 @@ jobs:
       - run: node --experimental-sea-config sea-config.json
       - run: |
           cp $(which node) dist/ats-cv-tailor-linux
-          chmod +x dist/ats-cv-tailor-macos
-          npx postject dist/ats-cv-tailor-macos NODE_SEA_BLOB dist/sea.blob \
-            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
-            --macho-segment-name NODE_SEA
+          chmod +x dist/ats-cv-tailor-linux
+          npx postject dist/ats-cv-tailor-linux NODE_SEA_BLOB dist/sea.blob \
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/ats-cv-tailor-macos
+          files: dist/ats-cv-tailor-linux
 
   build-windows:
     runs-on: windows-latest
