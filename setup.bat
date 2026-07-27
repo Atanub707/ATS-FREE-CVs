@@ -38,9 +38,9 @@ if exist "ATS-FREE-CVs" (
     cd ATS-FREE-CVs
   ) else (
     echo Downloading ZIP...
-    curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
-    tar -xf ats.zip
-    move ATS-FREE-CVs-main ATS-FREE-CVs
+    powershell -Command "& {Invoke-WebRequest -Uri 'https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip' -OutFile 'ats.zip'}"
+    powershell -Command "& {Expand-Archive -Path 'ats.zip' -DestinationPath '.' -Force}"
+    move ATS-FREE-CVs-main ATS-FREE-CVs >nul 2>&1
     del ats.zip
     cd ATS-FREE-CVs
   )
@@ -105,9 +105,9 @@ echo.
 echo ╔════════════════════════════════════════════╗
 echo ║  Starting the app...                       ║
 echo ║  Opening http://localhost:3000             ║
-echo ║  Press Ctrl+C to stop                     ║
+echo ║  Close this window to stop the app        ║
 echo ╚════════════════════════════════════════════╝
 echo.
+timeout /t 3 /nobreak >nul
 start http://localhost:3000
-call npm run dev
-pause
+npm run dev
