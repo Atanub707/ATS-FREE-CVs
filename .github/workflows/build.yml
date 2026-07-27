@@ -6,70 +6,67 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-
+  build-linux:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Install dependencies
-        run: npm install --loglevel=warn --no-audit --no-fund
-        shell: bash
-        timeout-minutes: 5
-
-      - name: Build frontend
-        run: npx vite build
-        shell: bash
-
-      - name: Bundle server
-        run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs 2>&1
-        shell: bash
-
-      - name: Create SEA blob
-        run: node --experimental-sea-config sea-config.json 2>&1
-        shell: bash
-
-      - name: Build executable (Linux)
-        if: runner.os == 'Linux'
-        run: |
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+      - run: node --experimental-sea-config sea-config.json
+      - run: |
           cp $(which node) dist/ats-cv-tailor-linux
           chmod +x dist/ats-cv-tailor-linux
           npx postject dist/ats-cv-tailor-linux NODE_SEA_BLOB dist/sea.blob \
-            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 2>&1
-        shell: bash
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ats-cv-tailor-linux
 
-      - name: Build executable (macOS)
-        if: runner.os == 'macOS'
-        run: |
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+      - run: node --experimental-sea-config sea-config.json
+      - run: |
           cp $(which node) dist/ats-cv-tailor-macos
           chmod +x dist/ats-cv-tailor-macos
           npx postject dist/ats-cv-tailor-macos NODE_SEA_BLOB dist/sea.blob \
             --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
-            --macho-segment-name NODE_SEA 2>&1
-        shell: bash
+            --macho-segment-name NODE_SEA
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ats-cv-tailor-macos
 
-      - name: Build executable (Windows)
-        if: runner.os == 'Windows'
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+        shell: pwsh
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+        shell: pwsh
+      - run: node --experimental-sea-config sea-config.json
+        shell: pwsh
+      - name: Build executable
         shell: pwsh
         run: |
-          Copy-Item "$env:ProgramFiles\nodejs\node.exe" dist\ats-cv-tailor-windows.exe
-          npx postject dist/ats-cv-tailor-windows.exe NODE_SEA_BLOB dist/sea.blob `
-            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 2>&1
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ats-cv-tailor-${{ runner.os }}
-          path: dist/ats-cv-tailor-*
-
+          Copy-Item (Get-Command node).Source dist\ats-cv-tailor-windows.exe
+          npx postject dist\ats-cv-tailor-windows.exe NODE_SEA_BLOB dist\sea.blob `
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
       - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: dist/ats-cv-tailor-*
-          fail_on_unmatched_files: false
+          files: dist\ats-cv-tailor-windows.exe
