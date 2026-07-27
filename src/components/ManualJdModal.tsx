@@ -1,27 +1,21 @@
 import React, { useState } from 'react';
 import { X, Loader2, Sparkles, Download, FileText } from 'lucide-react';
 
-interface JdResult {
-  matchScore: number;
-  gapAnalysis: any;
-  downloadToken: string;
-}
-
 export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<JdResult | null>(null);
+  const [tailoring, setTailoring] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [downloadToken, setDownloadToken] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true);
-    setError('');
-    setResult(null);
+    setLoading(true); setError(''); setResult(null); setDownloadToken(null);
     try {
       const res = await fetch('/api/analyze-jd', {
         method: 'POST',
@@ -35,9 +29,24 @@ export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
     finally { setLoading(false); }
   };
 
+  const handleTailor = async () => {
+    setTailoring(true); setError(''); setDownloadToken(null);
+    try {
+      const res = await fetch('/api/analyze-jd/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), company: company.trim(), description: description.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Tailoring failed'); return; }
+      setDownloadToken(data.downloadToken);
+    } catch (e: any) { setError(e.message); }
+    finally { setTailoring(false); }
+  };
+
   const download = (format: string) => {
-    if (!result?.downloadToken) return;
-    window.open(`/api/analyze-jd/download?token=${result.downloadToken}&format=${format}`, '_blank');
+    if (!downloadToken) return;
+    window.open(`/api/analyze-jd/download?token=${downloadToken}&format=${format}`, '_blank');
   };
 
   const score = result?.matchScore ?? 0;
@@ -85,7 +94,7 @@ export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
               <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()}
                 className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-semibold text-xs flex items-center justify-center space-x-2 cursor-pointer">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Analyzing...</span></>
-                  : <><Sparkles className="w-4 h-4" /><span>Analyze & Tailor CV</span></>}
+                  : <><Sparkles className="w-4 h-4" /><span>Analyze Match</span></>}
               </button>
             </>
           ) : (
@@ -93,14 +102,6 @@ export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-center">
                 <span className="text-[10px] uppercase font-bold text-emerald-600">ATS Match Score</span>
                 <div className={`text-4xl font-extrabold ${color} mt-1`}>{score}%</div>
-              </div>
-
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <span className="text-xs font-bold text-indigo-800">CV Tailored & Ready to Download</span>
-                </div>
-                <p className="text-[11px] text-indigo-600 mt-1">Your CV has been optimized for this job. Choose a format below.</p>
               </div>
 
               {result.gapAnalysis?.matchingSkills?.length > 0 && (
@@ -136,16 +137,38 @@ export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 </div>
               )}
 
-              <div className="flex items-center space-x-2 pt-2">
-                <button onClick={() => download('docx')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
-                  <Download className="w-3.5 h-3.5" /><span>Download DOCX</span>
+              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+
+              {!downloadToken ? (
+                <button onClick={handleTailor} disabled={tailoring}
+                  className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold text-xs flex items-center justify-center space-x-2 cursor-pointer">
+                  {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Generating Tailored CV...</span></>
+                    : <><Sparkles className="w-4 h-4" /><span>Generate Tailored CV</span></>}
                 </button>
-                <button onClick={() => download('pdf')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
-                  <Download className="w-3.5 h-3.5" /><span>Download PDF</span>
-                </button>
-                <button onClick={() => { setResult(null); setTitle(''); setCompany(''); setDescription(''); }}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs cursor-pointer">
-                  New Analysis
+              ) : (
+                <>
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-bold text-indigo-800">Tailored CV Ready</span>
+                    </div>
+                    <p className="text-[11px] text-indigo-600 mt-1">Your CV has been optimized for this job. Update your Master CV first to incorporate recommendations, then download.</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button onClick={() => download('docx')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
+                      <Download className="w-3.5 h-3.5" /><span>Download DOCX</span>
+                    </button>
+                    <button onClick={() => download('pdf')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
+                      <Download className="w-3.5 h-3.5" /><span>Download PDF</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-center pt-1">
+                <button onClick={() => { setResult(null); setDownloadToken(null); setTitle(''); setCompany(''); setDescription(''); setError(''); }}
+                  className="text-xs text-slate-400 hover:text-slate-600 underline cursor-pointer">
+                  Start New Analysis
                 </button>
               </div>
             </div>
