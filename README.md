@@ -98,17 +98,7 @@ npm run dev
 
 ---
 
-### Method 3: One-Click Script (Windows)
-
-1. **[⬇ Download setup.bat](https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/setup.bat)**
-2. Double-click the downloaded file
-3. Follow the on-screen prompts
-
-The script will auto-install Node.js if missing, download the app, install dependencies, and start it.
-
----
-
-### Method 4: Manual Install (For Developers)
+### Method 3: Manual Install (For Developers)
 
 ```bash
 git clone https://github.com/Atanub707/ATS-FREE-CVs.git
