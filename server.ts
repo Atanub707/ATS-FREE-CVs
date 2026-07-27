@@ -747,15 +747,54 @@ async function startServer() {
         updatedAt: new Date().toISOString(),
       };
 
-      // Match
+      // Match only — no tailoring yet
       const matcher = new LlmMatcher();
       const matchResult = await matcher.matchJob(virtualJob, masterCv);
 
-      // Tailor
+      res.json({
+        success: true,
+        matchScore: matchResult.matchScore,
+        gapAnalysis: matchResult.gapAnalysis,
+      });
+    } catch (err: any) {
+      console.error('Analyze JD error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Tailor a manually analyzed JD (separate step after user updates master CV)
+  app.post('/api/analyze-jd/tailor', async (req, res) => {
+    try {
+      const { title, company, description } = req.body;
+      if (!title || !description) {
+        res.status(400).json({ error: 'Title and description are required.' });
+        return;
+      }
+
+      const masterCv = getMasterCv();
+      if (!masterCv) {
+        res.status(400).json({ error: 'No master CV found. Create one first.' });
+        return;
+      }
+
+      const virtualJob: Job = {
+        id: `manual-${Date.now()}`,
+        title: title.trim(),
+        company: company?.trim() || 'Unknown Company',
+        location: 'Remote',
+        source: 'Custom',
+        description: description.trim(),
+        url: '',
+        postedDate: new Date().toISOString(),
+        postedDateParsed: new Date().toISOString().split('T')[0],
+        state: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
       const tailorEngine = new LlmCvTailor();
       const tailoredCv = await tailorEngine.tailorCv(virtualJob, masterCv);
 
-      // Store temporarily for download
       const token = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       manualResults.set(token, {
         tailoredCv,
@@ -764,14 +803,9 @@ async function startServer() {
       });
       setTimeout(() => manualResults.delete(token), 30 * 60 * 1000);
 
-      res.json({
-        success: true,
-        matchScore: matchResult.matchScore,
-        gapAnalysis: matchResult.gapAnalysis,
-        downloadToken: token,
-      });
+      res.json({ success: true, downloadToken: token });
     } catch (err: any) {
-      console.error('Analyze JD error:', err);
+      console.error('Tailor JD error:', err);
       res.status(500).json({ error: err.message });
     }
   });
