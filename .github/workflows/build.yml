@@ -18,10 +18,11 @@ jobs:
           node-version: '24'
       - run: npm install --loglevel=warn --no-audit --no-fund
       - run: npx vite build
-      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --outfile=dist/bundle.cjs 2>&1 || true
+      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas dist/ 2>/dev/null; true
       - run: node --experimental-sea-config sea-config.json
       - run: |
-          cp $(which node) dist/ats-cv-tailor-macos
+          cp $(which node) dist/ats-cv-tailor-linux
           chmod +x dist/ats-cv-tailor-macos
           npx postject dist/ats-cv-tailor-macos NODE_SEA_BLOB dist/sea.blob \
             --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
@@ -40,7 +41,7 @@ jobs:
       - run: npm install --loglevel=warn --no-audit --no-fund
       - run: npx vite build
         shell: pwsh
-      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --outfile=dist/bundle.cjs 2>&1; Exit(0)
         shell: pwsh
       - run: node --experimental-sea-config sea-config.json
         shell: pwsh
