@@ -19,7 +19,9 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --loglevel=error
+        run: npm install --loglevel=verbose
+        shell: bash
+        timeout-minutes: 10
 
       - name: Build frontend
         run: npx vite build
