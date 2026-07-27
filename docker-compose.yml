@@ -1,14 +1,12 @@
-version: '3.8'
-
 services:
-  ats-app:
+  ats-cv-tailor:
     build: .
+    container_name: ats-cv-tailor
     ports:
       - "3000:3000"
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - PORT=3000
     volumes:
       - ./data:/app/data
       - ./config.ini:/app/config.ini
+    environment:
+      - DISABLE_HMR=true
     restart: unless-stopped
