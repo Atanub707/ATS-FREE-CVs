@@ -1,9 +1,10 @@
 import React from 'react';
-import { FileText, Settings } from 'lucide-react';
+import { FileText, Settings, FileInput } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
   onOpenSettings: () => void;
+  onOpenManualJd: () => void;
   totalJobs: number;
   matchedCount: number;
   tailoredCount: number;
@@ -12,6 +13,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenMasterCv,
   onOpenSettings,
+  onOpenManualJd,
   totalJobs,
   matchedCount,
   tailoredCount,
@@ -59,6 +61,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Minimal Action Controls */}
         <div className="flex items-center space-x-2">
+          <button
+            onClick={onOpenManualJd}
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer"
+          >
+            <FileInput className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="whitespace-nowrap">Manual JD</span>
+          </button>
+
           <button
             onClick={onOpenMasterCv}
             id="btn-master-cv"

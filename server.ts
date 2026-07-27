@@ -715,6 +715,104 @@ async function startServer() {
     }
   });
 
+  // Analyze a manual JD (no scraping needed)
+  const manualResults = new Map<string, { tailoredCv: any; title: string; company: string }>();
+
+  app.post('/api/analyze-jd', async (req, res) => {
+    try {
+      const { title, company, description } = req.body;
+      if (!title || !description) {
+        res.status(400).json({ error: 'Title and description are required.' });
+        return;
+      }
+
+      const masterCv = getMasterCv();
+      if (!masterCv) {
+        res.status(400).json({ error: 'No master CV found. Create one first.' });
+        return;
+      }
+
+      const virtualJob: Job = {
+        id: `manual-${Date.now()}`,
+        title: title.trim(),
+        company: company?.trim() || 'Unknown Company',
+        location: 'Remote',
+        source: 'Custom',
+        description: description.trim(),
+        url: '',
+        postedDate: new Date().toISOString(),
+        postedDateParsed: new Date().toISOString().split('T')[0],
+        state: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Match
+      const matcher = new LlmMatcher();
+      const matchResult = await matcher.matchJob(virtualJob, masterCv);
+
+      // Tailor
+      const tailorEngine = new LlmCvTailor();
+      const tailoredCv = await tailorEngine.tailorCv(virtualJob, masterCv);
+
+      // Store temporarily for download
+      const token = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      manualResults.set(token, {
+        tailoredCv,
+        title: virtualJob.title,
+        company: virtualJob.company,
+      });
+      setTimeout(() => manualResults.delete(token), 30 * 60 * 1000);
+
+      res.json({
+        success: true,
+        matchScore: matchResult.matchScore,
+        gapAnalysis: matchResult.gapAnalysis,
+        downloadToken: token,
+      });
+    } catch (err: any) {
+      console.error('Analyze JD error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Download manual JD tailored CV
+  app.get('/api/analyze-jd/download', async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      const format = (req.query.format as string) || 'docx';
+      const data = manualResults.get(token);
+
+      if (!data) {
+        res.status(404).json({ error: 'Analysis result expired or not found. Please re-analyze.' });
+        return;
+      }
+
+      const safeName = data.tailoredCv.candidateName.replace(/ /g, '_');
+      const safeCompany = data.company.replace(/[^a-zA-Z0-9]/g, '_');
+
+      if (format === 'pdf') {
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
+        res.send(pdfBuffer);
+      } else if (format === 'txt') {
+        const textCv = generatePlainTextCv(data.tailoredCv);
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.txt"`);
+        res.send(textCv);
+      } else {
+        const docxBuffer = await generateDocxBuffer(data.tailoredCv);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.docx"`);
+        res.send(docxBuffer);
+      }
+    } catch (err: any) {
+      console.error('Manual download error:', err);
+      res.status(500).json({ error: 'Failed to generate file.' });
+    }
+  });
+
   // Update Job Status
   app.put('/api/jobs/:id/status', (req, res) => {
     try {
