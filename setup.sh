@@ -73,9 +73,6 @@ jsonDbPath=./data/jobs_backup.json
 [scraper]
 stealthMode=true
 maxRetries=3
-adzunaAppId=
-adzunaApiKey=
-indeedPublisherId=
 EOF
 fi
 

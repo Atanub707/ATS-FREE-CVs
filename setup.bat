@@ -70,9 +70,6 @@ if not exist config.ini (
   echo [scraper] >> config.ini
   echo stealthMode=true >> config.ini
   echo maxRetries=3 >> config.ini
-  echo adzunaAppId= >> config.ini
-  echo adzunaApiKey= >> config.ini
-  echo indeedPublisherId= >> config.ini
 )
 
 REM API key
