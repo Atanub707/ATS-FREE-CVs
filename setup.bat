@@ -8,42 +8,41 @@ echo ║        ATS CV Tailor — Local Setup        ║
 echo ╚════════════════════════════════════════════╝
 echo.
 
-REM Check Node.js
+REM Check Node.js — auto-install if missing
 where node >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-  echo Node.js is required but not installed.
+  echo Node.js is required. Downloading and installing...
   echo.
-  echo Download it from: https://nodejs.org/
-  echo Click the LTS button, install like any other program.
-  echo After installing, run this script again.
-  echo.
-  start https://nodejs.org/
-  pause
-  exit /b 1
+  powershell -Command "& {Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.11.0/node-v22.11.0-x64.msi' -OutFile '%TEMP%\node-installer.msi'}"
+  echo Installing Node.js (this may take a minute)...
+  msiexec /i "%TEMP%\node-installer.msi" /quiet /norestart
+  del "%TEMP%\node-installer.msi" 2>nul
+  rem Add Node to PATH for this session
+  set PATH=%PATH%;C:\Program Files\nodejs\
+  where node >nul 2>&1
+  if %ERRORLEVEL% neq 0 (
+    echo Node.js installed! Please close this window, reopen, and run setup.bat again.
+    pause
+    exit /b 1
+  )
 )
 
 for /f "tokens=1" %%v in ('node -v') do set NODE_VER=%%v
 echo ✓ Node.js %NODE_VER% detected
 
-REM Clone or use existing
+REM Download
 if exist "ATS-FREE-CVs" (
   cd ATS-FREE-CVs
   echo ✓ Using existing ATS-FREE-CVs folder
 ) else (
   echo.
   echo Step 1: Downloading the app...
-  where git >nul 2>&1
-  if %ERRORLEVEL% equ 0 (
-    git clone https://github.com/Atanub707/ATS-FREE-CVs.git
-    cd ATS-FREE-CVs
-  ) else (
-    echo Downloading ZIP...
-    powershell -Command "& {Invoke-WebRequest -Uri 'https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip' -OutFile 'ats.zip'}"
-    powershell -Command "& {Expand-Archive -Path 'ats.zip' -DestinationPath '.' -Force}"
-    move ATS-FREE-CVs-main ATS-FREE-CVs >nul 2>&1
-    del ats.zip
-    cd ATS-FREE-CVs
-  )
+  echo Downloading ZIP...
+  powershell -Command "& {Invoke-WebRequest -Uri 'https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip' -OutFile '%TEMP%\ats.zip'}"
+  powershell -Command "& {Expand-Archive -Path '%TEMP%\ats.zip' -DestinationPath '%TEMP%' -Force}"
+  move "%TEMP%\ATS-FREE-CVs-main" "ATS-FREE-CVs" >nul 2>&1
+  del "%TEMP%\ats.zip" 2>nul
+  cd ATS-FREE-CVs
   echo ✓ Downloaded
 )
 
