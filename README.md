@@ -1,6 +1,6 @@
 
 
-## Quick Setup (No Terminal Skills Needed)
+## Quick Setup
 
 **Mac / Linux:** Open Terminal, paste this and press Enter:
 
@@ -8,16 +8,14 @@
 curl -sL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/setup.sh | bash
 ```
 
+**Windows:** [**⬇ Download setup.bat**](https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/setup.bat) — then double-click the downloaded file.
+
 The script will:
 1. Check if Node.js is installed (if not, opens the download page)
 2. Download the app
 3. Install dependencies
-4. Ask for your API key (optional — can do it later in Settings)
+4. Ask for your API key (optional)
 5. Start the app and open it in your browser
-
-**Windows:** Download `setup.bat` from the repo, double-click it, and follow the prompts.
-
-> **Requirements:** Just a computer with internet. The script handles everything else.
 
 ---
 
