@@ -19,9 +19,9 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --loglevel=verbose
+        run: npm install --loglevel=warn --no-audit --no-fund
         shell: bash
-        timeout-minutes: 10
+        timeout-minutes: 5
 
       - name: Build frontend
         run: npx vite build
