@@ -4,7 +4,7 @@ earlyBlockThreshold=30
 
 [llm]
 provider=opencode-go
-apiKey=sk-BGkiio5V8alNSZEipX2yMJ9d22S4N2dSDHHhaOrOYsubdYKHS2dhiSpFTYKoQqF0
+apiKey=
 baseUrl=https://opencode.ai/zen/go/v1
 model=deepseek-v4-flash
 temperature=0.2
