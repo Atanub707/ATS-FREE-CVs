@@ -26,7 +26,10 @@ export default function App() {
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
   const [isBatchMatching, setIsBatchMatching] = useState(false);
   const [isBatchTailoring, setIsBatchTailoring] = useState(false);
-  const [actionJobIdLoading, setActionJobIdLoading] = useState<string | null>(null);
+  const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
+
+  const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
+  const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
 
   // Initial Fetch
   const fetchAllData = async () => {
@@ -99,7 +102,7 @@ export default function App() {
 
   // Match Job Handler
   const handleMatchJob = async (jobId: string) => {
-    setActionJobIdLoading(jobId);
+    addLoadingJobId(jobId);
     try {
       const res = await fetch(`/api/jobs/${jobId}/match`, {
         method: 'POST',
@@ -115,7 +118,7 @@ export default function App() {
     } catch (err) {
       console.error('Match error:', err);
     } finally {
-      setActionJobIdLoading(null);
+      removeLoadingJobId(jobId);
     }
   };
 
@@ -147,7 +150,7 @@ export default function App() {
 
   // Tailor CV Handler
   const handleTailorJob = async (jobId: string) => {
-    setActionJobIdLoading(jobId);
+    addLoadingJobId(jobId);
     try {
       const res = await fetch(`/api/jobs/${jobId}/tailor`, {
         method: 'POST',
@@ -163,7 +166,7 @@ export default function App() {
     } catch (err) {
       console.error('Tailor error:', err);
     } finally {
-      setActionJobIdLoading(null);
+      removeLoadingJobId(jobId);
     }
   };
 
@@ -308,7 +311,7 @@ export default function App() {
           onClearAll={handleClearAll}
           isBatchMatching={isBatchMatching}
           isBatchTailoring={isBatchTailoring}
-          actionJobIdLoading={actionJobIdLoading}
+          loadingJobIds={loadingJobIds}
         />
       </main>
 
@@ -319,7 +322,7 @@ export default function App() {
         onMatchJob={handleMatchJob}
         onTailorJob={handleTailorJob}
         onUpdateStatus={handleUpdateStatus}
-        isLoading={actionJobIdLoading === selectedJob?.id}
+        isLoading={selectedJob ? loadingJobIds.has(selectedJob.id) : false}
       />
 
       {/* Master Candidate CV Drawer */}
