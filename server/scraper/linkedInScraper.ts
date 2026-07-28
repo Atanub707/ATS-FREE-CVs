@@ -162,10 +162,6 @@ export class LinkedInScraper extends BaseScraper {
 
     try {
       await fetchJobs(tprParam);
-
-      if (scrapedJobs.length < limit && tprParam) {
-        await fetchJobs('');
-      }
     } catch (err) {
       console.warn('LinkedIn live fetch notice:', err);
     }
