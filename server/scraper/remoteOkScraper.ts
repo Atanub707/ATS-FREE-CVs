@@ -11,66 +11,69 @@ export class RemoteOkScraper extends BaseScraper {
     const jobs: Job[] = [];
     const seenUrls = new Set<string>();
 
-    try {
-      const response = await fetch('https://remoteok.com/api', {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-        signal: AbortSignal.timeout(15000),
-      });
+    console.log('[RemoteOK] Starting scrape, limit:', limit);
 
-      if (!response.ok) {
-        console.warn(`RemoteOK API error: ${response.status}`);
-        return jobs;
-      }
+    const response = await fetch('https://remoteok.com/api', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(15000),
+    });
 
-      const data = await response.json();
-      const allJobs: any[] = data.slice(1);
-
-      for (const job of allJobs) {
-        if (jobs.length >= limit) break;
-
-        const position = (job.position || '').trim();
-        if (!position || JUNK_TITLES.has(position.toLowerCase())) continue;
-
-        const company = (job.company || '').trim();
-        const description = (job.description || '').trim();
-
-        const jobUrl = job.url || job.apply_url || '';
-        if (!jobUrl || seenUrls.has(jobUrl)) continue;
-        seenUrls.add(jobUrl);
-
-        const postedDate = job.date ? new Date(job.date) : new Date();
-
-        const cleanDescription = description
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<[^>]+>/g, '')
-          .replace(/\n{3,}/g, '\n\n')
-          .replace(/[ \t]+\n/g, '\n')
-          .replace(/\n[ \t]+/g, '\n')
-          .trim();
-
-        jobs.push({
-          id: `remoteok-${job.id || Date.now()}-${jobs.length}`,
-          title: position,
-          company: company || 'Unknown',
-          location: 'Remote',
-          source: 'RemoteOK',
-          description: cleanDescription || 'Description not available',
-          url: jobUrl,
-          postedDate: postedDate.toISOString(),
-          postedDateParsed: postedDate.toISOString().split('T')[0],
-          salaryMin: job.salary_min > 0 ? job.salary_min : undefined,
-          salaryMax: job.salary_max > 0 ? job.salary_max : undefined,
-          jobType: 'Full-time · Remote',
-          state: 'pending',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
-    } catch (err: any) {
-      console.warn('RemoteOK fetch error:', err?.message || err);
+    if (!response.ok) {
+      throw new Error(`RemoteOK API returned ${response.status} ${response.statusText}`);
     }
 
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error('RemoteOK API returned unexpected format: not an array');
+    }
+
+    const allJobs: any[] = data.slice(1);
+    console.log('[RemoteOK] API returned', allJobs.length, 'jobs');
+
+    for (const job of allJobs) {
+      if (jobs.length >= limit) break;
+
+      const position = (job.position || '').trim();
+      if (!position || JUNK_TITLES.has(position.toLowerCase())) continue;
+
+      const company = (job.company || '').trim();
+      const description = (job.description || '').trim();
+
+      const jobUrl = job.url || job.apply_url || '';
+      if (!jobUrl || seenUrls.has(jobUrl)) continue;
+      seenUrls.add(jobUrl);
+
+      const postedDate = job.date ? new Date(job.date) : new Date();
+
+      const cleanDescription = description
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .trim();
+
+      jobs.push({
+        id: `remoteok-${job.id || Date.now()}-${jobs.length}`,
+        title: position,
+        company: company || 'Unknown',
+        location: 'Remote',
+        source: 'RemoteOK',
+        description: cleanDescription || 'Description not available',
+        url: jobUrl,
+        postedDate: postedDate.toISOString(),
+        postedDateParsed: postedDate.toISOString().split('T')[0],
+        salaryMin: job.salary_min > 0 ? job.salary_min : undefined,
+        salaryMax: job.salary_max > 0 ? job.salary_max : undefined,
+        jobType: 'Full-time · Remote',
+        state: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    console.log('[RemoteOK] Returning', jobs.length, 'jobs');
     return jobs;
   }
 }
