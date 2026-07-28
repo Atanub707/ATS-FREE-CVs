@@ -1,16 +1,15 @@
 import { BaseScraper } from './baseScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
+const JUNK_TITLES = new Set(['nunavut', 'other', 'full', 'free', 'candidate requirements', 'join our team', 'come and join us', 'skip content', 'why join us', 'current vacancies', 'all jobs', 'no open roles right now', 'widen the circle', 'we are', 'take the initiative', 'we don\'t currently have any open roles', 'i want all the money', 'job hunting indecision']);
+
 export class RemoteOkScraper extends BaseScraper {
   readonly source = 'RemoteOK' as const;
 
   async scrape(params: ScraperParams): Promise<Job[]> {
-    const keywords = params.keywords.trim().toLowerCase();
     const limit = params.maxJobsPerSource || 10;
     const jobs: Job[] = [];
     const seenUrls = new Set<string>();
-
-    const terms = keywords ? keywords.split(/\s+/).filter(Boolean) : [];
 
     try {
       const response = await fetch('https://remoteok.com/api', {
@@ -25,28 +24,15 @@ export class RemoteOkScraper extends BaseScraper {
 
       const data = await response.json();
       const allJobs: any[] = data.slice(1);
-      if (allJobs.length === 0) return jobs;
 
       for (const job of allJobs) {
         if (jobs.length >= limit) break;
 
         const position = (job.position || '').trim();
+        if (!position || JUNK_TITLES.has(position.toLowerCase())) continue;
+
         const company = (job.company || '').trim();
         const description = (job.description || '').trim();
-        const tags: string[] = job.tags || [];
-
-        if (!position || position === 'No positions currently available') continue;
-
-        const searchText = `${position} ${company} ${description} ${tags.join(' ')}`.toLowerCase();
-
-        let match = terms.length === 0;
-        if (terms.length === 1) {
-          match = searchText.includes(terms[0]);
-        } else if (terms.length > 1) {
-          const matchedTerms = terms.filter(t => searchText.includes(t));
-          match = matchedTerms.length >= Math.ceil(terms.length * 0.5);
-        }
-        if (!match) continue;
 
         const jobUrl = job.url || job.apply_url || '';
         if (!jobUrl || seenUrls.has(jobUrl)) continue;
