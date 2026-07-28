@@ -35,7 +35,7 @@ interface JobMatrixProps {
   onClearAll: () => Promise<void>;
   isBatchMatching: boolean;
   isBatchTailoring: boolean;
-  actionJobIdLoading: string | null;
+  loadingJobIds: Set<string>;
 }
 
 const JobCard = React.memo(function JobCard({
@@ -268,7 +268,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   onClearAll,
   isBatchMatching,
   isBatchTailoring,
-  actionJobIdLoading,
+  loadingJobIds,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
@@ -551,7 +551,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               <JobCard
                 key={itemKey}
                 job={job}
-                isLoadingThisJob={actionJobIdLoading === job.id}
+                isLoadingThisJob={loadingJobIds.has(job.id)}
                 onSelectJob={onSelectJob}
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
