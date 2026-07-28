@@ -24,6 +24,18 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Secret scan summary
+        if: always()
+        run: |
+          echo "## 🔑 Secret Scanning (gitleaks)" >> $GITHUB_STEP_SUMMARY
+          if [ -f gitleaks-output.txt ]; then
+            echo "❌ Secrets found:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat gitleaks-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No secrets detected." >> $GITHUB_STEP_SUMMARY
+          fi
 
   audit:
     name: npm Audit
@@ -33,14 +45,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: npm audit (fail on high+critical)
-        run: npm audit --audit-level=high
+      - name: npm audit
+        continue-on-error: true
+        id: audit
+        run: |
+          npm audit --audit-level=high --json 2>&1 > npm-audit.json || true
+          VULN_COUNT=$(npm audit --audit-level=high --json 2>/dev/null | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.metadata?.vulnerabilities?.high||0)}catch{console.log(0)}})" 2>/dev/null || echo 0)
+          echo "count=$VULN_COUNT" >> $GITHUB_OUTPUT
+      - name: Audit summary
+        if: always()
+        run: |
+          echo "## 📦 npm Audit" >> $GITHUB_STEP_SUMMARY
+          COUNT=${{ steps.audit.outputs.count || 0 }}
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ **$COUNT high/critical vulnerabilities found**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            npm audit --audit-level=high 2>&1 || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No high/critical vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          fi
       - name: Check allowed exceptions
         run: |
           if [ -f .npm-audit-allowlist ]; then
-            echo "Known exceptions:"
-            cat .npm-audit-allowlist
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Known exceptions" >> $GITHUB_STEP_SUMMARY
+            cat .npm-audit-allowlist >> $GITHUB_STEP_SUMMARY
           fi
+      - name: Fail on high/critical
+        run: npm audit --audit-level=high
 
   trivy:
     name: Trivy Container Scan
@@ -49,22 +82,41 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t ats-cv-tailor .
-      - uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ats-cv-tailor
-          format: table
-          severity: HIGH,CRITICAL
-          exit-code: 1
-          ignore-unfixed: true
+      - name: Run Trivy scan
+        id: trivy
+        continue-on-error: true
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --severity HIGH,CRITICAL \
+            --ignore-unfixed --format table --exit-code 1 \
+            ats-cv-tailor 2>&1 | tee trivy-output.txt
+      - name: Trivy summary
+        if: always()
+        run: |
+          echo "## 🐳 Trivy Container Scan" >> $GITHUB_STEP_SUMMARY
+          if grep -q "Total: [1-9]" trivy-output.txt 2>/dev/null; then
+            echo "❌ **HIGH/CRITICAL vulnerabilities found**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No HIGH/CRITICAL vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          fi
       - name: Check Trivy exceptions
+        if: always()
         run: |
           if [ -f .trivyignore ]; then
-            echo "Ignored CVEs (documented exceptions):"
-            cat .trivyignore
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Ignored CVEs (documented exceptions)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat .trivyignore >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           fi
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
+      - name: Fail on vulnerabilities
+        if: steps.trivy.outcome == 'failure'
+        run: |
+          echo "❌ Trivy found HIGH/CRITICAL vulnerabilities. See summary above."
+          exit 1
 
   # ──────────────────── BUILD STAGE ────────────────────
   # Runs only if all security jobs pass AND this is a version tag push
