@@ -238,12 +238,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <span>Sources:</span>
             </span>
 
-            {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever'] as const).map((src) => (
+            {(['LinkedIn', 'Arbeitnow', 'RemoteOK', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever'] as const).map((src) => (
               <button key={src} type="button"
                 onClick={() => toggleSource(src)}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
                   selectedSources.includes(src)
                   ? src === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-300'
+                  : src === 'RemoteOK' ? 'bg-cyan-50 text-cyan-700 border-cyan-300'
                   : src === 'Arbeitnow' ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                   : src === 'SimplyHired' ? 'bg-teal-50 text-teal-700 border-teal-300'
                   : src === 'Dice' ? 'bg-purple-50 text-purple-700 border-purple-300'

@@ -4,6 +4,7 @@ import { SimplyHiredScraper } from './simplyHiredScraper.js';
 import { DiceScraper } from './diceScraper.js';
 import { ReedScraper } from './reedScraper.js';
 import { CompanyPortalScraper } from './companyPortalScraper.js';
+import { RemoteOkScraper } from './remoteOkScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
 export class ScraperFactory {
@@ -40,6 +41,11 @@ export class ScraperFactory {
       if (source === 'Greenhouse' || source === 'Lever') {
         const cp = new CompanyPortalScraper();
         const jobs = await cp.scrape(params);
+        allJobs.push(...jobs);
+      }
+      if (source === 'RemoteOK') {
+        const remoteok = new RemoteOkScraper();
+        const jobs = await remoteok.scrape(params);
         allJobs.push(...jobs);
       }
     }
