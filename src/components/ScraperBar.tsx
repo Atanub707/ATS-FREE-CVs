@@ -260,7 +260,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
             {selectedSources.includes('RemoteOK') && (
               <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded ml-1">
-                ⓘ Try broad keywords
+                ⓘ Returns latest remote jobs (keyword search unavailable)
               </span>
             )}
             {selectedSources.includes('Dice') && (
