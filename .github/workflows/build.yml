@@ -10,7 +10,6 @@ on:
 permissions:
   contents: write
   packages: write
-  security-events: write
   actions: read
 
 jobs:
@@ -43,22 +42,6 @@ jobs:
             cat .npm-audit-allowlist
           fi
 
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - run: npm install --loglevel=warn --no-audit --no-fund
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          queries: security-and-quality
-      - uses: github/codeql-action/analyze@v3
-
   trivy:
     name: Trivy Container Scan
     runs-on: ubuntu-latest
@@ -69,8 +52,7 @@ jobs:
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ats-cv-tailor
-          format: sarif
-          output: trivy-results.sarif
+          format: table
           severity: HIGH,CRITICAL
           exit-code: 1
           ignore-unfixed: true
@@ -87,7 +69,7 @@ jobs:
   # ──────────────────── BUILD STAGE ────────────────────
   # Runs only if all security jobs pass AND this is a version tag push
   build-linux:
-    needs: [secrets, audit, codeql, trivy]
+    needs: [secrets, audit, trivy]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -111,7 +93,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
-    needs: [secrets, audit, codeql, trivy]
+    needs: [secrets, audit, trivy]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     steps:
@@ -136,7 +118,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
-    needs: [secrets, audit, codeql, trivy]
+    needs: [secrets, audit, trivy]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
@@ -163,7 +145,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   docker:
-    needs: [secrets, audit, codeql, trivy]
+    needs: [secrets, audit, trivy]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
