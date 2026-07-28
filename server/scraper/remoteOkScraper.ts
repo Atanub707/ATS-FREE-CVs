@@ -10,11 +10,7 @@ export class RemoteOkScraper extends BaseScraper {
     const jobs: Job[] = [];
     const seenUrls = new Set<string>();
 
-    const filter = params.datePostedFilter || 'all';
-    let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
-    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
-    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+    const terms = keywords ? keywords.split(/\s+/).filter(Boolean) : [];
 
     try {
       const response = await fetch('https://remoteok.com/api', {
@@ -39,8 +35,17 @@ export class RemoteOkScraper extends BaseScraper {
         const description = (job.description || '').trim();
         const tags: string[] = job.tags || [];
 
+        if (!position || position === 'No positions currently available') continue;
+
         const searchText = `${position} ${company} ${description} ${tags.join(' ')}`.toLowerCase();
-        const match = !keywords || searchText.includes(keywords);
+
+        let match = terms.length === 0;
+        if (terms.length === 1) {
+          match = searchText.includes(terms[0]);
+        } else if (terms.length > 1) {
+          const matchedTerms = terms.filter(t => searchText.includes(t));
+          match = matchedTerms.length >= Math.ceil(terms.length * 0.5);
+        }
         if (!match) continue;
 
         const jobUrl = job.url || job.apply_url || '';
@@ -48,7 +53,6 @@ export class RemoteOkScraper extends BaseScraper {
         seenUrls.add(jobUrl);
 
         const postedDate = job.date ? new Date(job.date) : new Date();
-        if (postedDate.getTime() < Date.now() - maxAgeMs) continue;
 
         const cleanDescription = description
           .replace(/<br\s*\/?>/gi, '\n')
@@ -61,7 +65,7 @@ export class RemoteOkScraper extends BaseScraper {
 
         jobs.push({
           id: `remoteok-${job.id || Date.now()}-${jobs.length}`,
-          title: position || 'Unknown Position',
+          title: position,
           company: company || 'Unknown',
           location: 'Remote',
           source: 'RemoteOK',
