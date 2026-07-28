@@ -1,0 +1,10 @@
+# Trivy vulnerability exceptions
+# Add CVE IDs here when:
+#   1. No fix is available (upstream hasn't patched)
+#   2. The vulnerability is not exploitable in this context
+#   3. The risk is reviewed and accepted
+#
+# Format: CVE-ID [,optional: comment]
+#
+# Examples:
+# CVE-2024-XXXXX  # transitive dep, no patch available, risk accepted

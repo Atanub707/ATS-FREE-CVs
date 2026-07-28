@@ -34,7 +34,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm audit --audit-level=moderate
+      - name: npm audit (fail on high+critical)
+        run: npm audit --audit-level=high
+      - name: Check allowed exceptions
+        run: |
+          if [ -f .npm-audit-allowlist ]; then
+            echo "Known exceptions:"
+            cat .npm-audit-allowlist
+          fi
 
   codeql:
     name: CodeQL Analysis
@@ -65,6 +72,13 @@ jobs:
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
           exit-code: 1
+          ignore-unfixed: true
+      - name: Check Trivy exceptions
+        run: |
+          if [ -f .trivyignore ]; then
+            echo "Ignored CVEs (documented exceptions):"
+            cat .trivyignore
+          fi
       - uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif

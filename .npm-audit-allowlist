@@ -1,0 +1,11 @@
+# npm audit exception allowlist
+# Add advisory IDs here when:
+#   1. No patched version exists
+#   2. The package is a transitive dep with no replacement
+#   3. Risk is reviewed and accepted
+#
+# Format: GHSA-xxxx-xxxx-xxxx [,optional: comment]
+#
+# Find advisory IDs from: npm audit --json
+# Examples:
+# GHSA-xxxx-xxxx-xxxx  # no patch available, dev-only dep
