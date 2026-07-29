@@ -171,7 +171,7 @@ export class LinkedInScraper extends BaseScraper {
     for (const job of scrapedJobs) {
       const jobId = job.id.replace('linkedin-', '');
       try {
-        await this.delay(3000 + Math.random() * 5000);
+        await this.delay(800 + Math.random() * 1200);
         const detail = await this.fetchJobDetail(jobId);
         job.description = detail.description || 'Description not available';
         if (detail.salaryText) {
