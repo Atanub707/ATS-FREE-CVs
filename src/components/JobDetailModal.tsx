@@ -340,6 +340,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     const beforeScore = tailored.audit?.beforeScore ?? job.matchScore ?? gap?.matchScore ?? 68;
                     const afterScore = tailored.audit?.afterScore ?? Math.min(98, Math.max(beforeScore + 18, 92));
                     const scoreBoost = tailored.audit?.scoreBoost ?? (afterScore - beforeScore);
+                    const breakdown = tailored.audit?.scoreBreakdown;
 
                     const missingSkillsBefore = tailored.audit?.missingBefore?.skills && tailored.audit.missingBefore.skills.length > 0
                       ? tailored.audit.missingBefore.skills
@@ -430,6 +431,30 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                             />
                           </div>
                         </div>
+
+                        {/* Score Breakdown */}
+                        {breakdown && (
+                          <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-3 space-y-2">
+                            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">How 52% is calculated</h4>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="bg-slate-800/80 rounded p-2 border border-slate-700/60">
+                                <span className="text-[10px] text-slate-400 block">Already Matched</span>
+                                <span className="text-lg font-bold text-slate-200">{breakdown.alreadyMatched}%</span>
+                                <span className="text-[9px] text-slate-500 block">Your Master CV score</span>
+                              </div>
+                              <div className="bg-emerald-900/30 rounded p-2 border border-emerald-800/40">
+                                <span className="text-[10px] text-emerald-400 block">Newly Integrated</span>
+                                <span className="text-lg font-bold text-emerald-400">+{breakdown.newlyIntegrated}%</span>
+                                <span className="text-[9px] text-emerald-600/80 block">From missing keywords</span>
+                              </div>
+                              <div className="bg-amber-900/30 rounded p-2 border border-amber-800/40">
+                                <span className="text-[10px] text-amber-400 block">Still Missing</span>
+                                <span className="text-lg font-bold text-amber-400">{breakdown.remainingGap}%</span>
+                                <span className="text-[9px] text-amber-600/80 block">Could not be added</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* BEFORE vs AFTER Audit Matrix */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

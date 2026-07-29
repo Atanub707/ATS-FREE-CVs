@@ -112,15 +112,14 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
 
       const integratedCount = verifiedKeywords.length;
       const totalMissing = missingKeywords.length;
-      let afterScore = beforeScore;
-      if (totalMissing > 0) {
-        const fillRatio = integratedCount / totalMissing;
-        afterScore = Math.round(beforeScore + fillRatio * (100 - beforeScore) * 0.55);
-        afterScore = Math.min(95, Math.max(beforeScore + 2, afterScore));
-      } else {
-        afterScore = Math.min(beforeScore + 8, 92);
-      }
+      const fullGap = 100 - beforeScore;
+      const maxPossibleBump = fullGap;
+      const fillRatio = totalMissing > 0 ? integratedCount / totalMissing : 0;
+      const bumpRaw = Math.round(fillRatio * maxPossibleBump);
+      const bumpDiscounted = Math.round(bumpRaw * 0.55);
+      const afterScore = Math.min(beforeScore + bumpDiscounted, 95);
       const scoreBoost = afterScore - beforeScore;
+      const remainingGap = 100 - afterScore;
 
       const rephrasedCount = (parsed.workExperience || []).reduce(
         (acc: number, item: any) => acc + (item.highlights?.length || 0), 0
@@ -168,6 +167,11 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           beforeScore,
           afterScore,
           scoreBoost,
+          scoreBreakdown: {
+            alreadyMatched: beforeScore,
+            newlyIntegrated: scoreBoost,
+            remainingGap,
+          },
           missingBefore: {
             skills: missingSkills,
             keywords: missingKeywords,
@@ -241,6 +245,11 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         beforeScore,
         afterScore,
         scoreBoost,
+        scoreBreakdown: {
+          alreadyMatched: beforeScore,
+          newlyIntegrated: scoreBoost,
+          remainingGap: 100 - afterScore,
+        },
         missingBefore: {
           skills: missingSkills,
           keywords: missingKeywords,
