@@ -60,10 +60,11 @@ export interface TailoringAudit {
   };
   addedAfter: {
     keywordsIncorporated: string[];
+    keywordsInExperience: string[];
+    keywordsInSkills: string[];
     rephrasedHighlightsCount: number;
     skillsAdded: string[];
   };
-  notIntegrable?: string[];
   auditNotes: string[];
 }
 

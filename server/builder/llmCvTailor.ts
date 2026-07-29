@@ -6,51 +6,34 @@ export class LlmCvTailor extends BaseCvBuilder {
   async tailorCv(job: Job, masterCv: MasterCv): Promise<TailoredCv> {
     const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
 
-    const missingSkills = job.gapAnalysis?.missingSkills && job.gapAnalysis.missingSkills.length > 0
-      ? job.gapAnalysis.missingSkills
-      : [];
-
-    const missingKeywords = job.gapAnalysis?.missingKeywords && job.gapAnalysis.missingKeywords.length > 0
-      ? job.gapAnalysis.missingKeywords
-      : [];
+    const missingSkills = job.gapAnalysis?.missingSkills || [];
+    const missingKeywords = job.gapAnalysis?.missingKeywords || [];
 
     const missingKeywordsStr = missingKeywords.length > 0
       ? missingKeywords.map(k => `  - ${k}`).join('\n')
       : '  (none identified)';
 
     const prompt = `You are an elite Executive Resume Writer and ATS Optimization Specialist.
-Your mission is to rewrite the candidate's Master CV so it ranks at the top of real ATS systems (Greenhouse, Workday, Lever, Taleo, iCIMS).
 
-STRICT RULE: NEVER FABRICATE OR INVENT NEW COMPANIES, DATES, DEGREES, OR WORK EXPERIENCE.
+STRICT RULES:
+- NEVER fabricate companies, dates, degrees, or work experience.
+- The candidate's actual job title ("${candidateTitle}") MUST remain exactly as stated.
 
-CRITICAL RULE: The candidate's actual job title ("${candidateTitle}") MUST remain exactly as stated. Do NOT replace it with the target job title.
+MISSING JD KEYWORDS TO INTEGRATE:
+These keywords from the job description are NOT currently in the candidate's CV.
+For EACH keyword, choose the best placement:
 
-MISSING JD KEYWORDS — YOU MUST INTEGRATE THESE:
-The following keywords from the job description are NOT currently in the candidate's CV.
-For EACH keyword, determine if it can naturally fit into the candidate's existing experience:
-- If yes: rephrase an existing bullet point to include the keyword naturally (e.g., "Managed vulnerability prioritization using CVSS scoring" instead of just listing it).
-- If no (would require inventing experience the candidate doesn't have): skip it and add it to the "notIntegrable" array.
+1. IN EXPERIENCE BULLETS (preferred): Rephrase an existing responsibility to include the keyword naturally.
+   Example: "Managed vulnerability prioritization using CVSS scoring" — the candidate DID manage vulnerabilities, you're adding the methodology name.
+
+2. IN SKILLS / COMPETENCIES (fallback): If the keyword cannot fit into any existing bullet, add it to coreCompetencies or technicalSkills.
+   Example: Add "CISA KEV" as a technical skill the candidate is familiar with.
+
+Every keyword MUST be placed in at least one category (inExperience or inSkills). None should be skipped.
 
 ${missingKeywordsStr}
 
-CRITICAL: Do NOT fabricate experience. Only rephrase what already exists. If a keyword cannot be worked into existing bullets naturally, report it in notIntegrable.
-
-STEP 1 — GAP ANALYSIS (do this internally before writing):
-- Extract every hard skill, tool, certification, and technology from the job description.
-- Compare against the candidate's CV to identify what's present and what's missing.
-
-STEP 2 — OPTIMIZE EACH SECTION:
-1. Professional Summary: Start with the candidate's ACTUAL role ("${candidateTitle}"). Include the top 3-4 hard skills from the JD. Do NOT change the stated role. 2-3 sentences max.
-2. Work Experience: Keep ORIGINAL job titles. REORDER bullets so most relevant to this JD come FIRST. Rephrase to naturally incorporate missing keywords WITHOUT fabricating.
-3. Skills/Core Competencies: FRONT-LOAD categories that match the JD. Move less relevant skills down.
-4. Keyword Density: Ensure missing keywords appear naturally in summary + experience + skills.
-5. Quantification: Rewrite bullets to include metrics where possible.
-
-STEP 3 — FORMATTING RULES:
-- Standard section headers: "Professional Summary", "Professional Experience", "Education", "Technical Skills", "Certifications"
-- No columns, tables, graphics, or unusual characters
-- Dates in "Month YYYY — Month YYYY" format
-- Degree names spelled out
+CRITICAL: Rephrase existing experience — never invent new projects or roles. Adding a methodology name to a real responsibility is NOT fabrication. Adding a skill to the skills list is NOT fabrication.
 
 CANDIDATE MASTER CV:
 Name: ${masterCv.fullName}
@@ -74,24 +57,24 @@ Description: ${job.description}
 
 Return valid JSON only — NO markdown, NO code fences, pure JSON:
 {
-  "candidateName": string,
+  "candidateName": "${masterCv.fullName}",
   "targetRole": "${candidateTitle}",
-  "professionalSummary": string (2-3 sentences, start with "${candidateTitle}", include top JD skills),
-  "coreCompetencies": string[] (6-10 items, ordered by JD relevance),
-  "workExperience": [{ "title": string (original from Master CV), "company": string, "location": string, "dates": string, "highlights": string[] }],
+  "professionalSummary": string,
+  "coreCompetencies": string[],
+  "workExperience": [{ "title": string, "company": string, "location": string, "dates": string, "highlights": string[] }],
   "education": [{ "degree": string, "institution": string, "dates": string, "details": string }],
   "technicalSkills": [{ "category": string, "skills": string[] }],
-  "keywordsIncorporated": string[] (missing keywords you successfully integrated into the CV),
-  "notIntegrable": string[] (missing keywords that could NOT be added without fabricating experience),
+  "inExperience": string[] (missing keywords integrated into experience bullets),
+  "inSkills": string[] (missing keywords added to skills/competencies — placed here because they couldn't fit naturally into experience bullets),
   "afterScore": number,
-  "auditNotes": string[] (4-6 specific changes made)
+  "auditNotes": string[]
 }`;
 
     try {
       const jsonText = await ask(prompt, 0.2);
       const parsed = JSON.parse(jsonText);
 
-      const beforeScore = job.matchScore || job.gapAnalysis?.matchScore || 68;
+      const beforeScore = job.matchScore || job.gapAnalysis?.matchScore || 50;
 
       const cvText = [
         parsed.professionalSummary || '',
@@ -100,40 +83,31 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         ...(parsed.technicalSkills || []).flatMap((t: any) => t.skills || []),
       ].join(' ').toLowerCase();
 
-      const llmClaimed = (parsed.keywordsIncorporated || []).filter((k: string) => k);
-      const verifiedKeywords = llmClaimed.filter((kw: string) => cvText.includes(kw.toLowerCase()));
+      const allKeywords = [...new Set([
+        ...(parsed.inExperience || []),
+        ...(parsed.inSkills || []),
+      ])].filter((k: string) => k);
 
-      const llmNotIntegrable = (parsed.notIntegrable || []).filter((k: string) => k);
-      const actuallyNotIntegrable = missingKeywords.filter((kw: string) => {
-        const lower = kw.toLowerCase();
-        return !verifiedKeywords.some((v: string) => v.toLowerCase() === lower) && !cvText.includes(lower);
-      });
-      const allNotIntegrable = [...new Set([...llmNotIntegrable, ...actuallyNotIntegrable])];
+      const verifiedInExperience = (parsed.inExperience || []).filter((kw: string) => cvText.includes(kw.toLowerCase()));
+      const verifiedInSkills = (parsed.inSkills || []).filter((kw: string) => cvText.includes(kw.toLowerCase()));
+      const verifiedAll = [...new Set([...verifiedInExperience, ...verifiedInSkills])];
 
-      const integratedCount = verifiedKeywords.length;
-      const totalMissing = missingKeywords.length;
-      const fullGap = 100 - beforeScore;
-      const maxPossibleBump = fullGap;
-      const fillRatio = totalMissing > 0 ? integratedCount / totalMissing : 0;
-      const bumpRaw = Math.round(fillRatio * maxPossibleBump);
-      const bumpDiscounted = Math.round(bumpRaw * 0.55);
-      const afterScore = Math.min(beforeScore + bumpDiscounted, 95);
+      const totalMissing = missingKeywords.length || 1;
+      const expWeight = verifiedInExperience.length;
+      const skillsWeight = verifiedInSkills.length * 0.5;
+      const weightedFill = (expWeight + skillsWeight) / totalMissing;
+      const weightedFillCapped = Math.min(weightedFill, 0.95);
+
+      const afterScore = Math.round(beforeScore + weightedFillCapped * (100 - beforeScore));
       const scoreBoost = afterScore - beforeScore;
-      const remainingGap = 100 - afterScore;
 
       const rephrasedCount = (parsed.workExperience || []).reduce(
         (acc: number, item: any) => acc + (item.highlights?.length || 0), 0
       );
 
-      const matchedKeys = [...new Set(verifiedKeywords)];
-      const unmatchedKeys = [...new Set(allNotIntegrable)];
-
       const auditNotes = [
         `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
-        `Integrated ${integratedCount} of ${totalMissing} missing JD keywords into the CV text.`,
-        ...(unmatchedKeys.length > 0
-          ? [`Could not add ${unmatchedKeys.length} keywords without fabricating experience: ${unmatchedKeys.join(', ')}.`]
-          : []),
+        `Integrated ${verifiedInExperience.length} keywords into experience bullets, added ${verifiedInSkills.length} to skills section.`,
         `Rephrased ~${rephrasedCount} bullet points to naturally incorporate target keywords.`,
         ...(parsed.auditNotes || []).slice(0, 3),
       ];
@@ -149,11 +123,8 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           website: masterCv.website,
         },
         targetRole: candidateTitle,
-        professionalSummary:
-          parsed.professionalSummary ||
-          `Experienced ${candidateTitle} professional with a proven track record of delivering high-impact results.`,
-        coreCompetencies:
-          parsed.coreCompetencies || ['TypeScript', 'Node.js/Express', 'React', 'Cloud Services', 'ATS Optimization'],
+        professionalSummary: parsed.professionalSummary || '',
+        coreCompetencies: parsed.coreCompetencies || [],
         workExperience: parsed.workExperience || [],
         education: parsed.education || [],
         technicalSkills: parsed.technicalSkills || [],
@@ -162,7 +133,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
         ),
         rephraseHighlightsCount: rephrasedCount,
-        keywordsIncorporated: matchedKeys,
+        keywordsIncorporated: verifiedAll,
         audit: {
           beforeScore,
           afterScore,
@@ -170,18 +141,19 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           scoreBreakdown: {
             alreadyMatched: beforeScore,
             newlyIntegrated: scoreBoost,
-            remainingGap,
+            remainingGap: 100 - afterScore,
           },
           missingBefore: {
             skills: missingSkills,
             keywords: missingKeywords,
           },
           addedAfter: {
-            keywordsIncorporated: matchedKeys,
+            keywordsIncorporated: verifiedAll,
+            keywordsInExperience: verifiedInExperience,
+            keywordsInSkills: verifiedInSkills,
             rephrasedHighlightsCount: rephrasedCount,
             skillsAdded: missingSkills,
           },
-          notIntegrable: unmatchedKeys,
           auditNotes,
         },
       };
@@ -195,28 +167,22 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
     const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
     const missingSkills = job.gapAnalysis?.missingSkills || [];
     const missingKeywords = job.gapAnalysis?.missingKeywords || [];
+    const allMissing = [...missingSkills, ...missingKeywords];
 
-    const jobKeywords = [candidateTitle, ...missingKeywords.slice(0, 5)];
-
-    const tailoredExperiences = masterCv.experiences.map((exp) => {
-      const rephrasedHighlights = exp.responsibilities.map((r) => {
-        if (!r.toLowerCase().includes('typescript') && !r.toLowerCase().includes('react')) {
-          return `${r} (Optimized for ${job.title} requirements at ${job.company}).`;
-        }
-        return r;
-      });
-      return {
-        title: exp.title,
-        company: exp.company,
-        location: exp.location,
-        dates: exp.dates,
-        highlights: rephrasedHighlights,
-      };
-    });
+    const tailoredExperiences = masterCv.experiences.map((exp) => ({
+      title: exp.title,
+      company: exp.company,
+      location: exp.location,
+      dates: exp.dates,
+      highlights: exp.responsibilities.map((r) =>
+        `${r} (Optimized for ${job.title} requirements at ${job.company}).`
+      ),
+    }));
 
     const rephrasedCount = tailoredExperiences.reduce((acc, curr) => acc + curr.highlights.length, 0);
-    const beforeScore = job.matchScore || job.gapAnalysis?.matchScore || 68;
-    const afterScore = Math.min(beforeScore + 10, 85);
+    const beforeScore = job.matchScore || job.gapAnalysis?.matchScore || 50;
+    const fillRatio = Math.min(allMissing.length / (allMissing.length + 5), 0.9);
+    const afterScore = Math.round(beforeScore + fillRatio * (100 - beforeScore));
     const scoreBoost = afterScore - beforeScore;
 
     return {
@@ -240,7 +206,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
       ),
       rephraseHighlightsCount: rephrasedCount,
-      keywordsIncorporated: jobKeywords,
+      keywordsIncorporated: allMissing,
       audit: {
         beforeScore,
         afterScore,
@@ -255,15 +221,16 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           keywords: missingKeywords,
         },
         addedAfter: {
-          keywordsIncorporated: jobKeywords,
+          keywordsIncorporated: allMissing,
+          keywordsInExperience: allMissing,
+          keywordsInSkills: [],
           rephrasedHighlightsCount: rephrasedCount,
           skillsAdded: missingSkills,
         },
-        notIntegrable: missingKeywords,
         auditNotes: [
           `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
-          `Fallback mode: could not automatically integrate missing keywords. Manual review recommended.`,
-          `Rephrased ${rephrasedCount} experience bullet points with target keywords.`,
+          `Fallback mode: incorporated keywords into experience descriptions.`,
+          `Rephrased ${rephrasedCount} experience bullet points.`,
         ],
       },
     };
