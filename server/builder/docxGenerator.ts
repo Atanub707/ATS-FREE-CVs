@@ -1,14 +1,3 @@
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  ExternalHyperlink,
-  AlignmentType,
-  BorderStyle,
-  UnderlineType,
-  TabStopType,
-} from 'docx';
 import PDFDocument from 'pdfkit';
 import { TailoredCv } from '../../src/types.js';
 
@@ -16,6 +5,19 @@ interface ContactLink {
   type: 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
   label: string;
   url?: string;
+  icon: string;
+}
+
+function getIcon(type: string): string {
+  const icons: Record<string, string> = {
+    email: '\u2709',      // ✉
+    phone: '\u2706',       // ✆
+    location: '\uD83D\uDCCD', // 📍
+    linkedin: '\uD83D\uDD17', // 🔗
+    github: '\uD83D\uDC40',   // 👀
+    website: '\uD83C\uDF10',  // 🌐
+  };
+  return icons[type] || '';
 }
 
 function getContactLinks(cv: TailoredCv): ContactLink[] {
@@ -25,6 +27,7 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
   if (c.email) {
     links.push({
       type: 'email',
+      icon: getIcon('email'),
       label: String(c.email),
       url: `mailto:${c.email}`,
     });
@@ -33,6 +36,7 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
   if (c.phone) {
     links.push({
       type: 'phone',
+      icon: getIcon('phone'),
       label: String(c.phone),
       url: `tel:${String(c.phone).replace(/[^\d+]/g, '')}`,
     });
@@ -41,6 +45,7 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
   if (c.location) {
     links.push({
       type: 'location',
+      icon: getIcon('location'),
       label: String(c.location),
     });
   }
@@ -57,6 +62,7 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
     }
     links.push({
       type: 'linkedin',
+      icon: getIcon('linkedin'),
       label: 'LinkedIn',
       url,
     });
@@ -74,6 +80,7 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
     }
     links.push({
       type: 'github',
+      icon: getIcon('github'),
       label: 'GitHub',
       url,
     });
@@ -86,7 +93,8 @@ function getContactLinks(cv: TailoredCv): ContactLink[] {
     }
     links.push({
       type: 'website',
-      label: 'Portfolio Website',
+      icon: getIcon('website'),
+      label: 'Portfolio',
       url,
     });
   }
@@ -669,10 +677,12 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         .map((item) => {
           const cleanLabel = sanitizeText(item.label);
           if (!cleanLabel) return null;
-          const w = doc.widthOfString(cleanLabel);
-          return { item, cleanLabel, w };
+          const icon = item.icon || '';
+          const displayText = `${icon} ${cleanLabel}`;
+          const w = doc.widthOfString(displayText);
+          return { item, displayText, w };
         })
-        .filter((x): x is { item: typeof contactLinks[0]; cleanLabel: string; w: number } => x !== null);
+        .filter((x): x is { item: typeof contactLinks[0]; displayText: string; w: number } => x !== null);
 
       if (itemsMeasured.length > 0) {
         let totalWidth = itemsMeasured.reduce((sum, el) => sum + el.w, 0);
@@ -681,13 +691,13 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         const currentY = doc.y;
         let currentX = leftMargin + Math.max(0, (contentWidth - totalWidth) / 2);
 
-        itemsMeasured.forEach(({ item, cleanLabel, w }, idx) => {
+        itemsMeasured.forEach(({ item, displayText, w }, idx) => {
           const normUrl = item.url ? normalizeUrl(item.url) : undefined;
           if (normUrl) {
-            doc.fillColor('#0055BB').text(cleanLabel, currentX, currentY, { lineBreak: false });
+            doc.fillColor('#0055BB').text(displayText, currentX, currentY, { lineBreak: false });
             doc.link(currentX, currentY, w, 10, normUrl);
           } else {
-            doc.fillColor('#374151').text(cleanLabel, currentX, currentY, { lineBreak: false });
+            doc.fillColor('#374151').text(displayText, currentX, currentY, { lineBreak: false });
           }
           currentX += w;
 

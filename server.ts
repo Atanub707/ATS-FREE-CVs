@@ -63,7 +63,7 @@ import {
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
-import { generateDocxBuffer, generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
+import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams } from './src/types.js';
 
 const upload = multer({
@@ -408,10 +408,10 @@ async function startServer() {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.txt"`);
         res.send(textCv);
       } else {
-        const docxBuffer = await generateDocxBuffer(masterAsTailored);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}.docx"`);
-        res.send(docxBuffer);
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
+        res.send(pdfBuffer);
       }
     } catch (err: any) {
       console.error('Master CV download error:', err);
@@ -926,30 +926,6 @@ async function startServer() {
   app.delete('/api/jobs', (req, res) => {
     const count = deleteAllJobs();
     res.json({ success: true, deletedCount: count });
-  });
-
-  // Download ATS .docx CV
-  app.get('/api/jobs/:id/download-docx', async (req, res) => {
-    try {
-      const job = getJobById(req.params.id);
-      if (!job || !job.tailoredCv) {
-        res.status(400).json({ error: 'Job or tailored CV not available for download.' });
-        return;
-      }
-
-      const docxBuffer = await generateDocxBuffer(job.tailoredCv);
-
-      const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
-      const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${safeName}_${safeCompany}.docx`;
-
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(docxBuffer);
-    } catch (err: any) {
-      console.error('Download docx error:', err);
-      res.status(500).json({ error: 'Failed to generate docx file.' });
-    }
   });
 
   // Download ATS .pdf CV
