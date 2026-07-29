@@ -49,6 +49,11 @@ export interface TailoringAudit {
   beforeScore: number;
   afterScore: number;
   scoreBoost: number;
+  scoreBreakdown: {
+    alreadyMatched: number;
+    newlyIntegrated: number;
+    remainingGap: number;
+  };
   missingBefore: {
     skills: string[];
     keywords: string[];
