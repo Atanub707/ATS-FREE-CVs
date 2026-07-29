@@ -238,9 +238,12 @@ export class LinkedInScraper extends BaseScraper {
             .replace(/&quot;/g, '"')
             .replace(/&#39;/g, "'")
             .replace(/\n{3,}/g, '\n\n')
-            .replace(/[ \t]+\n/g, '\n')
-            .replace(/\n[ \t]+/g, '\n')
-            .trim();
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n[ \t]+/g, '\n')
+          .replace(/^[ \t]*Show more[ \t]*$/gim, '')
+          .replace(/^[ \t]*Show less[ \t]*$/gim, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
 
           let salaryMin: number | undefined;
           let salaryMax: number | undefined;
