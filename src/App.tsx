@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
@@ -28,12 +28,11 @@ export default function App() {
   const [isBatchTailoring, setIsBatchTailoring] = useState(false);
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
   const [processingMessages, setProcessingMessages] = useState<Record<string, string>>({});
-  const popupTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
 
-  const runWithButtonMessages = useCallback(async (jobId: string, messages: string[], fn: () => Promise<void>) => {
+  const runWithButtonMessages = async (jobId: string, messages: string[], fn: () => Promise<void>) => {
     addLoadingJobId(jobId);
     let idx = 0;
     setProcessingMessages((prev) => ({ ...prev, [jobId]: messages[0] }));

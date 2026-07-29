@@ -198,36 +198,44 @@ const JobCard = React.memo(function JobCard({
         {/* Action Button Controls */}
         <div className="flex items-center space-x-1.5">
           {/* Run Match */}
-          <button
-            onClick={() => onMatchJob(job.id)}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer max-w-[200px]"
-            title={isLoading ? processingMessage : 'Run AI Auto-Matcher'}
-          >
-            {isLoading ? (
-              <span className="truncate text-[11px] text-slate-600">{processingMessage}</span>
-            ) : (
-              <>
-                <Zap className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
-              </>
+          <div className="relative group">
+            <button
+              onClick={() => onMatchJob(job.id)}
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+              ) : (
+                <Zap className="w-3.5 h-3.5 text-blue-600" />
+              )}
+              <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
+            </button>
+            {isLoading && processingMessage && (
+              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white whitespace-nowrap shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                {processingMessage}
+              </div>
             )}
-          </button>
+          </div>
 
           {/* Tailor CV */}
-          <button
-            onClick={() => onTailorJob(job.id)}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer max-w-[200px]"
-            title={isLoading ? processingMessage : 'Tailor candidate CV for this job'}
-          >
-            {isLoading ? (
-              <span className="truncate text-[11px]">{processingMessage}</span>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
-              </>
+          <div className="relative group">
+            <button
+              onClick={() => onTailorJob(job.id)}
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              )}
+              <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
+            </button>
+            {isLoading && processingMessage && (
+              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white whitespace-nowrap shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                {processingMessage}
+              </div>
             )}
-          </button>
+          </div>
 
           {/* Single ATS Download CV Dropdown */}
           {job.tailoredCv && (
