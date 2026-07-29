@@ -200,9 +200,8 @@ const JobCard = React.memo(function JobCard({
           {/* Run Match */}
           <button
             onClick={() => onMatchJob(job.id)}
-            disabled={isLoading}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50 max-w-[200px]"
-            title="Run Gemini AI Auto-Matcher"
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer max-w-[200px]"
+            title={isLoading ? processingMessage : 'Run AI Auto-Matcher'}
           >
             {isLoading ? (
               <span className="truncate text-[11px] text-slate-600">{processingMessage}</span>
@@ -217,9 +216,8 @@ const JobCard = React.memo(function JobCard({
           {/* Tailor CV */}
           <button
             onClick={() => onTailorJob(job.id)}
-            disabled={isLoading}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50 max-w-[200px]"
-            title="Tailor candidate CV for this job"
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer max-w-[200px]"
+            title={isLoading ? processingMessage : 'Tailor candidate CV for this job'}
           >
             {isLoading ? (
               <span className="truncate text-[11px]">{processingMessage}</span>
