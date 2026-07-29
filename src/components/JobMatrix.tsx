@@ -350,7 +350,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <Sparkles className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-xl font-bold text-emerald-600 mt-1">{tailoredCount}</div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Ready for Calibri .docx</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Ready to download as PDF</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">

@@ -155,9 +155,6 @@ export const ManualJdModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                     <p className="text-[11px] text-indigo-600 mt-1">Your CV has been optimized for this job. Update your Master CV first to incorporate recommendations, then download.</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button onClick={() => download('docx')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
-                      <Download className="w-3.5 h-3.5" /><span>Download DOCX</span>
-                    </button>
                     <button onClick={() => download('pdf')} className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer">
                       <Download className="w-3.5 h-3.5" /><span>Download PDF</span>
                     </button>
