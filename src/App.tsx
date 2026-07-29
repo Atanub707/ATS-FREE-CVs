@@ -27,19 +27,25 @@ export default function App() {
   const [isBatchMatching, setIsBatchMatching] = useState(false);
   const [isBatchTailoring, setIsBatchTailoring] = useState(false);
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
-  const [processingMessages, setProcessingMessages] = useState<Record<string, string[]>>({});
+  const [scoreMessages, setScoreMessages] = useState<Record<string, string[]>>({});
+  const [tailorMessages, setTailorMessages] = useState<Record<string, string[]>>({});
 
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
 
-  const runWithButtonMessages = async (jobId: string, messages: string[], fn: () => Promise<void>) => {
+  const runWithMessages = async (
+    jobId: string,
+    messages: string[],
+    fn: () => Promise<void>,
+    setter: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+  ) => {
     addLoadingJobId(jobId);
     let idx = 0;
-    setProcessingMessages((prev) => ({ ...prev, [jobId]: [messages[0]] }));
+    setter((prev) => ({ ...prev, [jobId]: [messages[0]] }));
     const timer = setInterval(() => {
       idx++;
       if (idx < messages.length) {
-        setProcessingMessages((prev) => ({
+        setter((prev) => ({
           ...prev,
           [jobId]: [...(prev[jobId] || []), messages[idx]],
         }));
@@ -52,7 +58,7 @@ export default function App() {
       console.error('Operation error:', err);
     } finally {
       clearInterval(timer);
-      setProcessingMessages((prev) => {
+      setter((prev) => {
         const next = { ...prev };
         delete next[jobId];
         return next;
@@ -134,11 +140,12 @@ export default function App() {
 
   // Match Job Handler
   const handleMatchJob = async (jobId: string) => {
-    runWithButtonMessages(jobId, [
-      'Reading requirements...',
-      'Comparing your profile...',
-      'Matching keywords...',
-      'Computing score...',
+    runWithMessages(jobId, [
+      'Reading job requirements from LinkedIn...',
+      'Extracting hard skills & technologies...',
+      'Comparing against your Master CV...',
+      'Identifying matching & missing keywords...',
+      'Computing weighted ATS match score...',
     ], async () => {
       const res = await fetch(`/api/jobs/${jobId}/match`, { method: 'POST' });
       if (res.ok) {
@@ -146,7 +153,7 @@ export default function App() {
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
       }
-    });
+    }, setScoreMessages);
   };
 
   // Batch Match Handler
@@ -176,12 +183,13 @@ export default function App() {
 
   // Tailor CV Handler
   const handleTailorJob = async (jobId: string) => {
-    runWithButtonMessages(jobId, [
-      'Analyzing requirements...',
-      'Matching your profile...',
-      'Rewriting experience...',
-      'Adding keywords...',
-      'Generating PDF...',
+    runWithMessages(jobId, [
+      'Analyzing job requirements from description...',
+      'Matching skills with your Master CV profile...',
+      'Rewriting experience bullets with JD keywords...',
+      'Integrating missing keywords into sections...',
+      'Verifying all keywords are placed correctly...',
+      'Generating ATS-ready PDF document...',
     ], async () => {
       const res = await fetch(`/api/jobs/${jobId}/tailor`, { method: 'POST' });
       if (res.ok) {
@@ -189,7 +197,7 @@ export default function App() {
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
       }
-    });
+    }, setTailorMessages);
   };
 
   // Batch Tailor Handler
@@ -331,7 +339,8 @@ export default function App() {
           isBatchMatching={isBatchMatching}
           isBatchTailoring={isBatchTailoring}
           loadingJobIds={loadingJobIds}
-          processingMessages={processingMessages}
+          scoreMessages={scoreMessages}
+          tailorMessages={tailorMessages}
         />
       </main>
 
