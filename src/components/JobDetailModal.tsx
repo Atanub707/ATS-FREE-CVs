@@ -216,9 +216,23 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {activeTab === 'details' && (
             <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                <h4 className="font-bold text-slate-900 text-xs mb-2 uppercase tracking-wide">
-                  Full Raw Job Text
-                </h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                    Full Raw Job Text
+                  </h4>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(job.description);
+                      const btn = document.activeElement as HTMLElement;
+                      btn.textContent = 'Copied!';
+                      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                    }}
+                    className="px-2 py-1 rounded text-[10px] font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors cursor-pointer"
+                    title="Copy job description to clipboard"
+                  >
+                    Copy
+                  </button>
+                </div>
                 <div className="whitespace-pre-wrap font-sans space-y-2">
                   {job.description}
                 </div>
