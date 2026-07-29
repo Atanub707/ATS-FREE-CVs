@@ -221,9 +221,21 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     Full Raw Job Text
                   </h4>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(job.description);
-                      const btn = document.activeElement as HTMLElement;
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const text = job.description;
+                      if (navigator.clipboard?.writeText) {
+                        navigator.clipboard.writeText(text);
+                      } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        ta.remove();
+                      }
+                      const btn = e.currentTarget;
                       btn.textContent = 'Copied!';
                       setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
                     }}
