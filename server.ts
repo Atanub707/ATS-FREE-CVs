@@ -356,7 +356,7 @@ async function startServer() {
   app.get('/api/cv/master/download', async (req, res) => {
     try {
       const m = getMasterCv();
-      const format = ((req.query.format as string) || 'docx').toLowerCase();
+      const format = ((req.query.format as string) || 'pdf').toLowerCase();
 
       const masterAsTailored = {
         candidateName: m.fullName,

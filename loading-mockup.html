@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pop-Up Messages</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f1f5f9; padding: 40px; max-width: 700px; margin: 0 auto;
+  }
+
+  .card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .source-tag { font-size: 11px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe; }
+  .time { font-size: 11px; color: #94a3b8; }
+  .title { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .actions { display: flex; gap: 6px; margin-top: 10px; }
+  .btn { padding: 6px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-score { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+  .btn-tailor { background: #0f172a; color: white; }
+  .btn-apply { background: #059669; color: white; }
+
+  .demo-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .demo-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; color: white; }
+  .demo-btn.purple { background: #6366f1; }
+
+  /* POP-UP overlay (transparent, just centers the popup) */
+  .pop-overlay {
+    position: fixed; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  .pop-overlay.visible { display: flex; }
+
+  .pop-box {
+    background: white; border-radius: 14px; padding: 24px 28px;
+    width: 340px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .pop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .pop-icon { width: 18px; height: 18px; border: 2.5px solid #e0e7ff; border-top-color: #6366f1; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pop-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+
+  .pop-messages { min-height: 60px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+  .pop-line {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+    opacity: 0; transform: translateX(-10px);
+    transition: all 0.2s ease;
+  }
+  .pop-line.active { opacity: 1; transform: translateX(0); background: #eef2ff; color: #4338ca; }
+  .pop-line.done { opacity: 1; transform: translateX(0); background: #f0fdf4; color: #166534; }
+  .pop-line.pending { opacity: 0.4; transform: translateX(0); color: #94a3b8; }
+
+  .pop-check { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .pop-line.active .pop-check { border: 2px solid #6366f1; color: #6366f1; animation: pulse 1s infinite; }
+  .pop-line.done .pop-check { background: #22c55e; color: white; border: 2px solid #22c55e; }
+  .pop-line.pending .pop-check { border: 2px solid #cbd5e1; color: #cbd5e1; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  .pop-progress { height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
+  .pop-progress-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.4s ease; }
+
+  .pop-label { font-size: 11px; color: #94a3b8; margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <button class="demo-btn purple" onclick="showPopup('tailor')">Tailor CV</button>
+  <button class="demo-btn purple" onclick="showPopup('score')" style="background:#2563eb;">Score Match</button>
+  <button class="demo-btn purple" onclick="showPopup('scrape')" style="background:#d97706;">Scrape Jobs</button>
+</div>
+
+<div class="card">
+  <div class="card-top">
+    <span class="source-tag">LinkedIn</span>
+    <span class="time">2h ago</span>
+  </div>
+  <div class="title">Senior DevOps Engineer</div>
+  <div class="meta">Google  •  Remote, US</div>
+  <div class="actions">
+    <button class="btn btn-score" onclick="showPopup('score')">Score</button>
+    <button class="btn btn-tailor" onclick="showPopup('tailor')">Tailor</button>
+    <button class="btn btn-apply">Apply</button>
+  </div>
+</div>
+
+<!-- POP-UP -->
+<div class="pop-overlay" id="popOverlay">
+  <div class="pop-box" id="popBox">
+    <div class="pop-header">
+      <div class="pop-icon" id="popIcon"></div>
+      <div class="pop-title" id="popTitle">Processing</div>
+    </div>
+    <div class="pop-messages" id="popMessages"></div>
+    <div class="pop-progress"><div class="pop-progress-fill" id="popProgress" style="width:0%"></div></div>
+    <div class="pop-label" id="popLabel">Please wait a moment...</div>
+  </div>
+</div>
+
+<script>
+const flows = {
+  tailor: {
+    title: 'Tailoring Your CV',
+    steps: [
+      'Analyzing job requirements',
+      'Matching skills with your profile',
+      'Rewriting experience bullets',
+      'Integrating missing keywords',
+      'Generating ATS-ready PDF',
+    ],
+    label: 'This may take 15-20 seconds...',
+  },
+  score: {
+    title: 'Scoring Your Match',
+    steps: [
+      'Reading job description',
+      'Comparing against your Master CV',
+      'Identifying matching skills',
+      'Calculating ATS match score',
+    ],
+    label: 'This may take 5-8 seconds...',
+  },
+  scrape: {
+    title: 'Scraping Jobs',
+    steps: [
+      'Searching LinkedIn',
+      'Searching RemoteOK',
+      'Searching WeWorkRemotely',
+      'Deduplicating results',
+      'Saving to database',
+    ],
+    label: 'This may take 10-20 seconds...',
+  }
+};
+
+let currentTimer = null;
+
+function showPopup(type) {
+  const flow = flows[type];
+  if (!flow) return;
+
+  if (currentTimer) { clearInterval(currentTimer); currentTimer = null; }
+
+  const overlay = document.getElementById('popOverlay');
+  const title = document.getElementById('popTitle');
+  const msgContainer = document.getElementById('popMessages');
+  const progress = document.getElementById('popProgress');
+  const label = document.getElementById('popLabel');
+  const icon = document.getElementById('popIcon');
+
+  title.textContent = flow.title;
+  label.textContent = flow.label;
+  icon.style.borderTopColor = '#6366f1';
+  progress.style.width = '0%';
+
+  msgContainer.innerHTML = flow.steps.map((s, i) =>
+    '<div class="pop-line pending" data-idx="' + i + '">' +
+    '<div class="pop-check">○</div>' +
+    '<span>' + s + '</span></div>'
+  ).join('');
+
+  overlay.classList.add('visible');
+
+  let i = 0;
+  const lines = msgContainer.querySelectorAll('.pop-line');
+
+  function nextStep() {
+    if (i >= flow.steps.length) {
+      done();
+      return;
+    }
+    if (i > 0) {
+      lines[i-1].className = 'pop-line done';
+      lines[i-1].querySelector('.pop-check').textContent = '✓';
+    }
+    lines[i].className = 'pop-line active';
+    lines[i].querySelector('.pop-check').textContent = '⟳';
+
+    const pct = Math.round((i / flow.steps.length) * 100);
+    progress.style.width = pct + '%';
+
+    i++;
+    currentTimer = setTimeout(nextStep, 1200);
+  }
+
+  function done() {
+    lines[flow.steps.length - 1].className = 'pop-line done';
+    lines[flow.steps.length - 1].querySelector('.pop-check').textContent = '✓';
+    progress.style.width = '100%';
+    icon.style.borderTopColor = '#22c55e';
+    label.textContent = '✓ Complete!';
+    currentTimer = setTimeout(() => {
+      overlay.classList.remove('visible');
+      currentTimer = null;
+    }, 1000);
+  }
+
+  nextStep();
+}
+</script>
+</body>
+</html>

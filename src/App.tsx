@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
@@ -6,6 +6,7 @@ import { JobDetailModal } from './components/JobDetailModal';
 import { MasterCvDrawer } from './components/MasterCvDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { ManualJdModal } from './components/ManualJdModal';
+import { ProcessingPopup, ProcessingConfig } from './components/ProcessingPopup';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
 
 export default function App() {
@@ -27,9 +28,41 @@ export default function App() {
   const [isBatchMatching, setIsBatchMatching] = useState(false);
   const [isBatchTailoring, setIsBatchTailoring] = useState(false);
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
+  const [popupConfig, setPopupConfig] = useState<ProcessingConfig | null>(null);
+  const [popupStep, setPopupStep] = useState(0);
+  const popupTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+
+  const closePopup = useCallback(() => {
+    setPopupConfig(null);
+    setPopupStep(0);
+    if (popupTimerRef.current) { clearInterval(popupTimerRef.current); popupTimerRef.current = undefined; }
+  }, []);
+
+  const runWithPopup = useCallback(async (config: ProcessingConfig, fn: () => Promise<void>) => {
+    setPopupConfig(config);
+    setPopupStep(0);
+    if (popupTimerRef.current) { clearInterval(popupTimerRef.current); }
+
+    let stepIdx = 0;
+    popupTimerRef.current = setInterval(() => {
+      stepIdx++;
+      if (stepIdx <= config.steps.length) {
+        setPopupStep(stepIdx);
+      }
+    }, 1200);
+
+    try {
+      await fn();
+    } catch (err) {
+      console.error('Operation error:', err);
+    } finally {
+      if (popupTimerRef.current) { clearInterval(popupTimerRef.current); popupTimerRef.current = undefined; }
+      setPopupStep(config.steps.length);
+    }
+  }, []);
 
   // Initial Fetch
   const fetchAllData = async () => {
@@ -71,127 +104,147 @@ export default function App() {
     maxJobsPerSource?: number;
   }) => {
     setIsScrapingLoading(true);
-    try {
+    let result = { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
+    const sourceList = params.sources.join(', ');
+    runWithPopup({
+      title: 'Searching Jobs',
+      steps: [
+        { label: `Searching ${sourceList}` },
+        { label: 'Fetching live job postings' },
+        { label: 'Filtering relevant results' },
+        { label: 'Deduplicating entries' },
+        { label: 'Saving to database' },
+      ],
+    }, async () => {
       const res = await fetch('/api/jobs/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
-
       if (res.ok) {
         const data = await res.json();
         setActiveStateTab('all');
         await fetchAllData();
-        return {
-          scrapedTotal: data.scrapedTotal || 0,
-          addedCount: data.addedCount || 0,
-          skippedDuplicates: data.skippedDuplicates || 0,
-        };
+        result = { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0 };
       } else {
         const err = await res.json();
         alert(`Scrape error: ${err.error}`);
-        return { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
       }
-    } catch (err: any) {
-      alert(`Scrape request failed: ${err.message}`);
-      return { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
-    } finally {
-      setIsScrapingLoading(false);
-    }
+    });
+    setIsScrapingLoading(false);
+    return result;
   };
 
   // Match Job Handler
   const handleMatchJob = async (jobId: string) => {
     addLoadingJobId(jobId);
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/match`, {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
-        if (selectedJob && selectedJob.id === jobId) {
-          setSelectedJob(data.job);
+    runWithPopup({
+      title: 'Scoring Your Match',
+      steps: [
+        { label: 'Reading job requirements' },
+        { label: 'Comparing against your Master CV' },
+        { label: 'Identifying matching & missing keywords' },
+        { label: 'Computing ATS match score' },
+      ],
+    }, async () => {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/match`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
+          if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
         }
+      } finally {
+        removeLoadingJobId(jobId);
       }
-    } catch (err) {
-      console.error('Match error:', err);
-    } finally {
-      removeLoadingJobId(jobId);
-    }
+    });
   };
 
   // Batch Match Handler
   const handleBatchMatch = async () => {
     setIsBatchMatching(true);
-    try {
-      const res = await fetch('/api/jobs/batch-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.jobs && Array.isArray(data.jobs)) {
-          setJobs((prev) => {
-            const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
-            return prev.map((j) => updated.get(j.id) || j);
-          });
+    runWithPopup({
+      title: 'Batch Scoring',
+      steps: [
+        { label: 'Processing pending jobs' },
+        { label: 'Running gap analysis' },
+        { label: 'Computing match scores' },
+      ],
+    }, async () => {
+      try {
+        const res = await fetch('/api/jobs/batch-match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.jobs && Array.isArray(data.jobs)) {
+            setJobs((prev) => {
+              const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
+              return prev.map((j) => updated.get(j.id) || j);
+            });
+          }
         }
+      } finally {
+        setIsBatchMatching(false);
       }
-    } catch (err) {
-      console.error('Batch match error:', err);
-    } finally {
-      setIsBatchMatching(false);
-    }
+    });
   };
 
   // Tailor CV Handler
   const handleTailorJob = async (jobId: string) => {
     addLoadingJobId(jobId);
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/tailor`, {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
-        if (selectedJob && selectedJob.id === jobId) {
-          setSelectedJob(data.job);
+    runWithPopup({
+      title: 'Tailoring Your CV',
+      steps: [
+        { label: 'Analyzing job requirements' },
+        { label: 'Matching skills with your profile' },
+        { label: 'Rewriting experience bullets' },
+        { label: 'Integrating missing keywords' },
+        { label: 'Generating ATS-ready PDF' },
+      ],
+    }, async () => {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/tailor`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
+          if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
         }
+      } finally {
+        removeLoadingJobId(jobId);
       }
-    } catch (err) {
-      console.error('Tailor error:', err);
-    } finally {
-      removeLoadingJobId(jobId);
-    }
+    });
   };
 
   // Batch Tailor Handler
   const handleBatchTailor = async () => {
     setIsBatchTailoring(true);
-    try {
-      const res = await fetch('/api/jobs/batch-tailor', {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.jobs && Array.isArray(data.jobs)) {
-          setJobs((prev) => {
-            const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
-            return prev.map((j) => updated.get(j.id) || j);
-          });
+    runWithPopup({
+      title: 'Batch Tailoring',
+      steps: [
+        { label: 'Processing matched jobs' },
+        { label: 'Rewriting experience bullets' },
+        { label: 'Integrating missing keywords' },
+        { label: 'Generating tailored CVs' },
+      ],
+    }, async () => {
+      try {
+        const res = await fetch('/api/jobs/batch-tailor', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.jobs && Array.isArray(data.jobs)) {
+            setJobs((prev) => {
+              const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
+              return prev.map((j) => updated.get(j.id) || j);
+            });
+          }
         }
+      } finally {
+        setIsBatchTailoring(false);
       }
-    } catch (err) {
-      console.error('Batch tailor error:', err);
-    } finally {
-      setIsBatchTailoring(false);
-    }
+    });
   };
 
   // Status Update Handler
@@ -349,6 +402,13 @@ export default function App() {
       <ManualJdModal
         isOpen={isManualJdOpen}
         onClose={() => setIsManualJdOpen(false)}
+      />
+
+      {/* Processing Popup */}
+      <ProcessingPopup
+        config={popupConfig}
+        currentStep={popupStep}
+        onClose={closePopup}
       />
     </div>
   );
