@@ -246,7 +246,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   </button>
                 </div>
                 <div className="whitespace-pre-wrap font-sans space-y-2">
-                  {job.description}
+                  {job.description.replace(/^[ \t]*Show more[ \t]*$/gim, '').replace(/^[ \t]*Show less[ \t]*$/gim, '').trim()}
                 </div>
               </div>
             </div>
