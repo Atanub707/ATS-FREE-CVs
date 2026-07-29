@@ -86,6 +86,15 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
         ? parsed.keywordsIncorporated
         : [...missingSkills, ...missingKeywords];
 
+      const cvText = [
+        parsed.professionalSummary || '',
+        ...(parsed.workExperience || []).flatMap((w: any) => w.highlights || []),
+        ...(parsed.coreCompetencies || []),
+        ...(parsed.technicalSkills || []).flatMap((t: any) => t.skills || []),
+      ].join(' ').toLowerCase();
+
+      const verifiedKeywords = keywordsInc.filter((kw: string) => cvText.includes(kw.toLowerCase()));
+
       const rephrasedCount = (parsed.workExperience || []).reduce(
         (acc: number, item: any) => acc + (item.highlights?.length || 0),
         0
@@ -96,7 +105,7 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
         : [
             `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
             `Rephrased ${rephrasedCount} experience bullet points with quantitative impact and job-matched verbs.`,
-            `Front-loaded required competencies (${keywordsInc.slice(0, 3).join(', ')}) into the Skills matrix.`,
+            `Front-loaded required competencies (${verifiedKeywords.slice(0, 3).join(', ')}) into the Skills matrix.`,
             `Bridged initial ATS gaps by seamlessly incorporating target keywords into existing role accomplishments.`,
           ];
 
@@ -124,7 +133,7 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
           typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
         ),
         rephraseHighlightsCount: rephrasedCount,
-        keywordsIncorporated: keywordsInc,
+        keywordsIncorporated: verifiedKeywords,
         audit: {
           beforeScore,
           afterScore,
@@ -134,7 +143,7 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
             keywords: missingKeywords,
           },
           addedAfter: {
-            keywordsIncorporated: keywordsInc,
+            keywordsIncorporated: verifiedKeywords,
             rephrasedHighlightsCount: rephrasedCount,
             skillsAdded: missingSkills,
           },
