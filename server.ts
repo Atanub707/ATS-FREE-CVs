@@ -652,13 +652,27 @@ async function startServer() {
         return;
       }
 
+      let jobToTailor = job;
+      if (!job.gapAnalysis) {
+        const masterCv = getMasterCv();
+        const matcher = new LlmMatcher();
+        const matchResult = await matcher.matchJob(job, masterCv);
+        jobToTailor = updateJobInStorage({
+          ...job,
+          matchScore: matchResult.matchScore,
+          gapAnalysis: matchResult.gapAnalysis,
+          state: 'matched',
+          matchedAt: new Date().toISOString(),
+        });
+      }
+
       const masterCv = getMasterCv();
       const tailorEngine = new LlmCvTailor();
 
-      const tailoredCv = await tailorEngine.tailorCv(job, masterCv);
+      const tailoredCv = await tailorEngine.tailorCv(jobToTailor, masterCv);
 
       const updatedJob = updateJobInStorage({
-        ...job,
+        ...jobToTailor,
         tailoredCv,
         state: 'tailored',
         tailoredAt: new Date().toISOString(),
