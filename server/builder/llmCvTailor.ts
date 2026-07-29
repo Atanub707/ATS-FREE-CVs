@@ -4,10 +4,14 @@ import { ask } from '../llm/llmAdapter.js';
 
 export class LlmCvTailor extends BaseCvBuilder {
   async tailorCv(job: Job, masterCv: MasterCv): Promise<TailoredCv> {
+    const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
+
     const prompt = `You are an elite Executive Resume Writer and ATS Optimization Specialist.
 Your mission is to rewrite the candidate's Master CV so it ranks at the top of real ATS systems (Greenhouse, Workday, Lever, Taleo, iCIMS).
 
 STRICT RULE: NEVER FABRICATE OR INVENT NEW COMPANIES, DATES, DEGREES, OR WORK EXPERIENCE.
+
+CRITICAL RULE: The candidate's actual job title ("${candidateTitle}") MUST remain exactly as stated above. Do NOT replace it with the target job title. The targetRole field must be "${candidateTitle}" — never the job posting title.
 
 STEP 1 — GAP ANALYSIS (do this internally before writing):
 - Extract every hard skill, tool, certification, and technology from the job description.
@@ -15,11 +19,11 @@ STEP 1 — GAP ANALYSIS (do this internally before writing):
 - Note which existing responsibilities can be rephrased to include missing keywords.
 
 STEP 2 — OPTIMIZE EACH SECTION using these real ATS rules:
-1. Professional Summary: Lead with the EXACT target job title. Include the top 3-4 hard skills from the JD in the first sentence. Use strong action verbs ("Architected", "Led", "Optimized", "Automated"). 2-3 sentences max.
-2. Work Experience: For each role, REORDER the bullet points so the most relevant to this JD come FIRST. Rephrase bullets to naturally incorporate JD keywords WITHOUT fabricating. Every bullet should include at minimum one hard skill keyword and ideally a quantified result.
-3. Skills/Core Competencies: FRONT-LOAD the category names and individual skills that match the JD. Move less relevant skills down. Use exact naming from the JD (e.g., if JD says "Terraform" not "IaC", use "Terraform").
-4. Keyword Density: Ensure the top 5 JD keywords appear at least 2-3 times across different sections (summary + experience + skills). Do NOT keyword-stuff — integrate naturally.
-5. Quantification: Rewrite every bullet to include metrics where possible: "%", "$", "x% faster", "reduced by", "managed N", "led team of N", "served N users".
+1. Professional Summary: Start with the candidate's ACTUAL role ("${candidateTitle}"). Include the top 3-4 hard skills from the JD in the first sentence. Use strong action verbs ("Architected", "Led", "Optimized", "Automated"). 2-3 sentences max. Do NOT change the stated role.
+2. Work Experience: For each role, keep the ORIGINAL job titles from the Master CV unchanged. REORDER the bullet points so the most relevant to this JD come FIRST. Rephrase bullets to naturally incorporate JD keywords WITHOUT fabricating.
+3. Skills/Core Competencies: FRONT-LOAD the category names and individual skills that match the JD. Move less relevant skills down. Use exact naming from the JD.
+4. Keyword Density: Ensure the top 5 JD keywords appear at least 2-3 times across different sections.
+5. Quantification: Rewrite every bullet to include metrics where possible.
 
 STEP 3 — FORMATTING RULES (ATS-friendly):
 - Use standard section headers ("Professional Summary", "Professional Experience", "Education", "Technical Skills", "Certifications")
@@ -31,6 +35,7 @@ STEP 3 — FORMATTING RULES (ATS-friendly):
 CANDIDATE MASTER CV:
 Name: ${masterCv.fullName}
 Email: ${masterCv.email} | Phone: ${masterCv.phone} | Location: ${masterCv.location}
+Current Role: ${candidateTitle}
 Summary: ${masterCv.summary}
 Experiences:
 ${JSON.stringify(masterCv.experiences, null, 2)}
@@ -50,15 +55,15 @@ Description: ${job.description}
 Return valid JSON only with these exact fields — NO markdown, NO code fences, pure JSON:
 {
   "candidateName": string,
-  "targetRole": string,
-  "professionalSummary": string (2-3 sentences, front-loaded with title + top hard skills),
+  "targetRole": string (must be exactly "${candidateTitle}" — do NOT change this),
+  "professionalSummary": string (2-3 sentences, start with "${candidateTitle}", include top JD hard skills),
   "coreCompetencies": string[] (6-10 items, ordered by JD relevance),
-  "workExperience": [{ "title": string, "company": string, "location": string, "dates": string, "highlights": string[] }],
+  "workExperience": [{ "title": string (keep original title from Master CV), "company": string, "location": string, "dates": string, "highlights": string[] }],
   "education": [{ "degree": string, "institution": string, "dates": string, "details": string }],
   "technicalSkills": [{ "category": string, "skills": string[] }],
   "keywordsIncorporated": string[] (top 8-12 JD keywords woven into the CV),
   "afterScore": number (estimated ATS match score 85-98),
-  "auditNotes": string[] (4-6 specific changes made: e.g. "Rephrased 4 bullets under Senior Engineer to include 'Kubernetes' and 'Terraform'", "Front-loaded 'AWS' into summary and first role", "Added quantified metrics to 3 bullets", "Reordered experience to prioritize DevOps responsibilities")
+  "auditNotes": string[] (4-6 specific changes made)
 }`;
 
     try {
@@ -89,7 +94,7 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
       const auditNotes = parsed.auditNotes && parsed.auditNotes.length > 0
         ? parsed.auditNotes
         : [
-            `Aligned candidate target title directly to "${job.title}".`,
+            `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
             `Rephrased ${rephrasedCount} experience bullet points with quantitative impact and job-matched verbs.`,
             `Front-loaded required competencies (${keywordsInc.slice(0, 3).join(', ')}) into the Skills matrix.`,
             `Bridged initial ATS gaps by seamlessly incorporating target keywords into existing role accomplishments.`,
@@ -105,10 +110,10 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
           github: masterCv.github,
           website: masterCv.website,
         },
-        targetRole: parsed.targetRole || job.title,
+        targetRole: candidateTitle,
         professionalSummary:
           parsed.professionalSummary ||
-          `Targeted ${job.title} with extensive experience aligning software engineering practices with ${job.company}'s technology stack.`,
+          `Experienced ${candidateTitle} professional with a proven track record of delivering high-impact results.`,
         coreCompetencies:
           parsed.coreCompetencies || ['TypeScript', 'Node.js/Express', 'React', 'Cloud Services', 'ATS Optimization'],
         workExperience: parsed.workExperience || [],
@@ -143,7 +148,8 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
   }
 
   private fallbackTailorCv(job: Job, masterCv: MasterCv): TailoredCv {
-    const jobKeywords = [job.title, 'TypeScript', 'React', 'Express', 'Cloud', 'Microservices'];
+    const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
+    const jobKeywords = [candidateTitle, 'TypeScript', 'React', 'Express', 'Cloud', 'Microservices'];
 
     const tailoredExperiences = masterCv.experiences.map((exp) => {
       const rephrasedHighlights = exp.responsibilities.map((r) => {
@@ -180,8 +186,8 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
         github: masterCv.github,
         website: masterCv.website,
       },
-      targetRole: job.title,
-      professionalSummary: `Targeted ${job.title} professional with proven software expertise tailored for ${job.company}. ${masterCv.summary}`,
+      targetRole: candidateTitle,
+      professionalSummary: `Experienced ${candidateTitle} professional. ${masterCv.summary}`,
       coreCompetencies: ['Full-Stack Engineering', 'System Architecture', 'ATS Optimization', 'Agile Development'],
       workExperience: tailoredExperiences,
       education: masterCv.education,
@@ -205,11 +211,11 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
           rephrasedHighlightsCount: rephrasedCount,
           skillsAdded: missingSkills,
         },
-        auditNotes: [
-          `Aligned candidate target role directly to "${job.title}".`,
-          `Rephrased ${rephrasedCount} experience bullet points with target keywords.`,
-          `Bridged initial ATS skills gaps with tailored role contextualizations.`,
-        ],
+          auditNotes: [
+            `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
+            `Rephrased ${rephrasedCount} experience bullet points with target keywords.`,
+            `Bridged initial ATS skills gaps with tailored role contextualizations.`,
+          ],
       },
     };
   }
