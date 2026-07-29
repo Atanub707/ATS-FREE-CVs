@@ -107,18 +107,7 @@ export default function App() {
     maxJobsPerSource?: number;
   }) => {
     setIsScrapingLoading(true);
-    let result = { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
-    const sourceList = params.sources.join(', ');
-    runWithPopup({
-      title: 'Searching Jobs',
-      steps: [
-        { label: `Searching ${sourceList}` },
-        { label: 'Fetching live job postings' },
-        { label: 'Filtering relevant results' },
-        { label: 'Deduplicating entries' },
-        { label: 'Saving to database' },
-      ],
-    }, async () => {
+    try {
       const res = await fetch('/api/jobs/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,14 +117,18 @@ export default function App() {
         const data = await res.json();
         setActiveStateTab('all');
         await fetchAllData();
-        result = { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0 };
+        return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0 };
       } else {
         const err = await res.json();
         alert(`Scrape error: ${err.error}`);
+        return { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
       }
-    });
-    setIsScrapingLoading(false);
-    return result;
+    } catch (err: any) {
+      alert(`Scrape request failed: ${err.message}`);
+      return { scrapedTotal: 0, addedCount: 0, skippedDuplicates: 0 };
+    } finally {
+      setIsScrapingLoading(false);
+    }
   };
 
   // Match Job Handler
