@@ -355,6 +355,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                     const rephrasedCount = tailored.audit?.addedAfter?.rephrasedHighlightsCount ?? tailored.rephraseHighlightsCount ?? 8;
 
+                    const notIntegrable = tailored.audit?.notIntegrable?.length
+                      ? tailored.audit.notIntegrable
+                      : [];
+
                     const auditNotes = tailored.audit?.auditNotes && tailored.audit.auditNotes.length > 0
                       ? tailored.audit.auditNotes
                       : [
@@ -474,23 +478,47 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                               </span>
                             </div>
 
-                            {/* Added Keywords */}
+                            {/* Integrated Keywords */}
                             <div className="space-y-2">
                               <div>
-                                <span className="text-[11px] font-semibold text-slate-300 block mb-1">Incorporated ATS Keywords:</span>
+                                <span className="text-[11px] font-semibold text-emerald-300 block mb-1">✓ Integrated Missing Keywords:</span>
                                 <div className="flex flex-wrap gap-1.5">
-                                  {keywordsIncorporated.slice(0, 10).map((kw, i) => (
-                                    <span
-                                      key={i}
-                                      className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 inline-flex items-center space-x-1"
-                                    >
-                                      <span className="text-emerald-400 font-bold">✓</span>
-                                      <span>{kw}</span>
-                                    </span>
-                                  ))}
+                                  {keywordsIncorporated.length > 0 ? (
+                                    keywordsIncorporated.slice(0, 12).map((kw, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 inline-flex items-center space-x-1"
+                                      >
+                                        <span className="text-emerald-400 font-bold">✓</span>
+                                        <span>{kw}</span>
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-[11px] text-slate-500 italic">No new keywords were integrated</span>
+                                  )}
                                 </div>
                               </div>
                             </div>
+
+                            {/* Not Integrable Keywords */}
+                            {notIntegrable.length > 0 && (
+                              <div className="space-y-2 pt-1 border-t border-amber-900/30">
+                                <div>
+                                  <span className="text-[11px] font-semibold text-amber-300 block mb-1">⚠ Could Not Be Added (would require fabrication):</span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {notIntegrable.slice(0, 10).map((kw, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-200 border border-amber-500/30 inline-flex items-center space-x-1"
+                                      >
+                                        <span className="text-amber-400 font-bold">⚠</span>
+                                        <span>{kw}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
