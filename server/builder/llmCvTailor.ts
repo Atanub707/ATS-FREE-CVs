@@ -92,6 +92,12 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
       const verifiedInSkills = (parsed.inSkills || []).filter((kw: string) => cvText.includes(kw.toLowerCase()));
       const verifiedAll = [...new Set([...verifiedInExperience, ...verifiedInSkills])];
 
+      const notIntegrable = missingKeywords.filter((kw: string) => {
+        const lower = kw.toLowerCase();
+        return !verifiedInExperience.some((v: string) => v.toLowerCase() === lower)
+            && !verifiedInSkills.some((v: string) => v.toLowerCase() === lower);
+      });
+
       const totalMissing = missingKeywords.length || 1;
       const expWeight = verifiedInExperience.length;
       const skillsWeight = verifiedInSkills.length * 0.5;
@@ -134,7 +140,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         ),
         rephraseHighlightsCount: rephrasedCount,
         keywordsIncorporated: verifiedAll,
-        audit: {
+          audit: {
           beforeScore,
           afterScore,
           scoreBoost,
@@ -154,6 +160,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
             rephrasedHighlightsCount: rephrasedCount,
             skillsAdded: missingSkills,
           },
+          notIntegrable,
           auditNotes,
         },
       };
@@ -207,7 +214,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
       ),
       rephraseHighlightsCount: rephrasedCount,
       keywordsIncorporated: allMissing,
-      audit: {
+        audit: {
         beforeScore,
         afterScore,
         scoreBoost,
@@ -227,6 +234,7 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
           rephrasedHighlightsCount: rephrasedCount,
           skillsAdded: missingSkills,
         },
+        notIntegrable: missingKeywords,
         auditNotes: [
           `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
           `Fallback mode: incorporated keywords into experience descriptions.`,

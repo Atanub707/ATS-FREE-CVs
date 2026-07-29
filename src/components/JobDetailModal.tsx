@@ -549,6 +549,23 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                           </div>
                         </div>
 
+                        {/* Not Integrable Keywords */}
+                        {notIntegrable.length > 0 && (
+                          <div className="bg-slate-900/90 border border-red-900/40 rounded-lg p-3.5">
+                            <div className="flex items-center space-x-1.5 mb-2">
+                              <span className="text-[11px] font-semibold text-red-300">✕ Could Not Be Added (not in experience or skills):</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {notIntegrable.slice(0, 10).map((kw, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-500/10 text-red-200 border border-red-500/30 inline-flex items-center space-x-1">
+                                  <span className="text-red-400 font-bold">✕</span>
+                                  <span>{kw}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Tailoring Notes */}
                         <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3.5 space-y-2">
                           <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">

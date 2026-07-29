@@ -65,6 +65,7 @@ export interface TailoringAudit {
     rephrasedHighlightsCount: number;
     skillsAdded: string[];
   };
+  notIntegrable: string[];
   auditNotes: string[];
 }
 
