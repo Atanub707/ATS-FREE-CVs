@@ -265,7 +265,7 @@ const JobCard = React.memo(function JobCard({
       </div>
     </div>
   );
-}, (prev, next) => prev.job === next.job && prev.isLoadingThisJob === next.isLoadingThisJob);
+}, (prev, next) => prev.job === next.job && prev.processingMessage === next.processingMessage);
 
 export const JobMatrix: React.FC<JobMatrixProps> = ({
   jobs,
