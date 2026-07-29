@@ -148,7 +148,7 @@ export class LinkedInScraper extends BaseScraper {
               url: cleanLink,
               postedDate: postedDateObj.toISOString(),
               postedDateParsed: postedDateObj.toISOString().split('T')[0],
-              jobType: jobLoc.toLowerCase().includes('remote') ? 'Full-time · Remote' : 'Full-time · On-site/Hybrid',
+              jobType: 'Full-time · Remote',
               state: 'pending',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
