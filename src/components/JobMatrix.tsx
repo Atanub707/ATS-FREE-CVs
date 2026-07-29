@@ -36,19 +36,22 @@ interface JobMatrixProps {
   isBatchMatching: boolean;
   isBatchTailoring: boolean;
   loadingJobIds: Set<string>;
-  processingMessages: Record<string, string[]>;
+  scoreMessages: Record<string, string[]>;
+  tailorMessages: Record<string, string[]>;
 }
 
 const JobCard = React.memo(function JobCard({
   job,
-  processingMessage,
+  scoreMsg,
+  tailorMsg,
   onSelectJob,
   onMatchJob,
   onTailorJob,
   onDeleteJob,
 }: {
   job: Job;
-  processingMessage: string[] | null;
+  scoreMsg: string[] | null;
+  tailorMsg: string[] | null;
   onSelectJob: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
@@ -56,8 +59,8 @@ const JobCard = React.memo(function JobCard({
 }) {
   const score = job.matchScore;
   const timeAgoStr = formatTimeAgo(job.postedDate || job.createdAt);
-  const isLoading = processingMessage !== null;
-  const currentMsg = isLoading && processingMessage ? processingMessage[processingMessage.length - 1] : '';
+  const isScoreLoading = scoreMsg !== null;
+  const isTailorLoading = tailorMsg !== null;
 
   return (
     <div className="bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-4 transition-all shadow-xs hover:shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
@@ -204,19 +207,19 @@ const JobCard = React.memo(function JobCard({
               onClick={() => onMatchJob(job.id)}
               className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer"
             >
-              {isLoading ? (
+              {isScoreLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
               ) : (
                 <Zap className="w-3.5 h-3.5 text-blue-600" />
               )}
               <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
             </button>
-            {isLoading && processingMessage && (
-              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity min-w-[160px]">
+            {isScoreLoading && scoreMsg && (
+              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity min-w-[180px]">
                 <div className="space-y-0.5">
-                  {processingMessage.map((msg, i) => (
-                    <div key={i} className={`flex items-center gap-1.5 ${i === processingMessage.length - 1 ? 'text-white' : 'text-slate-400'}`}>
-                      <span>{i === processingMessage.length - 1 ? '⟳' : '✓'}</span>
+                  {scoreMsg.map((msg, i) => (
+                    <div key={i} className={`flex items-center gap-1.5 ${i === scoreMsg.length - 1 ? 'text-white' : 'text-slate-400'}`}>
+                      <span>{i === scoreMsg.length - 1 ? '⟳' : '✓'}</span>
                       <span>{msg}</span>
                     </div>
                   ))}
@@ -231,19 +234,19 @@ const JobCard = React.memo(function JobCard({
               onClick={() => onTailorJob(job.id)}
               className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer"
             >
-              {isLoading ? (
+              {isTailorLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               )}
               <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
             </button>
-            {isLoading && processingMessage && (
-              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity min-w-[160px]">
+            {isTailorLoading && tailorMsg && (
+              <div className="absolute bottom-full left-0 mb-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-slate-900 text-white shadow-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity min-w-[200px]">
                 <div className="space-y-0.5">
-                  {processingMessage.map((msg, i) => (
-                    <div key={i} className={`flex items-center gap-1.5 ${i === processingMessage.length - 1 ? 'text-white' : 'text-slate-400'}`}>
-                      <span>{i === processingMessage.length - 1 ? '⟳' : '✓'}</span>
+                  {tailorMsg.map((msg, i) => (
+                    <div key={i} className={`flex items-center gap-1.5 ${i === tailorMsg.length - 1 ? 'text-white' : 'text-slate-400'}`}>
+                      <span>{i === tailorMsg.length - 1 ? '⟳' : '✓'}</span>
                       <span>{msg}</span>
                     </div>
                   ))}
@@ -280,7 +283,7 @@ const JobCard = React.memo(function JobCard({
       </div>
     </div>
   );
-}, (prev, next) => prev.job === next.job && prev.processingMessage === next.processingMessage);
+}, (prev, next) => prev.job === next.job && prev.scoreMsg === next.scoreMsg && prev.tailorMsg === next.tailorMsg);
 
 export const JobMatrix: React.FC<JobMatrixProps> = ({
   jobs,
@@ -296,7 +299,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   isBatchMatching,
   isBatchTailoring,
   loadingJobIds,
-  processingMessages,
+  scoreMessages,
+  tailorMessages,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
@@ -579,7 +583,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               <JobCard
                 key={itemKey}
                 job={job}
-                processingMessage={processingMessages[job.id] || null}
+                scoreMsg={scoreMessages[job.id] || null}
+                tailorMsg={tailorMessages[job.id] || null}
                 onSelectJob={onSelectJob}
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
