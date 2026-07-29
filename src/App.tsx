@@ -56,7 +56,7 @@ export default function App() {
       });
       removeLoadingJobId(jobId);
     }
-  }, []);
+  };
 
   // Initial Fetch
   const fetchAllData = async () => {
