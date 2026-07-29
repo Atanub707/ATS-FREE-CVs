@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Button-Anchor Loading</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; padding: 40px; max-width: 700px; margin: 0 auto; }
+
+  .card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 12px; position: relative; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .source-tag { font-size: 11px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe; }
+  .time { font-size: 11px; color: #94a3b8; }
+  .title { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .actions { display: flex; gap: 6px; margin-top: 10px; position: relative; }
+
+  .btn { padding: 6px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-score { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+  .btn-tailor { background: #0f172a; color: white; }
+
+  .demo-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .demo-btn { padding: 8px 16px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; color: white; }
+  .demo-btn.purple { background: #6366f1; }
+  .demo-btn.blue { background: #2563eb; }
+
+  /* Loading tooltip anchored to button */
+  .loading-tip {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: #1e293b; color: white;
+    padding: 8px 12px; border-radius: 8px;
+    font-size: 11px; font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    animation: tipIn 0.15s ease;
+    z-index: 10;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  @keyframes tipIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes tipOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-4px); } }
+
+  .loading-tip .sp { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-tip.done { background: #065f46; }
+  .loading-tip.done .sp { border-color: rgba(255,255,255,0.2); border-top-color: white; }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <button class="demo-btn purple" onclick="demo('tailor')">Tailor</button>
+  <button class="demo-btn blue" onclick="demo('score')">Score</button>
+</div>
+
+<div class="card">
+  <div class="card-top">
+    <span class="source-tag">LinkedIn</span>
+    <span class="time">2h ago</span>
+  </div>
+  <div class="title">Senior DevOps Engineer</div>
+  <div class="meta">Google  •  Remote, US</div>
+  <div class="actions" id="actionArea">
+    <button class="btn btn-score" onclick="demo('score')">Score</button>
+    <button class="btn btn-tailor" onclick="demo('tailor')">Tailor</button>
+  </div>
+</div>
+
+<script>
+const messages = {
+  score: ['Reading job requirements...', 'Comparing against your Master CV...', 'Matching keywords...', '✓ Score calculated!'],
+  tailor: ['Analyzing job requirements...', 'Matching skills with your profile...', 'Rewriting experience bullets...', 'Integrating keywords...', '✓ CV tailored!']
+};
+
+let timer = null;
+
+function demo(type) {
+  if (timer) { clearInterval(timer); timer = null; }
+
+  const area = document.getElementById('actionArea');
+  const old = area.querySelector('.loading-tip');
+  if (old) old.remove();
+
+  const msgs = messages[type];
+  let i = 0;
+
+  const tip = document.createElement('div');
+  tip.className = 'loading-tip';
+  tip.innerHTML = '<div class="sp"></div><span class="txt">' + msgs[0] + '</span>';
+  area.appendChild(tip);
+
+  timer = setInterval(() => {
+    i++;
+    if (i >= msgs.length) {
+      clearInterval(timer); timer = null;
+      tip.className = 'loading-tip done';
+      tip.innerHTML = '<div class="sp"></div><span class="txt">' + msgs[i-1] + '</span>';
+      setTimeout(() => { tip.style.animation = 'tipOut 0.15s ease'; setTimeout(() => tip.remove(), 150); }, 1200);
+      return;
+    }
+    tip.querySelector('.txt').textContent = msgs[i];
+  }, 1000);
+}
+</script>
+</body>
+</html>

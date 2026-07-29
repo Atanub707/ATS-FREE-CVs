@@ -36,18 +36,19 @@ interface JobMatrixProps {
   isBatchMatching: boolean;
   isBatchTailoring: boolean;
   loadingJobIds: Set<string>;
+  processingMessages: Record<string, string>;
 }
 
 const JobCard = React.memo(function JobCard({
   job,
-  isLoadingThisJob,
+  processingMessage,
   onSelectJob,
   onMatchJob,
   onTailorJob,
   onDeleteJob,
 }: {
   job: Job;
-  isLoadingThisJob: boolean;
+  processingMessage: string | null;
   onSelectJob: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
@@ -55,6 +56,7 @@ const JobCard = React.memo(function JobCard({
 }) {
   const score = job.matchScore;
   const timeAgoStr = formatTimeAgo(job.postedDate || job.createdAt);
+  const isLoading = processingMessage !== null;
 
   return (
     <div className="bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-4 transition-all shadow-xs hover:shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
@@ -198,31 +200,35 @@ const JobCard = React.memo(function JobCard({
           {/* Run Match */}
           <button
             onClick={() => onMatchJob(job.id)}
-            disabled={isLoadingThisJob}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+            disabled={isLoading}
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50 max-w-[200px]"
             title="Run Gemini AI Auto-Matcher"
           >
-            {isLoadingThisJob ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+            {isLoading ? (
+              <span className="truncate text-[11px] text-slate-600">{processingMessage}</span>
             ) : (
-              <Zap className="w-3.5 h-3.5 text-blue-600" />
+              <>
+                <Zap className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
+              </>
             )}
-            <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
           </button>
 
           {/* Tailor CV */}
           <button
             onClick={() => onTailorJob(job.id)}
-            disabled={isLoadingThisJob}
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+            disabled={isLoading}
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-50 max-w-[200px]"
             title="Tailor candidate CV for this job"
           >
-            {isLoadingThisJob ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            {isLoading ? (
+              <span className="truncate text-[11px]">{processingMessage}</span>
             ) : (
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
+              </>
             )}
-            <span>{job.tailoredCv ? 'Re-Tailor' : 'Tailor'}</span>
           </button>
 
           {/* Single ATS Download CV Dropdown */}
@@ -269,6 +275,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   isBatchMatching,
   isBatchTailoring,
   loadingJobIds,
+  processingMessages,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
@@ -551,7 +558,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               <JobCard
                 key={itemKey}
                 job={job}
-                isLoadingThisJob={loadingJobIds.has(job.id)}
+                processingMessage={processingMessages[job.id] || null}
                 onSelectJob={onSelectJob}
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
