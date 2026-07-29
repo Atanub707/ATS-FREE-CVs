@@ -27,7 +27,7 @@ export default function App() {
   const [isBatchMatching, setIsBatchMatching] = useState(false);
   const [isBatchTailoring, setIsBatchTailoring] = useState(false);
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
-  const [processingMessages, setProcessingMessages] = useState<Record<string, string>>({});
+  const [processingMessages, setProcessingMessages] = useState<Record<string, string[]>>({});
 
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
@@ -35,11 +35,14 @@ export default function App() {
   const runWithButtonMessages = async (jobId: string, messages: string[], fn: () => Promise<void>) => {
     addLoadingJobId(jobId);
     let idx = 0;
-    setProcessingMessages((prev) => ({ ...prev, [jobId]: messages[0] }));
+    setProcessingMessages((prev) => ({ ...prev, [jobId]: [messages[0]] }));
     const timer = setInterval(() => {
       idx++;
       if (idx < messages.length) {
-        setProcessingMessages((prev) => ({ ...prev, [jobId]: messages[idx] }));
+        setProcessingMessages((prev) => ({
+          ...prev,
+          [jobId]: [...(prev[jobId] || []), messages[idx]],
+        }));
       }
     }, 1200);
 
