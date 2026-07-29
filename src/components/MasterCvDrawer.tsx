@@ -344,20 +344,6 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
               />
               <button
                 onClick={async () => {
-                  const res = await fetch('/api/cv/master/download?format=docx');
-                  const blob = await res.blob();
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url; a.download = `${downloadFilename}.docx`;
-                  a.click(); URL.revokeObjectURL(url);
-                }}
-                className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
-              >
-                <FileDown className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">DOCX</span>
-              </button>
-              <button
-                onClick={async () => {
                   const res = await fetch('/api/cv/master/download?format=pdf');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);

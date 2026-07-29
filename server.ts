@@ -828,7 +828,7 @@ async function startServer() {
   app.get('/api/analyze-jd/download', async (req, res) => {
     try {
       const token = req.query.token as string;
-      const format = (req.query.format as string) || 'docx';
+      const format = (req.query.format as string) || 'pdf';
       const data = manualResults.get(token);
 
       if (!data) {
@@ -850,10 +850,10 @@ async function startServer() {
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.txt"`);
         res.send(textCv);
       } else {
-        const docxBuffer = await generateDocxBuffer(data.tailoredCv);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.docx"`);
-        res.send(docxBuffer);
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
+        res.send(pdfBuffer);
       }
     } catch (err: any) {
       console.error('Manual download error:', err);
@@ -961,7 +961,7 @@ async function startServer() {
         return;
       }
 
-      const format = ((req.query.format as string) || 'docx').toLowerCase();
+      const format = ((req.query.format as string) || 'pdf').toLowerCase();
       const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
       const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
       const baseName = `${safeName}_${safeCompany}`;
@@ -977,10 +977,10 @@ async function startServer() {
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.txt"`);
         res.send(textCv);
       } else {
-        const docxBuffer = await generateDocxBuffer(job.tailoredCv);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.setHeader('Content-Disposition', `attachment; filename="${baseName}.docx"`);
-        res.send(docxBuffer);
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+        res.send(pdfBuffer);
       }
     } catch (err: any) {
       console.error('Download error:', err);
