@@ -16,6 +16,7 @@ export default function App() {
   // Active filters and views
   const [activeStateTab, setActiveStateTab] = useState<'all' | JobState>('all');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJobTab, setSelectedJobTab] = useState<'details' | 'gap' | 'tailored'>('details');
 
   // Drawers and Modals
   const [isMasterCvOpen, setIsMasterCvOpen] = useState(false);
@@ -324,7 +325,8 @@ export default function App() {
           jobs={jobs}
           activeStateTab={activeStateTab}
           onStateTabChange={setActiveStateTab}
-          onSelectJob={(job) => setSelectedJob(job)}
+          onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
+          onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
           onMatchJob={handleMatchJob}
           onBatchMatch={handleBatchMatch}
           onTailorJob={handleTailorJob}
@@ -348,6 +350,7 @@ export default function App() {
         onTailorJob={handleTailorJob}
         onUpdateStatus={handleUpdateStatus}
         isLoading={selectedJob ? loadingJobIds.has(selectedJob.id) : false}
+        initialTab={selectedJobTab}
       />
 
       {/* Master Candidate CV Drawer */}

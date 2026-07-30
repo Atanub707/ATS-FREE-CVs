@@ -27,6 +27,7 @@ interface JobMatrixProps {
   activeStateTab: 'all' | JobState;
   onStateTabChange: (tab: 'all' | JobState) => void;
   onSelectJob: (job: Job) => void;
+  onSelectTailoredReview: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onBatchMatch: () => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
@@ -46,6 +47,7 @@ const JobCard = React.memo(function JobCard({
   scoreMsg,
   tailorMsg,
   onSelectJob,
+  onSelectTailoredReview,
   onMatchJob,
   onTailorJob,
   onDeleteJob,
@@ -55,6 +57,7 @@ const JobCard = React.memo(function JobCard({
   scoreMsg: string[] | null;
   tailorMsg: string[] | null;
   onSelectJob: (job: Job) => void;
+  onSelectTailoredReview: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
   onDeleteJob: (jobId: string) => Promise<void>;
@@ -160,8 +163,8 @@ const JobCard = React.memo(function JobCard({
 
       {/* Right Section: Match Score & Action Buttons */}
       <div className="flex items-center justify-between md:justify-end space-x-4 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 shrink-0">
-        {/* Score Pill */}
-        <div className="text-center min-w-[85px]">
+        {/* Score Pill - clickable to open audit */}
+        <div className="text-center min-w-[85px] cursor-pointer" onClick={() => onSelectTailoredReview(job)} title="View tailoring audit">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">
             {job.tailoredCv ? 'Tailored ATS' : 'ATS Score'}
           </span>
@@ -304,13 +307,14 @@ const JobCard = React.memo(function JobCard({
       </div>
     </div>
   );
-}, (prev, next) => prev.job === next.job && prev.scoreMsg === next.scoreMsg && prev.tailorMsg === next.tailorMsg && prev.onUpdateStatus === next.onUpdateStatus);
+}, (prev, next) => prev.job === next.job && prev.scoreMsg === next.scoreMsg && prev.tailorMsg === next.tailorMsg && prev.onUpdateStatus === next.onUpdateStatus && prev.onSelectTailoredReview === next.onSelectTailoredReview);
 
 export const JobMatrix: React.FC<JobMatrixProps> = ({
   jobs,
   activeStateTab,
   onStateTabChange,
   onSelectJob,
+  onSelectTailoredReview,
   onMatchJob,
   onBatchMatch,
   onTailorJob,
@@ -619,6 +623,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 scoreMsg={scoreMessages[job.id] || null}
                 tailorMsg={tailorMessages[job.id] || null}
                 onSelectJob={onSelectJob}
+                onSelectTailoredReview={onSelectTailoredReview}
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
                 onDeleteJob={onDeleteJob}

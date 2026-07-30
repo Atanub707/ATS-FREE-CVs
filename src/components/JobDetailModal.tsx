@@ -33,6 +33,7 @@ interface JobDetailModalProps {
   onTailorJob: (jobId: string) => Promise<void>;
   onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
   isLoading: boolean;
+  initialTab?: 'details' | 'gap' | 'tailored';
 }
 
 function formatSocialLink(type: 'linkedin' | 'github' | 'website' | 'email' | 'phone', value: string): string {
@@ -70,10 +71,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   onTailorJob,
   onUpdateStatus,
   isLoading,
+  initialTab,
 }) => {
   if (!job) return null;
 
-  const [activeTab, setActiveTab] = useState<'details' | 'gap' | 'tailored'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'gap' | 'tailored'>(initialTab || 'details');
   const [copiedText, setCopiedText] = useState(false);
 
   const gap = job.gapAnalysis;
