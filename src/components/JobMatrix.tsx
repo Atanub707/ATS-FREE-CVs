@@ -372,6 +372,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   const pendingCount = jobs.filter((j) => j.state === 'pending').length;
   const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
   const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
+  const appliedCount = jobs.filter((j) => j.state === 'applied').length;
 
   const scoredJobs = jobs.filter((j) => j.matchScore !== undefined);
   const avgScore = scoredJobs.length > 0 ? Math.round(scoredJobs.reduce((acc, j) => acc + (j.matchScore || 0), 0) / scoredJobs.length) : 0;
@@ -379,7 +380,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       {/* Metrics Row - Minimal & Clean */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Total Jobs</span>
@@ -407,15 +408,24 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <p className="text-[11px] text-slate-500 mt-0.5">Ready to download as PDF</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>Pending Score</span>
-            <Clock className="w-4 h-4 text-slate-400" />
+          <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+              <span>Pending Score</span>
+              <Clock className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="text-xl font-bold text-slate-700 mt-1">{pendingCount}</div>
+            <p className="text-[11px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
           </div>
-          <div className="text-xl font-bold text-slate-700 mt-1">{pendingCount}</div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
+
+          <div className="bg-white border border-green-200 rounded-lg p-3.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+              <span>Applied</span>
+              <span className="text-green-600 text-sm">✅</span>
+            </div>
+            <div className="text-xl font-bold text-green-600 mt-1">{appliedCount}</div>
+            <p className="text-[11px] text-green-600/70 mt-0.5">Jobs you applied to</p>
+          </div>
         </div>
-      </div>
 
       {/* Tabs & Batch Actions Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-lg shadow-xs">
