@@ -32,6 +32,7 @@ interface JobMatrixProps {
   onTailorJob: (jobId: string) => Promise<void>;
   onBatchTailor: () => Promise<void>;
   onDeleteJob: (jobId: string) => Promise<void>;
+  onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
   onClearAll: () => Promise<void>;
   isBatchMatching: boolean;
   isBatchTailoring: boolean;
@@ -48,6 +49,7 @@ const JobCard = React.memo(function JobCard({
   onMatchJob,
   onTailorJob,
   onDeleteJob,
+  onUpdateStatus,
 }: {
   job: Job;
   scoreMsg: string[] | null;
@@ -56,6 +58,7 @@ const JobCard = React.memo(function JobCard({
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
   onDeleteJob: (jobId: string) => Promise<void>;
+  onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
 }) {
   const score = job.matchScore;
   const timeAgoStr = formatTimeAgo(job.postedDate || job.createdAt);
@@ -63,7 +66,11 @@ const JobCard = React.memo(function JobCard({
   const isTailorLoading = tailorMsg !== null;
 
   return (
-    <div className="bg-white border border-slate-200 hover:border-slate-300 rounded-lg p-4 transition-all shadow-xs hover:shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+    <div className={`bg-white border rounded-lg p-4 transition-all shadow-xs hover:shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 group ${
+      job.state === 'applied'
+        ? 'border-green-300 hover:border-green-400 border-l-4 border-l-green-500'
+        : 'border-slate-200 hover:border-slate-300'
+    }`}>
       {/* Left Section: Details */}
       <div className="space-y-1.5 flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -103,7 +110,7 @@ const JobCard = React.memo(function JobCard({
             {job.state === 'matched' && <Zap className="w-3 h-3 text-blue-600" />}
             {job.state === 'tailored' && <Sparkles className="w-3 h-3 text-emerald-600" />}
             {job.state === 'ready' && <CheckCircle2 className="w-3 h-3 text-purple-600" />}
-            <span>{job.state === 'pending' ? 'Pending Score' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : 'Applied'}</span>
+            <span>{job.state === 'pending' ? 'Pending Score' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : job.state === 'applied' ? 'Applied' : 'Ready'}</span>
           </span>
 
           {/* Posted Relative Time */}
@@ -260,6 +267,20 @@ const JobCard = React.memo(function JobCard({
             <DownloadCvDropdown jobId={job.id} buttonText="Download CV" size="sm" />
           )}
 
+          {/* Applied Toggle */}
+          <button
+            onClick={() => onUpdateStatus(job.id, job.state === 'applied' ? 'pending' : 'applied')}
+            className={`px-2 py-1.5 rounded-md text-xs font-semibold border transition-colors flex items-center space-x-1 cursor-pointer ${
+              job.state === 'applied'
+                ? 'bg-green-50 text-green-700 border-green-300'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-green-300 hover:text-green-600'
+            }`}
+            title={job.state === 'applied' ? 'Mark as not applied' : 'Mark as applied'}
+          >
+            <span>{job.state === 'applied' ? '✅' : '○'}</span>
+            <span>{job.state === 'applied' ? 'Applied' : 'Mark Applied'}</span>
+          </button>
+
           {/* Apply Button */}
           <a
             href={getValidJobUrl(job)}
@@ -283,7 +304,7 @@ const JobCard = React.memo(function JobCard({
       </div>
     </div>
   );
-}, (prev, next) => prev.job === next.job && prev.scoreMsg === next.scoreMsg && prev.tailorMsg === next.tailorMsg);
+}, (prev, next) => prev.job === next.job && prev.scoreMsg === next.scoreMsg && prev.tailorMsg === next.tailorMsg && prev.onUpdateStatus === next.onUpdateStatus);
 
 export const JobMatrix: React.FC<JobMatrixProps> = ({
   jobs,
@@ -295,6 +316,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   onTailorJob,
   onBatchTailor,
   onDeleteJob,
+  onUpdateStatus,
   onClearAll,
   isBatchMatching,
   isBatchTailoring,
@@ -399,14 +421,15 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-lg shadow-xs">
         {/* State Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1">
-          {(['all', 'pending', 'matched', 'tailored', 'ready'] as const).map((tab) => {
+          {(['all', 'pending', 'matched', 'tailored', 'ready', 'applied'] as const).map((tab) => {
             const count = tab === 'all' ? jobs.length : jobs.filter((j) => j.state === tab).length;
             const labels = {
               all: 'All Jobs',
               pending: 'Pending',
               matched: 'Matched',
               tailored: 'Tailored',
-              ready: 'Applied',
+              ready: 'Ready',
+              applied: 'Applied',
             };
 
             return (
@@ -589,6 +612,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
                 onDeleteJob={onDeleteJob}
+                onUpdateStatus={onUpdateStatus}
               />
             );
           })}
