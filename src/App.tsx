@@ -300,6 +300,7 @@ export default function App() {
   };
   const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
   const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
+  const appliedCount = jobs.filter((j) => j.state === 'applied').length;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
@@ -311,6 +312,7 @@ export default function App() {
         totalJobs={jobs.length}
         matchedCount={matchedCount}
         tailoredCount={tailoredCount}
+        appliedCount={appliedCount}
       />
 
       {/* Live Job Scraper Bar */}
@@ -328,6 +330,7 @@ export default function App() {
           onTailorJob={handleTailorJob}
           onBatchTailor={handleBatchTailor}
           onDeleteJob={handleDeleteJob}
+          onUpdateStatus={handleUpdateStatus}
           onClearAll={handleClearAll}
           isBatchMatching={isBatchMatching}
           isBatchTailoring={isBatchTailoring}

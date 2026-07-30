@@ -8,6 +8,7 @@ interface NavbarProps {
   totalJobs: number;
   matchedCount: number;
   tailoredCount: number;
+  appliedCount: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   totalJobs,
   matchedCount,
   tailoredCount,
+  appliedCount,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900 shadow-xs">
@@ -54,8 +56,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <span className="text-slate-300">•</span>
           <div className="flex items-center space-x-1.5">
-            <span className="text-slate-500 font-medium">Tailored CVs:</span>
+            <span className="text-slate-500 font-medium">Tailored:</span>
             <span className="font-bold text-emerald-600">{tailoredCount}</span>
+          </div>
+          <span className="text-slate-300">•</span>
+          <div className="flex items-center space-x-1.5">
+            <span className="text-slate-500 font-medium">Applied:</span>
+            <span className="font-bold text-green-600">{appliedCount}</span>
           </div>
         </div>
 
