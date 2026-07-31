@@ -11,7 +11,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { JobSource } from '../types';
-import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
+import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions, detectDomains } from '../constants/suggestions';
 
 interface ScraperBarProps {
   onScrape: (params: {
@@ -34,6 +34,10 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
+
+  const roleSuggestions = getRoleSuggestions(keywords);
+  const keywordSuggestions = getKeywordSuggestions(keywords);
+  const matchedDomains = detectDomains(keywords);
 
   const toggleSource = (source: JobSource) => {
     setSelectedSources((prev) =>
@@ -72,10 +76,10 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
     <div className="bg-white border-b border-slate-200 py-4 text-slate-900">
       {/* Predefined Datalists for Native Auto-completion */}
       <datalist id="datalist-roles-keywords">
-        {PREDEFINED_ROLES.map((role) => (
+        {roleSuggestions.map((role) => (
           <option key={role} value={role} />
         ))}
-        {PREDEFINED_KEYWORDS.map((kw) => (
+        {keywordSuggestions.map((kw) => (
           <option key={kw} value={kw} />
         ))}
       </datalist>
@@ -192,9 +196,9 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span className="text-slate-500 font-semibold flex items-center space-x-1 mr-1">
               <Tag className="w-3 h-3 text-slate-400" />
-              <span>Suggested Roles:</span>
+              <span>Suggested Roles{matchedDomains.length > 0 ? ` (${matchedDomains[0].label})` : ''}:</span>
             </span>
-            {PREDEFINED_ROLES.slice(0, 5).map((role) => (
+            {roleSuggestions.slice(0, 5).map((role) => (
               <button
                 type="button"
                 key={role}
@@ -209,6 +213,26 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               </button>
             ))}
           </div>
+
+          {matchedDomains.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="text-indigo-500 font-semibold mr-1">Related Skills:</span>
+              {keywordSuggestions.slice(0, 8).map((kw) => (
+                <button
+                  type="button"
+                  key={kw}
+                  onClick={() => setKeywords(kw)}
+                  className={`px-2 py-0.5 rounded-md border text-[11px] transition-all cursor-pointer ${
+                    keywords === kw
+                      ? 'bg-indigo-600 text-white border-indigo-600 font-medium'
+                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                  }`}
+                >
+                  {kw}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
             <span className="text-slate-400 font-semibold mr-1">Locations:</span>
