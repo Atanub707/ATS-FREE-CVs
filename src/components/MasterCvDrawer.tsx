@@ -59,6 +59,10 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [gapsLoading, setGapsLoading] = useState(false);
   const [gapsAddedMsg, setGapsAddedMsg] = useState<string | null>(null);
 
+  const [summarySuggestions, setSummarySuggestions] = useState<{ label: string; text: string }[]>([]);
+  const [isImprovingSummary, setIsImprovingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   useEffect(() => {
     setFormData(masterCv);
     setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
@@ -74,6 +78,44 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
       }
     } catch { /* ignore */ }
     setGapsLoading(false);
+  };
+
+  const handleAskAiSummary = async () => {
+    if (!formData.summary.trim()) {
+      setSummaryError('Write a brief summary first, then ask AI to improve it.');
+      return;
+    }
+    setIsImprovingSummary(true);
+    setSummaryError(null);
+    setSummarySuggestions([]);
+    try {
+      const res = await fetch('/api/cv/improve-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: formData.summary,
+          experiences: formData.experiences,
+          skills: formData.skills,
+          certifications: formData.certifications,
+          fullName: formData.fullName,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSummarySuggestions(data.options || []);
+      } else {
+        const err = await res.json();
+        setSummaryError(err.error || 'Failed to generate suggestions.');
+      }
+    } catch {
+      setSummaryError('AI request failed. Please try again.');
+    }
+    setIsImprovingSummary(false);
+  };
+
+  const applySummarySuggestion = (text: string) => {
+    setFormData({ ...formData, summary: text });
+    setSummarySuggestions([]);
   };
 
   const toggleGap = (skill: string) => {
@@ -607,9 +649,30 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
 
           {/* Master Professional Summary */}
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-              Master Professional Summary
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                Master Professional Summary
+              </h3>
+              <button
+                type="button"
+                onClick={handleAskAiSummary}
+                disabled={isImprovingSummary}
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer disabled:opacity-50"
+                title="Ask AI to improve your summary"
+              >
+                {isImprovingSummary ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    <span>Ask AI</span>
+                  </>
+                )}
+              </button>
+            </div>
             <textarea
               rows={4}
               value={formData.summary}
@@ -617,6 +680,33 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
               placeholder="Candidate's comprehensive professional background summary..."
               className="w-full bg-white border border-slate-200 rounded p-2.5 text-slate-900 leading-relaxed focus:outline-none focus:ring-1 focus:ring-slate-900"
             />
+
+            {summaryError && (
+              <p className="text-[11px] text-red-600 font-medium">{summaryError}</p>
+            )}
+
+            {summarySuggestions.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <p className="text-[11px] font-semibold text-indigo-700 flex items-center space-x-1">
+                  <Sparkles className="w-3 h-3" />
+                  <span>AI Suggested Summaries — click one to apply:</span>
+                </p>
+                {summarySuggestions.map((opt, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => applySummarySuggestion(opt.text)}
+                    className="w-full text-left p-3 rounded-lg border border-indigo-200 bg-white hover:border-indigo-400 hover:shadow-sm transition-all cursor-pointer group"
+                    title={`Apply "${opt.label}"`}
+                  >
+                    <span className="block text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1 group-hover:underline">
+                      {opt.label}
+                    </span>
+                    <span className="text-xs text-slate-700 leading-relaxed">{opt.text}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Work Experience History */}

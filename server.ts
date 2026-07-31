@@ -419,6 +419,54 @@ async function startServer() {
     }
   });
 
+  app.post('/api/cv/improve-summary', async (req, res) => {
+    try {
+      const { summary, experiences, skills, certifications, fullName } = req.body;
+      if (!summary || typeof summary !== 'string' || !summary.trim()) {
+        res.status(400).json({ error: 'Summary is required.' });
+        return;
+      }
+
+      const prompt = `You are an elite Executive Resume Writer. The candidate wants improved versions of their professional summary.
+
+CURRENT SUMMARY:
+"""${summary}"""
+
+CANDIDATE CONTEXT:
+Name: ${fullName || 'Candidate'}
+Work Experience:
+${JSON.stringify(experiences || [], null, 2)}
+Skills:
+${JSON.stringify(skills || [], null, 2)}
+Certifications:
+${JSON.stringify(certifications || [], null, 2)}
+
+Write 3 improved professional summary options (2-3 sentences each). Rules:
+- Never fabricate skills, companies, or achievements.
+- Use strong action verbs and quantify impact where facts allow.
+- Each option should have a distinct tone: (1) Concise & Impact-Driven, (2) Leadership-Focused, (3) Skill-Dense for ATS keyword matching.
+- Do NOT invent new experience. Only rephrase and emphasize what exists.
+
+Return valid JSON only — NO markdown, NO code fences:
+{
+  "options": [
+    { "label": "Concise & Impact-Driven", "text": "..." },
+    { "label": "Leadership-Focused", "text": "..." },
+    { "label": "Skill-Dense (ATS)", "text": "..." }
+  ]
+}`;
+
+      const jsonText = await ask(prompt, 0.4);
+      const parsed = JSON.parse(jsonText);
+      const options = Array.isArray(parsed.options) ? parsed.options.slice(0, 3) : [];
+
+      res.json({ success: true, options });
+    } catch (err: any) {
+      console.error('Improve summary error:', err);
+      res.status(500).json({ error: err.message || 'Failed to generate summary suggestions.' });
+    }
+  });
+
   app.post('/api/cv/parse-text', async (req, res) => {
     try {
       const { rawText } = req.body;
