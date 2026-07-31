@@ -168,6 +168,7 @@ export interface ScraperParams {
   maxJobsPerSource?: number;
   jobTitle?: string;
   experienceLevel?: ExperienceLevel;
+  under10Applicants?: boolean;
   adzunaAppId?: string;
   adzunaApiKey?: string;
   indeedPublisherId?: string;

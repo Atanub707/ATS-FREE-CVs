@@ -22,6 +22,7 @@ interface ScraperBarProps {
     minSalary?: number;
     maxJobsPerSource?: number;
     experienceLevel?: string;
+    under10Applicants?: boolean;
   }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number } | void>;
   isLoading: boolean;
 }
@@ -32,6 +33,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
+  const [under10Applicants, setUnder10Applicants] = useState(false);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
 
@@ -57,6 +59,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       datePostedFilter,
       maxJobsPerSource,
       experienceLevel,
+      under10Applicants,
     });
 
     if (result && result.scrapedTotal > 0) {
@@ -189,6 +192,24 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
+        </div>
+
+        {/* Advanced Filters */}
+        <div className="flex items-center gap-3 text-[11px]">
+          <label className="flex items-center space-x-2 cursor-pointer text-slate-600 hover:text-slate-900 transition-colors">
+            <input
+              type="checkbox"
+              checked={under10Applicants}
+              onChange={(e) => setUnder10Applicants(e.target.checked)}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            />
+            <span className="font-medium">Under 10 applicants (LinkedIn)</span>
+          </label>
+          {under10Applicants && (
+            <span className="text-amber-600 text-[10px] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+              ⚡ Less competition — faster responses
+            </span>
+          )}
         </div>
 
         {/* Quick Predefined Suggestion Chips */}

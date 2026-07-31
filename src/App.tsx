@@ -106,6 +106,7 @@ export default function App() {
     datePostedFilter: 'all' | '24h' | '7d' | '30d';
     minSalary?: number;
     maxJobsPerSource?: number;
+    under10Applicants?: boolean;
   }) => {
     setIsScrapingLoading(true);
     try {
