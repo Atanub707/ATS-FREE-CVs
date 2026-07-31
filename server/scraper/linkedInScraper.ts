@@ -38,7 +38,7 @@ export class LinkedInScraper extends BaseScraper {
         pageAttempts++;
         const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(
           keywords
-        )}&location=${encodeURIComponent(location)}&f_WT=2${tpr}&start=${start}`;
+        )}&location=${encodeURIComponent(location)}&f_WT=2${tpr}${params.under10Applicants ? '&f_AL=true' : ''}&start=${start}`;
 
         const response = await fetch(searchUrl, {
           headers: {
