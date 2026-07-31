@@ -141,7 +141,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/ats-cv-tailor-linux
-          tag_name: v1.0.0
+          tag_name: v1.0.1
           token: ${{ secrets.GITHUB_TOKEN }}
       - if: success()
         run: echo "✅ Linux build complete" >> $GITHUB_STEP_SUMMARY
@@ -223,6 +223,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ steps.repo.outputs.image }}:latest,${{ steps.repo.outputs.image }}:v1.0.0
+          tags: ${{ steps.repo.outputs.image }}:latest,${{ steps.repo.outputs.image }}:v1.0.1
       - if: success()
         run: echo "✅ Docker image pushed to GHCR" >> $GITHUB_STEP_SUMMARY
