@@ -8,10 +8,12 @@ export class RemoteOkScraper extends BaseScraper {
 
   async scrape(params: ScraperParams): Promise<Job[]> {
     const limit = params.maxJobsPerSource || 10;
+    const keywords = params.keywords.trim().toLowerCase();
+    const terms = keywords ? keywords.split(/\s+/).filter(Boolean) : [];
     const jobs: Job[] = [];
     const seenUrls = new Set<string>();
 
-    console.log('[RemoteOK] Starting scrape, limit:', limit);
+    console.log('[RemoteOK] Starting scrape, limit:', limit, 'keywords:', keywords);
 
     const response = await fetch('https://remoteok.com/api', {
       headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
@@ -35,6 +37,13 @@ export class RemoteOkScraper extends BaseScraper {
 
       const position = (job.position || '').trim();
       if (!position || JUNK_TITLES.has(position.toLowerCase())) continue;
+
+      if (terms.length > 0) {
+        const tags: string[] = (job.tags || []).map((t: string) => t.toLowerCase());
+        const positionLower = position.toLowerCase();
+        const hit = terms.some((t) => positionLower.includes(t) || tags.some((tag) => tag.includes(t)));
+        if (!hit) continue;
+      }
 
       const company = (job.company || '').trim();
       const description = (job.description || '').trim();
