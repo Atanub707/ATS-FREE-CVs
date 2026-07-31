@@ -142,6 +142,7 @@ jobs:
         with:
           files: dist/ats-cv-tailor-linux
           tag_name: v1.0.1
+          generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
       - if: success()
         run: echo "✅ Linux build complete" >> $GITHUB_STEP_SUMMARY
