@@ -1,7 +1,7 @@
 import { BaseScraper } from './baseScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
-const JUNK_TITLES = new Set(['nunavut', 'other', 'full', 'free', 'candidate requirements', 'join our team', 'come and join us', 'skip content', 'why join us', 'current vacancies', 'all jobs', 'no open roles right now', 'widen the circle', 'we are', 'take the initiative', 'we don\'t currently have any open roles', 'i want all the money', 'job hunting indecision']);
+const JUNK_TITLES = new Set(['nunavut', 'other', 'full', 'free', 'candidate requirements', 'join our team', 'come and join us', 'skip content', 'why join us', 'current vacancies', 'all jobs', 'no open roles right now', 'widen the circle', 'we are', 'take the initiative', 'we don\'t currently have any open roles', 'i want all the money', 'job hunting indecision', 'not finding your fit apply here', 'expression of interest', 'speculative cv', 'at office', 'read more', 'reeder', 'act application form', 'care navigator level 1']);
 
 export class RemoteOkScraper extends BaseScraper {
   readonly source = 'RemoteOK' as const;
@@ -41,7 +41,11 @@ export class RemoteOkScraper extends BaseScraper {
       if (terms.length > 0) {
         const tags: string[] = (job.tags || []).map((t: string) => t.toLowerCase());
         const positionLower = position.toLowerCase();
-        const hit = terms.some((t) => positionLower.includes(t) || tags.some((tag) => tag.includes(t)));
+        const tagsText = tags.join(' ');
+        const hit = terms.some((t) => {
+          const word = t.toLowerCase();
+          return new RegExp(`\\b${word}\\b`).test(positionLower) || new RegExp(`\\b${word}\\b`).test(tagsText);
+        });
         if (!hit) continue;
       }
 
