@@ -200,7 +200,11 @@ export class LinkedInScraper extends BaseScraper {
       }
     }
 
-    return scrapedJobs;
+    // Post-filter: remove Hybrid/On-site jobs (promoted jobs bypass LinkedIn's f_WT filter)
+    const remoteJobs = scrapedJobs.filter((j) => !j.jobType.includes('Hybrid') && !j.jobType.includes('On-site'));
+
+    console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} remote-only jobs`);
+    return remoteJobs;
   }
 
   private async fetchJobDetail(jobId: string): Promise<{
