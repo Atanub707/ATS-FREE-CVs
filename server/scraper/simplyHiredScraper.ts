@@ -17,13 +17,13 @@ export class SimplyHiredScraper extends BaseScraper {
     const seenKeys = new Set<string>();
 
     let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    let fdbParam = '';
-    if (filter === '24h') { maxAgeMs = 24 * 60 * 60 * 1000; fdbParam = '1'; }
-    else if (filter === '7d') { maxAgeMs = 7 * 24 * 60 * 60 * 1000; fdbParam = '7'; }
-    else if (filter === '30d') { maxAgeMs = 30 * 24 * 60 * 60 * 1000; fdbParam = '30'; }
+    let tParam = '';
+    if (filter === '24h') { maxAgeMs = 24 * 60 * 60 * 1000; tParam = '&t=1'; }
+    else if (filter === '7d') { maxAgeMs = 7 * 24 * 60 * 60 * 1000; tParam = '&t=7'; }
+    else if (filter === '30d') { maxAgeMs = 30 * 24 * 60 * 60 * 1000; tParam = '&t=30'; }
 
     try {
-      const baseUrl = `${SIMPLYHIRED_SEARCH}?q=${encodeURIComponent(keywords)}${location ? `&l=${encodeURIComponent(location)}` : ''}${fdbParam ? `&fdb=${fdbParam}` : ''}`;
+      const baseUrl = `${SIMPLYHIRED_SEARCH}?q=${encodeURIComponent(keywords)}${location ? `&l=${encodeURIComponent(location)}` : ''}${tParam}`;
       let page = 0;
       const maxPages = 3;
 
@@ -84,7 +84,7 @@ export class SimplyHiredScraper extends BaseScraper {
         }
       }
 
-      console.log(`SimplyHired: ${jobs.length} jobs from ${fdbParam ? 'filtered' : 'unfiltered'} search`);
+      console.log(`SimplyHired: ${jobs.length} jobs from ${filter} search`);
 
       // Fetch detail pages for descriptions
       let detailCount = 0;
