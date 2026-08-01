@@ -138,7 +138,6 @@ export class LinkedInScraper extends BaseScraper {
           }
 
           if (title && company) {
-            const jobLocLower = jobLoc.toLowerCase();
             scrapedJobs.push({
               id: `linkedin-${jobId}`,
               title,
@@ -149,7 +148,7 @@ export class LinkedInScraper extends BaseScraper {
               url: cleanLink,
               postedDate: postedDateObj.toISOString(),
               postedDateParsed: postedDateObj.toISOString().split('T')[0],
-              jobType: jobLocLower.includes('remote') ? 'Full-time · Remote' : jobLocLower.includes('hybrid') ? 'Full-time · Hybrid' : 'Full-time',
+              jobType: 'Full-time',
               state: 'pending',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -175,6 +174,9 @@ export class LinkedInScraper extends BaseScraper {
         await this.delay(800 + Math.random() * 1200);
         const detail = await this.fetchJobDetail(jobId);
         job.description = detail.description || 'Description not available';
+        if (detail.workType) {
+          job.jobType = `Full-time · ${detail.workType}`;
+        }
         if (detail.salaryText) {
           job.salaryText = detail.salaryText;
           job.salaryMin = detail.salaryMin;
@@ -196,6 +198,7 @@ export class LinkedInScraper extends BaseScraper {
 
   private async fetchJobDetail(jobId: string): Promise<{
     description: string;
+    workType?: string;
     salaryMin?: number;
     salaryMax?: number;
     salaryText?: string;
@@ -263,8 +266,18 @@ export class LinkedInScraper extends BaseScraper {
             }
           }
 
+          let workType: string | undefined;
+          const empType = posting.employmentType || '';
+          const locType = (posting.jobLocationType || '').toLowerCase();
+          if (locType.includes('telecommute') || locType.includes('remote')) {
+            workType = 'Remote';
+          } else if (empType.toLowerCase().includes('remote')) {
+            workType = 'Remote';
+          }
+
           return {
             description: cleanDescription || 'Description not available',
+            workType,
             salaryMin,
             salaryMax,
             salaryText,
