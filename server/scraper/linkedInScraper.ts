@@ -148,7 +148,7 @@ export class LinkedInScraper extends BaseScraper {
               url: cleanLink,
               postedDate: postedDateObj.toISOString(),
               postedDateParsed: postedDateObj.toISOString().split('T')[0],
-              jobType: 'Full-time',
+              jobType: 'Full-time · Remote',
               state: 'pending',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -176,6 +176,13 @@ export class LinkedInScraper extends BaseScraper {
         job.description = detail.description || 'Description not available';
         if (detail.workType) {
           job.jobType = `Full-time · ${detail.workType}`;
+        } else if (detail.description) {
+          const d = detail.description.toLowerCase();
+          if (d.includes('hybrid') && !d.includes('no hybrid') && !d.includes('not hybrid')) {
+            job.jobType = 'Full-time · Hybrid';
+          } else if ((d.includes('on-site') || d.includes('onsite')) && !d.includes('no on-site')) {
+            job.jobType = 'Full-time · On-site';
+          }
         }
         if (detail.salaryText) {
           job.salaryText = detail.salaryText;
