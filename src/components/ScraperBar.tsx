@@ -283,26 +283,32 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <span>Sources:</span>
             </span>
 
-            {(['LinkedIn', 'Arbeitnow', 'RemoteOK', 'WeWorkRemotely', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever'] as const).map((src) => (
-              <button key={src} type="button"
-                onClick={() => toggleSource(src)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                  selectedSources.includes(src)
-                  ? src === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-300'
-                  : src === 'RemoteOK' ? 'bg-cyan-50 text-cyan-700 border-cyan-300'
-                  : src === 'WeWorkRemotely' ? 'bg-violet-50 text-violet-700 border-violet-300'
-                  : src === 'Arbeitnow' ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : src === 'SimplyHired' ? 'bg-teal-50 text-teal-700 border-teal-300'
-                  : src === 'Dice' ? 'bg-purple-50 text-purple-700 border-purple-300'
-                  : src === 'Reed' ? 'bg-rose-50 text-rose-700 border-rose-300'
-                  : src === 'Greenhouse' ? 'bg-green-50 text-green-700 border-green-300'
-                  : 'bg-orange-50 text-orange-700 border-orange-300'
-                  : 'bg-slate-100 text-slate-500 border-slate-200'
-                }`}
-              >
-                {src} {selectedSources.includes(src) ? '✓' : ''}
-              </button>
-            ))}
+            {(['LinkedIn', 'Arbeitnow', 'RemoteOK', 'WeWorkRemotely', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever'] as const).map((src) => {
+              const isComingSoon = src === 'WeWorkRemotely';
+              return (
+                <button key={src} type="button"
+                  onClick={() => !isComingSoon && toggleSource(src)}
+                  disabled={isComingSoon}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${
+                    isComingSoon
+                      ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+                      : selectedSources.includes(src)
+                      ? src === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-300 cursor-pointer'
+                      : src === 'RemoteOK' ? 'bg-cyan-50 text-cyan-700 border-cyan-300 cursor-pointer'
+                      : src === 'WeWorkRemotely' ? 'bg-violet-50 text-violet-700 border-violet-300 cursor-pointer'
+                      : src === 'Arbeitnow' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 cursor-pointer'
+                      : src === 'SimplyHired' ? 'bg-teal-50 text-teal-700 border-teal-300 cursor-pointer'
+                      : src === 'Dice' ? 'bg-purple-50 text-purple-700 border-purple-300 cursor-pointer'
+                      : src === 'Reed' ? 'bg-rose-50 text-rose-700 border-rose-300 cursor-pointer'
+                      : src === 'Greenhouse' ? 'bg-green-50 text-green-700 border-green-300 cursor-pointer'
+                      : 'bg-orange-50 text-orange-700 border-orange-300 cursor-pointer'
+                      : 'bg-slate-100 text-slate-500 border-slate-200 cursor-pointer'
+                  }`}
+                >
+                  {src} {isComingSoon ? 'Coming Soon' : selectedSources.includes(src) ? '✓' : ''}
+                </button>
+              );
+            })}
 
             {selectedSources.includes('Dice') && (
               <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded ml-1">
