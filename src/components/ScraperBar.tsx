@@ -283,7 +283,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <span>Sources:</span>
             </span>
 
-            {(['LinkedIn', 'Arbeitnow', 'RemoteOK', 'WeWorkRemotely', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever'] as const).map((src) => {
+            {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever', 'RemoteOK', 'WeWorkRemotely'] as const).map((src) => {
               const isComingSoon = src === 'WeWorkRemotely' || src === 'RemoteOK';
               return (
                 <button key={src} type="button"
