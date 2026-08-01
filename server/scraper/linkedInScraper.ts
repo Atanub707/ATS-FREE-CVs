@@ -138,6 +138,7 @@ export class LinkedInScraper extends BaseScraper {
           }
 
           if (title && company) {
+            const jobLocLower = jobLoc.toLowerCase();
             scrapedJobs.push({
               id: `linkedin-${jobId}`,
               title,
@@ -148,7 +149,7 @@ export class LinkedInScraper extends BaseScraper {
               url: cleanLink,
               postedDate: postedDateObj.toISOString(),
               postedDateParsed: postedDateObj.toISOString().split('T')[0],
-              jobType: 'Full-time · Remote',
+              jobType: jobLocLower.includes('remote') ? 'Full-time · Remote' : jobLocLower.includes('hybrid') ? 'Full-time · Hybrid' : 'Full-time',
               state: 'pending',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
