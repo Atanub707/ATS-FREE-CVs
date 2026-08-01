@@ -13,53 +13,57 @@ export class DiceScraper extends BaseScraper {
     const seenIds = new Set<string>();
 
     let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
-    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
-    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+    let dateParam = '';
+    if (filter === '24h') { maxAgeMs = 24 * 60 * 60 * 1000; dateParam = 'ONE'; }
+    else if (filter === '7d') { maxAgeMs = 7 * 24 * 60 * 60 * 1000; dateParam = 'SEVEN'; }
+    else if (filter === '30d') { maxAgeMs = 30 * 24 * 60 * 60 * 1000; dateParam = 'THIRTY'; }
+
+    const isRemote = location.toLowerCase() === 'remote';
+    const remoteParam = isRemote ? '&filters.workplaceTypes=Remote' : '';
 
     try {
-      const url = `https://www.dice.com/jobs?q=${encodeURIComponent(keywords)}${location ? `&location=${encodeURIComponent(location)}` : ''}`;
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        },
-        signal: AbortSignal.timeout(15000),
-      });
+      const baseUrl = `https://www.dice.com/jobs?q=${encodeURIComponent(keywords)}${location && !isRemote ? `&location=${encodeURIComponent(location)}` : ''}${dateParam ? `&filters.postedDate=${dateParam}` : ''}${remoteParam}`;
+      let page = 1;
+      const maxPages = 5;
+      const allUuids: string[] = [];
+      const companies: { [uuid: string]: string } = {};
 
-      if (!response.ok) {
-        console.warn(`Dice search returned ${response.status}`);
-        return jobs;
-      }
+      while (allUuids.length < limit * 3 && page <= maxPages) {
+        const pageUrl = page === 1 ? baseUrl : `${baseUrl}&page=${page}`;
+        const response = await fetch(pageUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(15000),
+        });
 
-      const html = await response.text();
+        if (!response.ok) break;
+        const html = await response.text();
 
-      // Extract job detail UUIDs
-      const linkRegex = /href=\"\/job-detail\/([a-f0-9-]+)\"/g;
-      const uuids: string[] = [];
-      let match;
-      while ((match = linkRegex.exec(html)) !== null) {
-        const id = match[1];
-        if (!seenIds.has(id)) {
-          seenIds.add(id);
-          uuids.push(id);
+        const linkRegex = /href="\/job-detail\/([a-f0-9-]+)"/g;
+        let match;
+        let foundOnPage = 0;
+        while ((match = linkRegex.exec(html)) !== null) {
+          const id = match[1];
+          if (!seenIds.has(id)) {
+            seenIds.add(id);
+            allUuids.push(id);
+            foundOnPage++;
+          }
         }
-      }
 
-      // Extract company names (in order)
-      const companyRegex = /company-name[^>]*>([^<]+)/g;
-      const companies: string[] = [];
-      while ((match = companyRegex.exec(html)) !== null) {
-        companies.push(match[1].trim().replace(/&amp;/g, '&'));
-      }
+        const companyRegex = /company-name[^>]*>([^<]+)/g;
+        const pageCompanies: string[] = [];
+        while ((match = companyRegex.exec(html)) !== null) {
+          pageCompanies.push(match[1].trim().replace(/&amp;/g, '&'));
+        }
+        allUuids.forEach((uuid, i) => { if (!companies[uuid]) companies[uuid] = pageCompanies[i] || ''; });
 
-      if (uuids.length === 0) {
-        console.warn('Dice: no job UUIDs found on search page (possible rate limit)');
-        return jobs;
+        console.log(`Dice page ${page}: ${foundOnPage} jobs`);
+        if (foundOnPage === 0) break;
+        page++;
       }
-      console.log(`Dice: ${uuids.length} job UUIDs found`);
 
       const batchSize = 5;
-      const toFetch = uuids.slice(0, limit);
+      const toFetch = allUuids.slice(0, limit);
       for (let batchStart = 0; batchStart < toFetch.length; batchStart += batchSize) {
         const batch = toFetch.slice(batchStart, batchStart + batchSize);
         const results = await Promise.allSettled(batch.map(async (uuid) => {
@@ -74,10 +78,9 @@ export class DiceScraper extends BaseScraper {
           const ld = JSON.parse(ldMatch[1]);
           if (ld['@type'] !== 'JobPosting') return null;
 
-          const idx = uuids.indexOf(uuid);
           return {
             title: ld.title || 'Unknown Position',
-            company: ld.hiringOrganization?.name || companies[idx] || 'Unknown Company',
+            company: ld.hiringOrganization?.name || companies[uuid] || 'Unknown Company',
             location: ld.jobLocation?.address?.addressLocality || ld.jobLocation?.address?.addressRegion || location || 'Remote',
             postedDate: ld.datePosted ? new Date(ld.datePosted) : new Date(),
             salaryText: ld.baseSalary?.value?.value
