@@ -14,12 +14,13 @@ export class ReedScraper extends BaseScraper {
     const seenIds = new Set<string>();
 
     let maxAgeMs = Number.MAX_SAFE_INTEGER;
-    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
-    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
-    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+    let dateParam = '';
+    if (filter === '24h') { maxAgeMs = 24 * 60 * 60 * 1000; dateParam = '&dateCreatedOffSet=today'; }
+    else if (filter === '7d') { maxAgeMs = 7 * 24 * 60 * 60 * 1000; dateParam = '&dateCreatedOffSet=lastSevenDays'; }
+    else if (filter === '30d') { maxAgeMs = 30 * 24 * 60 * 60 * 1000; dateParam = '&dateCreatedOffSet=lastThirtyDays'; }
 
     try {
-      const url = `https://www.reed.co.uk/jobs/${encodeURIComponent(keywords.toLowerCase().replace(/\s+/g, '-'))}-jobs${location ? `?location=${encodeURIComponent(location)}` : ''}`;
+      const url = `https://www.reed.co.uk/jobs/${encodeURIComponent(keywords.toLowerCase().replace(/\s+/g, '-'))}-jobs?q=${encodeURIComponent(keywords)}${dateParam}${location ? `&location=${encodeURIComponent(location)}` : ''}`;
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
         signal: AbortSignal.timeout(15000),
