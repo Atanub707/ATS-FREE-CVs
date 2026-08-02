@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
@@ -42,6 +42,10 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Guards list refresh while a mutation (batch/single match-tailor) is in flight,
+  // so the UI never renders a mid-operation snapshot
+  const isMutatingRef = useRef(false);
+
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
 
@@ -65,6 +69,7 @@ export default function App() {
     }, 1200);
 
     try {
+      isMutatingRef.current = true;
       await fn();
     } catch (err) {
       console.error('Operation error:', err);
@@ -76,11 +81,14 @@ export default function App() {
         return next;
       });
       removeLoadingJobId(jobId);
+      isMutatingRef.current = false;
+      fetchJobs();
     }
   };
 
   // Fetch job list (server-side filtered + paginated) and stats
   const fetchJobs = useCallback(async () => {
+    if (isMutatingRef.current) return;
     const params = new URLSearchParams({
       state: activeStateTab,
       source: sourceFilter,
@@ -190,7 +198,6 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
-        fetchJobs();
       }
     }, setScoreMessages);
   };
@@ -198,6 +205,7 @@ export default function App() {
   // Batch Match Handler
   const handleBatchMatch = async () => {
     setIsBatchMatching(true);
+    isMutatingRef.current = true;
     try {
       const res = await fetch('/api/jobs/batch-match', {
         method: 'POST',
@@ -212,12 +220,13 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
-        fetchJobs();
       }
     } catch (err) {
       console.error('Batch match error:', err);
     } finally {
       setIsBatchMatching(false);
+      isMutatingRef.current = false;
+      fetchJobs();
     }
   };
 
@@ -236,7 +245,6 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
-        fetchJobs();
       }
     }, setTailorMessages);
   };
@@ -244,6 +252,7 @@ export default function App() {
   // Batch Tailor Handler
   const handleBatchTailor = async () => {
     setIsBatchTailoring(true);
+    isMutatingRef.current = true;
     try {
       const res = await fetch('/api/jobs/batch-tailor', { method: 'POST' });
       if (res.ok) {
@@ -254,12 +263,13 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
-        fetchJobs();
       }
     } catch (err) {
       console.error('Batch tailor error:', err);
     } finally {
       setIsBatchTailoring(false);
+      isMutatingRef.current = false;
+      fetchJobs();
     }
   };
 

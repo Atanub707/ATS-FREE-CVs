@@ -1,11 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { Job, MasterCv, JobFilterQueryParams, JobState } from '../../src/types.js';
+import Database from 'better-sqlite3';
+import { Job, MasterCv, JobFilterQueryParams } from '../../src/types.js';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
 const MASTER_CV_PATH = path.join(DATA_DIR, 'master_cv.json');
-const PRIMARY_FILE_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite.json'); // Primary JSON store (legacy filename kept for data compatibility)
+const SQLITE_DB_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite');
+const LEGACY_PRIMARY_JSON = path.join(DATA_DIR, 'ats_jobs.sqlite.json');
 
 export const DEFAULT_MASTER_CV: MasterCv = {
   fullName: 'Alex Mercer',
@@ -107,122 +109,95 @@ export const DEFAULT_MASTER_CV: MasterCv = {
   ]
 };
 
-// Ensure data directory exists
 function ensureDataDir(): void {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
 }
 
-// Master CV Storage
-export function getMasterCv(): MasterCv {
+// ─────────────────── SQLite connection ───────────────────
+let db: Database.Database | null = null;
+
+function getDb(): Database.Database {
+  if (db) return db;
   ensureDataDir();
+  db = new Database(SQLITE_DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS jobs (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS master_cv (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      data TEXT NOT NULL
+    );
+  `);
+  return db;
+}
+
+/** One-time import from legacy JSON files if the DB is empty */
+function migrateFromLegacyJson(): void {
+  ensureDataDir();
+  const d = getDb();
+  const row = d.prepare('SELECT COUNT(*) AS c FROM jobs').get() as { c: number };
+  if (row.c > 0) return;
+
+  const legacyPath = [LEGACY_PRIMARY_JSON, JSON_FILE_PATH].find((p) => fs.existsSync(p));
+  if (!legacyPath) return;
+
   try {
-    if (fs.existsSync(MASTER_CV_PATH)) {
-      const data = fs.readFileSync(MASTER_CV_PATH, 'utf-8');
-      return JSON.parse(data);
-    }
-    saveMasterCv(DEFAULT_MASTER_CV);
-    return DEFAULT_MASTER_CV;
+    const parsed: Job[] = JSON.parse(fs.readFileSync(legacyPath, 'utf-8'));
+    const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, data) VALUES (?, ?)');
+    const tx = d.transaction((jobs: Job[]) => {
+      for (const j of jobs) insert.run(j.id, JSON.stringify(j));
+    });
+    tx(parsed);
+    console.log(`[Storage] Imported ${parsed.length} jobs from legacy JSON into SQLite`);
   } catch (err) {
-    console.error('Error reading master CV, returning default:', err);
-    return DEFAULT_MASTER_CV;
+    console.warn('[Storage] Legacy JSON import failed:', err);
   }
 }
 
-export function saveMasterCv(cv: MasterCv): void {
-  ensureDataDir();
+migrateFromLegacyJson();
+
+// ─────────────────── Master CV Storage ───────────────────
+export function getMasterCv(): MasterCv {
   try {
-    fs.writeFileSync(MASTER_CV_PATH, JSON.stringify(cv, null, 2), 'utf-8');
+    const d = getDb();
+    const row = d.prepare('SELECT data FROM master_cv WHERE id = 1').get() as { data: string } | undefined;
+    if (row) return JSON.parse(row.data);
+  } catch (err) {
+    console.error('Error reading master CV from DB:', err);
+  }
+  // Fallback: legacy JSON file or default
+  try {
+    if (fs.existsSync(MASTER_CV_PATH)) {
+      const cv = JSON.parse(fs.readFileSync(MASTER_CV_PATH, 'utf-8'));
+      saveMasterCv(cv);
+      return cv;
+    }
+  } catch { /* ignore */ }
+  saveMasterCv(DEFAULT_MASTER_CV);
+  return DEFAULT_MASTER_CV;
+}
+
+export function saveMasterCv(cv: MasterCv): void {
+  try {
+    const d = getDb();
+    d.prepare('INSERT INTO master_cv (id, data) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data')
+      .run(JSON.stringify(cv));
   } catch (err) {
     console.error('Error saving master CV:', err);
   }
 }
 
-// Jobs Storage
+// ─────────────────── Jobs Storage ───────────────────
 export function getAllJobs(): Job[] {
-  ensureDataDir();
   try {
-    // Check SQLite file store first, then fallback to JSON
-    const primaryFile = fs.existsSync(PRIMARY_FILE_PATH) ? PRIMARY_FILE_PATH : JSON_FILE_PATH;
-    if (fs.existsSync(primaryFile)) {
-      const raw = fs.readFileSync(primaryFile, 'utf-8');
-      const parsed: Job[] = JSON.parse(raw);
-
-      // Sanitize IDs to guarantee uniqueness and fix any 'linkedin-undefined'
-      const seenIds = new Set<string>();
-      let modified = false;
-
-      const cleanText = (str?: string) => {
-        if (!str) return '';
-        return str.replace(/\s+/g, ' ').trim();
-      };
-      const cleanUrl = (str?: string, title?: string, company?: string, source?: string) => {
-        if (!str) return '';
-        let result = str;
-        try {
-          result = decodeURIComponent(str);
-        } catch {}
-        result = result.replace(/[\r\n\t]+/g, '').trim();
-
-        // Check if LinkedIn link with numeric ID
-        const linkedinMatch = result.match(/\/view\/.*?(\d{7,11})/) || result.match(/(\d{7,11})/);
-        if ((source === 'LinkedIn' || result.includes('linkedin.com')) && linkedinMatch && linkedinMatch[1]) {
-          return `https://www.linkedin.com/jobs/view/${linkedinMatch[1]}`;
-        }
-
-        return result;
-      };
-
-      const sanitized = parsed.map((job, idx) => {
-        let currentId = job.id;
-        const sanitizedTitle = cleanText(job.title) || job.title;
-        const sanitizedCompany = cleanText(job.company) || job.company;
-        const sanitizedLocation = cleanText(job.location) || job.location;
-        const sanitizedUrl = cleanUrl(job.url, sanitizedTitle, sanitizedCompany, job.source) || job.url;
-
-        if (
-          sanitizedTitle !== job.title ||
-          sanitizedCompany !== job.company ||
-          sanitizedLocation !== job.location ||
-          sanitizedUrl !== job.url
-        ) {
-          modified = true;
-        }
-
-        if (!currentId || currentId === 'linkedin-undefined' || seenIds.has(currentId)) {
-          const urlMatch = job.url?.match(/(\d{6,})/);
-          if (urlMatch && urlMatch[1]) {
-            currentId = `linkedin-${urlMatch[1]}`;
-          } else {
-            currentId = `job-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`;
-          }
-
-          while (seenIds.has(currentId)) {
-            currentId = `${currentId}-${Math.random().toString(36).substring(2, 5)}`;
-          }
-
-          modified = true;
-        }
-
-        seenIds.add(currentId);
-        return {
-          ...job,
-          id: currentId,
-          title: sanitizedTitle,
-          company: sanitizedCompany,
-          location: sanitizedLocation,
-          url: sanitizedUrl,
-        };
-      });
-
-      if (modified) {
-        saveAllJobs(sanitized);
-      }
-
-      return sanitized;
-    }
-    return [];
+    const d = getDb();
+    const rows = d.prepare('SELECT data FROM jobs').all() as { data: string }[];
+    return rows.map((r) => JSON.parse(r.data));
   } catch (err) {
     console.error('Error loading jobs:', err);
     return [];
@@ -230,72 +205,97 @@ export function getAllJobs(): Job[] {
 }
 
 export function saveAllJobs(jobs: Job[]): void {
-  ensureDataDir();
   try {
-    const data = JSON.stringify(jobs, null, 2);
-    fs.writeFileSync(PRIMARY_FILE_PATH, data, 'utf-8');
-    fs.writeFileSync(JSON_FILE_PATH, data, 'utf-8'); // Dual persistence backup
+    const d = getDb();
+    const insert = d.prepare('INSERT OR REPLACE INTO jobs (id, data) VALUES (?, ?)');
+    const existing = new Set((d.prepare('SELECT id FROM jobs').all() as { id: string }[]).map((r) => r.id));
+    const tx = d.transaction(() => {
+      for (const job of jobs) {
+        insert.run(job.id, JSON.stringify(job));
+        existing.delete(job.id);
+      }
+      const del = d.prepare('DELETE FROM jobs WHERE id = ?');
+      for (const gone of existing) del.run(gone);
+    });
+    tx();
   } catch (err) {
     console.error('Error saving jobs:', err);
   }
 }
 
 export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
-  const existing = getAllJobs();
-  const existingUrls = new Set(existing.map((j) => j.url.toLowerCase().trim()));
+  const d = getDb();
+  const existingUrls = new Set((d.prepare('SELECT data FROM jobs').all() as { data: string }[])
+    .map((r) => { try { return (JSON.parse(r.data) as Job).url?.toLowerCase().trim(); } catch { return ''; } })
+    .filter(Boolean));
+
+  const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, data) VALUES (?, ?)');
   const added: Job[] = [];
   let skipped = 0;
 
-  for (const job of newJobs) {
-    const normalizedUrl = job.url.toLowerCase().trim();
-    if (!existingUrls.has(normalizedUrl)) {
-      existingUrls.add(normalizedUrl);
-      added.push(job);
-    } else {
-      skipped++;
+  const tx = d.transaction(() => {
+    for (const job of newJobs) {
+      const normalizedUrl = job.url?.toLowerCase().trim() || '';
+      if (normalizedUrl && existingUrls.has(normalizedUrl)) {
+        skipped++;
+        continue;
+      }
+      const result = insert.run(job.id, JSON.stringify(job));
+      if (result.changes > 0) {
+        existingUrls.add(normalizedUrl);
+        added.push(job);
+      } else {
+        skipped++;
+      }
     }
-  }
-
-  if (added.length > 0) {
-    saveAllJobs([...added, ...existing]);
-  }
+  });
+  tx();
 
   return { added, skipped };
 }
 
 export function getJobById(id: string): Job | undefined {
-  const jobs = getAllJobs();
-  return jobs.find((j) => j.id === id);
+  try {
+    const d = getDb();
+    const row = d.prepare('SELECT data FROM jobs WHERE id = ?').get(id) as { data: string } | undefined;
+    return row ? JSON.parse(row.data) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function updateJobInStorage(updatedJob: Job): Job {
-  const jobs = getAllJobs();
-  const index = jobs.findIndex((j) => j.id === updatedJob.id);
-  if (index !== -1) {
-    jobs[index] = {
-      ...updatedJob,
-      updatedAt: new Date().toISOString()
-    };
-    saveAllJobs(jobs);
-    return jobs[index];
+  try {
+    const d = getDb();
+    const result = d.prepare('UPDATE jobs SET data = ? WHERE id = ?').run(
+      JSON.stringify({ ...updatedJob, updatedAt: new Date().toISOString() }),
+      updatedJob.id
+    );
+    if (result.changes > 0) return { ...updatedJob, updatedAt: new Date().toISOString() };
+    return updatedJob;
+  } catch (err) {
+    console.error('Error updating job:', err);
+    return updatedJob;
   }
-  return updatedJob;
 }
 
 export function deleteJobFromStorage(id: string): boolean {
-  const jobs = getAllJobs();
-  const filtered = jobs.filter((j) => j.id !== id);
-  if (filtered.length !== jobs.length) {
-    saveAllJobs(filtered);
-    return true;
+  try {
+    const d = getDb();
+    return d.prepare('DELETE FROM jobs WHERE id = ?').run(id).changes > 0;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 export function deleteAllJobs(): number {
-  const count = getAllJobs().length;
-  saveAllJobs([]);
-  return count;
+  try {
+    const d = getDb();
+    const result = d.prepare('DELETE FROM jobs').run();
+    return result.changes;
+  } catch {
+    return 0;
+  }
 }
 
 export function queryJobs(params: JobFilterQueryParams) {
@@ -364,14 +364,12 @@ export function queryJobs(params: JobFilterQueryParams) {
   };
 }
 
-// Explicit Migration helper between JSON and SQLite
+// Explicit export between SQLite and JSON
 export function runStorageMigration(targetMode: 'sqlite' | 'json'): { success: boolean; message: string; count: number } {
   ensureDataDir();
   const currentJobs = getAllJobs();
   if (targetMode === 'sqlite') {
-    const data = JSON.stringify(currentJobs, null, 2);
-    fs.writeFileSync(PRIMARY_FILE_PATH, data, 'utf-8');
-    return { success: true, message: `Successfully migrated ${currentJobs.length} jobs into SQLite store.`, count: currentJobs.length };
+    return { success: true, message: `SQLite is already the primary store (${currentJobs.length} jobs).`, count: currentJobs.length };
   } else {
     const data = JSON.stringify(currentJobs, null, 2);
     fs.writeFileSync(JSON_FILE_PATH, data, 'utf-8');
