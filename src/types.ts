@@ -170,9 +170,6 @@ export interface ScraperParams {
   jobTitle?: string;
   experienceLevel?: ExperienceLevel;
   under10Applicants?: boolean;
-  adzunaAppId?: string;
-  adzunaApiKey?: string;
-  indeedPublisherId?: string;
 }
 
 export type LlmProvider = 'opencode-go' | 'openrouter' | 'openai' | 'gemini' | 'anthropic' | 'nvidia';
@@ -197,9 +194,6 @@ export interface AppConfig {
   scraper: {
     stealthMode: boolean;
     maxRetries: number;
-    adzunaAppId: string;
-    adzunaApiKey: string;
-    indeedPublisherId: string;
   };
 }
 

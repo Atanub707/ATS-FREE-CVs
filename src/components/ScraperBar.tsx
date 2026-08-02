@@ -243,6 +243,18 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
             {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever', 'RemoteOK', 'WeWorkRemotely'] as const).map((src) => {
               const isComingSoon = src === 'WeWorkRemotely' || src === 'RemoteOK';
+              const isSelected = selectedSources.includes(src);
+              const colorMap: Record<string, string> = {
+                LinkedIn: 'bg-blue-50 text-blue-700 border-blue-300 cursor-pointer',
+                RemoteOK: 'bg-cyan-50 text-cyan-700 border-cyan-300 cursor-pointer',
+                WeWorkRemotely: 'bg-violet-50 text-violet-700 border-violet-300 cursor-pointer',
+                Arbeitnow: 'bg-emerald-50 text-emerald-700 border-emerald-300 cursor-pointer',
+                SimplyHired: 'bg-teal-50 text-teal-700 border-teal-300 cursor-pointer',
+                Dice: 'bg-purple-50 text-purple-700 border-purple-300 cursor-pointer',
+                Reed: 'bg-rose-50 text-rose-700 border-rose-300 cursor-pointer',
+                Greenhouse: 'bg-green-50 text-green-700 border-green-300 cursor-pointer',
+                Lever: 'bg-orange-50 text-orange-700 border-orange-300 cursor-pointer',
+              };
               return (
                 <button key={src} type="button"
                   onClick={() => !isComingSoon && toggleSource(src)}
@@ -250,20 +262,12 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                   className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-colors ${
                     isComingSoon
                       ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                      : selectedSources.includes(src)
-                      ? src === 'LinkedIn' ? 'bg-blue-50 text-blue-700 border-blue-300 cursor-pointer'
-                      : src === 'RemoteOK' ? 'bg-cyan-50 text-cyan-700 border-cyan-300 cursor-pointer'
-                      : src === 'WeWorkRemotely' ? 'bg-violet-50 text-violet-700 border-violet-300 cursor-pointer'
-                      : src === 'Arbeitnow' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 cursor-pointer'
-                      : src === 'SimplyHired' ? 'bg-teal-50 text-teal-700 border-teal-300 cursor-pointer'
-                      : src === 'Dice' ? 'bg-purple-50 text-purple-700 border-purple-300 cursor-pointer'
-                      : src === 'Reed' ? 'bg-rose-50 text-rose-700 border-rose-300 cursor-pointer'
-                      : src === 'Greenhouse' ? 'bg-green-50 text-green-700 border-green-300 cursor-pointer'
-                      : 'bg-orange-50 text-orange-700 border-orange-300 cursor-pointer'
+                      : isSelected
+                      ? (colorMap[src] || 'bg-slate-100 text-slate-500 border-slate-200 cursor-pointer')
                       : 'bg-slate-100 text-slate-500 border-slate-200 cursor-pointer'
                   }`}
                 >
-                  {src} {isComingSoon ? 'Coming Soon' : selectedSources.includes(src) ? '✓' : ''}
+                  {src} {isComingSoon ? 'Coming Soon' : isSelected ? '✓' : ''}
                 </button>
               );
             })}

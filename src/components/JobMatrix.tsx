@@ -87,10 +87,6 @@ const JobCard = React.memo(function JobCard({
             className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer hover:underline ${
               job.source === 'LinkedIn'
                 ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
-                : job.source === 'Adzuna'
-                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-                : job.source === 'Indeed'
-                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
                 : job.source === 'Glassdoor'
                 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
                 : job.source === 'Arbeitnow'

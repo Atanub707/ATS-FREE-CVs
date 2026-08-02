@@ -23,20 +23,14 @@ export function getValidJobUrl(job: { url?: string; title?: string; company?: st
     return `https://www.reed.co.uk/jobs/${encodeURIComponent(query.replace(/\s+/g, '-'))}-jobs`;
   }
 
-  // 4. Handle Glassdoor jobs
+  // 4. Handle Greenhouse / Lever company portals
   if (job.source === 'Greenhouse' || job.source === 'Lever') {
     if (url.startsWith('http')) return url;
     const query = [job.title, job.company].filter(Boolean).join(' ');
     return `https://www.google.com/search?q=${encodeURIComponent(query + ' job')}`;
   }
 
-  // 5. Handle Glassdoor jobs
-  if (job.source === 'Glassdoor') {
-    const query = [job.title, job.company].filter(Boolean).join(' ');
-    return `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${encodeURIComponent(query)}`;
-  }
-
-  // 4. For non-LinkedIn sources (SimplyHired, Dice, etc.)
+  // For non-LinkedIn sources (SimplyHired, Dice, etc.)
   // Extract real numeric LinkedIn job ID (7 to 11 digits) from URL or ID
   // Only for LinkedIn or unspecified sources
   if (job.source !== 'LinkedIn' && job.source !== undefined) {

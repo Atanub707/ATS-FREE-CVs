@@ -70,10 +70,6 @@ export async function scrapeJobDescription(jobUrl: string): Promise<{ text: stri
     let source = 'Web';
     const hostname = new URL(jobUrl).hostname.toLowerCase();
     if (hostname.includes('linkedin')) source = 'LinkedIn';
-    else if (hostname.includes('indeed')) source = 'Indeed';
-    else if (hostname.includes('glassdoor')) source = 'Glassdoor';
-    else if (hostname.includes('ziprecruiter')) source = 'ZipRecruiter';
-    else if (hostname.includes('adzuna')) source = 'Adzuna';
     else if (hostname.includes('arbeitnow')) source = 'Arbeitnow';
 
     return { text: cleaned, source };
