@@ -253,13 +253,14 @@ export const PREDEFINED_ROLES = TRENDING_ROLES;
 export const PREDEFINED_KEYWORDS = TRENDING_KEYWORDS;
 
 export const PREDEFINED_LOCATIONS = [
-  'Remote',
-  'Hybrid',
+  'Worldwide',
+  'Europe',
+  'Asia',
+  'North America',
   'Singapore',
   'Kolkata, INDIA',
   'Bengaluru, INDIA',
   'San Francisco, CA',
   'New York, NY',
   'London, UK',
-  'Worldwide',
 ];

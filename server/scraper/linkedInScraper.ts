@@ -13,6 +13,12 @@ export class LinkedInScraper extends BaseScraper {
 
     let tprParam = '';
     let maxAgeMs = Number.MAX_SAFE_INTEGER;
+    let fwtParam = '&f_WT=2';
+    const jt = params.jobType || 'remote';
+    if (jt === 'remote') fwtParam = '&f_WT=2';
+    else if (jt === 'onsite') fwtParam = '&f_WT=1';
+    else if (jt === 'hybrid') fwtParam = '&f_WT=3';
+    else fwtParam = '';
 
     if (filter === '24h') {
       tprParam = '&f_TPR=r86400';
@@ -38,7 +44,7 @@ export class LinkedInScraper extends BaseScraper {
         pageAttempts++;
         const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(
           keywords
-        )}&location=${encodeURIComponent(location)}&f_WT=2${tpr}${params.under10Applicants ? '&f_AL=true' : ''}&start=${start}`;
+        )}&location=${encodeURIComponent(location)}${fwtParam}${tpr}${params.under10Applicants ? '&f_AL=true' : ''}&start=${start}`;
 
         const response = await fetch(searchUrl, {
           headers: {
@@ -200,10 +206,13 @@ export class LinkedInScraper extends BaseScraper {
       }
     }
 
-    // Post-filter: remove Hybrid/On-site jobs (promoted jobs bypass LinkedIn's f_WT filter)
-    const remoteJobs = scrapedJobs.filter((j) => !j.jobType.includes('Hybrid') && !j.jobType.includes('On-site'));
+    const postFilter = params.jobType === 'remote' || !params.jobType;
+    // Post-filter: remove non-matching work type jobs when remote selected
+    const remoteJobs = postFilter
+      ? scrapedJobs.filter((j) => !j.jobType.includes('Hybrid') && !j.jobType.includes('On-site'))
+      : scrapedJobs;
 
-    console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} remote-only jobs`);
+    console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} ${jt} jobs`);
     return remoteJobs;
   }
 

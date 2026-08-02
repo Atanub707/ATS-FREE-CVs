@@ -104,6 +104,7 @@ export default function App() {
     location: string;
     sources: JobSource[];
     datePostedFilter: 'all' | '24h' | '7d' | '30d';
+    jobType?: 'all' | 'remote' | 'onsite' | 'hybrid';
     minSalary?: number;
     maxJobsPerSource?: number;
     under10Applicants?: boolean;
