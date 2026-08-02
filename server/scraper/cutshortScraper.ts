@@ -12,9 +12,9 @@ const ROLE_SLUGS: Record<string, string[]> = {
   'remote-devops-jobs': ['devops', 'sre', 'platform engineer', 'cloud engineer', 'infrastructure'],
   'remote-aws-jobs': ['aws', 'amazon web services'],
   'remote-python-jobs': ['python'],
-  'remote-java-jobs': ['java'],
+  'remote-java-jobs': ['java', 'spring boot'],
   'remote-golang-jobs': ['golang', 'go developer', 'go lang'],
-  'remote-nodejs-jobs': ['nodejs', 'node.js', 'node js', 'node developer'],
+  'remote-nodejs-jobs': ['nodejs', 'node.js', 'node js', 'node developer', 'backend node'],
   'remote-reactjs-jobs': ['react', 'reactjs', 'react js', 'frontend react'],
   'remote-frontend-developer-jobs': ['frontend', 'front-end', 'ui developer', 'web developer'],
   'remote-web-development-jobs': ['web', 'website', 'wordpress'],
@@ -29,8 +29,8 @@ const ROLE_SLUGS: Record<string, string[]> = {
   'remote-flutter-jobs': ['flutter'],
   'remote-ios-developer-jobs': ['ios', 'swift', 'iphone'],
   'remote-android-developer-jobs': ['android', 'kotlin'],
-  'remote-datascience-jobs': ['data science', 'datascience', 'ml engineer', 'machine learning engineer'],
-  'remote-machine-learning-ml-jobs': ['machine learning', 'ml', 'ai engineer', 'llm'],
+  'remote-datascience-jobs': ['data science', 'datascience', 'ml engineer', 'machine learning engineer', 'data engineer'],
+  'remote-machine-learning-ml-jobs': ['machine learning', 'ml', 'ai engineer', 'llm', 'ai'],
   'remote-data-analytics-jobs': ['data analytics', 'analytics', 'business intelligence', 'bi'],
   'remote-sql-jobs': ['sql', 'database', 'mysql', 'postgres'],
   'remote-cyber-security-jobs': ['security', 'cyber', 'infosec', 'penetration'],
@@ -41,14 +41,34 @@ const ROLE_SLUGS: Record<string, string[]> = {
   'remote-windows-azure-jobs': ['azure', 'windows'],
   'remote-startup-jobs': ['startup'],
   'remote-video-editing-jobs': ['video editing', 'video editor'],
-  'remote-golang-jobs': ['golang'],
+};
+
+// Software/backend/fullstack roles map to the closest slug; matching done client-side
+const FALLBACK_SLUGS: Record<string, string> = {
+  'software': 'remote-frontend-developer-jobs',
+  'full stack': 'remote-frontend-developer-jobs',
+  'fullstack': 'remote-frontend-developer-jobs',
+  'backend': 'remote-nodejs-jobs',
+  'back end': 'remote-nodejs-jobs',
+  'developer': 'remote-frontend-developer-jobs',
+  'engineer': 'remote-devops-jobs',
+  'data': 'remote-datascience-jobs',
+  'security': 'remote-cyber-security-jobs',
+  'cyber': 'remote-cyber-security-jobs',
+  'web': 'remote-web-development-jobs',
+  'product': 'remote-business-analysis-jobs',
 };
 
 function resolveSlug(keywords: string): string {
   const kw = keywords.toLowerCase().trim();
-  // Exact match first
+  // Exact role term match first (e.g. 'devops' in 'DevOps Engineer')
   for (const [slug, terms] of Object.entries(ROLE_SLUGS)) {
     if (terms.some((t) => kw.includes(t))) return slug;
+  }
+  // Fallback by first word of keyword
+  const firstWord = kw.split(/\s+/)[0];
+  for (const [term, slug] of Object.entries(FALLBACK_SLUGS)) {
+    if (firstWord.includes(term) || kw.includes(term)) return slug;
   }
   // Try direct slug format (e.g. user typed 'devops-jobs')
   const direct = kw.replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '');
@@ -79,7 +99,7 @@ export class CutshortScraper extends BaseScraper {
 
         const response = await fetch(url, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(30000),
         });
 
         if (!response.ok) {
@@ -116,7 +136,12 @@ export class CutshortScraper extends BaseScraper {
           }
 
           const remoteType = item.remoteType || '';
-          const jobTypeParts = [remoteType === 'remote_okay' ? 'Remote' : remoteType === 'remote_not_okay' ? 'On-site' : ''].filter(Boolean);
+          const titleLower = (title + ' ' + (item.locationsText || '')).toLowerCase();
+          let workType = '';
+          if (remoteType === 'remote_okay' || titleLower.includes('remote')) workType = 'Remote';
+          else if (remoteType === 'remote_not_okay') workType = 'On-site';
+          else if (titleLower.includes('hybrid')) workType = 'Hybrid';
+          const jobTypeParts = [workType].filter(Boolean);
 
           // sanitizedComment still contains HTML — strip tags to plain text
           const cleanDescription = (item.sanitizedComment || '')
