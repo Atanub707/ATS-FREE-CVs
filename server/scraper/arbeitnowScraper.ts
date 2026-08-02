@@ -46,7 +46,10 @@ export class ArbeitnowScraper extends BaseScraper {
           const description = job.description || '';
           const company = job.company_name || 'Unknown';
 
-          const match = !keywordsLower || title.toLowerCase().includes(keywordsLower) || description.toLowerCase().includes(keywordsLower);
+          // Term-based matching: any significant keyword term must appear (phrase match missed jobs like "DevOps Lead")
+          const terms = keywordsLower.split(/\s+/).filter((t) => t.length > 2);
+          const searchText = `${title} ${company}`.toLowerCase();
+          const match = terms.length === 0 || terms.some((t) => searchText.includes(t));
           if (!match) continue;
 
           const jobUrl = job.url || '';
@@ -87,7 +90,7 @@ export class ArbeitnowScraper extends BaseScraper {
           });
         }
 
-        if (found === 0) break;
+        if (found === 0 && jobs.length === 0) break;
       } catch (err: any) {
         console.warn(`Arbeitnow fetch error on page ${page}:`, err?.message || err);
         break;

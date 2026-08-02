@@ -528,10 +528,10 @@ Return valid JSON only — NO markdown, NO code fences:
     }
   });
 
-  // Scrape Jobs (LinkedIn & Indeed)
+  // Scrape Jobs
   app.post('/api/jobs/scrape', async (req, res) => {
     try {
-      const { keywords, location, sources, datePostedFilter, minSalary, maxJobsPerSource, jobTitle, experienceLevel } = req.body;
+      const { keywords, location, sources, datePostedFilter, jobType, minSalary, maxJobsPerSource, jobTitle, experienceLevel, under10Applicants } = req.body;
 
       if (!keywords || !keywords.trim()) {
         res.status(400).json({ error: 'Keywords parameter is required.' });
@@ -543,10 +543,12 @@ Return valid JSON only — NO markdown, NO code fences:
         location: location || 'Remote',
         sources,
         datePostedFilter: datePostedFilter || 'all',
+        jobType: jobType || 'all',
         minSalary: minSalary ? Number(minSalary) : undefined,
         maxJobsPerSource: maxJobsPerSource ? Number(maxJobsPerSource) : 15,
         jobTitle: jobTitle?.trim() || undefined,
         experienceLevel: experienceLevel || 'all',
+        under10Applicants: under10Applicants === true,
       });
 
       const { added, skipped } = saveNewJobs(scrapedJobs);
