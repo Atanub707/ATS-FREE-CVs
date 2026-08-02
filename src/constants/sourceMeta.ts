@@ -16,6 +16,11 @@ export const SOURCE_METADATA: Record<JobSource, SourceMeta> = {
   RemoteOK: { flag: '🌍', country: 'Global remote', region: 'global' },
   WeWorkRemotely: { flag: '🌍', country: 'Global remote', region: 'global' },
   MyCareersFuture: { flag: '🇸🇬', country: 'Singapore', region: 'asia' },
+  Cutshort: { flag: '🇮🇳', country: 'India', region: 'asia' },
+  Gupy: { flag: '🇧🇷', country: 'Brazil', region: 'apac' },
+  JobsCh: { flag: '🇨🇭', country: 'Switzerland', region: 'eu' },
+  Daijob: { flag: '🇯🇵', country: 'Japan', region: 'asia' },
+  MyJobMag: { flag: '🇳🇬', country: 'Nigeria', region: 'apac' },
   Custom: { flag: '🌐', country: 'Custom', region: 'global' },
 };
 

@@ -527,6 +527,11 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 <option value="SimplyHired">SimplyHired</option>
                 <option value="Dice">Dice</option>
                 <option value="MyCareersFuture">MyCareersFuture</option>
+                <option value="Cutshort">Cutshort</option>
+                <option value="Gupy">Gupy</option>
+                <option value="JobsCh">JobsCh</option>
+                <option value="Daijob">Daijob</option>
+                <option value="MyJobMag">MyJobMag</option>
                 <option value="Glassdoor">Glassdoor</option>
                 <option value="Custom">Custom</option>
               </select>
