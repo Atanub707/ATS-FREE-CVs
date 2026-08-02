@@ -1,5 +1,5 @@
 export type JobState = 'pending' | 'matched' | 'tailored' | 'ready' | 'applied';
-export type JobSource = 'LinkedIn' | 'Glassdoor' | 'Arbeitnow' | 'SimplyHired' | 'Dice' | 'Reed' | 'Greenhouse' | 'Lever' | 'RemoteOK' | 'WeWorkRemotely' | 'MyCareersFuture' | 'Custom';
+export type JobSource = 'LinkedIn' | 'Glassdoor' | 'Arbeitnow' | 'SimplyHired' | 'Dice' | 'Reed' | 'RemoteOK' | 'WeWorkRemotely' | 'MyCareersFuture' | 'Custom';
 
 export interface Job {
   id: string;
