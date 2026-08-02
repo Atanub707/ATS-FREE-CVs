@@ -92,6 +92,12 @@ export class CompanyPortalScraper extends BaseScraper {
     const sources = params.sources || [];
     if (!keyword) return [];
 
+    const filter = params.datePostedFilter || 'all';
+    let maxAgeMs = Number.MAX_SAFE_INTEGER;
+    if (filter === '24h') maxAgeMs = 24 * 60 * 60 * 1000;
+    else if (filter === '7d') maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+    else if (filter === '30d') maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+
     const levelFilters: Record<string, (title: string) => boolean> = {
       all: () => true,
       entry: (t) => /junior|jr\.?|entry|graduate|new\s*grad|associate/i.test(t),
@@ -116,7 +122,9 @@ export class CompanyPortalScraper extends BaseScraper {
       for (const r of lvResults) if (r.status === 'fulfilled') allJobs.push(...r.value);
     }
 
-    const filtered = allJobs.filter(j => levelFilter(j.title));
+    const filtered = allJobs.filter(j =>
+      levelFilter(j.title) && new Date(j.postedDate).getTime() >= Date.now() - maxAgeMs
+    );
     filtered.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
 
     console.log(`  Found ${filtered.length} "${keyword}" (${level}) jobs`);
