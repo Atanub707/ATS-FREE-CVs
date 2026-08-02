@@ -34,7 +34,7 @@ export class MyCareersFutureScraper extends BaseScraper {
       const maxPages = 5;
 
       while (jobs.length < limit && page <= maxPages) {
-        const url = `https://api.mycareersfuture.gov.sg/v2/jobs?searchText=${encodeURIComponent(keywords)}&limit=20&page=${page}${employmentTypeParam}`;
+        const url = `https://api.mycareersfuture.gov.sg/v2/jobs?search=${encodeURIComponent(keywords)}&limit=20&page=${page}${employmentTypeParam}`;
 
         const response = await fetch(url, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
@@ -60,12 +60,13 @@ export class MyCareersFutureScraper extends BaseScraper {
           const title = item.title || '';
           if (!title) continue;
 
-          const company = item.hiringCompany?.name || item.postedCompany?.name || 'Unknown';
+          const company = item.postedCompany?.name || item.hiringCompany?.name || 'Unknown';
           const address = item.address || {};
-          const location = address.formattedAddress
-            || (address.city ? address.city : '')
-            || (address.region ? address.region : '')
-            || 'Singapore';
+          const location = address.building
+            ? `${address.building}, Singapore`
+            : address.street
+            ? `${address.street}, Singapore`
+            : (address.formattedAddress || 'Singapore');
 
           const postedDateStr = item.metadata?.newPostingDate || item.metadata?.originalPostingDate || item.metadata?.createdAt;
           const postedDate = postedDateStr ? new Date(postedDateStr) : new Date();
