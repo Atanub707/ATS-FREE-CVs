@@ -5,7 +5,7 @@ import { Job, MasterCv, JobFilterQueryParams, JobState } from '../../src/types.j
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
 const MASTER_CV_PATH = path.join(DATA_DIR, 'master_cv.json');
-const SQLITE_FILE_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite.json'); // Dual-backed JSON/SQLite store
+const PRIMARY_FILE_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite.json'); // Primary JSON store (legacy filename kept for data compatibility)
 
 export const DEFAULT_MASTER_CV: MasterCv = {
   fullName: 'Alex Mercer',
@@ -144,7 +144,7 @@ export function getAllJobs(): Job[] {
   ensureDataDir();
   try {
     // Check SQLite file store first, then fallback to JSON
-    const primaryFile = fs.existsSync(SQLITE_FILE_PATH) ? SQLITE_FILE_PATH : JSON_FILE_PATH;
+    const primaryFile = fs.existsSync(PRIMARY_FILE_PATH) ? PRIMARY_FILE_PATH : JSON_FILE_PATH;
     if (fs.existsSync(primaryFile)) {
       const raw = fs.readFileSync(primaryFile, 'utf-8');
       const parsed: Job[] = JSON.parse(raw);
@@ -169,16 +169,6 @@ export function getAllJobs(): Job[] {
         const linkedinMatch = result.match(/\/view\/.*?(\d{7,11})/) || result.match(/(\d{7,11})/);
         if ((source === 'LinkedIn' || result.includes('linkedin.com')) && linkedinMatch && linkedinMatch[1]) {
           return `https://www.linkedin.com/jobs/view/${linkedinMatch[1]}`;
-        }
-
-        if (source === 'Indeed' && !result.includes('indeed.com/jobs?q=')) {
-          const query = [title, company].filter(Boolean).join(' ');
-          return `https://www.indeed.com/jobs?q=${encodeURIComponent(query)}`;
-        }
-
-        if (source === 'Glassdoor' && !result.includes('glassdoor.com/Job/')) {
-          const query = [title, company].filter(Boolean).join(' ');
-          return `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${encodeURIComponent(query)}`;
         }
 
         return result;
@@ -243,7 +233,7 @@ export function saveAllJobs(jobs: Job[]): void {
   ensureDataDir();
   try {
     const data = JSON.stringify(jobs, null, 2);
-    fs.writeFileSync(SQLITE_FILE_PATH, data, 'utf-8');
+    fs.writeFileSync(PRIMARY_FILE_PATH, data, 'utf-8');
     fs.writeFileSync(JSON_FILE_PATH, data, 'utf-8'); // Dual persistence backup
   } catch (err) {
     console.error('Error saving jobs:', err);
@@ -380,7 +370,7 @@ export function runStorageMigration(targetMode: 'sqlite' | 'json'): { success: b
   const currentJobs = getAllJobs();
   if (targetMode === 'sqlite') {
     const data = JSON.stringify(currentJobs, null, 2);
-    fs.writeFileSync(SQLITE_FILE_PATH, data, 'utf-8');
+    fs.writeFileSync(PRIMARY_FILE_PATH, data, 'utf-8');
     return { success: true, message: `Successfully migrated ${currentJobs.length} jobs into SQLite store.`, count: currentJobs.length };
   } else {
     const data = JSON.stringify(currentJobs, null, 2);

@@ -59,12 +59,12 @@ import {
   queryJobs,
   saveNewJobs,
   runStorageMigration,
-} from './server/storage/sqliteStorage.js';
+} from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
-import { JobFilterQueryParams } from './src/types.js';
+import { JobFilterQueryParams, Job } from './src/types.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -953,8 +953,8 @@ Return valid JSON only — NO markdown, NO code fences:
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      const [saved] = saveNewJobs([job]);
-      res.json({ success: true, job: saved || job });
+      const { added, skipped } = saveNewJobs([job]);
+      res.json({ success: true, job: added[0] || job, skippedDuplicates: skipped });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

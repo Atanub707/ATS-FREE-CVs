@@ -1,7 +1,7 @@
-import { Job, ScraperParams, JobSource } from '../../src/types.js';
+import { Job, ScraperParams } from '../../src/types.js';
 
 export abstract class BaseScraper {
-  abstract readonly source: JobSource;
+  abstract readonly source: string;
 
   protected getStealthHeaders(): Record<string, string> {
     const userAgents = [
@@ -29,35 +29,6 @@ export abstract class BaseScraper {
 
   protected delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  protected extractSalaryFromString(text: string): { min?: number; max?: number; text?: string } {
-    if (!text) return {};
-    const salaryRegex = /(\$|\bUSD\b|\bEUR\b|\bGBP\b)?\s*(\d{2,3}(?:,\d{3})+|\d{2,3}k)\s*(?:-|to|\b–\b)\s*(\$|\bUSD\b|\bEUR\b|\bGBP\b)?\s*(\d{2,3}(?:,\d{3})+|\d{2,3}k)/i;
-    const match = text.match(salaryRegex);
-    if (match) {
-      const minRaw = match[2].toLowerCase().replace(/,/g, '');
-      const maxRaw = match[4].toLowerCase().replace(/,/g, '');
-      const min = minRaw.endsWith('k') ? parseFloat(minRaw) * 1000 : parseFloat(minRaw);
-      const max = maxRaw.endsWith('k') ? parseFloat(maxRaw) * 1000 : parseFloat(maxRaw);
-      return {
-        min: isNaN(min) ? undefined : min,
-        max: isNaN(max) ? undefined : max,
-        text: match[0]
-      };
-    }
-    const singleRegex = /(\$|\bUSD\b)?\s*(\d{2,3}(?:,\d{3})+|\d{2,3}k)\s*(?:\/yr|\/year|\bannually\b|\ba year\b)/i;
-    const singleMatch = text.match(singleRegex);
-    if (singleMatch) {
-      const raw = singleMatch[2].toLowerCase().replace(/,/g, '');
-      const val = raw.endsWith('k') ? parseFloat(raw) * 1000 : parseFloat(raw);
-      return {
-        min: isNaN(val) ? undefined : val,
-        max: isNaN(val) ? undefined : val,
-        text: singleMatch[0]
-      };
-    }
-    return {};
   }
 
   abstract scrape(params: ScraperParams): Promise<Job[]>;

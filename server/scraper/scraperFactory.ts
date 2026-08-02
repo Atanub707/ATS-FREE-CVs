@@ -14,45 +14,33 @@ export class ScraperFactory {
     const allJobs: Job[] = [];
 
     for (const source of sources) {
-      if (source === 'LinkedIn') {
-        const linkedin = new LinkedInScraper();
-        const jobs = await linkedin.scrape(params);
+      try {
+        let jobs: Job[] = [];
+        if (source === 'LinkedIn') {
+          jobs = await new LinkedInScraper().scrape(params);
+        } else if (source === 'Arbeitnow') {
+          jobs = await new ArbeitnowScraper().scrape(params);
+        } else if (source === 'SimplyHired') {
+          jobs = await new SimplyHiredScraper().scrape(params);
+        } else if (source === 'Dice') {
+          jobs = await new DiceScraper().scrape(params);
+        } else if (source === 'Reed') {
+          jobs = await new ReedScraper().scrape(params);
+        } else if (source === 'Greenhouse' || source === 'Lever') {
+          jobs = await new CompanyPortalScraper().scrape(params);
+        } else if (source === 'RemoteOK') {
+          jobs = await new RemoteOkScraper().scrape(params);
+        } else if (source === 'WeWorkRemotely') {
+          jobs = await new WeWorkRemotelyScraper().scrape(params);
+        } else {
+          console.warn(`[ScraperFactory] Unknown source: ${source}, skipping`);
+          continue;
+        }
         allJobs.push(...jobs);
-      }
-      if (source === 'Arbeitnow') {
-        const arbeitnow = new ArbeitnowScraper();
-        const jobs = await arbeitnow.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'SimplyHired') {
-        const sh = new SimplyHiredScraper();
-        const jobs = await sh.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'Dice') {
-        const dice = new DiceScraper();
-        const jobs = await dice.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'Reed') {
-        const reed = new ReedScraper();
-        const jobs = await reed.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'Greenhouse' || source === 'Lever') {
-        const cp = new CompanyPortalScraper();
-        const jobs = await cp.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'RemoteOK') {
-        const remoteok = new RemoteOkScraper();
-        const jobs = await remoteok.scrape(params);
-        allJobs.push(...jobs);
-      }
-      if (source === 'WeWorkRemotely') {
-        const wwr = new WeWorkRemotelyScraper();
-        const jobs = await wwr.scrape(params);
-        allJobs.push(...jobs);
+        console.log(`[ScraperFactory] ${source}: ${jobs.length} jobs`);
+      } catch (err: any) {
+        // Isolate failures: one broken source must not abort the rest
+        console.warn(`[ScraperFactory] ${source} failed: ${err?.message || err}`);
       }
     }
 
