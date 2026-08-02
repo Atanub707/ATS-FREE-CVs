@@ -6,6 +6,7 @@ import { ReedScraper } from './reedScraper.js';
 import { CompanyPortalScraper } from './companyPortalScraper.js';
 import { RemoteOkScraper } from './remoteOkScraper.js';
 import { WeWorkRemotelyScraper } from './weWorkRemotelyScraper.js';
+import { MyCareersFutureScraper } from './myCareersFutureScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
 export class ScraperFactory {
@@ -32,6 +33,8 @@ export class ScraperFactory {
           jobs = await new RemoteOkScraper().scrape(params);
         } else if (source === 'WeWorkRemotely') {
           jobs = await new WeWorkRemotelyScraper().scrape(params);
+        } else if (source === 'MyCareersFuture') {
+          jobs = await new MyCareersFutureScraper().scrape(params);
         } else {
           console.warn(`[ScraperFactory] Unknown source: ${source}, skipping`);
           continue;

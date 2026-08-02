@@ -241,7 +241,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               <span>Sources:</span>
             </span>
 
-            {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever', 'RemoteOK', 'WeWorkRemotely'] as const).map((src) => {
+            {(['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever', 'MyCareersFuture', 'RemoteOK', 'WeWorkRemotely'] as const).map((src) => {
               const isComingSoon = src === 'WeWorkRemotely' || src === 'RemoteOK';
               const isSelected = selectedSources.includes(src);
               const colorMap: Record<string, string> = {
@@ -254,6 +254,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                 Reed: 'bg-rose-50 text-rose-700 border-rose-300 cursor-pointer',
                 Greenhouse: 'bg-green-50 text-green-700 border-green-300 cursor-pointer',
                 Lever: 'bg-orange-50 text-orange-700 border-orange-300 cursor-pointer',
+                MyCareersFuture: 'bg-red-50 text-red-700 border-red-300 cursor-pointer',
               };
               return (
                 <button key={src} type="button"
