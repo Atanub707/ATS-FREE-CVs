@@ -6,6 +6,11 @@ import { ReedScraper } from './reedScraper.js';
 import { RemoteOkScraper } from './remoteOkScraper.js';
 import { WeWorkRemotelyScraper } from './weWorkRemotelyScraper.js';
 import { MyCareersFutureScraper } from './myCareersFutureScraper.js';
+import { CutshortScraper } from './cutshortScraper.js';
+import { GupyScraper } from './gupyScraper.js';
+import { JobsChScraper } from './jobsChScraper.js';
+import { DaijobScraper } from './daijobScraper.js';
+import { MyJobMagScraper } from './myJobMagScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
 
 export class ScraperFactory {
@@ -32,6 +37,16 @@ export class ScraperFactory {
           jobs = await new WeWorkRemotelyScraper().scrape(params);
         } else if (source === 'MyCareersFuture') {
           jobs = await new MyCareersFutureScraper().scrape(params);
+        } else if (source === 'Cutshort') {
+          jobs = await new CutshortScraper().scrape(params);
+        } else if (source === 'Gupy') {
+          jobs = await new GupyScraper().scrape(params);
+        } else if (source === 'JobsCh') {
+          jobs = await new JobsChScraper().scrape(params);
+        } else if (source === 'Daijob') {
+          jobs = await new DaijobScraper().scrape(params);
+        } else if (source === 'MyJobMag') {
+          jobs = await new MyJobMagScraper().scrape(params);
         } else {
           console.warn(`[ScraperFactory] Unknown source: ${source}, skipping`);
           continue;
