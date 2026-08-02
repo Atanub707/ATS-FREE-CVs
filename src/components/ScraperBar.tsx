@@ -19,6 +19,7 @@ interface ScraperBarProps {
     location: string;
     sources: JobSource[];
     datePostedFilter: 'all' | '24h' | '7d' | '30d';
+    jobType?: 'all' | 'remote' | 'onsite' | 'hybrid';
     minSalary?: number;
     maxJobsPerSource?: number;
     experienceLevel?: string;
@@ -31,6 +32,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
+  const [jobType, setJobType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('remote');
   const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
   const [under10Applicants, setUnder10Applicants] = useState(false);
@@ -57,6 +59,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       location,
       sources: selectedSources,
       datePostedFilter,
+      jobType,
       maxJobsPerSource,
       experienceLevel,
       under10Applicants,
@@ -134,6 +137,24 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
             </div>
           </div>
 
+          {/* Job Type */}
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Job Type</label>
+            <div className="relative">
+              <select
+                value={jobType}
+                onChange={(e) => setJobType(e.target.value as any)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-2 pr-6 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all cursor-pointer appearance-none font-normal"
+              >
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">On-site</option>
+                <option value="all">All</option>
+              </select>
+              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
           {/* Date Filter */}
           <div className="lg:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1">Posted</label>
@@ -153,7 +174,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           </div>
 
           {/* Experience Level */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <label className="block text-xs font-semibold text-slate-700 mb-1">Level</label>
             <div className="relative">
               <select
@@ -172,7 +193,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           </div>
 
           {/* Scrape Limit */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Scrape Limit
             </label>
