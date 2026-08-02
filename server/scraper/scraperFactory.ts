@@ -3,7 +3,6 @@ import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { SimplyHiredScraper } from './simplyHiredScraper.js';
 import { DiceScraper } from './diceScraper.js';
 import { ReedScraper } from './reedScraper.js';
-import { CompanyPortalScraper } from './companyPortalScraper.js';
 import { RemoteOkScraper } from './remoteOkScraper.js';
 import { WeWorkRemotelyScraper } from './weWorkRemotelyScraper.js';
 import { MyCareersFutureScraper } from './myCareersFutureScraper.js';
@@ -27,8 +26,6 @@ export class ScraperFactory {
           jobs = await new DiceScraper().scrape(params);
         } else if (source === 'Reed') {
           jobs = await new ReedScraper().scrape(params);
-        } else if (source === 'Greenhouse' || source === 'Lever') {
-          jobs = await new CompanyPortalScraper().scrape(params);
         } else if (source === 'RemoteOK') {
           jobs = await new RemoteOkScraper().scrape(params);
         } else if (source === 'WeWorkRemotely') {

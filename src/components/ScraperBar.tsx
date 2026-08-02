@@ -26,7 +26,7 @@ interface ScraperBarProps {
   isLoading: boolean;
 }
 
-const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'Greenhouse', 'Lever', 'MyCareersFuture', 'RemoteOK', 'WeWorkRemotely'];
+const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'RemoteOK', 'WeWorkRemotely'];
 const COMING_SOON: JobSource[] = ['RemoteOK', 'WeWorkRemotely'];
 
 export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) => {
