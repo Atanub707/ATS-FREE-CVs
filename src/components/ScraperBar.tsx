@@ -11,7 +11,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { JobSource } from '../types';
-import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions, detectDomains } from '../constants/suggestions';
+import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
 
 interface ScraperBarProps {
   onScrape: (params: {
@@ -41,7 +41,6 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
   const roleSuggestions = getRoleSuggestions(keywords);
   const keywordSuggestions = getKeywordSuggestions(keywords);
-  const matchedDomains = detectDomains(keywords);
 
   const toggleSource = (source: JobSource) => {
     setSelectedSources((prev) =>
@@ -231,68 +230,6 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
               ⚡ Less competition — faster responses
             </span>
           )}
-        </div>
-
-        {/* Quick Predefined Suggestion Chips */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-            <span className="text-slate-500 font-semibold flex items-center space-x-1 mr-1">
-              <Tag className="w-3 h-3 text-slate-400" />
-              <span>Suggested Roles{matchedDomains.length > 0 ? ` (${matchedDomains[0].label})` : ''}:</span>
-            </span>
-            {roleSuggestions.slice(0, 5).map((role) => (
-              <button
-                type="button"
-                key={role}
-                onClick={() => setKeywords(role)}
-                className={`px-2 py-0.5 rounded-md border text-[11px] transition-all cursor-pointer ${
-                  keywords === role
-                    ? 'bg-slate-900 text-white border-slate-900 font-medium'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                }`}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-
-          {matchedDomains.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-              <span className="text-indigo-500 font-semibold mr-1">Related Skills:</span>
-              {keywordSuggestions.slice(0, 8).map((kw) => (
-                <button
-                  type="button"
-                  key={kw}
-                  onClick={() => setKeywords(kw)}
-                  className={`px-2 py-0.5 rounded-md border text-[11px] transition-all cursor-pointer ${
-                    keywords === kw
-                      ? 'bg-indigo-600 text-white border-indigo-600 font-medium'
-                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
-                  }`}
-                >
-                  {kw}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-            <span className="text-slate-400 font-semibold mr-1">Locations:</span>
-            {PREDEFINED_LOCATIONS.map((loc) => (
-              <button
-                type="button"
-                key={loc}
-                onClick={() => setLocation(loc)}
-                className={`px-2 py-0.5 rounded-md border text-[11px] transition-all cursor-pointer ${
-                  location === loc
-                    ? 'bg-slate-900 text-white border-slate-900 font-medium'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                }`}
-              >
-                {loc}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Source Selector Controls & Scrape Button */}
