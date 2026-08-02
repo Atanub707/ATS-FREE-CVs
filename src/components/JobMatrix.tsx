@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Job, JobState, JobSource } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
@@ -24,8 +24,20 @@ import {
 
 interface JobMatrixProps {
   jobs: Job[];
+  totalJobs: number;
+  stats: { total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> };
   activeStateTab: 'all' | JobState;
   onStateTabChange: (tab: 'all' | JobState) => void;
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  sourceFilter: 'all' | JobSource;
+  setSourceFilter: (v: 'all' | JobSource) => void;
+  sortBy: 'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax';
+  setSortBy: (v: 'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax') => void;
+  page: number;
+  setPage: (v: number) => void;
+  pageSize: number;
+  setPageSize: (v: number) => void;
   onSelectJob: (job: Job) => void;
   onSelectTailoredReview: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
@@ -307,8 +319,20 @@ const JobCard = React.memo(function JobCard({
 
 export const JobMatrix: React.FC<JobMatrixProps> = ({
   jobs,
+  totalJobs,
+  stats,
   activeStateTab,
   onStateTabChange,
+  searchTerm,
+  setSearchTerm,
+  sourceFilter,
+  setSourceFilter,
+  sortBy,
+  setSortBy,
+  page,
+  setPage,
+  pageSize,
+  setPageSize,
   onSelectJob,
   onSelectTailoredReview,
   onMatchJob,
@@ -324,58 +348,16 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   scoreMessages,
   tailorMessages,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
-  const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const pendingCount = stats.pending;
+  const matchedCount = stats.matched;
+  const tailoredCount = stats.tailored;
+  const appliedCount = stats.applied;
+  const scoredJobsCount = stats.scoredCount;
+  const avgScore = stats.avgScore;
 
-  // Filter & Sort Jobs
-  const filteredJobs = jobs
-    .filter((j) => {
-      if (activeStateTab !== 'all' && j.state !== activeStateTab) return false;
-      if (sourceFilter !== 'all' && j.source !== sourceFilter) return false;
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
-        return (
-          j.title.toLowerCase().includes(q) ||
-          j.company.toLowerCase().includes(q) ||
-          j.location.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'matchScore') {
-        return (b.matchScore || 0) - (a.matchScore || 0);
-      }
-      if (sortBy === 'salaryMax') {
-        return (b.salaryMax || 0) - (a.salaryMax || 0);
-      }
-      if (sortBy === 'postedDate') {
-        const timeA = new Date(a.postedDate || a.createdAt).getTime();
-        const timeB = new Date(b.postedDate || b.createdAt).getTime();
-        return timeB - timeA;
-      }
-      // Default: 'createdAt' (Recently Scraped)
-      const timeA = new Date(a.createdAt || 0).getTime();
-      const timeB = new Date(b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
-
-  useEffect(() => { setPage(1); }, [searchTerm, sourceFilter, sortBy, activeStateTab, pageSize]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
   const safePage = Math.min(page, totalPages);
-  const paginatedJobs = filteredJobs.slice((safePage - 1) * pageSize, safePage * pageSize);
-
-  const pendingCount = jobs.filter((j) => j.state === 'pending').length;
-  const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
-  const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
-  const appliedCount = jobs.filter((j) => j.state === 'applied').length;
-
-  const scoredJobs = jobs.filter((j) => j.matchScore !== undefined);
-  const avgScore = scoredJobs.length > 0 ? Math.round(scoredJobs.reduce((acc, j) => acc + (j.matchScore || 0), 0) / scoredJobs.length) : 0;
+  const paginatedJobs = jobs;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
@@ -386,7 +368,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <span>Total Jobs</span>
             <Briefcase className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{jobs.length}</div>
+          <div className="text-xl font-bold text-slate-900 mt-1">{stats.total}</div>
           <p className="text-[11px] text-slate-500 mt-0.5">Scraped across sources</p>
         </div>
 
@@ -396,7 +378,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <TrendingUp className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-xl font-bold text-blue-600 mt-1">{avgScore}%</div>
-              <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobs.length} scored with AI</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobsCount} scored with AI</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
@@ -432,7 +414,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
         {/* State Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1">
           {(['all', 'pending', 'matched', 'tailored', 'ready', 'applied'] as const).map((tab) => {
-            const count = tab === 'all' ? jobs.length : jobs.filter((j) => j.state === tab).length;
+            const count = tab === 'all' ? stats.total : (stats.byState[tab] || 0);
             const labels = {
               all: 'All Jobs',
               pending: 'Pending',
@@ -600,7 +582,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       </div>
 
       {/* Job Card List */}
-      {filteredJobs.length === 0 ? (
+      {paginatedJobs.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-200">
           <Briefcase className="w-8 h-8 text-slate-400 mx-auto mb-2" />
           <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
@@ -631,10 +613,10 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       )}
 
       {/* Pagination */}
-      {filteredJobs.length > 0 && (
+      {paginatedJobs.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-xs text-xs">
           <div className="flex items-center space-x-3 text-slate-600">
-            <span className="font-medium">{filteredJobs.length} jobs</span>
+            <span className="font-medium">{totalJobs} jobs</span>
             <span className="text-slate-300">|</span>
             <div className="flex items-center space-x-1.5">
               <span className="text-slate-500">Show</span>

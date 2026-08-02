@@ -280,6 +280,19 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
+  // Warn if a previously-committed (compromised) API key is still in use
+  const COMPROMISED_KEYS = new Set(['sk-BGkiio5V8alNSZEipX2yMJ9d22S4N2dSDHHhaOrOYsubdYKHS2dhiSpFTYKoQqF0']);
+  const configuredKey = loadConfig().llm.apiKey;
+  if (COMPROMISED_KEYS.has(configuredKey)) {
+    console.warn('\n==========================================================');
+    console.warn('⚠️  SECURITY WARNING: Your API key was exposed in an old');
+    console.warn('    public git commit. Anyone with repo history has it.');
+    console.warn('    Generate a NEW key in your LLM provider dashboard and');
+    console.warn('    paste it in Settings → LLM API Key (or config.ini).');
+    console.warn('    Then revoke the old key on the provider side.');
+    console.warn('==========================================================\n');
+  }
+
   // Seed sample jobs if store is completely empty on initial startup
   const initialJobs = getAllJobs();
   if (initialJobs.length === 0) {
@@ -572,6 +585,28 @@ Return valid JSON only — NO markdown, NO code fences:
     } catch (err: any) {
       console.error('Generic scrape error:', err);
       res.status(500).json({ error: err.message || 'Scraping failed.' });
+    }
+  });
+
+  // Job stats for KPI dashboard (counts computed server-side from all jobs)
+  app.get('/api/jobs/stats', (req, res) => {
+    try {
+      const all = getAllJobs();
+      const pending = all.filter((j) => j.state === 'pending').length;
+      const matched = all.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
+      const tailored = all.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
+      const applied = all.filter((j) => j.state === 'applied').length;
+      const scored = all.filter((j) => j.matchScore !== undefined);
+      const avgScore = scored.length > 0
+        ? Math.round(scored.reduce((acc, j) => acc + (j.matchScore || 0), 0) / scored.length)
+        : 0;
+
+      const byState: Record<string, number> = { pending: 0, matched: 0, tailored: 0, ready: 0, applied: 0 };
+      for (const j of all) if (byState[j.state] !== undefined) byState[j.state]++;
+
+      res.json({ total: all.length, pending, matched, tailored, applied, scoredCount: scored.length, avgScore, byState });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 

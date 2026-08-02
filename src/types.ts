@@ -203,7 +203,7 @@ export interface JobFilterQueryParams {
   search?: string;
   minScore?: number;
   maxScore?: number;
-  sortBy?: 'postedDate' | 'matchScore' | 'createdAt' | 'company' | 'title';
+  sortBy?: 'postedDate' | 'matchScore' | 'createdAt' | 'company' | 'title' | 'salaryMax';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;

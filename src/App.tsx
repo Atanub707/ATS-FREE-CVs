@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
@@ -30,6 +30,17 @@ export default function App() {
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
   const [scoreMessages, setScoreMessages] = useState<Record<string, string[]>>({});
   const [tailorMessages, setTailorMessages] = useState<Record<string, string[]>>({});
+
+  // Server-side list state
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [stats, setStats] = useState<{ total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> }>({
+    total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const addLoadingJobId = (id: string) => setLoadingJobIds((prev) => new Set(prev).add(id));
   const removeLoadingJobId = (id: string) => setLoadingJobIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
@@ -68,19 +79,39 @@ export default function App() {
     }
   };
 
-  // Initial Fetch
+  // Fetch job list (server-side filtered + paginated) and stats
+  const fetchJobs = useCallback(async () => {
+    const params = new URLSearchParams({
+      state: activeStateTab,
+      source: sourceFilter,
+      search: searchTerm,
+      sortBy,
+      sortOrder: 'desc',
+      page: String(page),
+      limit: String(pageSize),
+    });
+    const [listRes, statsRes] = await Promise.all([
+      fetch(`/api/jobs?${params}`),
+      fetch('/api/jobs/stats'),
+    ]);
+    if (listRes.ok) {
+      const data = await listRes.json();
+      setJobs(data.jobs || []);
+      setTotalJobs(data.total || 0);
+    }
+    if (statsRes.ok) {
+      setStats(await statsRes.json());
+    }
+  }, [activeStateTab, sourceFilter, searchTerm, sortBy, page, pageSize]);
+
+  // Initial Fetch (CV + config + first page)
   const fetchAllData = async () => {
     try {
-      const [jobsRes, cvRes, configRes] = await Promise.all([
-        fetch('/api/jobs?limit=500'),
+      const [cvRes, configRes] = await Promise.all([
         fetch('/api/cv/master'),
         fetch('/api/config'),
       ]);
 
-      if (jobsRes.ok) {
-        const data = await jobsRes.json();
-        setJobs(data.jobs || []);
-      }
       if (cvRes.ok) {
         const cvData = await cvRes.json();
         setMasterCv(cvData);
@@ -89,6 +120,7 @@ export default function App() {
         const configData = await configRes.json();
         setConfig(configData);
       }
+      await fetchJobs();
     } catch (err) {
       console.error('Failed to fetch initial data:', err);
     }
@@ -97,6 +129,16 @@ export default function App() {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // Refetch whenever filters/pagination change
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  // Reset to page 1 when a filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [activeStateTab, sourceFilter, searchTerm, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -148,6 +190,7 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
+        fetchJobs();
       }
     }, setScoreMessages);
   };
@@ -169,6 +212,7 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
+        fetchJobs();
       }
     } catch (err) {
       console.error('Batch match error:', err);
@@ -192,6 +236,7 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
+        fetchJobs();
       }
     }, setTailorMessages);
   };
@@ -209,6 +254,7 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
+        fetchJobs();
       }
     } catch (err) {
       console.error('Batch tailor error:', err);
@@ -229,6 +275,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
+        fetchJobs();
       }
     } catch (err) {
       console.error('Status update error:', err);
@@ -247,6 +294,7 @@ export default function App() {
         if (selectedJob && selectedJob.id === jobId) {
           setSelectedJob(null);
         }
+        fetchJobs();
       }
     } catch (err) {
       console.error('Delete error:', err);
@@ -260,6 +308,7 @@ export default function App() {
       if (res.ok) {
         setJobs([]);
         setSelectedJob(null);
+        fetchJobs();
       }
     } catch (err) {
       console.error('Clear all error:', err);
@@ -301,10 +350,6 @@ export default function App() {
       console.error('Save config error:', err);
     }
   };
-  const matchedCount = jobs.filter((j) => j.state === 'matched' || j.state === 'tailored' || j.state === 'ready').length;
-  const tailoredCount = jobs.filter((j) => j.state === 'tailored' || j.state === 'ready').length;
-  const appliedCount = jobs.filter((j) => j.state === 'applied').length;
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
       {/* Header Navigation */}
@@ -312,10 +357,10 @@ export default function App() {
         onOpenMasterCv={() => setIsMasterCvOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenManualJd={() => setIsManualJdOpen(true)}
-        totalJobs={jobs.length}
-        matchedCount={matchedCount}
-        tailoredCount={tailoredCount}
-        appliedCount={appliedCount}
+        totalJobs={stats.total}
+        matchedCount={stats.matched}
+        tailoredCount={stats.tailored}
+        appliedCount={stats.applied}
       />
 
       {/* Live Job Scraper Bar */}
@@ -325,8 +370,20 @@ export default function App() {
       <main>
         <JobMatrix
           jobs={jobs}
+          totalJobs={totalJobs}
+          stats={stats}
           activeStateTab={activeStateTab}
           onStateTabChange={setActiveStateTab}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sourceFilter={sourceFilter}
+          setSourceFilter={setSourceFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
           onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
           onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
           onMatchJob={handleMatchJob}
