@@ -5,10 +5,6 @@ interface NavbarProps {
   onOpenMasterCv: () => void;
   onOpenSettings: () => void;
   onOpenManualJd: () => void;
-  totalJobs: number;
-  matchedCount: number;
-  tailoredCount: number;
-  appliedCount: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
   onLogout?: () => void;
 }
@@ -17,10 +13,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMasterCv,
   onOpenSettings,
   onOpenManualJd,
-  totalJobs,
-  matchedCount,
-  tailoredCount,
-  appliedCount,
   user,
   onLogout,
 }) => {
@@ -44,29 +36,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <p className="text-[11px] text-slate-500 hidden sm:block">
               Job Search • AI ATS Matching • CV Tailoring & Export
             </p>
-          </div>
-        </div>
-
-        {/* Minimalist Metrics Badge */}
-        <div className="hidden lg:flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
-          <div className="flex items-center space-x-1.5">
-            <span className="text-slate-500 font-medium">Scraped:</span>
-            <span className="font-bold text-slate-900">{totalJobs}</span>
-          </div>
-          <span className="text-slate-300">•</span>
-          <div className="flex items-center space-x-1.5">
-            <span className="text-slate-500 font-medium">Scored:</span>
-            <span className="font-bold text-blue-600">{matchedCount}</span>
-          </div>
-          <span className="text-slate-300">•</span>
-          <div className="flex items-center space-x-1.5">
-            <span className="text-slate-500 font-medium">Tailored:</span>
-            <span className="font-bold text-emerald-600">{tailoredCount}</span>
-          </div>
-          <span className="text-slate-300">•</span>
-          <div className="flex items-center space-x-1.5">
-            <span className="text-slate-500 font-medium">Applied:</span>
-            <span className="font-bold text-green-600">{appliedCount}</span>
           </div>
         </div>
 
