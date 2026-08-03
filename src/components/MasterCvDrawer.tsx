@@ -144,14 +144,11 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
     const newSkills: string[] = Array.from(selectedGaps);
     const skillsCat = updated.skills.find((s) => s.category.toLowerCase().includes('skill') || s.category === 'Core Competencies');
     if (skillsCat) {
-      for (const s of newSkills) {
-        const normalized = s.charAt(0).toUpperCase() + s.slice(1);
-        if (!skillsCat.items.some((i) => i.toLowerCase() === normalized.toLowerCase())) {
-          skillsCat.items.push(normalized);
-        }
-      }
+      const normalized = newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1));
+      const existing = new Set(skillsCat.items.map((i) => i.toLowerCase()));
+      skillsCat.items = [...normalized.filter((n) => !existing.has(n.toLowerCase())), ...skillsCat.items];
     } else {
-      updated.skills.push({ category: 'Core Competencies', items: newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1)) });
+      updated.skills = [{ category: 'Core Competencies', items: newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1)) }, ...updated.skills];
     }
     setFormData(updated);
     setSkillGaps((prev) => prev.filter((g) => !selectedGaps.has(g.skill)));
@@ -275,14 +272,14 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
 
   const addExperience = () => {
     const updated = { ...formData };
-    updated.experiences.push({
+    updated.experiences = [{
       id: `exp-${Date.now()}`,
       title: 'Job Title',
       company: 'Company Name',
       location: 'Remote / City, State',
       dates: '2022 - Present',
       responsibilities: ['Key responsibility or major accomplishment...'],
-    });
+    }, ...updated.experiences];
     setFormData(updated);
   };
 
@@ -295,13 +292,13 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const addEducation = () => {
     const updated = { ...formData };
     if (!updated.education) updated.education = [];
-    updated.education.push({
+    updated.education = [{
       id: `edu-${Date.now()}`,
       degree: 'B.S. Computer Science',
       institution: 'University Name',
       dates: '2018 - 2022',
       details: 'Major in Software Engineering',
-    });
+    }, ...updated.education];
     setFormData(updated);
   };
 
@@ -313,10 +310,10 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
 
   const addSkillCategory = () => {
     const updated = { ...formData };
-    updated.skills.push({
+    updated.skills = [{
       category: 'New Category',
       items: ['Skill 1', 'Skill 2'],
-    });
+    }, ...updated.skills];
     setFormData(updated);
   };
 
@@ -337,7 +334,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
     };
     setFormData((prev) => ({
       ...prev,
-      projects: [...(prev.projects || []), newProject],
+      projects: [newProject, ...(prev.projects || [])],
     }));
   };
 
@@ -404,13 +401,13 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const addCertification = () => {
     const updated = { ...formData };
     if (!updated.certifications) updated.certifications = [];
-    updated.certifications.push({
+    updated.certifications = [{
       id: `cert-${Date.now()}`,
       name: 'AWS Certified Solutions Architect',
       issuer: 'Amazon Web Services',
       date: '2023',
       link: '',
-    });
+    }, ...updated.certifications];
     setFormData(updated);
   };
 
