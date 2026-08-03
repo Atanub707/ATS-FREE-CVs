@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Calendar,
   ExternalLink,
+  Users,
 } from 'lucide-react';
 
 interface JobMatrixProps {
@@ -134,6 +135,17 @@ const JobCard = React.memo(function JobCard({
           {job.jobType && (
             <span className="text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
               {job.jobType}
+            </span>
+          )}
+
+          {/* Applicant Count */}
+          {job.applicantCount !== undefined && (
+            <span
+              className="inline-flex items-center space-x-1 text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200"
+              title="Number of people who applied for this job"
+            >
+              <Users className="w-3 h-3 text-slate-400" />
+              <span>{job.applicantCount.toLocaleString()} applicants</span>
             </span>
           )}
         </div>

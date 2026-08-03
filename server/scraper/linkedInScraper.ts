@@ -197,6 +197,9 @@ export class LinkedInScraper extends BaseScraper {
         } else {
           job.salaryText = 'Salary not mentioned';
         }
+        if (detail.applicantCount !== undefined) {
+          job.applicantCount = detail.applicantCount;
+        }
         detailFetched++;
         console.log(`  [${detailFetched}/${scrapedJobs.length}] Fetched details for: ${job.title} @ ${job.company}`);
       } catch (err: any) {
@@ -222,6 +225,7 @@ export class LinkedInScraper extends BaseScraper {
     salaryMin?: number;
     salaryMax?: number;
     salaryText?: string;
+    applicantCount?: number;
   }> {
     const url = `https://www.linkedin.com/jobs/view/${jobId}`;
     const response = await fetch(url, {
@@ -235,6 +239,17 @@ export class LinkedInScraper extends BaseScraper {
 
     const html = await response.text();
     const $ = cheerio.load(html);
+
+    // Applicant count from the "N applicants" metadata caption
+    let applicantCount: number | undefined;
+    const applicantCaption = $('.num-applicants__caption').first().text().trim();
+    if (applicantCaption) {
+      const numMatch = applicantCaption.match(/([\d,.]+)\s*applicants?/i);
+      if (numMatch) {
+        const parsed = parseInt(numMatch[1].replace(/,/g, ''), 10);
+        if (!isNaN(parsed)) applicantCount = parsed;
+      }
+    }
 
     // Try JSON-LD first (most reliable structured data)
     const jsonLdScripts = $('script[type="application/ld+json"]').toArray();
@@ -301,6 +316,7 @@ export class LinkedInScraper extends BaseScraper {
             salaryMin,
             salaryMax,
             salaryText,
+            applicantCount,
           };
         }
       } catch {
@@ -341,6 +357,7 @@ export class LinkedInScraper extends BaseScraper {
         if (text) {
           return {
             description: text,
+            applicantCount,
           };
         }
       }
@@ -351,6 +368,7 @@ export class LinkedInScraper extends BaseScraper {
     if (metaDesc) {
       return {
         description: metaDesc.trim(),
+        applicantCount,
       };
     }
 
