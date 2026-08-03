@@ -19,6 +19,7 @@ import {
   Globe,
   Award,
   FolderGit2,
+  GripVertical,
   TrendingUp,
   AlertTriangle,
   ChevronDown,
@@ -338,6 +339,59 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
       ...prev,
       projects: [...(prev.projects || []), newProject],
     }));
+  };
+
+  const [dragProjectIdx, setDragProjectIdx] = useState<number | null>(null);
+  const [dragExpIdx, setDragExpIdx] = useState<number | null>(null);
+
+  const handleProjectDragStart = (e: React.DragEvent, idx: number) => {
+    setDragProjectIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleProjectDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleProjectDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (dragProjectIdx === null || dragProjectIdx === targetIdx) {
+      setDragProjectIdx(null);
+      return;
+    }
+    setFormData((prev) => {
+      const projects = [...(prev.projects || [])];
+      const [moved] = projects.splice(dragProjectIdx, 1);
+      projects.splice(targetIdx, 0, moved);
+      return { ...prev, projects };
+    });
+    setDragProjectIdx(null);
+  };
+
+  const handleExpDragStart = (e: React.DragEvent, idx: number) => {
+    setDragExpIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleExpDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleExpDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (dragExpIdx === null || dragExpIdx === targetIdx) {
+      setDragExpIdx(null);
+      return;
+    }
+    setFormData((prev) => {
+      const experiences = [...prev.experiences];
+      const [moved] = experiences.splice(dragExpIdx, 1);
+      experiences.splice(targetIdx, 0, moved);
+      return { ...prev, experiences };
+    });
+    setDragExpIdx(null);
   };
 
   const removeProject = (pIdx: number) => {
@@ -738,9 +792,23 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             </div>
 
             {formData.experiences.map((exp, expIdx) => (
-              <div key={exp.id || expIdx} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-3">
+              <div
+                key={exp.id || expIdx}
+                draggable
+                onDragStart={(e) => handleExpDragStart(e, expIdx)}
+                onDragOver={handleExpDragOver}
+                onDrop={(e) => handleExpDrop(e, expIdx)}
+                className={`bg-white p-3.5 rounded-lg border space-y-3 cursor-grab active:cursor-grabbing transition-all ${
+                  dragExpIdx === expIdx
+                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="font-bold text-slate-700 text-[11px]">Position #{expIdx + 1}</span>
+                  <span className="font-bold text-slate-700 text-[11px] flex items-center space-x-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Position #{expIdx + 1}</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeExperience(expIdx)}
@@ -1013,9 +1081,23 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             </div>
 
             {(formData.projects || []).map((proj, pIdx) => (
-              <div key={proj.id || pIdx} className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5">
+              <div
+                key={proj.id || pIdx}
+                draggable
+                onDragStart={(e) => handleProjectDragStart(e, pIdx)}
+                onDragOver={handleProjectDragOver}
+                onDrop={(e) => handleProjectDrop(e, pIdx)}
+                className={`bg-white p-3 rounded-lg border space-y-2.5 cursor-grab active:cursor-grabbing transition-all ${
+                  dragProjectIdx === pIdx
+                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-700 text-[11px]">Project #{pIdx + 1}</span>
+                  <span className="flex items-center space-x-1.5 font-bold text-slate-700 text-[11px]">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Project #{pIdx + 1}</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeProject(pIdx)}
