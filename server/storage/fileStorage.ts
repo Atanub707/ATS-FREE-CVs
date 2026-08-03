@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import Database from 'better-sqlite3';
 import { Job, MasterCv, JobFilterQueryParams } from '../../src/types.js';
 
@@ -9,6 +11,93 @@ const MASTER_CV_PATH = path.join(DATA_DIR, 'master_cv.json');
 const SQLITE_DB_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite');
 const LEGACY_PRIMARY_JSON = path.join(DATA_DIR, 'ats_jobs.sqlite.json');
 
+// Request-scoped identity: the middleware wraps each request with the
+// authenticated user id, and storage functions resolve the current user from it.
+export const authContext = new AsyncLocalStorage<{ userId: string }>();
+
+export function getCurrentUserId(): string {
+  return authContext.getStore()?.userId || '';
+}
+
+export function runWithUser(userId: string, fn: () => void): void {
+  authContext.run({ userId }, fn);
+}
+
+// ─────────────────── Sessions ───────────────────
+export function createSession(userId: string): string {
+  const token = crypto.randomBytes(24).toString('hex');
+  getDb().prepare('INSERT OR REPLACE INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)')
+    .run(token, userId, new Date().toISOString());
+  return token;
+}
+
+export function getSessionUser(token: string): string | undefined {
+  try {
+    const row = getDb().prepare('SELECT user_id FROM sessions WHERE token = ?').get(token) as { user_id: string } | undefined;
+    return row?.user_id;
+  } catch { return undefined; }
+}
+
+export function deleteSession(token: string): void {
+  try {
+    getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  } catch { /* ignore */ }
+}
+
+// ─────────────────── Auth / Users ───────────────────
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  isGuest: boolean;
+  createdAt: string;
+}
+
+function hashPassword(password: string, salt: string): string {
+  return crypto.scryptSync(password, salt, 32).toString('hex');
+}
+
+export function createUser(email: string, name: string, password?: string): User {
+  const d = getDb();
+  const existing = d.prepare('SELECT 1 FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  if (existing) throw new Error('An account with this email already exists.');
+  const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const isGuest = !password;
+  const salt = isGuest ? '' : crypto.randomBytes(8).toString('hex');
+  const passHash = isGuest ? '' : hashPassword(password!, salt);
+  const createdAt = new Date().toISOString();
+  d.prepare('INSERT INTO users (id, email, name, salt, pass_hash, is_guest, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(id, email.toLowerCase().trim(), name, salt, passHash, isGuest ? 1 : 0, createdAt);
+  return { id, email: email.toLowerCase().trim(), name, isGuest, createdAt };
+}
+
+export function verifyLogin(email: string, password: string): User | null {
+  const d = getDb();
+  const row = d.prepare('SELECT id, email, name, salt, pass_hash, is_guest, created_at FROM users WHERE email = ?')
+    .get(email.toLowerCase().trim()) as { id: string; email: string; name: string; salt: string; pass_hash: string; is_guest: number; created_at: string } | undefined;
+  if (!row || row.is_guest === 1) return null;
+  const hash = hashPassword(password, row.salt);
+  if (hash !== row.pass_hash) return null;
+  return { id: row.id, email: row.email, name: row.name, isGuest: false, createdAt: row.created_at };
+}
+
+export function listUsers(): User[] {
+  try {
+    const d = getDb();
+    return (d.prepare('SELECT id, email, name, is_guest, created_at FROM users ORDER BY is_guest ASC, name').all() as any[])
+      .map((r) => ({ id: r.id, email: r.email, name: r.name, isGuest: r.is_guest === 1, createdAt: r.created_at }));
+  } catch { return []; }
+}
+
+export function getUserById(id: string): User | undefined {
+  try {
+    const d = getDb();
+    const r = d.prepare('SELECT id, email, name, is_guest, created_at FROM users WHERE id = ?').get(id) as any;
+    return r ? { id: r.id, email: r.email, name: r.name, isGuest: r.is_guest === 1, createdAt: r.created_at } : undefined;
+  } catch { return undefined; }
+}
+
+// ─────────────────── Database ───────────────────
 export const DEFAULT_MASTER_CV: MasterCv = {
   fullName: 'Alex Mercer',
   email: 'alex.mercer.dev@example.com',
@@ -118,55 +207,103 @@ function ensureDataDir(): void {
 // ─────────────────── SQLite connection ───────────────────
 let db: Database.Database | null = null;
 
-function getDb(): Database.Database {
+export function getDb(): Database.Database {
   if (db) return db;
   ensureDataDir();
   db = new Database(SQLITE_DB_PATH);
   db.pragma('journal_mode = WAL');
   db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      salt TEXT,
+      pass_hash TEXT,
+      is_guest INTEGER DEFAULT 0,
+      created_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT
+    );
     CREATE TABLE IF NOT EXISTS jobs (
       id TEXT PRIMARY KEY,
+      user_id TEXT,
       data TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS master_cv (
-      profile_id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
+      user_id TEXT PRIMARY KEY,
       data TEXT NOT NULL,
       updated_at TEXT
     );
   `);
-  migrateOldMasterCvSchema(db);
+  migrateToUsers(db);
   return db;
 }
 
 /**
- * If the pre-multi-profile master_cv table (id INTEGER CHECK(id=1)) exists,
- * rebuild it into the profile-keyed table and migrate the existing row to 'default'.
+ * Migrates a pre-auth database into per-user isolation. Idempotent:
+ * each step runs only if its precondition is unmet, so interrupted
+ * migrations can be retried safely.
  */
-function migrateOldMasterCvSchema(d: Database.Database): void {
-  const cols = d.prepare("PRAGMA table_info(master_cv)").all() as { name: string }[];
-  const hasProfileId = cols.some((c) => c.name === 'profile_id');
-  if (hasProfileId) return;
-
-  console.log('[Storage] Migrating master_cv table to multi-profile schema...');
+function migrateToUsers(d: Database.Database): void {
   try {
-    const oldRows = d.prepare('SELECT data FROM master_cv').all() as { data: string }[];
-    d.exec('DROP TABLE master_cv');
-    d.exec(`
-      CREATE TABLE master_cv (
-        profile_id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        data TEXT NOT NULL,
-        updated_at TEXT
-      );
-    `);
-    const insert = d.prepare('INSERT OR IGNORE INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)');
-    if (oldRows.length > 0) {
-      insert.run('default', 'Default Profile', oldRows[0].data, new Date().toISOString());
-      console.log('[Storage] Migrated existing master CV to "default" profile');
+    // 1. jobs table: add user_id if missing
+    const jobCols = d.prepare('PRAGMA table_info(jobs)').all() as { name: string }[];
+    if (!jobCols.some((c) => c.name === 'user_id')) {
+      d.exec('ALTER TABLE jobs ADD COLUMN user_id TEXT');
+      console.log('[Storage] Added user_id column to jobs table');
+    }
+
+    // 2. master_cv table: rebuild into user-keyed schema
+    const cvCols = d.prepare('PRAGMA table_info(master_cv)').all() as { name: string }[];
+    if (!cvCols.some((c) => c.name === 'user_id')) {
+      d.exec('ALTER TABLE master_cv RENAME TO master_cv_old');
+      d.exec(`
+        CREATE TABLE master_cv (
+          user_id TEXT PRIMARY KEY,
+          data TEXT NOT NULL,
+          updated_at TEXT
+        );
+      `);
+      if (cvCols.some((c) => c.name === 'profile_id')) {
+        const rows = d.prepare('SELECT profile_id, data, updated_at FROM master_cv_old').all() as { profile_id: string; data: string; updated_at: string }[];
+        const keep = rows.find((r) => r.profile_id === 'default') || rows[0];
+        if (keep) {
+          d.prepare('INSERT INTO master_cv (user_id, data, updated_at) VALUES (?, ?, ?)')
+            .run('__placeholder__', keep.data, keep.updated_at || new Date().toISOString());
+        }
+      } else if (cvCols.some((c) => c.name === 'data')) {
+        const row = d.prepare('SELECT data, updated_at FROM master_cv_old LIMIT 1').get() as { data: string; updated_at: string } | undefined;
+        if (row) {
+          d.prepare('INSERT INTO master_cv (user_id, data, updated_at) VALUES (?, ?, ?)')
+            .run('__placeholder__', row.data, row.updated_at || new Date().toISOString());
+        }
+      }
+      d.exec('DROP TABLE master_cv_old');
+      console.log('[Storage] Rebuilt master_cv table with user_id schema');
+    }
+
+    // 3. Ensure an owner exists for unclaimed data
+    const userCount = (d.prepare('SELECT COUNT(*) AS c FROM users').get() as { c: number }).c;
+    let adminId: string | undefined;
+    if (userCount === 0) {
+      const admin = createUser('admin@local', 'Admin');
+      adminId = admin.id;
+      console.log(`[Storage] Created admin user (admin@local, id=${admin.id})`);
+    } else {
+      adminId = (d.prepare('SELECT id FROM users ORDER BY is_guest ASC, created_at ASC LIMIT 1').get() as any)?.id;
+    }
+
+    if (adminId) {
+      d.exec(`UPDATE jobs SET user_id = '${adminId}' WHERE user_id IS NULL OR user_id = ''`);
+      d.exec(`UPDATE master_cv SET user_id = '${adminId}' WHERE user_id = '__placeholder__' OR user_id = ''`);
+      const owned = (d.prepare('SELECT COUNT(*) AS c FROM jobs WHERE user_id = ?').get(adminId) as { c: number }).c;
+      console.log(`[Storage] Data isolation ready: ${owned} jobs owned by ${adminId}`);
     }
   } catch (err) {
-    console.error('[Storage] master_cv migration failed:', err);
+    console.error('[Storage] User migration failed:', err);
   }
 }
 
@@ -182,9 +319,10 @@ function migrateFromLegacyJson(): void {
 
   try {
     const parsed: Job[] = JSON.parse(fs.readFileSync(legacyPath, 'utf-8'));
-    const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, data) VALUES (?, ?)');
+    const adminId = (d.prepare('SELECT id FROM users ORDER BY is_guest ASC, created_at ASC LIMIT 1').get() as any)?.id || '';
+    const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, user_id, data) VALUES (?, ?, ?)');
     const tx = d.transaction((jobs: Job[]) => {
-      for (const j of jobs) insert.run(j.id, JSON.stringify(j));
+      for (const j of jobs) insert.run(j.id, adminId, JSON.stringify(j));
     });
     tx(parsed);
     console.log(`[Storage] Imported ${parsed.length} jobs from legacy JSON into SQLite`);
@@ -196,127 +334,39 @@ function migrateFromLegacyJson(): void {
 migrateFromLegacyJson();
 
 // ─────────────────── Master CV Storage (multi-profile) ───────────────────
-export interface CvProfile {
-  id: string;
-  name: string;
-  updatedAt?: string;
-  isActive?: boolean;
-}
-
-// Keep the active profile id in a small sidecar file so it survives restarts
-// without touching config.ini (which is gitignored but also user-editable).
-const ACTIVE_PROFILE_PATH = path.join(DATA_DIR, 'active_profile.txt');
-
-export function getActiveProfileId(): string {
-  try {
-    if (fs.existsSync(ACTIVE_PROFILE_PATH)) {
-      const id = fs.readFileSync(ACTIVE_PROFILE_PATH, 'utf-8').trim();
-      if (id) return id;
-    }
-  } catch { /* ignore */ }
-  return 'default';
-}
-
-export function setActiveProfileId(id: string): void {
-  ensureDataDir();
-  try {
-    fs.writeFileSync(ACTIVE_PROFILE_PATH, id, 'utf-8');
-  } catch (err) {
-    console.error('Error saving active profile:', err);
-  }
-}
-
-export function listCvProfiles(): CvProfile[] {
+// ─────────────────── Master CV Storage (per-user) ───────────────────
+export function getMasterCv(userId?: string): MasterCv {
+  const targetId = userId || getCurrentUserId();
   try {
     const d = getDb();
-    const activeId = getActiveProfileId();
-    const rows = d.prepare('SELECT profile_id, name, updated_at FROM master_cv ORDER BY name').all() as { profile_id: string; name: string; updated_at: string | null }[];
-    return rows.map((r) => ({
-      id: r.profile_id,
-      name: r.name,
-      updatedAt: r.updated_at || undefined,
-      isActive: r.profile_id === activeId,
-    }));
-  } catch (err) {
-    console.error('Error listing profiles:', err);
-    return [];
-  }
-}
-
-export function createCvProfile(name: string, cloneFrom?: string): CvProfile {
-  const d = getDb();
-  const profileId = `profile-${Date.now()}`;
-  let data = JSON.stringify(DEFAULT_MASTER_CV);
-  let updatedAt = new Date().toISOString();
-
-  if (cloneFrom) {
-    const row = d.prepare('SELECT data FROM master_cv WHERE profile_id = ?').get(cloneFrom) as { data: string } | undefined;
-    if (row) {
-      const cv = JSON.parse(row.data);
-      cv.fullName = `${name} Candidate`;
-      data = JSON.stringify(cv);
-    }
-  }
-
-  const existing = d.prepare('SELECT 1 FROM master_cv WHERE name = ?').get(name);
-  if (existing) {
-    throw new Error(`A profile named "${name}" already exists.`);
-  }
-
-  d.prepare('INSERT INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)')
-    .run(profileId, name, data, updatedAt);
-  return { id: profileId, name, updatedAt, isActive: false };
-}
-
-export function deleteCvProfile(id: string): boolean {
-  if (id === 'default') return false; // never delete the default profile
-  const d = getDb();
-  const result = d.prepare('DELETE FROM master_cv WHERE profile_id = ?').run(id);
-  if (result.changes > 0 && getActiveProfileId() === id) {
-    setActiveProfileId('default');
-  }
-  return result.changes > 0;
-}
-
-export function getMasterCv(profileId?: string): MasterCv {
-  const targetId = profileId || getActiveProfileId();
-  try {
-    const d = getDb();
-    const row = d.prepare('SELECT data FROM master_cv WHERE profile_id = ?').get(targetId) as { data: string } | undefined;
+    const row = d.prepare('SELECT data FROM master_cv WHERE user_id = ?').get(targetId) as { data: string } | undefined;
     if (row) return JSON.parse(row.data);
   } catch (err) {
     console.error('Error reading master CV from DB:', err);
   }
-  // Fallback: legacy JSON file or default
-  try {
-    if (fs.existsSync(MASTER_CV_PATH)) {
-      const cv = JSON.parse(fs.readFileSync(MASTER_CV_PATH, 'utf-8'));
-      saveMasterCv(cv, 'default');
-      return cv;
-    }
-  } catch { /* ignore */ }
-  saveMasterCv(DEFAULT_MASTER_CV, 'default');
+  // No stored CV for this user — a fresh default (legacy JSON import is handled by the migration).
+  saveMasterCv(DEFAULT_MASTER_CV, targetId);
   return DEFAULT_MASTER_CV;
 }
 
-export function saveMasterCv(cv: MasterCv, profileId?: string): void {
-  const targetId = profileId || getActiveProfileId();
+export function saveMasterCv(cv: MasterCv, userId?: string): void {
+  const targetId = userId || getCurrentUserId();
   try {
     const d = getDb();
     d.prepare(`
-      INSERT INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)
-      ON CONFLICT(profile_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
-    `).run(targetId, `Profile ${targetId.slice(-4)}`, JSON.stringify(cv), new Date().toISOString());
+      INSERT INTO master_cv (user_id, data, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+    `).run(targetId, JSON.stringify(cv), new Date().toISOString());
   } catch (err) {
     console.error('Error saving master CV:', err);
   }
 }
 
-// ─────────────────── Jobs Storage ───────────────────
-export function getAllJobs(): Job[] {
+// ─────────────────── Jobs Storage (per-user) ───────────────────
+function getJobsForUser(userId: string): Job[] {
   try {
     const d = getDb();
-    const rows = d.prepare('SELECT data FROM jobs').all() as { data: string }[];
+    const rows = d.prepare('SELECT data FROM jobs WHERE user_id = ?').all(userId) as { data: string }[];
     return rows.map((r) => JSON.parse(r.data));
   } catch (err) {
     console.error('Error loading jobs:', err);
@@ -324,18 +374,26 @@ export function getAllJobs(): Job[] {
   }
 }
 
+export function getAllJobs(): Job[] {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  return getJobsForUser(userId);
+}
+
 export function saveAllJobs(jobs: Job[]): void {
+  const userId = getCurrentUserId();
+  if (!userId) return;
   try {
     const d = getDb();
-    const insert = d.prepare('INSERT OR REPLACE INTO jobs (id, data) VALUES (?, ?)');
-    const existing = new Set((d.prepare('SELECT id FROM jobs').all() as { id: string }[]).map((r) => r.id));
+    const insert = d.prepare('INSERT OR REPLACE INTO jobs (id, user_id, data) VALUES (?, ?, ?)');
+    const existing = new Set((d.prepare('SELECT id FROM jobs WHERE user_id = ?').all(userId) as { id: string }[]).map((r) => r.id));
     const tx = d.transaction(() => {
       for (const job of jobs) {
-        insert.run(job.id, JSON.stringify(job));
+        insert.run(job.id, userId, JSON.stringify(job));
         existing.delete(job.id);
       }
-      const del = d.prepare('DELETE FROM jobs WHERE id = ?');
-      for (const gone of existing) del.run(gone);
+      const del = d.prepare('DELETE FROM jobs WHERE id = ? AND user_id = ?');
+      for (const gone of existing) del.run(gone, userId);
     });
     tx();
   } catch (err) {
@@ -344,12 +402,14 @@ export function saveAllJobs(jobs: Job[]): void {
 }
 
 export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
+  const userId = getCurrentUserId();
+  if (!userId) return { added: [], skipped: 0 };
   const d = getDb();
-  const existingUrls = new Set((d.prepare('SELECT data FROM jobs').all() as { data: string }[])
+  const existingUrls = new Set((d.prepare('SELECT data FROM jobs WHERE user_id = ?').all(userId) as { data: string }[])
     .map((r) => { try { return (JSON.parse(r.data) as Job).url?.toLowerCase().trim(); } catch { return ''; } })
     .filter(Boolean));
 
-  const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, data) VALUES (?, ?)');
+  const insert = d.prepare('INSERT OR IGNORE INTO jobs (id, user_id, data) VALUES (?, ?, ?)');
   const added: Job[] = [];
   let skipped = 0;
 
@@ -360,7 +420,7 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
         skipped++;
         continue;
       }
-      const result = insert.run(job.id, JSON.stringify(job));
+      const result = insert.run(job.id, userId, JSON.stringify(job));
       if (result.changes > 0) {
         existingUrls.add(normalizedUrl);
         added.push(job);
@@ -375,9 +435,11 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
 }
 
 export function getJobById(id: string): Job | undefined {
+  const userId = getCurrentUserId();
+  if (!userId) return undefined;
   try {
     const d = getDb();
-    const row = d.prepare('SELECT data FROM jobs WHERE id = ?').get(id) as { data: string } | undefined;
+    const row = d.prepare('SELECT data FROM jobs WHERE id = ? AND user_id = ?').get(id, userId) as { data: string } | undefined;
     return row ? JSON.parse(row.data) : undefined;
   } catch {
     return undefined;
@@ -385,11 +447,13 @@ export function getJobById(id: string): Job | undefined {
 }
 
 export function updateJobInStorage(updatedJob: Job): Job {
+  const userId = getCurrentUserId();
   try {
     const d = getDb();
-    const result = d.prepare('UPDATE jobs SET data = ? WHERE id = ?').run(
+    const result = d.prepare('UPDATE jobs SET data = ? WHERE id = ? AND user_id = ?').run(
       JSON.stringify({ ...updatedJob, updatedAt: new Date().toISOString() }),
-      updatedJob.id
+      updatedJob.id,
+      userId
     );
     if (result.changes > 0) return { ...updatedJob, updatedAt: new Date().toISOString() };
     return updatedJob;
@@ -400,18 +464,20 @@ export function updateJobInStorage(updatedJob: Job): Job {
 }
 
 export function deleteJobFromStorage(id: string): boolean {
+  const userId = getCurrentUserId();
   try {
     const d = getDb();
-    return d.prepare('DELETE FROM jobs WHERE id = ?').run(id).changes > 0;
+    return d.prepare('DELETE FROM jobs WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
   } catch {
     return false;
   }
 }
 
 export function deleteAllJobs(): number {
+  const userId = getCurrentUserId();
   try {
     const d = getDb();
-    const result = d.prepare('DELETE FROM jobs').run();
+    const result = d.prepare('DELETE FROM jobs WHERE user_id = ?').run(userId);
     return result.changes;
   } catch {
     return 0;

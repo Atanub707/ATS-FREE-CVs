@@ -49,13 +49,18 @@ async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
 
 import { loadConfig, saveConfig } from './server/config.js';
 import {
+  getDb,
   getMasterCv,
   saveMasterCv,
-  listCvProfiles,
-  createCvProfile,
-  deleteCvProfile,
-  getActiveProfileId,
-  setActiveProfileId,
+  createUser,
+  verifyLogin,
+  listUsers,
+  getUserById,
+  createSession,
+  getSessionUser,
+  deleteSession,
+  runWithUser,
+  getCurrentUserId,
   getAllJobs,
   getJobById,
   updateJobInStorage,
@@ -285,6 +290,20 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
+  // Session middleware: resolve the auth cookie to a user and make it
+  // available to every handler (and storage call) for this request.
+  app.use((req, _res, next) => {
+    const cookieHeader = (req.headers.cookie || '').split(';').map((s) => s.trim());
+    const match = cookieHeader.find((c) => c.startsWith('ats_session='));
+    const token = match ? match.slice('ats_session='.length) : '';
+    const userId = token ? getSessionUser(token) : undefined;
+    if (userId) {
+      runWithUser(userId, () => next());
+    } else {
+      runWithUser('', () => next());
+    }
+  });
+
   // Warn if a previously-committed (compromised) API key is still in use
   const COMPROMISED_KEYS = new Set(['sk-BGkiio5V8alNSZEipX2yMJ9d22S4N2dSDHHhaOrOYsubdYKHS2dhiSpFTYKoQqF0']);
   const configuredKey = loadConfig().llm.apiKey;
@@ -298,16 +317,24 @@ async function startServer() {
     console.warn('==========================================================\n');
   }
 
-  // Seed sample jobs if store is completely empty on initial startup
-  const initialJobs = getAllJobs();
-  if (initialJobs.length === 0) {
-    const sampleScrape = await ScraperFactory.runScrape({
-      keywords: 'Full Stack TypeScript Engineer',
-      location: 'Remote',
-      sources: ['LinkedIn'],
-      maxJobsPerSource: 5,
+  // Seed sample jobs if store is completely empty on initial startup.
+  // Runs in the first user's context so the seed lands in a real account.
+  const seedUser = (getDb().prepare('SELECT id FROM users ORDER BY is_guest ASC, created_at ASC LIMIT 1').get() as any)?.id as string | undefined;
+  if (seedUser) {
+    runWithUser(seedUser, () => {
+      const initialJobs = getAllJobs();
+      if (initialJobs.length === 0) {
+        (async () => {
+          const sampleScrape = await ScraperFactory.runScrape({
+            keywords: 'Full Stack TypeScript Engineer',
+            location: 'Remote',
+            sources: ['LinkedIn'],
+            maxJobsPerSource: 5,
+          });
+          saveNewJobs(sampleScrape);
+        })();
+      }
     });
-    saveNewJobs(sampleScrape);
   }
 
   // --- API ROUTES ---
@@ -326,83 +353,92 @@ async function startServer() {
     }
   });
 
-  // Master CV routes
+  // Master CV routes (scoped to logged-in user)
   app.get('/api/cv/master', (req, res) => {
-    const profileId = (req.query.profile as string) || undefined;
-    res.json(getMasterCv(profileId));
+    const userId = getCurrentUserId();
+    if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+    res.json(getMasterCv(userId));
   });
 
   app.post('/api/cv/master', (req, res) => {
     try {
-      const profileId = (req.body.profileId as string) || undefined;
-      saveMasterCv(req.body, profileId);
-      res.json({ success: true, cv: getMasterCv(profileId) });
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      saveMasterCv(req.body, userId);
+      res.json({ success: true, cv: getMasterCv(userId) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  // ── Multi-profile management ──
-  app.get('/api/cv/profiles', (req, res) => {
-    try {
-      const profiles = listCvProfiles();
-      const activeId = getActiveProfileId();
-      if (profiles.length === 0) {
-        // Ensure the default profile exists
-        getMasterCv('default');
-        res.json({ profiles: listCvProfiles(), activeProfileId: activeId });
-        return;
-      }
-      res.json({ profiles, activeProfileId: activeId });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+  // ── Auth ──
+  app.get('/api/auth/me', (req, res) => {
+    const userId = getCurrentUserId();
+    if (!userId) return res.json({ user: null });
+    const user = getUserById(userId);
+    res.json({ user: user ? { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest } : null });
   });
 
-  app.post('/api/cv/profiles', (req, res) => {
+  app.post('/api/auth/register', (req, res) => {
     try {
-      const { name, cloneFrom } = req.body;
-      if (!name || !name.trim()) {
-        res.status(400).json({ error: 'Profile name is required.' });
-        return;
+      const { email, password, name } = req.body;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'A valid email is required.' });
       }
-      const profile = createCvProfile(name.trim(), cloneFrom);
-      res.json({ success: true, profile });
+      if (!password || password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      }
+      const displayName = (name || '').trim() || email.split('@')[0];
+      const user = createUser(email, displayName, password);
+      const token = createSession(user.id);
+      res.cookie('ats_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 90 * 24 * 60 * 60 * 1000 });
+      res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest } });
     } catch (err: any) {
       res.status(409).json({ error: err.message });
     }
   });
 
-  app.delete('/api/cv/profiles/:id', (req, res) => {
+  app.post('/api/auth/login', (req, res) => {
     try {
-      const deleted = deleteCvProfile(req.params.id);
-      if (!deleted) {
-        res.status(400).json({ error: 'Cannot delete the default profile or profile not found.' });
-        return;
-      }
-      res.json({ success: true });
+      const { email, password } = req.body;
+      const user = verifyLogin(email || '', password || '');
+      if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+      const token = createSession(user.id);
+      res.cookie('ats_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 90 * 24 * 60 * 60 * 1000 });
+      res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest } });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post('/api/cv/profiles/activate', (req, res) => {
+  app.post('/api/auth/guest', (req, res) => {
     try {
-      const { profileId } = req.body;
-      if (!profileId) {
-        res.status(400).json({ error: 'profileId is required.' });
-        return;
+      const name = (req.body.name || '').trim();
+      if (!name) return res.status(400).json({ error: 'Guest name is required.' });
+      // Sign in to an existing guest, or create a new one
+      let user = listUsers().find((u) => u.isGuest && u.name.toLowerCase() === name.toLowerCase());
+      if (!user) {
+        user = createUser(`guest-${Date.now()}@local`, name, undefined);
       }
-      const exists = listCvProfiles().some((p) => p.id === profileId);
-      if (!exists) {
-        res.status(404).json({ error: 'Profile not found.' });
-        return;
-      }
-      setActiveProfileId(profileId);
-      res.json({ success: true, activeProfileId: profileId, cv: getMasterCv(profileId) });
+      const token = createSession(user.id);
+      res.cookie('ats_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 90 * 24 * 60 * 60 * 1000 });
+      res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest } });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    const cookieHeader = (req.headers.cookie || '').split(';').map((s) => s.trim());
+    const match = cookieHeader.find((c) => c.startsWith('ats_session='));
+    if (match) deleteSession(match.slice('ats_session='.length));
+    res.clearCookie('ats_session');
+    res.json({ success: true });
+  });
+
+  // Existing guest accounts are listed so the login screen can offer one-click sign-in
+  app.get('/api/auth/guests', (req, res) => {
+    res.json({ guests: listUsers().filter((u) => u.isGuest).map((u) => ({ id: u.id, name: u.name, email: u.email })) });
   });
 
   // Skill Gaps - aggregate missing skills across all scored jobs

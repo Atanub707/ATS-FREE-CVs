@@ -6,14 +6,15 @@ import { JobDetailModal } from './components/JobDetailModal';
 import { MasterCvDrawer } from './components/MasterCvDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { ManualJdModal } from './components/ManualJdModal';
+import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
 
 export default function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [masterCv, setMasterCv] = useState<MasterCv | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [profiles, setProfiles] = useState<{ id: string; name: string; updatedAt?: string; isActive?: boolean }[]>([]);
-  const [activeProfileId, setActiveProfileId] = useState<string>('default');
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; isGuest: boolean } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Active filters and views
   const [activeStateTab, setActiveStateTab] = useState<'all' | JobState>('all');
@@ -114,31 +115,34 @@ export default function App() {
     }
   }, [activeStateTab, sourceFilter, searchTerm, sortBy, page, pageSize]);
 
-  // Initial Fetch (CV + config + first page)
+  // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
     try {
-      const [cvRes, configRes, profilesRes] = await Promise.all([
-        fetch('/api/cv/master'),
+      const [authRes, configRes] = await Promise.all([
+        fetch('/api/auth/me'),
         fetch('/api/config'),
-        fetch('/api/cv/profiles'),
       ]);
 
-      if (cvRes.ok) {
-        const cvData = await cvRes.json();
-        setMasterCv(cvData);
+      if (authRes.ok) {
+        const authData = await authRes.json();
+        setCurrentUser(authData.user);
+        if (authData.user) {
+          const cvRes = await fetch('/api/cv/master');
+          if (cvRes.ok) {
+            const cvData = await cvRes.json();
+            setMasterCv(cvData);
+          }
+          await fetchJobs();
+        }
       }
       if (configRes.ok) {
         const configData = await configRes.json();
         setConfig(configData);
       }
-      if (profilesRes.ok) {
-        const profilesData = await profilesRes.json();
-        setProfiles(profilesData.profiles || []);
-        setActiveProfileId(profilesData.activeProfileId || 'default');
-      }
-      await fetchJobs();
     } catch (err) {
       console.error('Failed to fetch initial data:', err);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -148,8 +152,8 @@ export default function App() {
 
   // Refetch whenever filters/pagination change
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    if (currentUser) fetchJobs();
+  }, [fetchJobs, currentUser]);
 
   // Reset to page 1 when a filter changes
   useEffect(() => {
@@ -339,87 +343,67 @@ export default function App() {
       const res = await fetch('/api/cv/master', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updatedCv, profileId: activeProfileId }),
+        body: JSON.stringify(updatedCv),
       });
 
       if (res.ok) {
         const data = await res.json();
         setMasterCv(data.cv);
-        refreshProfiles();
       }
     } catch (err) {
       console.error('Save master CV error:', err);
     }
   };
 
-  // Profile handlers
-  const refreshProfiles = async () => {
-    try {
-      const res = await fetch('/api/cv/profiles');
-      if (res.ok) {
-        const data = await res.json();
-        setProfiles(data.profiles || []);
-        setActiveProfileId(data.activeProfileId || 'default');
-      }
-    } catch { /* ignore */ }
+  // ── Auth handlers ──
+  const handleLogin = async (email: string, password: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Login failed.' };
+    setCurrentUser(data.user);
+    setMasterCv(null);
+    await fetchAllData();
+    return null;
   };
 
-  const handleCreateProfile = async (name: string, cloneFrom?: string) => {
-    try {
-      const res = await fetch('/api/cv/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, cloneFrom }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        await handleActivateProfile(data.profile.id);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('Create profile error:', err);
-      return false;
-    }
+  const handleRegister = async (name: string, email: string, password: string) => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Registration failed.' };
+    setCurrentUser(data.user);
+    setMasterCv(null);
+    await fetchAllData();
+    return null;
   };
 
-  const handleActivateProfile = async (profileId: string) => {
-    try {
-      const res = await fetch('/api/cv/profiles/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMasterCv(data.cv);
-        setActiveProfileId(profileId);
-        setProfiles((prev) => prev.map((p) => ({ ...p, isActive: p.id === profileId })));
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('Activate profile error:', err);
-      return false;
-    }
+  const handleGuestLogin = async (name: string) => {
+    const res = await fetch('/api/auth/guest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Guest login failed.' };
+    setCurrentUser(data.user);
+    setMasterCv(null);
+    await fetchAllData();
+    return null;
   };
 
-  const handleDeleteProfile = async (profileId: string) => {
-    try {
-      const res = await fetch(`/api/cv/profiles/${profileId}`, { method: 'DELETE' });
-      if (res.ok) {
-        await refreshProfiles();
-        if (activeProfileId === profileId) {
-          const cvRes = await fetch('/api/cv/master');
-          if (cvRes.ok) setMasterCv(await cvRes.json());
-        }
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('Delete profile error:', err);
-      return false;
-    }
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setCurrentUser(null);
+    setMasterCv(null);
+    setJobs([]);
+    setSelectedJob(null);
   };
 
   // Save Config Handler
@@ -441,96 +425,105 @@ export default function App() {
   };
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      {/* Header Navigation */}
-      <Navbar
-        onOpenMasterCv={() => setIsMasterCvOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenManualJd={() => setIsManualJdOpen(true)}
-        totalJobs={stats.total}
-        matchedCount={stats.matched}
-        tailoredCount={stats.tailored}
-        appliedCount={stats.applied}
-      />
-
-      {/* Live Job Scraper Bar */}
-      <ScraperBar onScrape={handleScrape} isLoading={isScrapingLoading} />
-
-      {/* Main Jobs Matrix View */}
-      <main>
-        <JobMatrix
-          jobs={jobs}
-          totalJobs={totalJobs}
-          stats={stats}
-          activeStateTab={activeStateTab}
-          onStateTabChange={setActiveStateTab}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          sourceFilter={sourceFilter}
-          setSourceFilter={setSourceFilter}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          page={page}
-          setPage={setPage}
-          pageSize={pageSize}
-          setPageSize={setPageSize}
-          onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
-          onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
-          onMatchJob={handleMatchJob}
-          onBatchMatch={handleBatchMatch}
-          onTailorJob={handleTailorJob}
-          onBatchTailor={handleBatchTailor}
-          onDeleteJob={handleDeleteJob}
-          onUpdateStatus={handleUpdateStatus}
-          onClearAll={handleClearAll}
-          isBatchMatching={isBatchMatching}
-          isBatchTailoring={isBatchTailoring}
-          loadingJobIds={loadingJobIds}
-          scoreMessages={scoreMessages}
-          tailorMessages={tailorMessages}
+      {authLoading ? (
+        <div className="min-h-screen flex items-center justify-center text-slate-500">Loading…</div>
+      ) : !currentUser ? (
+        <LoginScreen
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onGuestLogin={handleGuestLogin}
         />
-      </main>
+      ) : (
+        <>
+          {/* Header Navigation */}
+          <Navbar
+            user={currentUser}
+            onLogout={handleLogout}
+            onOpenMasterCv={() => setIsMasterCvOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenManualJd={() => setIsManualJdOpen(true)}
+            totalJobs={stats.total}
+            matchedCount={stats.matched}
+            tailoredCount={stats.tailored}
+            appliedCount={stats.applied}
+          />
 
-      {/* Job Details & Tailored CV Modal */}
-      <JobDetailModal
-        job={selectedJob}
-        onClose={() => setSelectedJob(null)}
-        onMatchJob={handleMatchJob}
-        onTailorJob={handleTailorJob}
-        onUpdateStatus={handleUpdateStatus}
-        isLoading={selectedJob ? loadingJobIds.has(selectedJob.id) : false}
-        initialTab={selectedJobTab}
-      />
+          {/* Live Job Scraper Bar */}
+          <ScraperBar onScrape={handleScrape} isLoading={isScrapingLoading} />
 
-      {/* Master Candidate CV Drawer */}
-      {masterCv && (
-        <MasterCvDrawer
-          isOpen={isMasterCvOpen}
-          onClose={() => setIsMasterCvOpen(false)}
-          masterCv={masterCv}
-          onSaveMasterCv={handleSaveMasterCv}
-          profiles={profiles}
-          activeProfileId={activeProfileId}
-          onActivateProfile={handleActivateProfile}
-          onCreateProfile={handleCreateProfile}
-          onDeleteProfile={handleDeleteProfile}
-        />
+          {/* Main Jobs Matrix View */}
+          <main>
+            <JobMatrix
+              jobs={jobs}
+              totalJobs={totalJobs}
+              stats={stats}
+              activeStateTab={activeStateTab}
+              onStateTabChange={setActiveStateTab}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              sourceFilter={sourceFilter}
+              setSourceFilter={setSourceFilter}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              page={page}
+              setPage={setPage}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
+              onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
+              onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
+              onMatchJob={handleMatchJob}
+              onBatchMatch={handleBatchMatch}
+              onTailorJob={handleTailorJob}
+              onBatchTailor={handleBatchTailor}
+              onDeleteJob={handleDeleteJob}
+              onUpdateStatus={handleUpdateStatus}
+              onClearAll={handleClearAll}
+              isBatchMatching={isBatchMatching}
+              isBatchTailoring={isBatchTailoring}
+              loadingJobIds={loadingJobIds}
+              scoreMessages={scoreMessages}
+              tailorMessages={tailorMessages}
+            />
+          </main>
+
+          {/* Job Details & Tailored CV Modal */}
+          <JobDetailModal
+            job={selectedJob}
+            onClose={() => setSelectedJob(null)}
+            onMatchJob={handleMatchJob}
+            onTailorJob={handleTailorJob}
+            onUpdateStatus={handleUpdateStatus}
+            isLoading={selectedJob ? loadingJobIds.has(selectedJob.id) : false}
+            initialTab={selectedJobTab}
+          />
+
+          {/* Master Candidate CV Drawer */}
+          {masterCv && (
+            <MasterCvDrawer
+              isOpen={isMasterCvOpen}
+              onClose={() => setIsMasterCvOpen(false)}
+              masterCv={masterCv}
+              onSaveMasterCv={handleSaveMasterCv}
+            />
+          )}
+
+          {/* System INI Config Settings Modal */}
+          {config && (
+            <SettingsModal
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+              config={config}
+              onSaveConfig={handleSaveConfig}
+            />
+          )}
+
+          {/* Manual JD Modal */}
+          <ManualJdModal
+            isOpen={isManualJdOpen}
+            onClose={() => setIsManualJdOpen(false)}
+          />
+        </>
       )}
-
-      {/* System INI Config Settings Modal */}
-      {config && (
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          config={config}
-          onSaveConfig={handleSaveConfig}
-        />
-      )}
-
-      {/* Manual JD Modal */}
-      <ManualJdModal
-        isOpen={isManualJdOpen}
-        onClose={() => setIsManualJdOpen(false)}
-      />
     </div>
   );
 }
