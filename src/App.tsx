@@ -442,10 +442,6 @@ export default function App() {
             onOpenMasterCv={() => setIsMasterCvOpen(true)}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenManualJd={() => setIsManualJdOpen(true)}
-            totalJobs={stats.total}
-            matchedCount={stats.matched}
-            tailoredCount={stats.tailored}
-            appliedCount={stats.applied}
           />
 
           {/* Live Job Scraper Bar */}
