@@ -422,6 +422,33 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
     }
   };
 
+  const [dragCertIdx, setDragCertIdx] = useState<number | null>(null);
+
+  const handleCertDragStart = (e: React.DragEvent, idx: number) => {
+    setDragCertIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCertDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleCertDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (dragCertIdx === null || dragCertIdx === targetIdx) {
+      setDragCertIdx(null);
+      return;
+    }
+    setFormData((prev) => {
+      const certs = [...(prev.certifications || [])];
+      const [moved] = certs.splice(dragCertIdx, 1);
+      certs.splice(targetIdx, 0, moved);
+      return { ...prev, certifications: certs };
+    });
+    setDragCertIdx(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
       <div className="bg-white border-l border-slate-200 w-full max-w-3xl h-full flex flex-col shadow-2xl overflow-hidden text-slate-900">
@@ -1211,9 +1238,23 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             </div>
 
             {(formData.certifications || []).map((cert, cIdx) => (
-              <div key={cert.id || cIdx} className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+              <div
+                key={cert.id || cIdx}
+                draggable
+                onDragStart={(e) => handleCertDragStart(e, cIdx)}
+                onDragOver={handleCertDragOver}
+                onDrop={(e) => handleCertDrop(e, cIdx)}
+                className={`bg-white p-3 rounded-lg border space-y-2 cursor-grab active:cursor-grabbing transition-all ${
+                  dragCertIdx === cIdx
+                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-700 text-[11px]">Certification #{cIdx + 1}</span>
+                  <span className="font-bold text-slate-700 text-[11px] flex items-center space-x-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Certification #{cIdx + 1}</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeCertification(cIdx)}
