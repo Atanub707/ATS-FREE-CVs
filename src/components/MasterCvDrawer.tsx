@@ -32,6 +32,11 @@ interface MasterCvDrawerProps {
   onClose: () => void;
   masterCv: MasterCv;
   onSaveMasterCv: (updated: MasterCv) => Promise<void>;
+  profiles?: { id: string; name: string; updatedAt?: string; isActive?: boolean }[];
+  activeProfileId?: string;
+  onActivateProfile?: (profileId: string) => Promise<boolean>;
+  onCreateProfile?: (name: string, cloneFrom?: string) => Promise<boolean>;
+  onDeleteProfile?: (profileId: string) => Promise<boolean>;
 }
 
 export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
@@ -39,6 +44,11 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   onClose,
   masterCv,
   onSaveMasterCv,
+  profiles = [],
+  activeProfileId = 'default',
+  onActivateProfile,
+  onCreateProfile,
+  onDeleteProfile,
 }) => {
   if (!isOpen) return null;
 
@@ -64,20 +74,36 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [isImprovingSummary, setIsImprovingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
-  const wasOpenRef = useRef(false);
+  const [showNewProfile, setShowNewProfile] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileClone, setNewProfileClone] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
-  // Reset formData only when the drawer transitions closed → open.
-  // (If we reset on every masterCv reference change, in-progress edits get wiped.)
+  const wasOpenRef = useRef(false);
+  const prevProfileRef = useRef<string | null>(null);
+
+  // Reset formData only when the drawer transitions closed → open,
+  // OR when the active profile changes while open (avoid saving edits into the wrong profile).
   useEffect(() => {
-    if (isOpen && !wasOpenRef.current) {
+    if (isOpen && (!wasOpenRef.current || !prevProfileRef.current)) {
+      setFormData(masterCv);
+      setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
+      setSavedSuccess(false);
+      setSummarySuggestions([]);
+      setSummaryError(null);
+      setShowNewProfile(false);
+    }
+    if (isOpen && prevProfileRef.current && prevProfileRef.current !== activeProfileId) {
+      // Profile switched while drawer open — reload formData for the new profile
       setFormData(masterCv);
       setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
       setSavedSuccess(false);
       setSummarySuggestions([]);
       setSummaryError(null);
     }
+    prevProfileRef.current = isOpen ? activeProfileId : prevProfileRef.current;
     wasOpenRef.current = isOpen;
-  }, [isOpen, masterCv]);
+  }, [isOpen, masterCv, activeProfileId]);
 
   const fetchSkillGaps = async () => {
     setGapsLoading(true);
@@ -241,6 +267,33 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  const handleCreateNewProfile = async () => {
+    if (!newProfileName.trim()) {
+      setProfileMsg('Please enter a profile name.');
+      return;
+    }
+    if (onCreateProfile) {
+      const ok = await onCreateProfile(newProfileName.trim(), newProfileClone ? activeProfileId : undefined);
+      if (ok) {
+        setNewProfileName('');
+        setNewProfileClone(false);
+        setShowNewProfile(false);
+        setProfileMsg('Profile created and activated.');
+      } else {
+        setProfileMsg('Could not create profile (name may already exist).');
+      }
+      setTimeout(() => setProfileMsg(null), 4000);
+    }
+  };
+
+  const handleDeleteActiveProfile = async () => {
+    if (!onDeleteProfile || activeProfileId === 'default') return;
+    if (!confirm(`Delete profile "${profiles.find((p) => p.id === activeProfileId)?.name || activeProfileId}"? This cannot be undone.`)) return;
+    const ok = await onDeleteProfile(activeProfileId);
+    if (ok) setProfileMsg('Profile deleted.');
+    setTimeout(() => setProfileMsg(null), 3000);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -450,19 +503,20 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
       <div className="bg-white border-l border-slate-200 w-full max-w-3xl h-full flex flex-col shadow-2xl overflow-hidden text-slate-900">
         {/* Drawer Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center space-x-2">
-            <User className="w-5 h-5 text-slate-700" />
-            <h2 className="text-base font-bold text-slate-900">Master Candidate Profile & CV</h2>
-          </div>
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-slate-700" />
+              <h2 className="text-base font-bold text-slate-900">Master Candidate Profile & CV</h2>
+            </div>
 
-          <div className="flex items-center space-x-2">
-            {savedSuccess && (
-              <span className="text-xs text-emerald-600 font-semibold flex items-center space-x-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Saved!</span>
-              </span>
-            )}
+            <div className="flex items-center space-x-2">
+              {savedSuccess && (
+                <span className="text-xs text-emerald-600 font-semibold flex items-center space-x-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Saved!</span>
+                </span>
+              )}
 
             <div className="flex items-center space-x-1.5">
               <input
@@ -500,7 +554,82 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer">
               <X className="w-5 h-5" />
             </button>
+            </div>
           </div>
+
+          {/* Profile Switcher */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold text-slate-500">Profile:</span>
+            <select
+              value={activeProfileId}
+              onChange={async (e) => {
+                const target = e.target.value;
+                if (target === activeProfileId) return;
+                if (onActivateProfile && (await onActivateProfile(target))) {
+                  setProfileMsg('Profile switched.');
+                  setTimeout(() => setProfileMsg(null), 3000);
+                }
+              }}
+              className="bg-white border border-slate-300 rounded-md px-2 py-1.5 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.isActive ? '✓' : ''}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setShowNewProfile((v) => !v)}
+              className="px-2 py-1.5 rounded-md text-[11px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors flex items-center space-x-1 cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+              <span>New Profile</span>
+            </button>
+
+            {activeProfileId !== 'default' && (
+              <button
+                type="button"
+                onClick={handleDeleteActiveProfile}
+                className="px-2 py-1.5 rounded-md text-[11px] font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            )}
+
+            {profileMsg && (
+              <span className="text-[11px] text-indigo-700 font-medium">{profileMsg}</span>
+            )}
+          </div>
+
+          {showNewProfile && (
+            <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg p-2.5">
+              <input
+                type="text"
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
+                placeholder="Profile name (e.g. DevOps, Cybersecurity...)"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <label className="flex items-center space-x-1.5 text-[11px] text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newProfileClone}
+                  onChange={(e) => setNewProfileClone(e.target.checked)}
+                  className="accent-indigo-600"
+                />
+                <span>Copy current</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleCreateNewProfile}
+                className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer"
+              >
+                Create
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Drawer Body Form */}

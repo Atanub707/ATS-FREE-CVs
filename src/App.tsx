@@ -12,6 +12,8 @@ export default function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [masterCv, setMasterCv] = useState<MasterCv | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [profiles, setProfiles] = useState<{ id: string; name: string; updatedAt?: string; isActive?: boolean }[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string>('default');
 
   // Active filters and views
   const [activeStateTab, setActiveStateTab] = useState<'all' | JobState>('all');
@@ -115,9 +117,10 @@ export default function App() {
   // Initial Fetch (CV + config + first page)
   const fetchAllData = async () => {
     try {
-      const [cvRes, configRes] = await Promise.all([
+      const [cvRes, configRes, profilesRes] = await Promise.all([
         fetch('/api/cv/master'),
         fetch('/api/config'),
+        fetch('/api/cv/profiles'),
       ]);
 
       if (cvRes.ok) {
@@ -127,6 +130,11 @@ export default function App() {
       if (configRes.ok) {
         const configData = await configRes.json();
         setConfig(configData);
+      }
+      if (profilesRes.ok) {
+        const profilesData = await profilesRes.json();
+        setProfiles(profilesData.profiles || []);
+        setActiveProfileId(profilesData.activeProfileId || 'default');
       }
       await fetchJobs();
     } catch (err) {
@@ -331,15 +339,86 @@ export default function App() {
       const res = await fetch('/api/cv/master', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedCv),
+        body: JSON.stringify({ ...updatedCv, profileId: activeProfileId }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setMasterCv(data.cv);
+        refreshProfiles();
       }
     } catch (err) {
       console.error('Save master CV error:', err);
+    }
+  };
+
+  // Profile handlers
+  const refreshProfiles = async () => {
+    try {
+      const res = await fetch('/api/cv/profiles');
+      if (res.ok) {
+        const data = await res.json();
+        setProfiles(data.profiles || []);
+        setActiveProfileId(data.activeProfileId || 'default');
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleCreateProfile = async (name: string, cloneFrom?: string) => {
+    try {
+      const res = await fetch('/api/cv/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, cloneFrom }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await handleActivateProfile(data.profile.id);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Create profile error:', err);
+      return false;
+    }
+  };
+
+  const handleActivateProfile = async (profileId: string) => {
+    try {
+      const res = await fetch('/api/cv/profiles/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMasterCv(data.cv);
+        setActiveProfileId(profileId);
+        setProfiles((prev) => prev.map((p) => ({ ...p, isActive: p.id === profileId })));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Activate profile error:', err);
+      return false;
+    }
+  };
+
+  const handleDeleteProfile = async (profileId: string) => {
+    try {
+      const res = await fetch(`/api/cv/profiles/${profileId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await refreshProfiles();
+        if (activeProfileId === profileId) {
+          const cvRes = await fetch('/api/cv/master');
+          if (cvRes.ok) setMasterCv(await cvRes.json());
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Delete profile error:', err);
+      return false;
     }
   };
 
@@ -429,6 +508,11 @@ export default function App() {
           onClose={() => setIsMasterCvOpen(false)}
           masterCv={masterCv}
           onSaveMasterCv={handleSaveMasterCv}
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onActivateProfile={handleActivateProfile}
+          onCreateProfile={handleCreateProfile}
+          onDeleteProfile={handleDeleteProfile}
         />
       )}
 
