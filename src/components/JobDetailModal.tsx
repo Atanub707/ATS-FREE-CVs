@@ -24,6 +24,7 @@ import {
   Globe,
   Award,
   Printer,
+  Users,
 } from 'lucide-react';
 
 interface JobDetailModalProps {
@@ -140,6 +141,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 <span className="flex items-center space-x-1 text-emerald-700 font-medium">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{job.salaryText}</span>
+                </span>
+              )}
+              {job.applicantCount !== undefined && (
+                <span className="flex items-center space-x-1 text-slate-600">
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{job.applicantCount.toLocaleString()} applicants</span>
                 </span>
               )}
             </div>

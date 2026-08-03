@@ -15,6 +15,7 @@ export interface Job {
   salaryMax?: number;
   salaryText?: string;
   jobType?: string; // Full-time, Remote, Contract, etc.
+  applicantCount?: number; // number of applicants who applied (LinkedIn)
   state: JobState;
   
   // AI Matching output
