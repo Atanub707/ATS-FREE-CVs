@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Footer */}
               <div className="mt-1.5 border-t border-slate-100 px-2.5 pt-2 pb-1.5 flex justify-between text-[10.5px] text-slate-400">
-                <span>v1.0.1 · local</span>
+                <span>v1.1.0 · local</span>
                 <span>Data stays on this machine</span>
               </div>
             </div>

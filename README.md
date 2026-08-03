@@ -20,7 +20,7 @@
 
 ## 📋 Overview
 
-ATS CV Tailor scrapes job listings from 7+ public sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine — your data never leaves your computer.
+ATS CV Tailor scrapes job listings from 10 global sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine — your data never leaves your computer. Each person gets their own **local account** with fully isolated CV, jobs, and match history.
 
 ---
 
@@ -28,13 +28,15 @@ ATS CV Tailor scrapes job listings from 7+ public sources, scores them against y
 
 | Feature | Description |
 |---|---|
-| **Multi-Source Job Search** | Search 7 sources: LinkedIn, Arbeitnow, SimplyHired, Dice, Reed, Greenhouse, Lever |
+| **Multi-Source Job Search** | 10 active sources: LinkedIn, Arbeitnow, SimplyHired, Dice, Reed, MyCareersFuture, Cutshort, Gupy, JobsCh, Daijob, MyJobMag |
 | **AI ATS Scoring** | Score jobs against your CV. Get match %, skill gaps, missing keywords, recommendations |
 | **CV Tailoring** | Generate ATS-optimized CVs tailored to specific job descriptions |
-| **Company Portal API** | Fetch jobs directly from company career pages via Greenhouse & Lever APIs |
+| **Applicant Counts** | See how many people applied to each LinkedIn job — right in the listing |
+| **Local Accounts** | Email+password or guest sign-in; each account has its own CV, jobs, and history |
 | **Manual JD Analysis** | Paste any job description, get scored and get a tailored CV — no scraping needed |
-| **Smart Filtering** | Filter by date posted, experience level (entry/mid/senior/lead), source, keyword |
-| **Export Formats** | Download tailored CVs as DOCX, PDF, or TXT |
+| **Smart Filtering** | Filter by date posted, job type, experience level, source, competition, keyword |
+| **Batch Processing** | One-click "Score Pending" and "Tailor Matched" for the whole list |
+| **Export** | Download tailored CVs as PDF |
 | **Local & Private** | Runs entirely on your machine. Your CV and API key stay local |
 
 ---
@@ -63,7 +65,11 @@ unzip ats.zip && cd ATS-FREE-CVs-main
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) — you'll land on the **sign-in screen**:
+
+- **Create Account** — email + password account (each account = fully isolated workspace)
+- **Sign In** — return to your existing account
+- **Guest** — instant password-less workspace ("Guest 1", "Guest 2"…); existing guests are one click away
 
 > **Note:** Docker Desktop is required. [Download here](https://www.docker.com/products/docker-desktop/).
 
@@ -117,8 +123,8 @@ ATS scoring and CV tailoring require an LLM API key. The app uses a **Bring Your
 
 ### Option A: Use the Settings UI
 
-1. Start the app and open [http://localhost:3000](http://localhost:3000)
-2. Click **Settings** (gear icon, top-right)
+1. Start the app and sign in
+2. Click the **account button** (avatar, top-right) → **Settings**
 3. Select your **LLM Provider**
 4. Enter your **API Key**
 5. Click **Apply Config**
@@ -155,14 +161,14 @@ temperature=0.2
 
 ### Step 1: Set Up Your Master CV
 
-Click **Master Candidate CV** (top-left) and fill in:
+Click the **account button** (avatar, top-right) → **Master Candidate CV** and fill in:
 - Professional summary
 - Work experience (titles, companies, dates, responsibilities)
 - Skills (categorized)
 - Education
 - Certifications & projects
 
-This is the baseline CV that all jobs will be scored and tailored against.
+This is the baseline CV that all jobs will be scored and tailored against. Each account has its own Master CV.
 
 ---
 
@@ -172,8 +178,9 @@ This is the baseline CV that all jobs will be scored and tailored against.
 2. Optionally enter a **location** (e.g., "Remote", "London")
 3. Select your **sources** from the available options
 4. Set **Posted** filter (Dice, Reed, SimplyHired show older postings — use "Anytime")
-5. Set **Level** filter (Junior / Mid / Senior / Lead)
-6. Click **Search Jobs**
+5. Set **Job Type** (Remote / Hybrid / On-site) and **Level** (Junior / Mid / Senior / Lead)
+6. Optionally tick **Under 10 applicants** to skip high-competition roles
+7. Click **Search Jobs**
 
 ### Job Sources
 
@@ -184,10 +191,17 @@ This is the baseline CV that all jobs will be scored and tailored against.
 | **SimplyHired** | Global coverage | HTML parsing | No |
 | **Dice** | US tech jobs | JSON-LD extraction | No |
 | **Reed** | UK jobs | Next.js SSR | No |
-| **Greenhouse** | Company career portals | REST API | No |
-| **Lever** | Company career portals | REST API | No |
+| **MyCareersFuture** 🇸🇬 | Singapore | Official gov API | No |
+| **Cutshort** 🇮🇳 | India | HTML scraping | No |
+| **Gupy** 🇧🇷 | Brazil | HTML scraping | No |
+| **JobsCh** 🇨🇭 | Switzerland | HTML scraping | No |
+| **Daijob** 🇯🇵 | Japan | HTML scraping | No |
+| **MyJobMag** 🇳🇬 | Nigeria | HTML scraping | No |
+| RemoteOK / WeWorkRemotely | Global remote | — | Coming soon |
 
 > ℹ️ **Dice, Reed, SimplyHired** use original posting dates. If you select "Last 24 Hours" and get 0 results, switch to "Anytime" — the jobs are still active, just older.
+>
+> 👥 **Applicant counts** are shown for LinkedIn jobs ("200 applicants") — see competition at a glance without opening the posting.
 
 ---
 
@@ -208,10 +222,7 @@ This is the baseline CV that all jobs will be scored and tailored against.
 
 1. Click **Tailor** on a scored job
 2. The AI rewrites your CV to target that specific job
-3. Download the tailored CV:
-   - **DOCX** (Word — best for ATS systems)
-   - **PDF**
-   - **TXT** (plain text)
+3. Download the tailored CV as **PDF**
 
 **Batch options:** Use **"Score Pending"** and **"Tailor Matched"** buttons to process multiple jobs at once.
 
@@ -221,12 +232,22 @@ This is the baseline CV that all jobs will be scored and tailored against.
 
 Paste any job description manually and get a scored, tailored CV without searching:
 
-1. Click **Manual JD** in the top navbar
+1. Click the **account button** → **Manual JD** (or press **⌘J**)
 2. Enter **Job Title**, **Company** (optional), and paste the **Job Description**
 3. Click **Analyze Match** — see your score, matching/missing skills, and recommendations
 4. Update your Master CV based on the recommendations
 5. Click **Generate Tailored CV**
-6. Download as DOCX or PDF
+6. Download as PDF
+
+---
+
+### Step 6: Sign Out & Switch Accounts
+
+1. Click the **account button** (avatar, top-right)
+2. **Sign out** returns you to the login screen
+3. Sign back in with your email, or one-click any existing guest account
+
+> 🗂️ **Isolation:** accounts never share data. Each sign-in sees only its own jobs, CVs, scores, and applied history — perfect for multiple users on one machine.
 
 ---
 
@@ -266,11 +287,13 @@ You can edit this file directly or use the **Settings** UI in the app.
 |---|---|
 | **Frontend** | React 19, TypeScript, Tailwind CSS v4, Lucide icons |
 | **Backend** | Express 4, TypeScript, tsx |
-| **LLM Integration** | Google Gemini AI SDK, OpenAI-compatible API |
+| **LLM Integration** | OpenAI-compatible providers (OpenCode Go, OpenRouter, OpenAI, Gemini, Anthropic, NVIDIA) |
 | **Scraping** | Native `fetch`, cheerio |
-| **Documents** | docx (Word), pdfkit (PDF) |
+| **Storage** | SQLite (`better-sqlite3`, WAL) — users, sessions, jobs, master CVs |
+| **Auth** | Local accounts — scrypt password hashing, httpOnly cookie sessions |
+| **Documents** | pdfkit (PDF) |
 | **Build** | Vite, esbuild |
-| **Storage** | JSON files |
+| **CI/CD** | GitHub Actions — gitleaks, npm audit, Trivy, auto-release to GitHub Releases + GHCR |
 
 ---
 
