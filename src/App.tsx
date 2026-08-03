@@ -3,9 +3,9 @@ import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
 import { JobDetailModal } from './components/JobDetailModal';
-import { MasterCvDrawer } from './components/MasterCvDrawer';
+import { MasterCvScreen } from './components/MasterCvScreen';
 import { SettingsModal } from './components/SettingsModal';
-import { ManualJdModal } from './components/ManualJdModal';
+import { ManualJdScreen } from './components/ManualJdScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
 
@@ -493,9 +493,9 @@ export default function App() {
             initialTab={selectedJobTab}
           />
 
-          {/* Master Candidate CV Drawer */}
+          {/* Master Candidate CV — full screen */}
           {masterCv && (
-            <MasterCvDrawer
+            <MasterCvScreen
               isOpen={isMasterCvOpen}
               onClose={() => setIsMasterCvOpen(false)}
               masterCv={masterCv}
@@ -513,8 +513,8 @@ export default function App() {
             />
           )}
 
-          {/* Manual JD Modal */}
-          <ManualJdModal
+          {/* Manual JD — full screen */}
+          <ManualJdScreen
             isOpen={isManualJdOpen}
             onClose={() => setIsManualJdOpen(false)}
           />
