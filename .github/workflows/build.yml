@@ -141,7 +141,7 @@ jobs:
       - name: Extract release notes
         id: notes
         run: |
-          awk '/^## v1.1.0/{flag=1; next} /^## v/{if(flag) exit} flag' CHANGELOG.md > /tmp/release-notes.md
+          awk '/^## v1.1.0/{flag=1; next} /^## v/{if(flag) exit} flag' CHANGELOG.md | sed '/^$/d' > /tmp/release-notes.md
           {
             echo "body<<EOF"
             cat /tmp/release-notes.md
