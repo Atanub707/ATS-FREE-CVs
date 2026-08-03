@@ -63,10 +63,20 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [isImprovingSummary, setIsImprovingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
+  const wasOpenRef = useRef(false);
+
+  // Reset formData only when the drawer transitions closed → open.
+  // (If we reset on every masterCv reference change, in-progress edits get wiped.)
   useEffect(() => {
-    setFormData(masterCv);
-    setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
-  }, [masterCv]);
+    if (isOpen && !wasOpenRef.current) {
+      setFormData(masterCv);
+      setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
+      setSavedSuccess(false);
+      setSummarySuggestions([]);
+      setSummaryError(null);
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, masterCv]);
 
   const fetchSkillGaps = async () => {
     setGapsLoading(true);
@@ -316,25 +326,25 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   };
 
   const addProject = () => {
-    const updated = { ...formData };
-    if (!updated.projects) updated.projects = [];
-    updated.projects.push({
+    const newProject = {
       id: `proj-${Date.now()}`,
       name: 'Project Name',
       description: 'Key project description, highlights, and results...',
       technologies: ['React', 'Node.js', 'TypeScript'],
       link: '',
       dates: '2023',
-    });
-    setFormData(updated);
+    };
+    setFormData((prev) => ({
+      ...prev,
+      projects: [...(prev.projects || []), newProject],
+    }));
   };
 
   const removeProject = (pIdx: number) => {
-    const updated = { ...formData };
-    if (updated.projects) {
-      updated.projects.splice(pIdx, 1);
-      setFormData(updated);
-    }
+    setFormData((prev) => ({
+      ...prev,
+      projects: (prev.projects || []).filter((_, i) => i !== pIdx),
+    }));
   };
 
   const addCertification = () => {
