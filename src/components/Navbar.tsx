@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Settings, FileInput } from 'lucide-react';
+import { FileText, Settings, FileInput, LogOut, UserCircle2 } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -9,6 +9,8 @@ interface NavbarProps {
   matchedCount: number;
   tailoredCount: number;
   appliedCount: number;
+  user?: { id: string; email: string; name: string; isGuest: boolean } | null;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -19,6 +21,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   matchedCount,
   tailoredCount,
   appliedCount,
+  user,
+  onLogout,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900 shadow-xs">
@@ -68,6 +72,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Minimal Action Controls */}
         <div className="flex items-center space-x-2">
+          {user && (
+            <div className="hidden md:flex items-center space-x-1.5 mr-1 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+              <UserCircle2 className="w-4 h-4 text-slate-500" />
+              <span className="text-xs font-semibold text-slate-700 max-w-32 truncate">
+                {user.isGuest ? `Guest · ${user.name}` : user.name}
+              </span>
+              <button
+                onClick={onLogout}
+                className="ml-1 p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           <button
             onClick={onOpenManualJd}
             className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer"
