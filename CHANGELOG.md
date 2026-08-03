@@ -1,5 +1,49 @@
 # Changelog
 
+## v1.1.0 (2026-08-03)
+
+### 🔐 Local Accounts & Data Isolation
+- **Local sign-in**: create accounts with email + password (scrypt-hashed), or use password-less **guest accounts** (Guest 1, Guest 2…).
+- **Per-account isolation**: every account has its own CV, job list, match history, and applied tracker. No more shared "one profile for everyone".
+- **Cookie sessions**: httpOnly session cookie per browser, resolved per request — each person on the same machine sees only their own data.
+- **One-click guest sign-in**: existing guests are listed on the login screen so switching accounts takes one click.
+- **Safe migration**: existing installations are migrated automatically — your old jobs and CV are claimed by a new `Admin` guest account; nothing is lost.
+
+### 🌍 Country-Specific Job Portals (6 new sources)
+- **MyCareersFuture** 🇸🇬 Singapore (official government API)
+- **Cutshort** 🇮🇳 India
+- **Gupy** 🇧🇷 Brazil
+- **JobsCh** 🇨🇭 Switzerland
+- **Daijob** 🇯🇵 Japan
+- **MyJobMag** 🇳🇬 Nigeria
+- Source pills show country flags so you can spot regional postings at a glance.
+- Greenhouse & Lever company-portal scrapers removed; RemoteOK / WeWorkRemotely parked as "Coming soon".
+
+### 👥 Applicant Counts
+- LinkedIn jobs now display **how many people applied** ("200 applicants") right in the listing and job detail — gauge competition without opening the posting.
+- Parsed from the job page at scrape time (no extra requests); only shown when the source exposes the number.
+
+### 💾 Real SQLite Storage
+- Replaced JSON file storage with **SQLite (`better-sqlite3`)** — WAL mode, crash-safe, faster at scale.
+- Legacy JSON data auto-imported on first run.
+- **Server-side pagination**: list + stats (`/api/jobs/stats`) moved to the server; large job lists load in pages instead of all-at-once.
+
+### 🎨 Professional Navbar
+- Four items (guest chip, Manual JD, Master CV, Settings) consolidated into **one account menu** — avatar pill with dropdown: user card, Workspace (Master CV, Manual JD ⌘J), System (Settings ⌘,), Sign out.
+- Duplicate metrics badge removed from the app bar (dashboard KPIs are the single source).
+- Keyboard shortcuts: **⌘J** = Manual JD, **⌘,** = Settings.
+
+### 🖱️ UX Improvements
+- **Drag-and-drop reordering** for Work Experience, Projects, Certifications in the Master CV drawer.
+- **Add-to-top** default for new Experience / Education / Skills / Projects / Certifications entries.
+- Reliable **Download CV** (programmatic click survives re-renders during tailoring).
+- Master CV form no longer wipes in-progress edits on background refreshes.
+
+### 🐛 Fixes
+- `jobType` / `under10Applicants` params were dropped by the scrape route — now forwarded correctly.
+- Arbeitnow term matching (e.g. "DevOps Engineer" now returns results).
+- MyJobMag date parsing regex; Cutshort slug→role mapping + 30s timeout + hybrid classification.
+
 ## v1.0.1 (2026-07-30)
 
 ### New Scrapers

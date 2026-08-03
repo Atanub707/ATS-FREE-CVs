@@ -138,11 +138,22 @@ jobs:
           chmod +x dist/ats-cv-tailor-linux
           npx postject dist/ats-cv-tailor-linux NODE_SEA_BLOB dist/sea.blob \
             --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+      - name: Extract release notes
+        id: notes
+        run: |
+          awk '/^## v1.1.0/{flag=1; next} /^## v/{if(flag) exit} flag' CHANGELOG.md > /tmp/release-notes.md
+          {
+            echo "body<<EOF"
+            cat /tmp/release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/ats-cv-tailor-linux
-          tag_name: v1.0.1
-          generate_release_notes: true
+          tag_name: v1.1.0
+          name: v1.1.0
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: false
           token: ${{ secrets.GITHUB_TOKEN }}
       - if: success()
         run: echo "✅ Linux build complete" >> $GITHUB_STEP_SUMMARY
@@ -224,6 +235,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ steps.repo.outputs.image }}:latest,${{ steps.repo.outputs.image }}:v1.0.1
+          tags: ${{ steps.repo.outputs.image }}:latest,${{ steps.repo.outputs.image }}:v1.1.0
       - if: success()
         run: echo "✅ Docker image pushed to GHCR" >> $GITHUB_STEP_SUMMARY
