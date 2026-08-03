@@ -129,11 +129,45 @@ function getDb(): Database.Database {
       data TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS master_cv (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      data TEXT NOT NULL
+      profile_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      data TEXT NOT NULL,
+      updated_at TEXT
     );
   `);
+  migrateOldMasterCvSchema(db);
   return db;
+}
+
+/**
+ * If the pre-multi-profile master_cv table (id INTEGER CHECK(id=1)) exists,
+ * rebuild it into the profile-keyed table and migrate the existing row to 'default'.
+ */
+function migrateOldMasterCvSchema(d: Database.Database): void {
+  const cols = d.prepare("PRAGMA table_info(master_cv)").all() as { name: string }[];
+  const hasProfileId = cols.some((c) => c.name === 'profile_id');
+  if (hasProfileId) return;
+
+  console.log('[Storage] Migrating master_cv table to multi-profile schema...');
+  try {
+    const oldRows = d.prepare('SELECT data FROM master_cv').all() as { data: string }[];
+    d.exec('DROP TABLE master_cv');
+    d.exec(`
+      CREATE TABLE master_cv (
+        profile_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        data TEXT NOT NULL,
+        updated_at TEXT
+      );
+    `);
+    const insert = d.prepare('INSERT OR IGNORE INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)');
+    if (oldRows.length > 0) {
+      insert.run('default', 'Default Profile', oldRows[0].data, new Date().toISOString());
+      console.log('[Storage] Migrated existing master CV to "default" profile');
+    }
+  } catch (err) {
+    console.error('[Storage] master_cv migration failed:', err);
+  }
 }
 
 /** One-time import from legacy JSON files if the DB is empty */
@@ -161,11 +195,94 @@ function migrateFromLegacyJson(): void {
 
 migrateFromLegacyJson();
 
-// ─────────────────── Master CV Storage ───────────────────
-export function getMasterCv(): MasterCv {
+// ─────────────────── Master CV Storage (multi-profile) ───────────────────
+export interface CvProfile {
+  id: string;
+  name: string;
+  updatedAt?: string;
+  isActive?: boolean;
+}
+
+// Keep the active profile id in a small sidecar file so it survives restarts
+// without touching config.ini (which is gitignored but also user-editable).
+const ACTIVE_PROFILE_PATH = path.join(DATA_DIR, 'active_profile.txt');
+
+export function getActiveProfileId(): string {
+  try {
+    if (fs.existsSync(ACTIVE_PROFILE_PATH)) {
+      const id = fs.readFileSync(ACTIVE_PROFILE_PATH, 'utf-8').trim();
+      if (id) return id;
+    }
+  } catch { /* ignore */ }
+  return 'default';
+}
+
+export function setActiveProfileId(id: string): void {
+  ensureDataDir();
+  try {
+    fs.writeFileSync(ACTIVE_PROFILE_PATH, id, 'utf-8');
+  } catch (err) {
+    console.error('Error saving active profile:', err);
+  }
+}
+
+export function listCvProfiles(): CvProfile[] {
   try {
     const d = getDb();
-    const row = d.prepare('SELECT data FROM master_cv WHERE id = 1').get() as { data: string } | undefined;
+    const activeId = getActiveProfileId();
+    const rows = d.prepare('SELECT profile_id, name, updated_at FROM master_cv ORDER BY name').all() as { profile_id: string; name: string; updated_at: string | null }[];
+    return rows.map((r) => ({
+      id: r.profile_id,
+      name: r.name,
+      updatedAt: r.updated_at || undefined,
+      isActive: r.profile_id === activeId,
+    }));
+  } catch (err) {
+    console.error('Error listing profiles:', err);
+    return [];
+  }
+}
+
+export function createCvProfile(name: string, cloneFrom?: string): CvProfile {
+  const d = getDb();
+  const profileId = `profile-${Date.now()}`;
+  let data = JSON.stringify(DEFAULT_MASTER_CV);
+  let updatedAt = new Date().toISOString();
+
+  if (cloneFrom) {
+    const row = d.prepare('SELECT data FROM master_cv WHERE profile_id = ?').get(cloneFrom) as { data: string } | undefined;
+    if (row) {
+      const cv = JSON.parse(row.data);
+      cv.fullName = `${name} Candidate`;
+      data = JSON.stringify(cv);
+    }
+  }
+
+  const existing = d.prepare('SELECT 1 FROM master_cv WHERE name = ?').get(name);
+  if (existing) {
+    throw new Error(`A profile named "${name}" already exists.`);
+  }
+
+  d.prepare('INSERT INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)')
+    .run(profileId, name, data, updatedAt);
+  return { id: profileId, name, updatedAt, isActive: false };
+}
+
+export function deleteCvProfile(id: string): boolean {
+  if (id === 'default') return false; // never delete the default profile
+  const d = getDb();
+  const result = d.prepare('DELETE FROM master_cv WHERE profile_id = ?').run(id);
+  if (result.changes > 0 && getActiveProfileId() === id) {
+    setActiveProfileId('default');
+  }
+  return result.changes > 0;
+}
+
+export function getMasterCv(profileId?: string): MasterCv {
+  const targetId = profileId || getActiveProfileId();
+  try {
+    const d = getDb();
+    const row = d.prepare('SELECT data FROM master_cv WHERE profile_id = ?').get(targetId) as { data: string } | undefined;
     if (row) return JSON.parse(row.data);
   } catch (err) {
     console.error('Error reading master CV from DB:', err);
@@ -174,19 +291,22 @@ export function getMasterCv(): MasterCv {
   try {
     if (fs.existsSync(MASTER_CV_PATH)) {
       const cv = JSON.parse(fs.readFileSync(MASTER_CV_PATH, 'utf-8'));
-      saveMasterCv(cv);
+      saveMasterCv(cv, 'default');
       return cv;
     }
   } catch { /* ignore */ }
-  saveMasterCv(DEFAULT_MASTER_CV);
+  saveMasterCv(DEFAULT_MASTER_CV, 'default');
   return DEFAULT_MASTER_CV;
 }
 
-export function saveMasterCv(cv: MasterCv): void {
+export function saveMasterCv(cv: MasterCv, profileId?: string): void {
+  const targetId = profileId || getActiveProfileId();
   try {
     const d = getDb();
-    d.prepare('INSERT INTO master_cv (id, data) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data')
-      .run(JSON.stringify(cv));
+    d.prepare(`
+      INSERT INTO master_cv (profile_id, name, data, updated_at) VALUES (?, ?, ?, ?)
+      ON CONFLICT(profile_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+    `).run(targetId, `Profile ${targetId.slice(-4)}`, JSON.stringify(cv), new Date().toISOString());
   } catch (err) {
     console.error('Error saving master CV:', err);
   }

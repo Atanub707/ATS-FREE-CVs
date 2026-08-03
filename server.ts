@@ -51,6 +51,11 @@ import { loadConfig, saveConfig } from './server/config.js';
 import {
   getMasterCv,
   saveMasterCv,
+  listCvProfiles,
+  createCvProfile,
+  deleteCvProfile,
+  getActiveProfileId,
+  setActiveProfileId,
   getAllJobs,
   getJobById,
   updateJobInStorage,
@@ -323,13 +328,78 @@ async function startServer() {
 
   // Master CV routes
   app.get('/api/cv/master', (req, res) => {
-    res.json(getMasterCv());
+    const profileId = (req.query.profile as string) || undefined;
+    res.json(getMasterCv(profileId));
   });
 
   app.post('/api/cv/master', (req, res) => {
     try {
-      saveMasterCv(req.body);
-      res.json({ success: true, cv: getMasterCv() });
+      const profileId = (req.body.profileId as string) || undefined;
+      saveMasterCv(req.body, profileId);
+      res.json({ success: true, cv: getMasterCv(profileId) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Multi-profile management ──
+  app.get('/api/cv/profiles', (req, res) => {
+    try {
+      const profiles = listCvProfiles();
+      const activeId = getActiveProfileId();
+      if (profiles.length === 0) {
+        // Ensure the default profile exists
+        getMasterCv('default');
+        res.json({ profiles: listCvProfiles(), activeProfileId: activeId });
+        return;
+      }
+      res.json({ profiles, activeProfileId: activeId });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/cv/profiles', (req, res) => {
+    try {
+      const { name, cloneFrom } = req.body;
+      if (!name || !name.trim()) {
+        res.status(400).json({ error: 'Profile name is required.' });
+        return;
+      }
+      const profile = createCvProfile(name.trim(), cloneFrom);
+      res.json({ success: true, profile });
+    } catch (err: any) {
+      res.status(409).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/cv/profiles/:id', (req, res) => {
+    try {
+      const deleted = deleteCvProfile(req.params.id);
+      if (!deleted) {
+        res.status(400).json({ error: 'Cannot delete the default profile or profile not found.' });
+        return;
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/cv/profiles/activate', (req, res) => {
+    try {
+      const { profileId } = req.body;
+      if (!profileId) {
+        res.status(400).json({ error: 'profileId is required.' });
+        return;
+      }
+      const exists = listCvProfiles().some((p) => p.id === profileId);
+      if (!exists) {
+        res.status(404).json({ error: 'Profile not found.' });
+        return;
+      }
+      setActiveProfileId(profileId);
+      res.json({ success: true, activeProfileId: profileId, cv: getMasterCv(profileId) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
