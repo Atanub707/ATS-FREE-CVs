@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MasterCv } from '../types';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
+import { CvPdfPreview, masterCvToPdfShape } from './CvPdfPreview';
 import {
   X,
   Save,
@@ -27,14 +28,14 @@ import {
   FileDown,
 } from 'lucide-react';
 
-interface MasterCvDrawerProps {
+interface MasterCvScreenProps {
   isOpen: boolean;
   onClose: () => void;
   masterCv: MasterCv;
   onSaveMasterCv: (updated: MasterCv) => Promise<void>;
 }
 
-export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
+export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   isOpen,
   onClose,
   masterCv,
@@ -45,6 +46,7 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   const [formData, setFormData] = useState<MasterCv>(masterCv);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [previewZoom, setPreviewZoom] = useState<50 | 75 | 100>(75);
 
   const [rawPasteText, setRawPasteText] = useState('');
   const [isParsingText, setIsParsingText] = useState(false);
@@ -446,30 +448,33 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-      <div className="bg-white border-l border-slate-200 w-full max-w-3xl h-full flex flex-col shadow-2xl overflow-hidden text-slate-900">
-        {/* Drawer Header */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <User className="w-5 h-5 text-slate-700" />
-              <h2 className="text-base font-bold text-slate-900">Master Candidate Profile & CV</h2>
+    <div className="fixed inset-0 z-40 bg-white text-slate-900 flex">
+      {/* LEFT: EDITOR */}
+      <div className="w-[46%] min-w-[420px] border-r border-slate-200 flex flex-col bg-white">
+        {/* Header */}
+        <div className="px-5 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2">
+            <User className="w-5 h-5 text-slate-700" />
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 leading-tight">Master Candidate CV</h2>
+              <p className="text-[10.5px] text-slate-400 font-medium">Edits apply to every score &amp; tailor · autosaved on Save</p>
             </div>
+          </div>
 
-            <div className="flex items-center space-x-2">
-              {savedSuccess && (
-                <span className="text-xs text-emerald-600 font-semibold flex items-center space-x-1">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Saved!</span>
-                </span>
-              )}
+          <div className="flex items-center space-x-2">
+            {savedSuccess && (
+              <span className="text-xs text-emerald-600 font-semibold flex items-center space-x-1">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Saved!</span>
+              </span>
+            )}
 
             <div className="flex items-center space-x-1.5">
               <input
                 type="text"
                 value={downloadFilename}
                 onChange={(e) => setDownloadFilename(e.target.value.replace(/[^a-zA-Z0-9_\-]/g, ''))}
-                className="w-28 bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 font-mono"
+                className="w-24 bg-white border border-slate-200 rounded px-2 py-1.5 text-[11px] text-slate-800 font-mono"
                 title="Filename (without extension)"
               />
               <button
@@ -481,31 +486,29 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
                   a.href = url; a.download = `${downloadFilename}.pdf`;
                   a.click(); URL.revokeObjectURL(url);
                 }}
-                className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 transition-colors inline-flex items-center space-x-1 cursor-pointer"
               >
                 <FileDown className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">PDF</span>
+                <span className="hidden sm:inline">Download</span>
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
                 id="btn-save-master-cv"
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>{isSaving ? 'Saving...' : 'Save Profile'}</span>
+                <span>{isSaving ? 'Saving...' : 'Save'}</span>
+              </button>
+              <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer" title="Close">
+                <X className="w-5 h-5" />
               </button>
             </div>
-
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer">
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
-        </div>
 
-        {/* Drawer Body Form */}
-        <form onSubmit={handleSave} className="p-6 overflow-y-auto space-y-6 flex-1 text-xs text-slate-800">
+        {/* Editor Body Form */}
+        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-slate-800">
           {/* File Upload & Quick Paste Auto-Extract Banner */}
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-blue-900 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
@@ -1393,6 +1396,38 @@ export const MasterCvDrawer: React.FC<MasterCvDrawerProps> = ({
             )}
           </div>
         </form>
+      </div>
+
+      {/* RIGHT: LIVE PDF PREVIEW */}
+      <div className="flex-1 bg-slate-100 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
+          <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span>Live PDF Preview — exactly what downloads</span>
+          </span>
+          <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5">
+            {([50, 75, 100] as const).map((z) => (
+              <button
+                key={z}
+                type="button"
+                onClick={() => setPreviewZoom(z)}
+                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                  previewZoom === z ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                {z}%
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-6 flex justify-center">
+          <div className="shadow-2xl rounded-sm overflow-hidden bg-white" style={{ minHeight: 'fit-content' }}>
+            <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} />
+          </div>
+        </div>
       </div>
     </div>
   );

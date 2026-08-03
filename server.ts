@@ -1008,7 +1008,28 @@ Return valid JSON only — NO markdown, NO code fences:
       });
       setTimeout(() => manualResults.delete(token), 30 * 60 * 1000);
 
-      res.json({ success: true, downloadToken: token });
+      // Diff payload for the UI's "what we add & why" panel
+      const audit = tailoredCv.audit;
+      res.json({
+        success: true,
+        downloadToken: token,
+        diff: {
+          beforeScore: audit?.beforeScore ?? 0,
+          afterScore: audit?.afterScore ?? 0,
+          scoreBoost: audit?.scoreBoost ?? 0,
+          scoreBreakdown: audit?.scoreBreakdown ?? { alreadyMatched: 0, newlyIntegrated: 0, remainingGap: 0 },
+          missingBefore: audit?.missingBefore ?? { skills: [], keywords: [] },
+          addedAfter: audit?.addedAfter ?? {
+            keywordsIncorporated: [],
+            keywordsInExperience: [],
+            keywordsInSkills: [],
+            rephrasedHighlightsCount: 0,
+            skillsAdded: [],
+          },
+          notIntegrable: audit?.notIntegrable ?? [],
+          auditNotes: audit?.auditNotes ?? [],
+        },
+      });
     } catch (err: any) {
       console.error('Tailor JD error:', err);
       res.status(500).json({ error: err.message });
