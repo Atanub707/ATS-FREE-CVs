@@ -85,15 +85,9 @@ function getContactItems(cv: PdfCvShape): { label: string; url?: string }[] {
   if (cv.contactInfo.email) items.push({ label: cv.contactInfo.email, url: `mailto:${cv.contactInfo.email}` });
   if (cv.contactInfo.phone) items.push({ label: cv.contactInfo.phone });
   if (cv.contactInfo.location) items.push({ label: cv.contactInfo.location });
-  if (cv.contactInfo.linkedin) {
-    const label = cv.contactInfo.linkedin.replace(/^https?:\/\/(www\.)?/, '');
-    items.push({ label, url: cv.contactInfo.linkedin });
-  }
-  if (cv.contactInfo.github) {
-    const label = cv.contactInfo.github.replace(/^https?:\/\/(www\.)?/, '');
-    items.push({ label, url: cv.contactInfo.github });
-  }
-  if (cv.contactInfo.website) items.push({ label: cv.contactInfo.website, url: cv.contactInfo.website });
+  if (cv.contactInfo.linkedin) items.push({ label: 'LinkedIn', url: cv.contactInfo.linkedin });
+  if (cv.contactInfo.github) items.push({ label: 'GitHub', url: cv.contactInfo.github });
+  if (cv.contactInfo.website) items.push({ label: 'Portfolio', url: cv.contactInfo.website });
   return items;
 }
 

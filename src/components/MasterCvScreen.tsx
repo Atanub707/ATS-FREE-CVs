@@ -273,7 +273,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [pagesAfter, setPagesAfter] = useState(0);
   const aiStepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
-  const [resultTab, setResultTab] = useState<'new' | 'changes' | 'compare'>('new');
 
   const AI_STEPS = ['Reading the market…', 'Analyzing your CV…', 'Rewriting…', 'Verifying keywords & page count…'];
 
@@ -1649,7 +1648,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <button type="button" onClick={() => setConfirmOpen(true)}
                 className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Use this version</span>
+                <span>Apply</span>
               </button>
             </div>
           </div>
@@ -1688,141 +1687,73 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 </div>
               </div>
 
-              {/* Trust note */}
-              <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 mt-3 text-[11.5px] font-semibold text-emerald-800">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span>
-                  All quantified achievements preserved · 0 meaning lost ·
-                  {(() => {
-                    const counts: Record<string, number> = { tighten: 0, merge: 0, keep: 0 };
-                    compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((c: any) => { if (counts[c.type] !== undefined) counts[c.type]++; }));
-                    return <> {counts.tighten} tightened · {counts.merge} merged · {counts.keep} kept as-is</>;
-                  })()}
-                </span>
-                <button type="button" onClick={() => setResultTab('compare')}
-                  className="ml-auto text-[11px] font-bold text-slate-600 underline whitespace-nowrap cursor-pointer">
-                  View technical diff
-                </button>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex gap-1 border-b border-slate-200 mt-5">
-                {([
-                  ['new', 'New CV', pagesAfter > 0 ? `${pagesAfter} pages` : ''],
-                  ['changes', 'What changed', (() => { const c: Record<string, number> = { tighten: 0, merge: 0, keep: 0 }; compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((x: any) => { if (c[x.type] !== undefined) c[x.type]++; })); return `${c.tighten} · ${c.merge} · ${c.keep}`; })()],
-                  ['compare', 'Compare', ''],
-                ] as const).map(([key, label, cnt]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setResultTab(key)}
-                    className={`px-4 py-2.5 text-[13px] font-bold border-b-2 -mb-px transition-colors flex items-center gap-1.5 cursor-pointer ${
-                      resultTab === key ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'
-                    }`}
-                  >
-                    {label}
-                    {cnt && <span className={`text-[9.5px] font-extrabold rounded-full px-1.5 py-px ${resultTab === key ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>{cnt}</span>}
-                  </button>
-                ))}
-              </div>
-
-              {/* ── Tab: New CV ── */}
-              {resultTab === 'new' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5 items-start animate-[fadeIn_.3s_ease]">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
-                      <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New CV</span>
-                      <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦ RECOMMENDED</span>
-                      <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
-                    </div>
-                    <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth onPageCount={setPagesAfter} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="w-2 h-2 rounded-full bg-slate-300" />
-                      <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
-                      <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
-                    </div>
-                    <div className="opacity-60">
-                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth onPageCount={setPagesBefore} />
-                    </div>
-                    <p className="text-center text-[10.5px] text-slate-400 font-semibold mt-3">Original preview collapsed · full text in Compare tab</p>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Tab: What changed ── */}
-              {resultTab === 'changes' && (
-                <div className="mt-5 space-y-3.5 animate-[fadeIn_.3s_ease]">
-                  {(['Work Experience', 'Professional Summary', 'Projects', 'Skills', 'Education', 'Certifications'] as const).map((sectionName) => {
-                    const section = compressResult.guidance?.sections?.find((s: any) => s.name === sectionName);
-                    const changes = section?.changes || [];
-                    if (changes.length === 0) return null;
-                    const count = (t: string) => changes.filter((c: any) => c.type === t).length;
-                    return (
-                      <div key={sectionName} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-slate-50/70">
-                          <span className="text-[13px] font-extrabold text-slate-900 flex-1">{sectionName}</span>
-                          {count('tighten') > 0 && <span className="text-[9.5px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">{count('tighten')} tightened</span>}
-                          {count('merge') > 0 && <span className="text-[9.5px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{count('merge')} merged</span>}
-                          {count('keep') > 0 && <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">{count('keep')} kept</span>}
+              {/* What changed — minimal list at top */}
+              {(() => {
+                const sections = compressResult.guidance?.sections || [];
+                const allChanges = sections.flatMap((s: any) => s.changes || []);
+                if (allChanges.length === 0) return null;
+                return (
+                  <div className="mt-4 bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2.5">What changes</p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
+                      {allChanges.map((c: any, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-[11.5px] leading-relaxed">
+                          <span className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center text-[8.5px] font-extrabold shrink-0 ${
+                            c.type === 'tighten' ? 'bg-blue-50 text-blue-600' : c.type === 'merge' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                          }`}>
+                            {c.type === 'tighten' ? '~' : c.type === 'merge' ? '+' : '✓'}
+                          </span>
+                          <span className="text-slate-600">
+                            <b className="text-slate-800">{c.type === 'tighten' ? 'Tightened' : c.type === 'merge' ? 'Merged' : 'Kept'}: </b>
+                            {c.reason}
+                          </span>
                         </div>
-                        <div className="px-4 py-2 divide-y divide-slate-50">
-                          {changes.map((c: any, i: number) => (
-                            <div key={i} className="py-3 flex items-start gap-3">
-                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-px ${
-                                c.type === 'tighten' ? 'bg-blue-50 text-blue-600' : c.type === 'merge' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
-                              }`}>
-                                {c.type === 'tighten' ? '~' : c.type === 'merge' ? '+' : '✓'}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mr-2">
-                                  {c.type === 'tighten' ? 'Tightened' : c.type === 'merge' ? 'Merged' : 'Kept'}
-                                </span>
-                                <span className="text-[11px] text-slate-500 leading-relaxed">
-                                  {c.reason}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {(!compressResult.guidance?.sections || compressResult.guidance.sections.length === 0) && (
-                    <p className="text-center text-xs text-slate-400 py-8">No guidance returned for this compression.</p>
-                  )}
-                </div>
-              )}
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
-              {/* ── Tab: Compare ── */}
-              {resultTab === 'compare' && (
-                <div className="mt-5 animate-[fadeIn_.3s_ease]">
-                  <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-3 text-[11.5px] text-slate-600 mb-4">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span>Green = meaning kept (reworded) · <span className="line-through text-slate-400">struck</span> = original wording · nothing is removed without its meaning surviving</span>
+              {/* Side-by-side: Old left, New right */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-5 items-start">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2 h-2 rounded-full bg-slate-300" />
+                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
+                    <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-2 h-2 rounded-full bg-slate-300" />
-                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
-                        <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
-                      </div>
-                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth onPageCount={setPagesBefore} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
-                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New</span>
-                        <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
-                      </div>
-                      <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth onPageCount={setPagesAfter} />
-                    </div>
+                  <div className="opacity-60">
+                    <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth onPageCount={setPagesBefore} />
                   </div>
                 </div>
-              )}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New CV</span>
+                    <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦</span>
+                    <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
+                  </div>
+                  <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth onPageCount={setPagesAfter} />
+                  <div className="flex gap-2.5 mt-4 justify-end">
+                    <button
+                      type="button"
+                      onClick={handleDownloadPdf}
+                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      <span>Download new CV</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmOpen(true)}
+                      className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Apply</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
