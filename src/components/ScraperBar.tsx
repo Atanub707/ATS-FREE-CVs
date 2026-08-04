@@ -22,7 +22,7 @@ interface ScraperBarProps {
     maxJobsPerSource?: number;
     experienceLevel?: string;
     under10Applicants?: boolean;
-  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number } | void>;
+  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number } | void>;
   isLoading: boolean;
 }
 
@@ -67,10 +67,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
     });
 
     if (result && result.scrapedTotal > 0) {
+      const filterNote = result.filteredOutCount && result.filteredOutCount > 0
+        ? ` (${result.filteredOutCount} filtered out — over 10 applicants)`
+        : '';
       if (result.addedCount > 0) {
-        setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! Added ${result.addedCount} new jobs to top (${result.skippedDuplicates} duplicates skipped).`);
+        setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! Added ${result.addedCount} new jobs to top (${result.skippedDuplicates} duplicates skipped).${filterNote}`);
       } else {
-        setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! (All ${result.skippedDuplicates} were already in your job list).`);
+        setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! (All ${result.skippedDuplicates} were already in your job list).${filterNote}`);
       }
     } else {
       const srcList = selectedSources.join(' + ');
@@ -230,7 +233,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           {/* Under 10 applicants */}
           <div className="flex flex-col gap-[6px]">
             <label className="text-[11px] font-semibold text-slate-500">Competition</label>
-            <label className="flex items-center gap-2 bg-white border-[1.5px] border-slate-200 rounded-[10px] px-3 py-[9px] cursor-pointer transition-all hover:border-slate-300">
+            <label className="flex items-center gap-2 bg-white border-[1.5px] border-slate-200 rounded-[10px] px-3 py-[9px] cursor-pointer transition-all hover:border-slate-300" title="Only show jobs with 10 or fewer applicants — low-competition roles (LinkedIn only; other sources are skipped when enabled)">
               <input
                 type="checkbox"
                 checked={under10Applicants}

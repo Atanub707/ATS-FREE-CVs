@@ -776,7 +776,8 @@ Return valid JSON only — NO markdown, NO code fences:
         return;
       }
 
-      const scrapedJobs = await ScraperFactory.runScrape({
+      const wantUnder10 = under10Applicants === true;
+      const scrapedJobsRaw = await ScraperFactory.runScrape({
         keywords: keywords.trim(),
         location: location || 'Remote',
         sources,
@@ -786,8 +787,18 @@ Return valid JSON only — NO markdown, NO code fences:
         maxJobsPerSource: maxJobsPerSource ? Number(maxJobsPerSource) : 15,
         jobTitle: jobTitle?.trim() || undefined,
         experienceLevel: experienceLevel || 'all',
-        under10Applicants: under10Applicants === true,
+        under10Applicants: wantUnder10,
       });
+
+      // Deterministic "under 10 applicants" guarantee: LinkedIn's f_AL=true
+      // filter is unreliable on the guest API, and other sources don't expose
+      // applicant counts at all. Post-filter on the scraped applicantCount so
+      // the option always delivers what it promises.
+      const scrapedJobs = wantUnder10
+        ? scrapedJobsRaw.filter((j) => j.applicantCount !== undefined && j.applicantCount <= 10)
+        : scrapedJobsRaw;
+
+      const filteredOutCount = scrapedJobsRaw.length - scrapedJobs.length;
 
       const { added, skipped } = saveNewJobs(scrapedJobs);
 
@@ -796,6 +807,7 @@ Return valid JSON only — NO markdown, NO code fences:
         scrapedTotal: scrapedJobs.length,
         addedCount: added.length,
         skippedDuplicates: skipped,
+        filteredOutCount: wantUnder10 ? filteredOutCount : 0,
         addedJobs: added,
       });
     } catch (err: any) {
