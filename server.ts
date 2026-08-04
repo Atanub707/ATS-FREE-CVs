@@ -73,12 +73,18 @@ import {
   listManualAnalyses,
   getManualAnalysis,
   deleteManualAnalysis,
+  saveCvVersion,
+  listCvVersions,
+  getCvVersion,
+  deleteCvVersion,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job } from './src/types.js';
+import { compressCv } from './server/ai/cvCompressor.js';
+import { getMarketData } from './server/ai/marketData.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -588,6 +594,124 @@ Return valid JSON only — NO markdown, NO code fences:
       console.error('Improve summary error:', err);
       res.status(500).json({ error: err.message || 'Failed to generate summary suggestions.' });
     }
+  });
+
+  // ── AI CV Compression ──
+  app.post('/api/cv/ai/analyze', async (req, res) => {
+    try {
+      const masterCv = getMasterCv();
+      if (!masterCv) {
+        res.status(400).json({ error: 'No master CV found. Create one first.' });
+        return;
+      }
+      const targetRole = (req.body?.targetRole as string)?.trim() || masterCv.experiences?.[0]?.title || '';
+      if (!targetRole) {
+        res.status(400).json({ error: 'Cannot determine target role from the CV.' });
+        return;
+      }
+      const marketData = getMarketData(targetRole);
+      const result = await compressCv(masterCv, targetRole, marketData);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      console.error('AI compress analyze error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/cv/ai/accept', async (req, res) => {
+    try {
+      const compressed = req.body?.compressedCv;
+      if (!compressed || typeof compressed !== 'object') {
+        res.status(400).json({ error: 'compressedCv is required.' });
+        return;
+      }
+      const masterCv = getMasterCv();
+      if (!masterCv) {
+        res.status(400).json({ error: 'No master CV found.' });
+        return;
+      }
+
+      // Backup current CV before overwriting
+      saveCvVersion(masterCv, `Before AI compression (${masterCv.fullName})`);
+
+      const exp = (compressed.workExperience || []).map((e: any, i: number) => ({
+        id: `exp-${Date.now()}-${i}`,
+        title: e.title || '',
+        company: e.company || '',
+        location: e.location || '',
+        dates: e.dates || '',
+        responsibilities: Array.isArray(e.highlights) ? e.highlights : [],
+      }));
+      const education = (compressed.education || []).map((e: any, i: number) => ({
+        id: `edu-${Date.now()}-${i}`,
+        degree: e.degree || '',
+        institution: e.institution || '',
+        dates: e.dates || '',
+        details: e.details || '',
+      }));
+      const skills = (compressed.technicalSkills || []).map((s: any) => ({
+        category: s.category || 'Skills',
+        items: Array.isArray(s.skills) ? s.skills : [],
+      }));
+      if (skills.length === 0 && Array.isArray(compressed.coreCompetencies)) {
+        skills.push({ category: 'Core Competencies', items: compressed.coreCompetencies });
+      }
+      const projects = (compressed.projects || []).map((p: any, i: number) => ({
+        id: `proj-${Date.now()}-${i}`,
+        name: p.name || '',
+        description: p.description || '',
+        technologies: Array.isArray(p.technologies) ? p.technologies : [],
+        link: p.link,
+        dates: p.dates,
+      }));
+      const certifications = (compressed.certifications || []).map((c: any) =>
+        typeof c === 'string' ? c : c.name || ''
+      ).filter(Boolean);
+
+      const newCv: any = {
+        fullName: compressed.candidateName || masterCv.fullName,
+        email: compressed.contactInfo?.email || masterCv.email,
+        phone: compressed.contactInfo?.phone || masterCv.phone,
+        location: compressed.contactInfo?.location || masterCv.location,
+        linkedin: compressed.contactInfo?.linkedin || masterCv.linkedin,
+        github: compressed.contactInfo?.github || masterCv.github,
+        website: compressed.contactInfo?.website || masterCv.website,
+        summary: compressed.professionalSummary || masterCv.summary,
+        experiences: exp,
+        education,
+        skills,
+        projects,
+        certifications,
+      };
+      saveMasterCv(newCv);
+      res.json({ success: true, cv: getMasterCv() });
+    } catch (err: any) {
+      console.error('AI compress accept error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/cv/versions', (req, res) => {
+    res.json({ versions: listCvVersions() });
+  });
+
+  app.post('/api/cv/versions/:id/restore', (req, res) => {
+    try {
+      const version = getCvVersion(req.params.id);
+      if (!version) {
+        res.status(404).json({ error: 'Version not found.' });
+        return;
+      }
+      saveCvVersion(getMasterCv(), `Before restore of ${req.params.id.slice(-6)}`);
+      saveMasterCv(version.data);
+      res.json({ success: true, cv: getMasterCv() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/cv/versions/:id', (req, res) => {
+    res.json({ success: deleteCvVersion(req.params.id) });
   });
 
   app.post('/api/cv/parse-text', async (req, res) => {
