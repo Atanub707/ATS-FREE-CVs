@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { MasterCv } from '../types';
 
 // Normalized shape mirroring server-side TailoredCv (as produced by generatePdfBuffer)
@@ -63,6 +63,23 @@ export function masterCvToPdfShape(m: MasterCv): PdfCvShape {
   };
 }
 
+// Convert an AI-compressed CV payload (server analyze/accept shape) into the
+// same normalized shape used for PDF rendering.
+export function compressedCvToPdfShape(cv: any): PdfCvShape {
+  return {
+    candidateName: cv.candidateName || '',
+    targetRole: cv.targetRole || '',
+    contactInfo: cv.contactInfo || {},
+    professionalSummary: cv.professionalSummary || '',
+    technicalSkills: Array.isArray(cv.technicalSkills) ? cv.technicalSkills : [],
+    coreCompetencies: Array.isArray(cv.coreCompetencies) ? cv.coreCompetencies : [],
+    workExperience: Array.isArray(cv.workExperience) ? cv.workExperience : [],
+    projects: Array.isArray(cv.projects) ? cv.projects : [],
+    education: Array.isArray(cv.education) ? cv.education : [],
+    certifications: Array.isArray(cv.certifications) ? cv.certifications : [],
+  };
+}
+
 function getContactItems(cv: PdfCvShape): { label: string; url?: string }[] {
   const items: { label: string; url?: string }[] = [];
   if (cv.contactInfo.email) items.push({ label: cv.contactInfo.email, url: `mailto:${cv.contactInfo.email}` });
@@ -104,6 +121,7 @@ interface CvBlock {
 interface CvPdfPreviewProps {
   cv: PdfCvShape;
   zoom?: 50 | 75 | 100;
+  onPageCount?: (n: number) => void;
 }
 
 /**
@@ -112,10 +130,14 @@ interface CvPdfPreviewProps {
  * next sheet, using the same break rules as pdfkit (section headers and
  * experience headers keep with their content; bullets are atomic).
  */
-export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100 }) => {
+export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPageCount }) => {
   const blocks = useMemo(() => buildBlocks(cv), [cv]);
   const measurerRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<CvBlock[][]>([]);
+
+  useEffect(() => {
+    onPageCount?.(pages.length);
+  }, [pages, onPageCount]);
 
   // Measure every block at 100% zoom (exact PDF metrics), then paginate.
   useLayoutEffect(() => {
