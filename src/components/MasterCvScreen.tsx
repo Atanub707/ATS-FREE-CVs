@@ -280,10 +280,11 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (!res.ok) { setAiError(data.error || 'Compression failed'); return; }
+      if (!res.ok) { setAiState('idle'); setAiError(data.error || 'Compression failed'); return; }
       setCompressResult(data);
       setAiState('result');
     } catch (e: any) {
+      setAiState('idle');
       setAiError(e.message || 'Compression failed');
     } finally {
       if (aiStepTimer.current) clearInterval(aiStepTimer.current);
@@ -1564,7 +1565,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
       {/* AI error */}
       {aiError && aiState !== 'running' && (
-        <div className="absolute top-16 right-6 z-50 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-lg px-4 py-2.5 shadow-lg">
+        <div className="absolute top-16 right-6 z-[70] bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-lg px-4 py-2.5 shadow-lg">
           {aiError}
         </div>
       )}
