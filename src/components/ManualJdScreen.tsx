@@ -21,6 +21,7 @@ interface DiffPayload {
   };
   notIntegrable: string[];
   auditNotes: string[];
+  bulletRewrites?: { original: string; rewritten: string }[];
 }
 
 interface AnalysisResult {
@@ -92,7 +93,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       const res = await fetch('/api/analyze-jd/tailor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), company: company.trim(), description: description.trim() }),
+        body: JSON.stringify({
+          title: title.trim(),
+          company: company.trim(),
+          description: description.trim(),
+          // Pass the analysis through so the engine integrates the real gaps
+          gapAnalysis: result?.gapAnalysis,
+          matchScore: result?.matchScore,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Tailoring failed'); return; }
@@ -372,7 +380,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                         <div className="text-[9.5px] text-slate-500 font-medium">skills added to <b className="text-slate-700">Skills</b></div>
                       </div>
                       <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                        <div className="text-lg font-extrabold text-emerald-600">+{diff.addedAfter.rephrasedHighlightsCount}</div>
+                        <div className="text-lg font-extrabold text-emerald-600">+{(diff.bulletRewrites?.length ?? diff.addedAfter.rephrasedHighlightsCount) || 0}</div>
                         <div className="text-[9.5px] text-slate-500 font-medium">bullets rewritten with <b className="text-slate-700">keywords</b></div>
                       </div>
                       <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
@@ -417,30 +425,46 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                     </div>
                   )}
 
-                  {/* Experience rewrites */}
-                  {diff.addedAfter.rephrasedHighlightsCount > 0 && (
+                  {/* Experience rewrites — before → after */}
+                  {(diff.bulletRewrites?.length || 0) > 0 && (
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                       <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                         <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
                           <span className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><Zap className="w-3.5 h-3.5" /></span>
-                          Experience bullets — {diff.addedAfter.rephrasedHighlightsCount} rewrites
+                          Experience bullets — {diff.bulletRewrites!.length} rewrites
                         </p>
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{diff.addedAfter.rephrasedHighlightsCount} MODIFIED</span>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{diff.bulletRewrites!.length} MODIFIED</span>
                       </div>
                       <div className="px-4 py-2 divide-y divide-slate-50">
-                        {diff.addedAfter.keywordsInExperience.slice(0, 10).map((k) => {
-                          const n = countInJd(k, description);
-                          const ctx = contextInJd(k, description);
+                        {diff.bulletRewrites!.map((br, bi) => {
+                          // Extract added words: token diff between rewritten and original
+                          const origWords = br.original.split(/\s+/);
+                          const rewWords = br.rewritten.split(/\s+/);
+                          const added = rewWords.filter((w) => !origWords.includes(w)).slice(0, 8);
                           return (
-                            <div key={k} className="flex items-start gap-3 py-2.5">
-                              <span className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-px">~</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-900">{k} <span className="text-[10px] font-medium text-slate-400">→ woven into existing bullet</span></p>
-                                {ctx && <p className="text-[10.5px] text-slate-400 mt-0.5 line-clamp-2">“{ctx}”</p>}
+                            <div key={bi} className="py-3">
+                              <div className="flex items-start gap-3">
+                                <span className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">~</span>
+                                <div className="flex-1 min-w-0">
+                                  {/* Before */}
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Before</p>
+                                  <p className="text-[11px] text-slate-400 line-through leading-relaxed">{br.original}</p>
+                                  {/* After */}
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mt-2.5 mb-1">After</p>
+                                  <p className="text-[11.5px] text-slate-800 leading-relaxed bg-emerald-50/60 border border-emerald-100 rounded-lg px-2.5 py-2">
+                                    {br.rewritten}
+                                  </p>
+                                  {added.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {added.map((w) => (
+                                        <span key={w} className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
+                                          +{w.replace(/[^a-zA-Z0-9\-/.]/g, '')}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {n > 0 && (
-                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 shrink-0">required ×{n}</span>
-                              )}
                             </div>
                           );
                         })}
