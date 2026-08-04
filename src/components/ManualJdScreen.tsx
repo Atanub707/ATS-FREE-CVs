@@ -192,6 +192,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const score = result?.matchScore ?? 0;
   const color = score >= 75 ? 'text-emerald-600' : score >= 50 ? 'text-blue-600' : score >= 30 ? 'text-amber-600' : 'text-red-600';
   const verdict = score >= 75 ? 'Strong fit — worth tailoring' : score >= 50 ? 'Decent fit — tailoring will help' : 'Weak fit — consider other roles';
+
+  // After tailoring, the card shows the NEW score (with old → new visible)
+  const displayScore = diff ? diff.afterScore : score;
+  const displayColor = displayScore >= 75 ? 'text-emerald-600' : displayScore >= 50 ? 'text-blue-600' : displayScore >= 30 ? 'text-amber-600' : 'text-red-600';
+  const displayVerdict = diff
+    ? displayScore >= 75 ? 'Strong fit — tailoring complete' : displayScore >= 50 ? 'Good fit — tailoring complete' : 'Weak fit — consider other roles'
+    : verdict;
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
   const matched = result?.gapAnalysis?.matchingSkills || [];
@@ -408,25 +415,40 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
           {/* Results */}
           {result && (
             <div className="space-y-5 animate-[fadeIn_.35s_ease]">
-              {/* Score card */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-5">
+              {/* Score card — shows NEW score after tailoring, with old → new */}
+              <div className={`bg-white border rounded-2xl p-5 shadow-sm flex items-center gap-5 ${diff ? 'border-emerald-200' : 'border-slate-200'}`}>
                 <div className="relative w-[76px] h-[76px] shrink-0">
                   <svg width="76" height="76" viewBox="0 0 76 76" className="transform -rotate-90">
                     <circle cx="38" cy="38" r="32" fill="none" stroke="#EFF1F5" strokeWidth="7" />
                     <circle
                       cx="38" cy="38" r="32" fill="none"
-                      stroke={score >= 75 ? '#0FA968' : score >= 50 ? '#2F54EB' : score >= 30 ? '#D97706' : '#DC2626'}
+                      stroke={displayScore >= 75 ? '#0FA968' : displayScore >= 50 ? '#2F54EB' : displayScore >= 30 ? '#D97706' : '#DC2626'}
                       strokeWidth="7" strokeLinecap="round"
                       strokeDasharray={ringC}
-                      strokeDashoffset={ringC * (1 - score / 100)}
+                      strokeDashoffset={ringC * (1 - displayScore / 100)}
                       style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(.22,.61,.36,1)' }}
                     />
                   </svg>
-                  <span className={`absolute inset-0 flex items-center justify-center text-lg font-extrabold ${color}`}>{score}%</span>
+                  <span className={`absolute inset-0 flex items-center justify-center text-lg font-extrabold ${displayColor}`}>{displayScore}%</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-extrabold text-slate-900">{verdict}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">{matched.length} of {totalRequired} required skills already present in your CV</div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {diff && (
+                      <>
+                        <span className="text-[11px] font-bold text-slate-400 line-through">{diff.beforeScore}%</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
+                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                          +{diff.scoreBoost}% after tailoring
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="text-[15px] font-extrabold text-slate-900">{displayVerdict}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">
+                    {diff
+                      ? `Score improved from ${diff.beforeScore}% to ${diff.afterScore}% — ${diff.addedAfter.skillsAdded.length} skills added, ${diff.bulletRewrites?.length ?? diff.addedAfter.rephrasedHighlightsCount} bullets rewritten`
+                      : `${matched.length} of ${totalRequired} required skills already present in your CV`}
+                  </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
                       Role: {title}
@@ -437,6 +459,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                     <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
                       {missing.length} missing
                     </span>
+                    {diff && (
+                      <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                        {diff.scoreBoost >= 0 ? '+' : ''}{diff.scoreBoost}% boost
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
