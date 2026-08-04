@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MasterCv } from '../types';
 
 // Normalized shape mirroring server-side TailoredCv (as produced by generatePdfBuffer)
@@ -80,208 +80,334 @@ function getContactItems(cv: PdfCvShape): { label: string; url?: string }[] {
   return items;
 }
 
+// ── Page geometry (Letter 8.5x11 at 72dpi, mirroring pdfkit) ──
+const PAGE_W = 612;
+const PAGE_H = 792;
+const MARGIN_X = 54; // 0.75in
+const MARGIN_Y = 43.2; // 0.6in
+const CONTENT_W = PAGE_W - MARGIN_X * 2; // 504
+const CONTENT_H = PAGE_H - MARGIN_Y * 2; // 705.6
+
+// Scale a pt value to the current zoom (all sizes scale linearly, so the
+// wrap points and relative heights stay identical at every zoom level).
+const pt = (v: number, zoom: number) => Math.round(v * (zoom / 100));
+
+// A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
+// the block requires at least that many pt to remain below it, otherwise it
+// moves to the next page (prevents orphaned section titles / headers).
+interface CvBlock {
+  key: string;
+  keepAfter?: number;
+  render: (zoom: number) => React.ReactNode;
+}
+
 interface CvPdfPreviewProps {
   cv: PdfCvShape;
   zoom?: 50 | 75 | 100;
 }
 
 /**
- * HTML replica of the server-side PDF (docxGenerator.ts / generatePdfBuffer).
- * Fonts, sizes, colors and layout mirror pdfkit output exactly:
- *  - Letter 8.5x11, margins 0.75" sides / 0.6" top-bottom
- *  - Name: Helvetica-Bold 18pt centered #111827, uppercase
- *  - Target role: Helvetica-Bold 10pt centered #374151
- *  - Contact: Helvetica 9pt centered, '   •   ' separators, links #0055BB
- *  - Section headers: Helvetica-Bold 10.5pt uppercase #111827 + 0.75pt #9CA3AF rule
- *  - Bullets: 9.5pt '•' #4B5563, text #1F2937
+ * HTML replica of the server-side PDF (docxGenerator.ts / generatePdfBuffer),
+ * rendered PAGE-WISE: content that exceeds one Letter page flows onto the
+ * next sheet, using the same break rules as pdfkit (section headers and
+ * experience headers keep with their content; bullets are atomic).
  */
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100 }) => {
-  const widthPx = Math.round(612 * (zoom / 100));
-  const contacts = getContactItems(cv);
-  const hasTechSkills = cv.technicalSkills.length > 0 || (cv.coreCompetencies?.length || 0) > 0;
+  const blocks = useMemo(() => buildBlocks(cv), [cv]);
+  const measurerRef = useRef<HTMLDivElement>(null);
+  const [pages, setPages] = useState<CvBlock[][]>([]);
+
+  // Measure every block at 100% zoom (exact PDF metrics), then paginate.
+  useLayoutEffect(() => {
+    const el = measurerRef.current;
+    if (!el) return;
+    const heights: Record<string, number> = {};
+    Array.from(el.children).forEach((child, i) => {
+      heights[blocks[i]?.key ?? ''] = (child as HTMLElement).getBoundingClientRect().height;
+    });
+    setPages(paginate(blocks, heights));
+  }, [blocks]);
 
   return (
-    <div
-      className="bg-white text-left"
-      style={{
-        width: widthPx,
-        minHeight: Math.round(792 * (zoom / 100)),
-        padding: `${Math.round(43.2 * (zoom / 100))}px ${Math.round(54 * (zoom / 100))}px`,
-        fontFamily: 'Helvetica, Arial, sans-serif',
-        color: '#1F2937',
-        fontSize: Math.round(9.5 * (zoom / 100)) + 'px',
-        lineHeight: 1.45,
-        transition: 'width .25s ease, min-height .25s ease, font-size .25s ease, padding .25s ease',
-      }}
-    >
-      {/* 1. Name */}
+    <div className="flex flex-col items-center gap-6">
+      {/* Hidden measurer — renders every block at 100% with the exact PDF
+          content width so heights are measured truthfully. */}
       <div
+        ref={measurerRef}
+        aria-hidden
         style={{
-          textAlign: 'center',
-          fontFamily: 'Helvetica-Bold, Helvetica, Arial, sans-serif',
-          fontSize: Math.round(18 * (zoom / 100)) + 'px',
-          fontWeight: 700,
-          color: '#111827',
-          textTransform: 'uppercase',
+          position: 'absolute',
+          left: -99999,
+          top: 0,
+          width: CONTENT_W,
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          color: '#1F2937',
+          fontSize: '9.5px',
+          lineHeight: 1.45,
+          visibility: 'hidden',
+          pointerEvents: 'none',
         }}
       >
-        {cv.candidateName || 'CANDIDATE NAME'}
+        {blocks.map((b) => (
+          <div key={b.key}>{b.render(100)}</div>
+        ))}
       </div>
 
-      {/* Target role */}
-      {cv.targetRole && (
+      {/* Stacked A4 pages */}
+      {pages.map((page, pi) => (
         <div
+          key={pi}
+          className="bg-white shadow-2xl rounded-sm"
           style={{
-            textAlign: 'center',
-            fontWeight: 700,
-            fontSize: Math.round(10 * (zoom / 100)) + 'px',
-            color: '#374151',
-            marginTop: Math.round(3 * (zoom / 100)) + 'px',
+            width: pt(PAGE_W, zoom),
+            height: pt(PAGE_H, zoom),
+            padding: `${pt(MARGIN_Y, zoom)}px ${pt(MARGIN_X, zoom)}px`,
+            overflow: 'hidden',
+            fontFamily: 'Helvetica, Arial, sans-serif',
+            color: '#1F2937',
+            fontSize: `${pt(9.5, zoom)}px`,
+            lineHeight: 1.45,
           }}
         >
-          {cv.targetRole}
-        </div>
-      )}
-
-      {/* 2. Contact line */}
-      {contacts.length > 0 && (
-        <div style={{ textAlign: 'center', fontSize: Math.round(9 * (zoom / 100)) + 'px', marginTop: Math.round(6 * (zoom / 100)) + 'px' }}>
-          {contacts.map((c, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && <span style={{ color: '#9CA3AF', margin: `0 ${Math.round(5 * (zoom / 100))}px` }}>•</span>}
-              {c.url ? (
-                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0055BB', textDecoration: 'underline' }}>
-                  {c.label}
-                </a>
-              ) : (
-                <span style={{ color: '#374151' }}>{c.label}</span>
-              )}
-            </React.Fragment>
+          {page.map((b) => (
+            <div key={b.key}>{b.render(zoom)}</div>
           ))}
         </div>
-      )}
-
-      {/* 3. Professional Summary */}
-      {cv.professionalSummary && (
-        <>
-          <SectionTitle zoom={zoom}>PROFESSIONAL SUMMARY</SectionTitle>
-          <div style={{ color: '#1F2937', marginBottom: Math.round(4 * (zoom / 100)) + 'px' }}>{cv.professionalSummary}</div>
-        </>
-      )}
-
-      {/* 4. Technical Skills */}
-      {hasTechSkills && (
-        <>
-          <SectionTitle zoom={zoom}>TECHNICAL SKILLS &amp; COMPETENCIES</SectionTitle>
-          {cv.technicalSkills.map((cat, i) => (
-            <div key={i} style={{ marginBottom: Math.round(3 * (zoom / 100)) + 'px' }}>
-              <span style={{ fontWeight: 700, color: '#111827' }}>{cat.category}: </span>
-              <span style={{ color: '#374151' }}>{cat.skills.join(', ')}</span>
-            </div>
-          ))}
-          {cv.technicalSkills.length === 0 && cv.coreCompetencies && (
-            <div style={{ color: '#1F2937' }}>{cv.coreCompetencies.join(', ')}</div>
-          )}
-        </>
-      )}
-
-      {/* 5. Professional Experience */}
-      {cv.workExperience.length > 0 && (
-        <>
-          <SectionTitle zoom={zoom}>PROFESSIONAL EXPERIENCE</SectionTitle>
-          {cv.workExperience.map((exp, i) => (
-            <div key={i} style={{ marginBottom: Math.round(8 * (zoom / 100)) + 'px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ fontWeight: 700, fontSize: Math.round(10 * (zoom / 100)) + 'px', color: '#111827' }}>
-                  {[exp.title, exp.company].filter(Boolean).join('   |   ')}
-                </span>
-                <span style={{ fontStyle: 'italic', fontSize: Math.round(8.5 * (zoom / 100)) + 'px', color: '#4B5563', whiteSpace: 'nowrap' }}>
-                  {[exp.dates, exp.location].filter(Boolean).join('   |   ')}
-                </span>
-              </div>
-              <div style={{ marginTop: Math.round(2 * (zoom / 100)) + 'px' }}>
-                {exp.highlights.map((hl, j) => (
-                  <Bullet key={j} zoom={zoom} text={hl} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* 6. Featured Projects */}
-      {cv.projects && cv.projects.length > 0 && (
-        <>
-          <SectionTitle zoom={zoom}>FEATURED PROJECTS</SectionTitle>
-          {cv.projects.map((p, i) => (
-            <div key={i} style={{ marginBottom: Math.round(8 * (zoom / 100)) + 'px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ fontWeight: 700, fontSize: Math.round(10 * (zoom / 100)) + 'px', color: '#111827' }}>
-                  {p.name}
-                  {p.link && (
-                    <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ color: '#0055BB', fontSize: Math.round(9 * (zoom / 100)) + 'px', fontWeight: 400, marginLeft: Math.round(6 * (zoom / 100)) + 'px' }}>
-                      | View Project
-                    </a>
-                  )}
-                </span>
-                {p.dates && (
-                  <span style={{ fontStyle: 'italic', fontSize: Math.round(8.5 * (zoom / 100)) + 'px', color: '#4B5563', whiteSpace: 'nowrap' }}>
-                    {p.dates}
-                  </span>
-                )}
-              </div>
-              {p.technologies && p.technologies.length > 0 && (
-                <div style={{ fontSize: Math.round(9 * (zoom / 100)) + 'px', marginTop: Math.round(2 * (zoom / 100)) + 'px' }}>
-                  <span style={{ fontWeight: 700, color: '#374151' }}>Technologies: </span>
-                  <span style={{ color: '#4B5563' }}>{p.technologies.join(', ')}</span>
-                </div>
-              )}
-              {p.description && <Bullet zoom={zoom} text={p.description} />}
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* 7. Education */}
-      {cv.education.length > 0 && (
-        <>
-          <SectionTitle zoom={zoom}>EDUCATION</SectionTitle>
-          {cv.education.map((e, i) => (
-            <div key={i} style={{ marginBottom: Math.round(6 * (zoom / 100)) + 'px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ fontWeight: 700, fontSize: Math.round(10 * (zoom / 100)) + 'px', color: '#111827' }}>{e.degree}</span>
-                {e.dates && (
-                  <span style={{ fontStyle: 'italic', fontSize: Math.round(8.5 * (zoom / 100)) + 'px', color: '#4B5563', whiteSpace: 'nowrap' }}>
-                    {e.dates}
-                  </span>
-                )}
-              </div>
-              <div style={{ color: '#374151' }}>{e.institution}</div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* 8. Certifications */}
-      {cv.certifications && cv.certifications.length > 0 && (
-        <>
-          <SectionTitle zoom={zoom}>CERTIFICATIONS &amp; CREDENTIALS</SectionTitle>
-          {cv.certifications.map((cert, i) => {
-            const parts = typeof cert === 'string' ? [cert] : [cert.name, cert.issuer, cert.date].filter(Boolean);
-            return <Bullet key={i} zoom={zoom} text={parts.join('   |   ')} />;
-          })}
-        </>
-      )}
+      ))}
     </div>
   );
 };
 
+// ── Pagination: greedy page fill with orphan protection ──
+function paginate(blocks: CvBlock[], heights: Record<string, number>): CvBlock[][] {
+  const pages: CvBlock[][] = [];
+  let current: CvBlock[] = [];
+  let used = 0;
+
+  for (const b of blocks) {
+    const h = heights[b.key] ?? 16;
+    const required = h + (b.keepAfter ?? 0);
+    if (used > 0 && used + required > CONTENT_H) {
+      pages.push(current);
+      current = [];
+      used = 0;
+    }
+    current.push(b);
+    used += h;
+  }
+  if (current.length > 0) pages.push(current);
+  return pages;
+}
+
+// ── Build the atomic block list in document order ──
+function buildBlocks(cv: PdfCvShape): CvBlock[] {
+  const blocks: CvBlock[] = [];
+  const contacts = getContactItems(cv);
+  const hasTechSkills = cv.technicalSkills.length > 0 || (cv.coreCompetencies?.length || 0) > 0;
+
+  const section = (title: string): CvBlock => ({
+    key: `sec-${title}`,
+    keepAfter: 40, // never orphan a section title at the bottom of a page
+    render: (zoom) => <SectionTitle zoom={zoom}>{title}</SectionTitle>,
+  });
+
+  // 1. Name + role + contact (always together)
+  blocks.push({
+    key: 'header',
+    render: (zoom) => (
+      <div style={{ paddingBottom: pt(4, zoom) }}>
+        <div
+          style={{
+            textAlign: 'center',
+            fontFamily: 'Helvetica-Bold, Helvetica, Arial, sans-serif',
+            fontSize: `${pt(18, zoom)}px`,
+            fontWeight: 700,
+            color: '#111827',
+            textTransform: 'uppercase',
+          }}
+        >
+          {cv.candidateName || 'CANDIDATE NAME'}
+        </div>
+        {cv.targetRole && (
+          <div
+            style={{
+              textAlign: 'center',
+              fontWeight: 700,
+              fontSize: `${pt(10, zoom)}px`,
+              color: '#374151',
+              paddingTop: pt(3, zoom),
+            }}
+          >
+            {cv.targetRole}
+          </div>
+        )}
+        {contacts.length > 0 && (
+          <div style={{ textAlign: 'center', fontSize: `${pt(9, zoom)}px`, paddingTop: pt(6, zoom) }}>
+            {contacts.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span style={{ color: '#9CA3AF', margin: `0 ${pt(5, zoom)}px` }}>•</span>}
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0055BB', textDecoration: 'underline' }}>
+                    {c.label}
+                  </a>
+                ) : (
+                  <span style={{ color: '#374151' }}>{c.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+  });
+
+  // 2. Professional Summary
+  if (cv.professionalSummary) {
+    blocks.push(section('PROFESSIONAL SUMMARY'));
+    blocks.push({
+      key: 'summary',
+      render: (zoom) => (
+        <div style={{ color: '#1F2937', paddingBottom: pt(4, zoom) }}>{cv.professionalSummary}</div>
+      ),
+    });
+  }
+
+  // 3. Technical Skills
+  if (hasTechSkills) {
+    blocks.push(section('TECHNICAL SKILLS &amp; COMPETENCIES'));
+    cv.technicalSkills.forEach((cat, i) => {
+      blocks.push({
+        key: `skill-${i}`,
+        render: (zoom) => (
+          <div style={{ paddingBottom: pt(3, zoom) }}>
+            <span style={{ fontWeight: 700, color: '#111827' }}>{cat.category}: </span>
+            <span style={{ color: '#374151' }}>{cat.skills.join(', ')}</span>
+          </div>
+        ),
+      });
+    });
+    if (cv.technicalSkills.length === 0 && cv.coreCompetencies) {
+      blocks.push({
+        key: 'skill-competencies',
+        render: (zoom) => (
+          <div style={{ color: '#1F2937', paddingBottom: pt(3, zoom) }}>{cv.coreCompetencies.join(', ')}</div>
+        ),
+      });
+    }
+  }
+
+  // 4. Professional Experience
+  if (cv.workExperience.length > 0) {
+    blocks.push(section('PROFESSIONAL EXPERIENCE'));
+    cv.workExperience.forEach((exp, i) => {
+      // Header stays with at least one bullet (pdfkit ensurePageSpace(45))
+      blocks.push({
+        key: `exp-${i}-head`,
+        keepAfter: 30,
+        render: (zoom) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, paddingBottom: pt(2, zoom) }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>
+              {[exp.title, exp.company].filter(Boolean).join('   |   ')}
+            </span>
+            <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: '#4B5563', whiteSpace: 'nowrap' }}>
+              {[exp.dates, exp.location].filter(Boolean).join('   |   ')}
+            </span>
+          </div>
+        ),
+      });
+      exp.highlights.forEach((hl, j) => {
+        blocks.push({
+          key: `exp-${i}-b${j}`,
+          render: (zoom) => <Bullet zoom={zoom} text={hl} />,
+        });
+      });
+    });
+  }
+
+  // 5. Featured Projects
+  if (cv.projects && cv.projects.length > 0) {
+    blocks.push(section('FEATURED PROJECTS'));
+    cv.projects.forEach((p, i) => {
+      blocks.push({
+        key: `proj-${i}-head`,
+        keepAfter: 25,
+        render: (zoom) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, paddingBottom: pt(2, zoom) }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>
+              {p.name}
+              {p.link && (
+                <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ color: '#0055BB', fontSize: `${pt(9, zoom)}px`, fontWeight: 400, marginLeft: pt(6, zoom) }}>
+                  | View Project
+                </a>
+              )}
+            </span>
+            {p.dates && (
+              <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: '#4B5563', whiteSpace: 'nowrap' }}>
+                {p.dates}
+              </span>
+            )}
+          </div>
+        ),
+      });
+      if (p.technologies && p.technologies.length > 0) {
+        blocks.push({
+          key: `proj-${i}-tech`,
+          render: (zoom) => (
+            <div style={{ fontSize: `${pt(9, zoom)}px`, paddingBottom: pt(2, zoom) }}>
+              <span style={{ fontWeight: 700, color: '#374151' }}>Technologies: </span>
+              <span style={{ color: '#4B5563' }}>{p.technologies.join(', ')}</span>
+            </div>
+          ),
+        });
+      }
+      if (p.description) {
+        blocks.push({ key: `proj-${i}-desc`, render: (zoom) => <Bullet zoom={zoom} text={p.description} /> });
+      }
+    });
+  }
+
+  // 6. Education
+  if (cv.education.length > 0) {
+    blocks.push(section('EDUCATION'));
+    cv.education.forEach((e, i) => {
+      blocks.push({
+        key: `edu-${i}`,
+        keepAfter: 15,
+        render: (zoom) => (
+          <div style={{ paddingBottom: pt(6, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>{e.degree}</span>
+              {e.dates && (
+                <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: '#4B5563', whiteSpace: 'nowrap' }}>
+                  {e.dates}
+                </span>
+              )}
+            </div>
+            <div style={{ color: '#374151' }}>{e.institution}</div>
+          </div>
+        ),
+      });
+    });
+  }
+
+  // 7. Certifications
+  if (cv.certifications && cv.certifications.length > 0) {
+    blocks.push(section('CERTIFICATIONS &amp; CREDENTIALS'));
+    cv.certifications.forEach((cert, i) => {
+      const parts = typeof cert === 'string' ? [cert] : [cert.name, cert.issuer, cert.date].filter(Boolean);
+      blocks.push({ key: `cert-${i}`, render: (zoom) => <Bullet zoom={zoom} text={parts.join('   |   ')} /> });
+    });
+  }
+
+  return blocks;
+}
+
 const SectionTitle: React.FC<{ zoom: number; children: React.ReactNode }> = ({ zoom, children }) => (
-  <div style={{ marginTop: Math.round(10 * (zoom / 100)) + 'px', marginBottom: Math.round(6 * (zoom / 100)) + 'px' }}>
+  <div style={{ paddingTop: pt(10, zoom), paddingBottom: pt(6, zoom) }}>
     <div
       style={{
         fontWeight: 700,
-        fontSize: Math.round(10.5 * (zoom / 100)) + 'px',
+        fontSize: `${pt(10.5, zoom)}px`,
         color: '#111827',
         textTransform: 'uppercase',
         letterSpacing: '0.04em',
@@ -289,7 +415,7 @@ const SectionTitle: React.FC<{ zoom: number; children: React.ReactNode }> = ({ z
     >
       {children}
     </div>
-    <div style={{ height: 1, background: '#9CA3AF', marginTop: Math.round(3 * (zoom / 100)) + 'px' }} />
+    <div style={{ height: 1, background: '#9CA3AF', marginTop: pt(3, zoom) }} />
   </div>
 );
 
@@ -297,7 +423,7 @@ const Bullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text }) => {
   const clean = String(text || '').replace(/^[*•\-]\s*/, '').trim();
   if (!clean) return null;
   return (
-    <div style={{ display: 'flex', gap: Math.round(6 * (zoom / 100)) + 'px', marginBottom: Math.round(2 * (zoom / 100)) + 'px' }}>
+    <div style={{ display: 'flex', gap: pt(6, zoom), paddingBottom: pt(2, zoom) }}>
       <span style={{ color: '#4B5563', flexShrink: 0 }}>•</span>
       <span style={{ color: '#1F2937' }}>{clean}</span>
     </div>
