@@ -249,6 +249,14 @@ export function getDb(): Database.Database {
       tailored_cv TEXT,
       created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS cv_versions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      note TEXT,
+      pages INTEGER DEFAULT 0,
+      created_at TEXT
+    );
   `);
   migrateToUsers(db);
   return db;
@@ -652,5 +660,40 @@ export function deleteManualAnalysis(id: string): boolean {
   const userId = getCurrentUserId();
   try {
     return getDb().prepare('DELETE FROM manual_analysis WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
+  } catch { return false; }
+}
+
+// ─────────────────── CV Versions (backups) ───────────────────
+export function saveCvVersion(data: any, note: string, pages?: number): void {
+  const userId = getCurrentUserId();
+  const id = `cvver-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  getDb().prepare(`
+    INSERT INTO cv_versions (id, user_id, data, note, pages, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, userId, JSON.stringify(data), note, pages ?? 0, new Date().toISOString());
+}
+
+export function listCvVersions(): { id: string; note: string; pages: number; createdAt: string }[] {
+  const userId = getCurrentUserId();
+  try {
+    return (getDb()
+      .prepare('SELECT id, note, pages, created_at FROM cv_versions WHERE user_id = ? ORDER BY created_at DESC')
+      .all(userId) as any[]).map((r) => ({ id: r.id, note: r.note || '', pages: r.pages ?? 0, createdAt: r.created_at || '' }));
+  } catch { return []; }
+}
+
+export function getCvVersion(id: string): { data: any; note: string } | undefined {
+  const userId = getCurrentUserId();
+  try {
+    const r = getDb().prepare('SELECT data, note FROM cv_versions WHERE id = ? AND user_id = ?').get(id, userId) as any;
+    if (!r) return undefined;
+    return { data: JSON.parse(r.data), note: r.note || '' };
+  } catch { return undefined; }
+}
+
+export function deleteCvVersion(id: string): boolean {
+  const userId = getCurrentUserId();
+  try {
+    return getDb().prepare('DELETE FROM cv_versions WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
   } catch { return false; }
 }
