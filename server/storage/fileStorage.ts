@@ -664,13 +664,15 @@ export function deleteManualAnalysis(id: string): boolean {
 }
 
 // ─────────────────── CV Versions (backups) ───────────────────
-export function saveCvVersion(data: any, note: string, pages?: number): void {
+export function saveCvVersion(data: MasterCv, note: string, pages?: number): void {
   const userId = getCurrentUserId();
   const id = `cvver-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  getDb().prepare(`
-    INSERT INTO cv_versions (id, user_id, data, note, pages, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, userId, JSON.stringify(data), note, pages ?? 0, new Date().toISOString());
+  try {
+    getDb().prepare(`
+      INSERT INTO cv_versions (id, user_id, data, note, pages, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, userId, JSON.stringify(data), note, pages ?? 0, new Date().toISOString());
+  } catch { /* ignore */ }
 }
 
 export function listCvVersions(): { id: string; note: string; pages: number; createdAt: string }[] {
@@ -682,7 +684,7 @@ export function listCvVersions(): { id: string; note: string; pages: number; cre
   } catch { return []; }
 }
 
-export function getCvVersion(id: string): { data: any; note: string } | undefined {
+export function getCvVersion(id: string): { data: MasterCv; note: string } | undefined {
   const userId = getCurrentUserId();
   try {
     const r = getDb().prepare('SELECT data, note FROM cv_versions WHERE id = ? AND user_id = ?').get(id, userId) as any;
