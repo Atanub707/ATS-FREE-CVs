@@ -46,7 +46,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [formData, setFormData] = useState<MasterCv>(masterCv);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [previewZoom, setPreviewZoom] = useState<50 | 75 | 100>(75);
+  const [previewZoom, setPreviewZoom] = useState<number>(75);
 
   const [rawPasteText, setRawPasteText] = useState('');
   const [isParsingText, setIsParsingText] = useState(false);
@@ -1556,20 +1556,32 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
             </button>
 
-            {/* Zoom */}
-            <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5">
-              {([50, 75, 100] as const).map((z) => (
-                <button
-                  key={z}
-                  type="button"
-                  onClick={() => setPreviewZoom(z)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
-                    previewZoom === z ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
-                  }`}
-                >
-                  {z}%
-                </button>
-              ))}
+            {/* Zoom in / out */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setPreviewZoom((z) => Math.max(40, z - 10))}
+                className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+                title="Zoom out"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewZoom(75)}
+                className="px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer tabular-nums"
+                title="Reset zoom to 75%"
+              >
+                {previewZoom}%
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewZoom((z) => Math.min(150, z + 10))}
+                className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+                title="Zoom in"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>

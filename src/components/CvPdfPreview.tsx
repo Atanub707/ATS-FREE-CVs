@@ -114,7 +114,7 @@ interface CvBlock {
 
 interface CvPdfPreviewProps {
   cv: PdfCvShape;
-  zoom?: 50 | 75 | 100;
+  zoom?: number;
   onPageCount?: (n: number) => void;
   /** Auto-scale pages to fill the container width (up to 100%) — use in
    *  side-by-side views so pages use the full lane without side gaps. */
