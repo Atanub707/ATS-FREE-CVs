@@ -970,7 +970,7 @@ Return valid JSON only — NO markdown, NO code fences:
   // Tailor a manually analyzed JD (separate step after user updates master CV)
   app.post('/api/analyze-jd/tailor', async (req, res) => {
     try {
-      const { title, company, description } = req.body;
+      const { title, company, description, gapAnalysis, matchScore } = req.body;
       if (!title || !description) {
         res.status(400).json({ error: 'Title and description are required.' });
         return;
@@ -995,6 +995,9 @@ Return valid JSON only — NO markdown, NO code fences:
         state: 'pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        // Pass through the analysis so the tailor engine knows what to integrate
+        ...(gapAnalysis ? { gapAnalysis } : {}),
+        ...(matchScore !== undefined ? { matchScore: Number(matchScore) } : {}),
       };
 
       const tailorEngine = new LlmCvTailor();
@@ -1007,6 +1010,22 @@ Return valid JSON only — NO markdown, NO code fences:
         company: virtualJob.company,
       });
       setTimeout(() => manualResults.delete(token), 30 * 60 * 1000);
+
+      // Per-bullet before → after diff: pair each original responsibility
+      // with its tailored highlight so the UI can show exactly what changed.
+      const bulletRewrites: { original: string; rewritten: string }[] = [];
+      const origExps = masterCv.experiences || [];
+      const newExps = tailoredCv.workExperience || [];
+      origExps.forEach((exp, i) => {
+        const newExp = newExps[i];
+        if (!newExp) return;
+        (exp.responsibilities || []).forEach((orig, j) => {
+          const rewritten = newExp.highlights?.[j];
+          if (rewritten && String(rewritten).trim() !== String(orig).trim()) {
+            bulletRewrites.push({ original: String(orig), rewritten: String(rewritten) });
+          }
+        });
+      });
 
       // Diff payload for the UI's "what we add & why" panel
       const audit = tailoredCv.audit;
@@ -1028,6 +1047,7 @@ Return valid JSON only — NO markdown, NO code fences:
           },
           notIntegrable: audit?.notIntegrable ?? [],
           auditNotes: audit?.auditNotes ?? [],
+          bulletRewrites,
         },
       });
     } catch (err: any) {
