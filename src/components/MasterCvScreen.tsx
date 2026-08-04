@@ -1432,10 +1432,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             ))}
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-6 flex justify-center">
-          <div className="shadow-2xl rounded-sm overflow-hidden bg-white" style={{ minHeight: 'fit-content' }}>
-            <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} />
-          </div>
+        <div className="flex-1 overflow-auto p-6">
+          <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} />
         </div>
       </div>
     </div>
