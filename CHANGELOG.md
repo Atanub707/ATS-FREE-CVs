@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.2.0 (2026-08-04)
+
+### ✨ AI CV Compression Assistant (Master CV)
+- **AI Compress button** in the Master CV screen — analyzes your CV against **live market data** (keywords extracted from your recent scraped jobs for the target role) and compresses it to the industry-standard 1–2 pages.
+- **3-phase engine**: Analyze (per-bullet guidance with reasons) → Rewrite (tightens & merges without losing meaning, weaves market keywords in) → Verify (deterministic keyword-preservation scan, stopword-filtered with word-boundary matching).
+- **Uses your BYOK key**: same provider/model from Settings — nothing extra to configure.
+- **Single-screen result**: hero outcome card (pages 3→2, % word reduction, market keywords added), a minimal "What changes" list (Tightened / Merged / Kept + reason), then side-by-side **Original (left) vs New CV (right)** at full width — pages auto-scale to fill the lane.
+- **Apply** replaces the master CV after an automatic backup; **Versions** drawer restores any backup with one click; a confirmation modal shows before/after stats before applying.
+- **Download new CV** (PDF) directly from the result view.
+
+### 🖥️ Master CV screen polish
+- Full-screen split editor with a **live, page-wise PDF preview** — content flows onto real A4 pages exactly like the downloaded PDF (headers never orphaned; repaginates as you type).
+- Clean header: Back · Save (split button with Download PDF dropdown) · Versions; **AI Compress + PDF rename** live in the preview toolbar.
+- Contact links in the preview now show **LinkedIn / GitHub / Portfolio** labels with hyperlinks instead of raw URLs.
+
+### ⚡ Performance & reliability
+- **No more global UI lock**: match/tailor processing no longer freezes the app — pagination, filters, deletes, and downloads stay live while jobs process in the background.
+- **Batch match & tailor run 3 jobs concurrently** instead of one-by-one (up to ~3× faster batches).
+- **Manual JD history**: every analysis is saved per user (SQLite) — restore any past analysis or its tailored CV anytime; history survives restarts.
+- Manual JD redesigned: fixed input panel on the left, all insights (score ring, skill chips with why-tooltips, recommendations, tailoring diff with before→after bullet rewrites) on the right.
+- **Back button** on all full-screen views (Manual JD, Master CV) — no more browser-history surprises.
+
+### 🐛 Fixes
+- `&amp;` literal text in PDF section titles.
+- React hooks violation (hooks after early return) that crashed the Master CV screen on close.
+- API-key audit advisories: undici + postcss updated (0 vulnerabilities).
+- Applicant counts, jobType/under10Applicants param forwarding, and scraper fixes carried forward.
+
 ## v1.1.0 (2026-08-03)
 
 ### 🔐 Local Accounts & Data Isolation
