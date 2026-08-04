@@ -807,25 +807,38 @@ Return valid JSON only — NO markdown, NO code fences:
       const config = loadConfig();
       const matcher = new LlmMatcher();
 
-      const updatedResults = [];
+      // Process concurrently (bounded) so a large batch finishes fast
+      // and the rest of the app keeps working.
+      const CONCURRENCY = 3;
+      const updatedResults: any[] = [];
+      let cursor = 0;
 
-      for (const job of targetJobs) {
-        const result = await matcher.matchJob(
-          job,
-          masterCv,
-          config.thresholds.earlyBlockThreshold
-        );
+      const worker = async () => {
+        while (cursor < targetJobs.length) {
+          const job = targetJobs[cursor++];
+          try {
+            const result = await matcher.matchJob(
+              job,
+              masterCv,
+              config.thresholds.earlyBlockThreshold
+            );
 
-        const updated = updateJobInStorage({
-          ...job,
-          matchScore: result.matchScore,
-          gapAnalysis: result.gapAnalysis,
-          state: result.isEarlyBlocked ? 'pending' : 'matched',
-          matchedAt: new Date().toISOString(),
-        });
+            const updated = updateJobInStorage({
+              ...job,
+              matchScore: result.matchScore,
+              gapAnalysis: result.gapAnalysis,
+              state: result.isEarlyBlocked ? 'pending' : 'matched',
+              matchedAt: new Date().toISOString(),
+            });
 
-        updatedResults.push(updated);
-      }
+            updatedResults.push(updated);
+          } catch (err) {
+            console.warn(`Batch match failed for job ${job.id}:`, err);
+          }
+        }
+      };
+
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, targetJobs.length) }, () => worker()));
 
       res.json({
         success: true,
@@ -898,20 +911,33 @@ Return valid JSON only — NO markdown, NO code fences:
       const masterCv = getMasterCv();
       const tailorEngine = new LlmCvTailor();
 
-      const tailoredResults = [];
+      // Process concurrently (bounded) so a large batch finishes fast
+      // and the rest of the app keeps working.
+      const CONCURRENCY = 3;
+      const tailoredResults: any[] = [];
+      let cursor = 0;
 
-      for (const job of candidateJobs) {
-        const tailoredCv = await tailorEngine.tailorCv(job, masterCv);
+      const worker = async () => {
+        while (cursor < candidateJobs.length) {
+          const job = candidateJobs[cursor++];
+          try {
+            const tailoredCv = await tailorEngine.tailorCv(job, masterCv);
 
-        const updated = updateJobInStorage({
-          ...job,
-          tailoredCv,
-          state: 'tailored',
-          tailoredAt: new Date().toISOString(),
-        });
+            const updated = updateJobInStorage({
+              ...job,
+              tailoredCv,
+              state: 'tailored',
+              tailoredAt: new Date().toISOString(),
+            });
 
-        tailoredResults.push(updated);
-      }
+            tailoredResults.push(updated);
+          } catch (err) {
+            console.warn(`Batch tailor failed for job ${job.id}:`, err);
+          }
+        }
+      };
+
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, candidateJobs.length) }, () => worker()));
 
       res.json({
         success: true,
