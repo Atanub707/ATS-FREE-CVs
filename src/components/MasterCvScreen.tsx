@@ -1549,7 +1549,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             {templateMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setTemplateMenuOpen(false)} />
-                <div className="absolute left-0 bottom-full mb-1.5 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1.5 max-h-72 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1.5 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1.5 max-h-72 overflow-y-auto">
                   <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">CV Template</p>
                   {CV_TEMPLATES.map((t) => (
                     <button
