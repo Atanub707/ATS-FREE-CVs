@@ -600,9 +600,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             >
               <History className="w-4 h-4" />
             </button>
-            <button onClick={onClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer" title="Close">
-              <X className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
