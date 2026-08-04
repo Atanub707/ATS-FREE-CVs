@@ -43,8 +43,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   masterCv,
   onSaveMasterCv,
 }) => {
-  if (!isOpen) return null;
-
   const [formData, setFormData] = useState<MasterCv>(masterCv);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -498,6 +496,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   };
 
   const [dragCertIdx, setDragCertIdx] = useState<number | null>(null);
+
+  if (!isOpen) return null;
 
   const handleCertDragStart = (e: React.DragEvent, idx: number) => {
     setDragCertIdx(idx);
