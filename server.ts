@@ -69,6 +69,10 @@ import {
   queryJobs,
   saveNewJobs,
   runStorageMigration,
+  saveManualAnalysis,
+  listManualAnalyses,
+  getManualAnalysis,
+  deleteManualAnalysis,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
@@ -956,10 +960,28 @@ Return valid JSON only — NO markdown, NO code fences:
       const matcher = new LlmMatcher();
       const matchResult = await matcher.matchJob(virtualJob, masterCv);
 
+      // Persist to history (per user)
+      let historyId: string | undefined;
+      try {
+        const saved = saveManualAnalysis({
+          role: virtualJob.title,
+          company: virtualJob.company,
+          description: virtualJob.description,
+          score: matchResult.matchScore,
+          gapAnalysis: matchResult.gapAnalysis,
+          diff: null,
+          tailoredCv: null,
+        });
+        historyId = saved.id;
+      } catch (err) {
+        console.warn('Manual JD history save failed:', err);
+      }
+
       res.json({
         success: true,
         matchScore: matchResult.matchScore,
         gapAnalysis: matchResult.gapAnalysis,
+        historyId,
       });
     } catch (err: any) {
       console.error('Analyze JD error:', err);
@@ -970,7 +992,7 @@ Return valid JSON only — NO markdown, NO code fences:
   // Tailor a manually analyzed JD (separate step after user updates master CV)
   app.post('/api/analyze-jd/tailor', async (req, res) => {
     try {
-      const { title, company, description, gapAnalysis, matchScore } = req.body;
+      const { title, company, description, gapAnalysis, matchScore, historyId } = req.body;
       if (!title || !description) {
         res.status(400).json({ error: 'Title and description are required.' });
         return;
@@ -1029,26 +1051,50 @@ Return valid JSON only — NO markdown, NO code fences:
 
       // Diff payload for the UI's "what we add & why" panel
       const audit = tailoredCv.audit;
+      const diffPayload = {
+        beforeScore: audit?.beforeScore ?? 0,
+        afterScore: audit?.afterScore ?? 0,
+        scoreBoost: audit?.scoreBoost ?? 0,
+        scoreBreakdown: audit?.scoreBreakdown ?? { alreadyMatched: 0, newlyIntegrated: 0, remainingGap: 0 },
+        missingBefore: audit?.missingBefore ?? { skills: [], keywords: [] },
+        addedAfter: audit?.addedAfter ?? {
+          keywordsIncorporated: [],
+          keywordsInExperience: [],
+          keywordsInSkills: [],
+          rephrasedHighlightsCount: 0,
+          skillsAdded: [],
+        },
+        notIntegrable: audit?.notIntegrable ?? [],
+        auditNotes: audit?.auditNotes ?? [],
+        bulletRewrites,
+      };
+
+      // Update the history record with the diff + tailored CV
+      if (historyId) {
+        try {
+          const existing = getManualAnalysis(historyId);
+          if (existing) {
+            saveManualAnalysis({
+              id: historyId,
+              role: existing.role,
+              company: existing.company,
+              description: existing.description,
+              score: existing.score,
+              gapAnalysis: existing.gapAnalysis,
+              diff: diffPayload,
+              tailoredCv,
+            });
+          }
+        } catch (err) {
+          console.warn('Manual JD history update failed:', err);
+        }
+      }
+
       res.json({
         success: true,
         downloadToken: token,
-        diff: {
-          beforeScore: audit?.beforeScore ?? 0,
-          afterScore: audit?.afterScore ?? 0,
-          scoreBoost: audit?.scoreBoost ?? 0,
-          scoreBreakdown: audit?.scoreBreakdown ?? { alreadyMatched: 0, newlyIntegrated: 0, remainingGap: 0 },
-          missingBefore: audit?.missingBefore ?? { skills: [], keywords: [] },
-          addedAfter: audit?.addedAfter ?? {
-            keywordsIncorporated: [],
-            keywordsInExperience: [],
-            keywordsInSkills: [],
-            rephrasedHighlightsCount: 0,
-            skillsAdded: [],
-          },
-          notIntegrable: audit?.notIntegrable ?? [],
-          auditNotes: audit?.auditNotes ?? [],
-          bulletRewrites,
-        },
+        historyId,
+        diff: diffPayload,
       });
     } catch (err: any) {
       console.error('Tailor JD error:', err);
@@ -1090,6 +1136,45 @@ Return valid JSON only — NO markdown, NO code fences:
     } catch (err: any) {
       console.error('Manual download error:', err);
       res.status(500).json({ error: 'Failed to generate file.' });
+    }
+  });
+
+  // ── Manual JD history (per user) ──
+  app.get('/api/manual-jd/history', (req, res) => {
+    res.json({ analyses: listManualAnalyses() });
+  });
+
+  app.get('/api/manual-jd/history/:id', (req, res) => {
+    try {
+      const record = getManualAnalysis(req.params.id);
+      if (!record) {
+        res.status(404).json({ error: 'Analysis not found.' });
+        return;
+      }
+      // Re-issue a download token if the record has a tailored CV,
+      // so downloads keep working long after the original session.
+      let downloadToken: string | undefined;
+      if (record.tailoredCv) {
+        downloadToken = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        manualResults.set(downloadToken, {
+          tailoredCv: record.tailoredCv,
+          title: record.role,
+          company: record.company,
+        });
+        setTimeout(() => manualResults.delete(downloadToken), 30 * 60 * 1000);
+      }
+      res.json({ analysis: record, downloadToken });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/manual-jd/history/:id', (req, res) => {
+    try {
+      const deleted = deleteManualAnalysis(req.params.id);
+      res.json({ success: deleted });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
