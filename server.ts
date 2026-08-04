@@ -82,7 +82,7 @@ import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
-import { JobFilterQueryParams, Job } from './src/types.js';
+import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
 import { compressCv } from './server/ai/cvCompressor.js';
 import { getMarketData } from './server/ai/marketData.js';
 
@@ -664,11 +664,13 @@ Return valid JSON only — NO markdown, NO code fences:
         link: p.link,
         dates: p.dates,
       }));
-      const certifications = (compressed.certifications || []).map((c: any) =>
-        typeof c === 'string' ? c : c.name || ''
-      ).filter(Boolean);
+      const certifications = (compressed.certifications || []).map((c: any, i: number) =>
+        typeof c === 'string'
+          ? { id: `cert-${Date.now()}-${i}`, name: c }
+          : { id: `cert-${Date.now()}-${i}`, name: c.name || '', issuer: c.issuer, date: c.date, link: c.link }
+      );
 
-      const newCv: any = {
+      const newCv: MasterCv = {
         fullName: compressed.candidateName || masterCv.fullName,
         email: compressed.contactInfo?.email || masterCv.email,
         phone: compressed.contactInfo?.phone || masterCv.phone,
@@ -682,6 +684,8 @@ Return valid JSON only — NO markdown, NO code fences:
         skills,
         projects,
         certifications,
+        rawText: masterCv.rawText,
+        downloadFilename: masterCv.downloadFilename,
       };
       saveMasterCv(newCv);
       res.json({ success: true, cv: getMasterCv() });
