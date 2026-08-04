@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
@@ -50,6 +51,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [previewZoom, setPreviewZoom] = useState<number>(75);
   const [template, setTemplate] = useState<TemplateId>(masterCv.templateId || 'harvard');
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [tplMenuPos, setTplMenuPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  const tplBtnRef = useRef<HTMLButtonElement>(null);
 
   const [rawPasteText, setRawPasteText] = useState('');
   const [isParsingText, setIsParsingText] = useState(false);
@@ -264,6 +267,44 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
     a.href = url; a.download = `${downloadFilename}.pdf`;
     a.click(); URL.revokeObjectURL(url);
   };
+
+  // ── Template menu: render via portal at document.body with fixed
+  //    positioning from the button's bounding rect, so no parent
+  //    container (overflow-hidden preview, transform, etc.) can clip or
+  //    contain it. Auto-flips upward when there's no room below.
+  const TPL_MENU_H = 288; // approx height of the 3-option menu
+  const openTemplateMenu = () => {
+    const btn = tplBtnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - r.bottom;
+    const up = spaceBelow < TPL_MENU_H + 8;
+    setTplMenuPos({
+      top: up ? undefined : r.bottom + 6,
+      bottom: up ? window.innerHeight - r.top + 6 : undefined,
+      left: Math.max(8, Math.min(r.left, window.innerWidth - 296)),
+    });
+    setTemplateMenuOpen(true);
+  };
+
+  const closeTemplateMenu = () => {
+    setTemplateMenuOpen(false);
+    setTplMenuPos(null);
+  };
+
+  // Reposition on scroll/resize while open so the menu stays anchored
+  // to the button even if the page/preview scrolls.
+  useEffect(() => {
+    if (!templateMenuOpen) return;
+    const reposition = () => openTemplateMenu();
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateMenuOpen]);
 
   const [aiState, setAiState] = useState<'idle' | 'running' | 'result'>('idle');
   const [compressResult, setCompressResult] = useState<any>(null);
@@ -1537,8 +1578,9 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           {/* Template selector */}
           <div className="relative">
             <button
+              ref={tplBtnRef}
               type="button"
-              onClick={() => setTemplateMenuOpen((v) => !v)}
+              onClick={openTemplateMenu}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer"
               title="Choose CV template"
             >
@@ -1546,34 +1588,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <span className="whitespace-nowrap">{CV_TEMPLATES.find((t) => t.id === template)?.label || 'Template'}</span>
               <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${templateMenuOpen ? 'rotate-180' : ''}`} />
             </button>
-            {templateMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setTemplateMenuOpen(false)} />
-                <div className="absolute left-0 top-full mt-1.5 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1.5 max-h-72 overflow-y-auto">
-                  <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">CV Template</p>
-                  {CV_TEMPLATES.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => { setTemplate(t.id); setTemplateMenuOpen(false); }}
-                      className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
-                        template === t.id ? 'bg-blue-50' : 'hover:bg-slate-100'
-                      }`}
-                    >
-                      <span className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        template === t.id ? 'border-blue-600' : 'border-slate-300'
-                      }`}>
-                        {template === t.id && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
-                      </span>
-                      <span>
-                        <span className="block text-[12.5px] font-bold text-slate-800">{t.label}</span>
-                        <span className="block text-[10.5px] text-slate-400 font-medium mt-0.5 leading-snug">{t.description}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
 
           <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
@@ -1885,6 +1899,47 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Template menu — portal to document.body so no parent container
+          can clip or contain it; independent fixed overlay layer. */}
+      {templateMenuOpen && tplMenuPos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[90]" onClick={closeTemplateMenu} />
+          <div
+            role="menu"
+            className="fixed z-[100] w-72 bg-white border border-slate-200 rounded-xl shadow-2xl p-1.5 max-h-72 overflow-y-auto"
+            style={{
+              top: tplMenuPos.top,
+              bottom: tplMenuPos.bottom,
+              left: tplMenuPos.left,
+            }}
+          >
+            <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">CV Template</p>
+            {CV_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                role="menuitem"
+                type="button"
+                onClick={() => { setTemplate(t.id); closeTemplateMenu(); }}
+                className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                  template === t.id ? 'bg-blue-50' : 'hover:bg-slate-100'
+                }`}
+              >
+                <span className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  template === t.id ? 'border-blue-600' : 'border-slate-300'
+                }`}>
+                  {template === t.id && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                </span>
+                <span>
+                  <span className="block text-[12.5px] font-bold text-slate-800">{t.label}</span>
+                  <span className="block text-[10.5px] text-slate-400 font-medium mt-0.5 leading-snug">{t.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );
