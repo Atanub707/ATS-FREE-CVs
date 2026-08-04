@@ -1,7 +1,7 @@
 import { getAllJobs } from '../storage/fileStorage.js';
 import { Job } from '../../src/types.js';
 
-const STOPWORDS = new Set([
+export const STOPWORDS = new Set([
   'the','and','for','with','you','are','will','our','your','have','this','that','from',
   'they','their','what','why','not','can','all','any','but','out','who','which','into',
   'experience','years','year','work','job','role','team','must','able','including','etc',
