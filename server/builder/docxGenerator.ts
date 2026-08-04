@@ -112,8 +112,17 @@ function sanitizeText(str: any): string {
 
 /**
  * Generate a PDF buffer matching the exact top-notch ATS specification with clickable hyperlinks.
+ * `template` mirrors the frontend CV_TEMPLATE_STYLES so the downloaded PDF matches the preview.
  */
-export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
+export function generatePdfBuffer(cv: TailoredCv, template: string = 'harvard'): Promise<Buffer> {
+  // ── Template styles (must match src/components/CvPdfPreview.tsx CV_TEMPLATE_STYLES) ──
+  const TEMPLATES: Record<string, { accent: string; nameSize: number; roleColor: string; ruleWidth: number; bodySize: number; bulletSize: number; sectionGap: number; expTitleSize: number }> = {
+    'harvard': { accent: '#2F54EB', nameSize: 18, roleColor: '#374151', ruleWidth: 0.75, bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10 },
+    'modern-minimal': { accent: '#111827', nameSize: 20, roleColor: '#565D6C', ruleWidth: 1.25, bodySize: 9.5, bulletSize: 9.5, sectionGap: 14, expTitleSize: 10 },
+    'compact-executive': { accent: '#1E3A5F', nameSize: 15, roleColor: '#475569', ruleWidth: 0.5, bodySize: 8.5, bulletSize: 8.5, sectionGap: 7, expTitleSize: 9 },
+  };
+  const t = TEMPLATES[template] || TEMPLATES.harvard;
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'LETTER',
@@ -142,11 +151,11 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
       }
     };
 
-    // 1. Candidate Name: 18pt Bold, centered (Harvard Style)
+    // 1. Candidate Name (template-sized, centered)
     doc.x = leftMargin;
     const candidateName = sanitizeText(cv.candidateName).toUpperCase() || 'CANDIDATE NAME';
     ensurePageSpace(30);
-    doc.font('Helvetica-Bold').fontSize(18).fillColor('#111827').text(candidateName, leftMargin, doc.y, {
+    doc.font('Helvetica-Bold').fontSize(t.nameSize).fillColor('#111827').text(candidateName, leftMargin, doc.y, {
       align: 'center',
       width: contentWidth,
     });
@@ -156,7 +165,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
     if (cv.targetRole) {
       const targetRole = sanitizeText(cv.targetRole);
       if (targetRole) {
-        doc.font('Helvetica-Bold').fontSize(10).fillColor('#374151').text(targetRole, leftMargin, doc.y, {
+        doc.font('Helvetica-Bold').fontSize(10).fillColor(t.roleColor).text(targetRole, leftMargin, doc.y, {
           align: 'center',
           width: contentWidth,
         });
@@ -211,17 +220,17 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
       }
     }
 
-    // Helper to render section header: Harvard format 10.5pt ALL CAPS Bold with solid horizontal rule
+    // Helper to render section header: template accent, ALL CAPS Bold with solid horizontal rule
     const renderSectionHeader = (title: string) => {
       ensurePageSpace(30);
       doc.x = leftMargin;
       doc.moveDown(0.2);
       const headY = doc.y;
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#111827').text(sanitizeText(title).toUpperCase(), leftMargin, headY, {
+      doc.font('Helvetica-Bold').fontSize(10.5).fillColor(t.accent).text(sanitizeText(title).toUpperCase(), leftMargin, headY, {
         width: contentWidth,
       });
       const ruleY = doc.y + 1;
-      doc.moveTo(leftMargin, ruleY).lineTo(rightMargin, ruleY).lineWidth(0.75).strokeColor('#9CA3AF').stroke();
+      doc.moveTo(leftMargin, ruleY).lineTo(rightMargin, ruleY).lineWidth(t.ruleWidth).strokeColor(t.accent).stroke();
       doc.y = ruleY + 5;
       doc.x = leftMargin;
     };
@@ -238,11 +247,11 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
       const tWidth = contentWidth - 16;
       const currentY = doc.y;
 
-      doc.font('Helvetica').fontSize(9.5).fillColor('#4B5563').text('•', bulletX, currentY, { lineBreak: false });
+      doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#4B5563').text('•', bulletX, currentY, { lineBreak: false });
 
       const normUrl = linkUrl ? normalizeUrl(linkUrl) : undefined;
       if (normUrl) {
-        doc.font('Helvetica').fontSize(9.5).fillColor('#0055BB').text(clean, textX, currentY, {
+        doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#0055BB').text(clean, textX, currentY, {
           width: tWidth,
           lineGap: 1.5,
           underline: true,
@@ -251,7 +260,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         const h = isFinite(rawH) && rawH > 0 ? rawH : 12;
         doc.link(textX, currentY, tWidth, h, normUrl);
       } else {
-        doc.font('Helvetica').fontSize(9.5).fillColor('#1F2937').text(clean, textX, currentY, {
+        doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#1F2937').text(clean, textX, currentY, {
           width: tWidth,
           lineGap: 1.5,
         });
@@ -267,7 +276,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
       if (cleanSummary) {
         renderSectionHeader('PROFESSIONAL SUMMARY');
         ensurePageSpace(20);
-        doc.font('Helvetica').fontSize(9.5).fillColor('#1F2937').text(cleanSummary, leftMargin, doc.y, {
+        doc.font('Helvetica').fontSize(t.bodySize).fillColor('#1F2937').text(cleanSummary, leftMargin, doc.y, {
           width: contentWidth,
           lineGap: 1.5,
         });
@@ -295,7 +304,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
           ensurePageSpace(15);
           doc
             .font('Helvetica-Bold')
-            .fontSize(9.5)
+            .fontSize(t.expTitleSize)
             .fillColor('#111827')
             .text(`${catName}: `, leftMargin, doc.y, { continued: true })
             .font('Helvetica')
@@ -308,7 +317,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         const compList = cv.coreCompetencies.map((c) => sanitizeText(c)).filter(Boolean).join(', ');
         if (compList) {
           ensurePageSpace(15);
-          doc.font('Helvetica').fontSize(9.5).fillColor('#1F2937').text(compList, leftMargin, doc.y, {
+          doc.font('Helvetica').fontSize(t.bodySize).fillColor('#1F2937').text(compList, leftMargin, doc.y, {
             width: contentWidth,
             lineGap: 1.5,
           });
@@ -333,7 +342,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
 
         // Title and Company
         const titleComp = company ? `${title}   |   ${company}` : title;
-        doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text(titleComp, leftMargin, entryY, {
+        doc.font('Helvetica-Bold').fontSize(t.expTitleSize).fillColor('#111827').text(titleComp, leftMargin, entryY, {
           width: contentWidth - 140,
         });
         const yAfterLeft = doc.y;
@@ -377,7 +386,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         if (normLink) {
           doc
             .font('Helvetica-Bold')
-            .fontSize(10)
+            .fontSize(t.expTitleSize)
             .fillColor('#111827')
             .text(pName, leftMargin, projY, { continued: true });
           doc
@@ -388,7 +397,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         } else {
           doc
             .font('Helvetica-Bold')
-            .fontSize(10)
+            .fontSize(t.expTitleSize)
             .fillColor('#111827')
             .text(pName, leftMargin, projY, { width: contentWidth - 120 });
         }
@@ -447,7 +456,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         // Line 1: Degree Name (Left) & Dates (Right)
         doc
           .font('Helvetica-Bold')
-          .fontSize(10)
+          .fontSize(t.expTitleSize)
           .fillColor('#111827')
           .text(degree, leftMargin, eduY, { width: contentWidth - 140 });
         const yAfterDegree = doc.y;
@@ -466,7 +475,7 @@ export function generatePdfBuffer(cv: TailoredCv): Promise<Buffer> {
         if (inst) {
           doc
             .font('Helvetica')
-            .fontSize(9.5)
+            .fontSize(t.bodySize)
             .fillColor('#374151')
             .text(inst, leftMargin, doc.y, { width: contentWidth });
         }

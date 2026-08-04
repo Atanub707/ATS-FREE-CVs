@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
-import { MasterCv } from '../types';
+import { MasterCv, TemplateId } from '../types';
 
 // Normalized shape mirroring server-side TailoredCv (as produced by generatePdfBuffer)
 export interface PdfCvShape {
@@ -103,6 +103,37 @@ const CONTENT_H = PAGE_H - MARGIN_Y * 2; // 705.6
 // wrap points and relative heights stay identical at every zoom level).
 const pt = (v: number, zoom: number) => Math.round(v * (zoom / 100));
 
+// ── Template styles — same structure/blocks for all three, only the
+//    visual treatment changes (colors, name size, density, rules).
+//    All variants stay single-column with standard headings → ATS-safe.
+export interface CvTemplateStyle {
+  accent: string;           // section headers / rules
+  nameSize: number;
+  roleColor: string;
+  ruleWidth: number;        // section rule thickness
+  bodySize: number;
+  bulletSize: number;
+  sectionGap: number;       // spacing before a section title
+  expTitleSize: number;
+  lineHeight: number;
+  nameWeight: number;
+}
+
+export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
+  'harvard': {
+    accent: '#2F54EB', nameSize: 18, roleColor: '#374151', ruleWidth: 0.75,
+    bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10, lineHeight: 1.45, nameWeight: 700,
+  },
+  'modern-minimal': {
+    accent: '#111827', nameSize: 20, roleColor: '#565D6C', ruleWidth: 1.25,
+    bodySize: 9.5, bulletSize: 9.5, sectionGap: 14, expTitleSize: 10, lineHeight: 1.5, nameWeight: 800,
+  },
+  'compact-executive': {
+    accent: '#1E3A5F', nameSize: 15, roleColor: '#475569', ruleWidth: 0.5,
+    bodySize: 8.5, bulletSize: 8.5, sectionGap: 7, expTitleSize: 9, lineHeight: 1.35, nameWeight: 700,
+  },
+};
+
 // A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
 // the block requires at least that many pt to remain below it, otherwise it
 // moves to the next page (prevents orphaned section titles / headers).
@@ -115,6 +146,7 @@ interface CvBlock {
 interface CvPdfPreviewProps {
   cv: PdfCvShape;
   zoom?: number;
+  template?: TemplateId;
   onPageCount?: (n: number) => void;
   /** Auto-scale pages to fill the container width (up to 100%) — use in
    *  side-by-side views so pages use the full lane without side gaps. */
@@ -127,8 +159,9 @@ interface CvPdfPreviewProps {
  * next sheet, using the same break rules as pdfkit (section headers and
  * experience headers keep with their content; bullets are atomic).
  */
-export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPageCount, fitToWidth = false }) => {
-  const blocks = useMemo(() => buildBlocks(cv), [cv]);
+export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
+  const style = CV_TEMPLATE_STYLES[template] || CV_TEMPLATE_STYLES.harvard;
+  const blocks = useMemo(() => buildBlocks(cv, style), [cv, style]);
   const measurerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<CvBlock[][]>([]);
@@ -242,7 +275,7 @@ function paginate(blocks: CvBlock[], heights: Record<string, number>): CvBlock[]
 }
 
 // ── Build the atomic block list in document order ──
-function buildBlocks(cv: PdfCvShape): CvBlock[] {
+function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
   const hasTechSkills = cv.technicalSkills.length > 0 || (cv.coreCompetencies?.length || 0) > 0;
@@ -250,7 +283,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
   const section = (title: string): CvBlock => ({
     key: `sec-${title}`,
     keepAfter: 40, // never orphan a section title at the bottom of a page
-    render: (zoom) => <SectionTitle zoom={zoom}>{title}</SectionTitle>,
+    render: (zoom) => <SectionTitle zoom={zoom} style={s}>{title}</SectionTitle>,
   });
 
   // 1. Name + role + contact (always together)
@@ -262,10 +295,11 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
           style={{
             textAlign: 'center',
             fontFamily: 'Helvetica-Bold, Helvetica, Arial, sans-serif',
-            fontSize: `${pt(18, zoom)}px`,
-            fontWeight: 700,
+            fontSize: `${pt(s.nameSize, zoom)}px`,
+            fontWeight: s.nameWeight,
             color: '#111827',
             textTransform: 'uppercase',
+            letterSpacing: s.nameSize >= 20 ? '0.05em' : '0.02em',
           }}
         >
           {cv.candidateName || 'CANDIDATE NAME'}
@@ -276,7 +310,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
               textAlign: 'center',
               fontWeight: 700,
               fontSize: `${pt(10, zoom)}px`,
-              color: '#374151',
+              color: s.roleColor,
               paddingTop: pt(3, zoom),
             }}
           >
@@ -309,7 +343,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
     blocks.push({
       key: 'summary',
       render: (zoom) => (
-        <div style={{ color: '#1F2937', paddingBottom: pt(4, zoom) }}>{cv.professionalSummary}</div>
+        <div style={{ color: '#1F2937', fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(4, zoom) }}>{cv.professionalSummary}</div>
       ),
     });
   }
@@ -321,7 +355,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
       blocks.push({
         key: `skill-${i}`,
         render: (zoom) => (
-          <div style={{ paddingBottom: pt(3, zoom) }}>
+          <div style={{ fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(3, zoom) }}>
             <span style={{ fontWeight: 700, color: '#111827' }}>{cat.category}: </span>
             <span style={{ color: '#374151' }}>{cat.skills.join(', ')}</span>
           </div>
@@ -332,7 +366,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
       blocks.push({
         key: 'skill-competencies',
         render: (zoom) => (
-          <div style={{ color: '#1F2937', paddingBottom: pt(3, zoom) }}>{cv.coreCompetencies.join(', ')}</div>
+          <div style={{ color: '#1F2937', fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(3, zoom) }}>{cv.coreCompetencies.join(', ')}</div>
         ),
       });
     }
@@ -348,7 +382,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
         keepAfter: 30,
         render: (zoom) => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, paddingBottom: pt(2, zoom) }}>
-            <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(s.expTitleSize, zoom)}px`, color: '#111827' }}>
               {[exp.title, exp.company].filter(Boolean).join('   |   ')}
             </span>
             <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: '#4B5563', whiteSpace: 'nowrap' }}>
@@ -360,7 +394,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
       exp.highlights.forEach((hl, j) => {
         blocks.push({
           key: `exp-${i}-b${j}`,
-          render: (zoom) => <Bullet zoom={zoom} text={hl} />,
+          render: (zoom) => <Bullet zoom={zoom} text={hl} style={s} />,
         });
       });
     });
@@ -375,7 +409,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
         keepAfter: 25,
         render: (zoom) => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, paddingBottom: pt(2, zoom) }}>
-            <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(s.expTitleSize, zoom)}px`, color: '#111827' }}>
               {p.name}
               {p.link && (
                 <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ color: '#0055BB', fontSize: `${pt(9, zoom)}px`, fontWeight: 400, marginLeft: pt(6, zoom) }}>
@@ -395,7 +429,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
         blocks.push({
           key: `proj-${i}-tech`,
           render: (zoom) => (
-            <div style={{ fontSize: `${pt(9, zoom)}px`, paddingBottom: pt(2, zoom) }}>
+            <div style={{ fontSize: `${pt(9, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(2, zoom) }}>
               <span style={{ fontWeight: 700, color: '#374151' }}>Technologies: </span>
               <span style={{ color: '#4B5563' }}>{p.technologies.join(', ')}</span>
             </div>
@@ -403,7 +437,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
         });
       }
       if (p.description) {
-        blocks.push({ key: `proj-${i}-desc`, render: (zoom) => <Bullet zoom={zoom} text={p.description} /> });
+        blocks.push({ key: `proj-${i}-desc`, render: (zoom) => <Bullet zoom={zoom} text={p.description} style={s} /> });
       }
     });
   }
@@ -416,9 +450,9 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
         key: `edu-${i}`,
         keepAfter: 15,
         render: (zoom) => (
-          <div style={{ paddingBottom: pt(6, zoom) }}>
+          <div style={{ fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(6, zoom) }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: `${pt(10, zoom)}px`, color: '#111827' }}>{e.degree}</span>
+              <span style={{ fontWeight: 700, fontSize: `${pt(s.expTitleSize, zoom)}px`, color: '#111827' }}>{e.degree}</span>
               {e.dates && (
                 <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: '#4B5563', whiteSpace: 'nowrap' }}>
                   {e.dates}
@@ -437,35 +471,35 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
     blocks.push(section('CERTIFICATIONS & CREDENTIALS'));
     cv.certifications.forEach((cert, i) => {
       const parts = typeof cert === 'string' ? [cert] : [cert.name, cert.issuer, cert.date].filter(Boolean);
-      blocks.push({ key: `cert-${i}`, render: (zoom) => <Bullet zoom={zoom} text={parts.join('   |   ')} /> });
+      blocks.push({ key: `cert-${i}`, render: (zoom) => <Bullet zoom={zoom} text={parts.join('   |   ')} style={s} /> });
     });
   }
 
   return blocks;
 }
 
-const SectionTitle: React.FC<{ zoom: number; children: React.ReactNode }> = ({ zoom, children }) => (
-  <div style={{ paddingTop: pt(10, zoom), paddingBottom: pt(6, zoom) }}>
+const SectionTitle: React.FC<{ zoom: number; style: CvTemplateStyle; children: React.ReactNode }> = ({ zoom, style, children }) => (
+  <div style={{ paddingTop: pt(style.sectionGap, zoom), paddingBottom: pt(6, zoom) }}>
     <div
       style={{
         fontWeight: 700,
         fontSize: `${pt(10.5, zoom)}px`,
-        color: '#111827',
+        color: style.accent,
         textTransform: 'uppercase',
-        letterSpacing: '0.04em',
+        letterSpacing: '0.06em',
       }}
     >
       {children}
     </div>
-    <div style={{ height: 1, background: '#9CA3AF', marginTop: pt(3, zoom) }} />
+    <div style={{ height: Math.max(1, Math.round(style.ruleWidth * (zoom / 100))), background: style.accent, opacity: 0.6, marginTop: pt(3, zoom) }} />
   </div>
 );
 
-const Bullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text }) => {
+const Bullet: React.FC<{ zoom: number; text: string; style: CvTemplateStyle }> = ({ zoom, text, style }) => {
   const clean = String(text || '').replace(/^[*•\-]\s*/, '').trim();
   if (!clean) return null;
   return (
-    <div style={{ display: 'flex', gap: pt(6, zoom), paddingBottom: pt(2, zoom) }}>
+    <div style={{ display: 'flex', gap: pt(6, zoom), fontSize: `${pt(style.bulletSize, zoom)}px`, lineHeight: style.lineHeight, paddingBottom: pt(2, zoom) }}>
       <span style={{ color: '#4B5563', flexShrink: 0 }}>•</span>
       <span style={{ color: '#1F2937' }}>{clean}</span>
     </div>

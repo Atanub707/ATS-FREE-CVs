@@ -525,9 +525,10 @@ async function startServer() {
 
       const safeName = m.fullName.replace(/ /g, '_');
       const filename = `${safeName}_Master_CV`;
+      const template = (req.query.template as string) || m.templateId || 'harvard';
 
       if (format === 'pdf') {
-        const pdfBuffer = await generatePdfBuffer(masterAsTailored);
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
         res.send(pdfBuffer);
@@ -537,7 +538,7 @@ async function startServer() {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.txt"`);
         res.send(textCv);
       } else {
-        const pdfBuffer = await generatePdfBuffer(masterAsTailored);
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
         res.send(pdfBuffer);
@@ -686,6 +687,7 @@ Return valid JSON only — NO markdown, NO code fences:
         certifications,
         rawText: masterCv.rawText,
         downloadFilename: masterCv.downloadFilename,
+        templateId: masterCv.templateId,
       };
       saveMasterCv(newCv);
       res.json({ success: true, cv: getMasterCv() });

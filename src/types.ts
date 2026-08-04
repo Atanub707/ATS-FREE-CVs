@@ -156,7 +156,16 @@ export interface MasterCv {
   certifications?: CertificationItem[];
   rawText?: string;
   downloadFilename?: string;
+  templateId?: TemplateId;
 }
+
+export type TemplateId = 'harvard' | 'modern-minimal' | 'compact-executive';
+
+export const CV_TEMPLATES: { id: TemplateId; label: string; description: string }[] = [
+  { id: 'harvard', label: 'Harvard Classic', description: 'Timeless single-column — safest for every ATS' },
+  { id: 'modern-minimal', label: 'Modern Minimal', description: 'Clean accent line — premium look, still ATS-safe' },
+  { id: 'compact-executive', label: 'Compact Executive', description: 'Denser typography — fits senior 2-page CVs' },
+];
 
 export type ExperienceLevel = 'all' | 'entry' | 'mid' | 'senior' | 'lead';
 
