@@ -237,6 +237,18 @@ export function getDb(): Database.Database {
       data TEXT NOT NULL,
       updated_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS manual_analysis (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      role TEXT,
+      company TEXT,
+      description TEXT,
+      score INTEGER,
+      gap_analysis TEXT,
+      diff TEXT,
+      tailored_cv TEXT,
+      created_at TEXT
+    );
   `);
   migrateToUsers(db);
   return db;
@@ -561,4 +573,84 @@ export function runStorageMigration(targetMode: 'sqlite' | 'json'): { success: b
     fs.writeFileSync(JSON_FILE_PATH, data, 'utf-8');
     return { success: true, message: `Successfully backed up ${currentJobs.length} jobs to JSON file storage.`, count: currentJobs.length };
   }
+}
+
+// ─────────────────── Manual JD History ───────────────────
+export interface ManualAnalysisRecord {
+  id: string;
+  role: string;
+  company: string;
+  description: string;
+  score: number;
+  gapAnalysis: any;
+  diff: any | null;
+  tailoredCv: any | null;
+  createdAt: string;
+}
+
+export function saveManualAnalysis(record: Omit<ManualAnalysisRecord, 'id' | 'createdAt'> & { id?: string }): ManualAnalysisRecord {
+  const userId = getCurrentUserId();
+  const id = record.id || `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const createdAt = new Date().toISOString();
+  getDb().prepare(`
+    INSERT OR REPLACE INTO manual_analysis (id, user_id, role, company, description, score, gap_analysis, diff, tailored_cv, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    userId,
+    record.role,
+    record.company,
+    record.description,
+    record.score,
+    JSON.stringify(record.gapAnalysis ?? null),
+    JSON.stringify(record.diff ?? null),
+    JSON.stringify(record.tailoredCv ?? null),
+    createdAt
+  );
+  return { ...record, id, createdAt };
+}
+
+export function listManualAnalyses(): { id: string; role: string; company: string; score: number; createdAt: string; hasTailoredCv: boolean }[] {
+  const userId = getCurrentUserId();
+  try {
+    const rows = getDb()
+      .prepare('SELECT id, role, company, score, tailored_cv, created_at FROM manual_analysis WHERE user_id = ? ORDER BY created_at DESC')
+      .all(userId) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      role: r.role || '',
+      company: r.company || '',
+      score: r.score ?? 0,
+      createdAt: r.created_at || '',
+      hasTailoredCv: !!(r.tailored_cv && r.tailored_cv !== 'null'),
+    }));
+  } catch { return []; }
+}
+
+export function getManualAnalysis(id: string): ManualAnalysisRecord | undefined {
+  const userId = getCurrentUserId();
+  try {
+    const r = getDb()
+      .prepare('SELECT * FROM manual_analysis WHERE id = ? AND user_id = ?')
+      .get(id, userId) as any;
+    if (!r) return undefined;
+    return {
+      id: r.id,
+      role: r.role || '',
+      company: r.company || '',
+      description: r.description || '',
+      score: r.score ?? 0,
+      gapAnalysis: r.gap_analysis ? JSON.parse(r.gap_analysis) : undefined,
+      diff: r.diff ? JSON.parse(r.diff) : null,
+      tailoredCv: r.tailored_cv ? JSON.parse(r.tailored_cv) : null,
+      createdAt: r.created_at || '',
+    };
+  } catch { return undefined; }
+}
+
+export function deleteManualAnalysis(id: string): boolean {
+  const userId = getCurrentUserId();
+  try {
+    return getDb().prepare('DELETE FROM manual_analysis WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
+  } catch { return false; }
 }
