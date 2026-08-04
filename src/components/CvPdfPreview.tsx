@@ -274,7 +274,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
 
   // 3. Technical Skills
   if (hasTechSkills) {
-    blocks.push(section('TECHNICAL SKILLS &amp; COMPETENCIES'));
+    blocks.push(section('TECHNICAL SKILLS & COMPETENCIES'));
     cv.technicalSkills.forEach((cat, i) => {
       blocks.push({
         key: `skill-${i}`,
@@ -392,7 +392,7 @@ function buildBlocks(cv: PdfCvShape): CvBlock[] {
 
   // 7. Certifications
   if (cv.certifications && cv.certifications.length > 0) {
-    blocks.push(section('CERTIFICATIONS &amp; CREDENTIALS'));
+    blocks.push(section('CERTIFICATIONS & CREDENTIALS'));
     cv.certifications.forEach((cert, i) => {
       const parts = typeof cert === 'string' ? [cert] : [cert.name, cert.issuer, cert.date].filter(Boolean);
       blocks.push({ key: `cert-${i}`, render: (zoom) => <Bullet zoom={zoom} text={parts.join('   |   ')} /> });
