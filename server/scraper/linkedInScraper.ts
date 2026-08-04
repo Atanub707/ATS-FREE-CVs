@@ -125,21 +125,43 @@ export class LinkedInScraper extends BaseScraper {
           const timeText = $el.find('time').text().trim().toLowerCase();
           const dateAttr = $el.find('time').attr('datetime');
 
+          // LinkedIn's guest API returns BOTH a relative label ("13 hours
+          // ago") and a date-only datetime attribute ("2026-08-04"). The
+          // date-only attr parses to midnight UTC, which would make every
+          // job look the same age. Parse the relative text first — it is
+          // the accurate posting time.
           let postedDateObj = new Date();
-          if (dateAttr) {
+          const relMatch = timeText.match(/(\d+)\s*(minute|hour|day|week|month)s?\s*ago/);
+          if (relMatch) {
+            const n = parseInt(relMatch[1], 10);
+            const unit = relMatch[2];
+            if (unit === 'minute') postedDateObj = new Date(now.getTime() - n * 60 * 1000);
+            else if (unit === 'hour') postedDateObj = new Date(now.getTime() - n * 60 * 60 * 1000);
+            else if (unit === 'day') postedDateObj = new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+            else if (unit === 'week') postedDateObj = new Date(now.getTime() - n * 7 * 24 * 60 * 60 * 1000);
+            else postedDateObj = new Date(now.getTime() - n * 30 * 24 * 60 * 60 * 1000);
+          } else if (timeText.includes('just now') || timeText.includes('minutes')) {
+            postedDateObj = new Date(now.getTime() - 5 * 60 * 1000);
+          } else if (timeText.includes('month')) {
+            const numMatch = timeText.match(/\d+/);
+            const months = numMatch ? parseInt(numMatch[0], 10) : 1;
+            postedDateObj = new Date(now.getTime() - months * 30 * 24 * 60 * 60 * 1000);
+          } else if (timeText.includes('year')) {
+            const numMatch = timeText.match(/\d+/);
+            const years = numMatch ? parseInt(numMatch[0], 10) : 1;
+            postedDateObj = new Date(now.getTime() - years * 365 * 24 * 60 * 60 * 1000);
+          } else if (dateAttr && dateAttr.length > 10) {
+            // Full ISO timestamp (rare) — parse precisely
             const parsed = new Date(dateAttr);
-            if (!isNaN(parsed.getTime())) {
-              postedDateObj = parsed;
-            }
-          } else if (timeText) {
-            if (timeText.includes('hour') || timeText.includes('minute') || timeText.includes('just now')) {
-              postedDateObj = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-            } else if (timeText.includes('day')) {
-              const numMatch = timeText.match(/\d+/);
-              const days = numMatch ? parseInt(numMatch[0], 10) : 1;
-              postedDateObj = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-            }
+            if (!isNaN(parsed.getTime())) postedDateObj = parsed;
+          } else if (dateAttr) {
+            // Date-only attr: use it but at the end of that day, not midnight,
+            // so "today" postings don't look older than they are.
+            const parsed = new Date(dateAttr + 'T23:59:59');
+            if (!isNaN(parsed.getTime()) && parsed <= now) postedDateObj = parsed;
           } else {
+            // No time info at all — stagger fallback so jobs don't all
+            // share one fabricated timestamp.
             postedDateObj = new Date(now.getTime() - (scrapedJobs.length + 1) * 3 * 60 * 60 * 1000);
           }
 
