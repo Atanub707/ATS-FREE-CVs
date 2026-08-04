@@ -107,7 +107,7 @@ const JobCard = React.memo(function JobCard({
                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
             }`}
           >
-            <span>Source: {job.source}</span>
+            <span>{job.source}</span>
             <ExternalLink className="w-2.5 h-2.5 text-blue-500 ml-0.5" />
           </a>
 
