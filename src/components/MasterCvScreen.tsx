@@ -1614,38 +1614,38 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <Sparkles className="w-3.5 h-3.5" />
               <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
             </button>
-
-            {/* Zoom in / out */}
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setPreviewZoom((z) => Math.max(40, z - 10))}
-                className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
-                title="Zoom out"
-              >
-                −
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom(75)}
-                className="px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer tabular-nums"
-                title="Reset zoom to 75%"
-              >
-                {previewZoom}%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom((z) => Math.min(150, z + 10))}
-                className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
-                title="Zoom in"
-              >
-                +
-              </button>
-            </div>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-6 relative">
           <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} template={template} />
+
+          {/* Floating zoom control — bottom-right corner, stays visible while scrolling */}
+          <div className="sticky bottom-4 ml-auto w-fit flex items-center bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setPreviewZoom((z) => Math.max(40, z - 10))}
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              title="Zoom out"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewZoom(75)}
+              className="px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer tabular-nums"
+              title="Reset zoom to 75%"
+            >
+              {previewZoom}%
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewZoom((z) => Math.min(150, z + 10))}
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              title="Zoom in"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
 
