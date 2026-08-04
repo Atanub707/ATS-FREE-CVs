@@ -1656,7 +1656,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-6 py-5">
+            <div className="px-6 py-5">
               {/* Outcome hero */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-5 flex-wrap">
                 <span className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
@@ -1736,7 +1736,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦ RECOMMENDED</span>
                       <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
                     </div>
-                    <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />
+                    <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth onPageCount={setPagesAfter} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-3">
@@ -1745,7 +1745,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
                     </div>
                     <div className="opacity-60">
-                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={50} onPageCount={setPagesBefore} />
+                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth onPageCount={setPagesBefore} />
                     </div>
                     <p className="text-center text-[10.5px] text-slate-400 font-semibold mt-3">Original preview collapsed · full text in Compare tab</p>
                   </div>
@@ -1810,7 +1810,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
                         <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
                       </div>
-                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={50} onPageCount={setPagesBefore} />
+                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth onPageCount={setPagesBefore} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-3">
@@ -1818,7 +1818,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New</span>
                         <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
                       </div>
-                      <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />
+                      <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth onPageCount={setPagesAfter} />
                     </div>
                   </div>
                 </div>

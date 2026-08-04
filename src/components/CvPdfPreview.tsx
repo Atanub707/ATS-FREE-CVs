@@ -122,6 +122,9 @@ interface CvPdfPreviewProps {
   cv: PdfCvShape;
   zoom?: 50 | 75 | 100;
   onPageCount?: (n: number) => void;
+  /** Auto-scale pages to fill the container width (up to 100%) — use in
+   *  side-by-side views so pages use the full lane without side gaps. */
+  fitToWidth?: boolean;
 }
 
 /**
@@ -130,14 +133,37 @@ interface CvPdfPreviewProps {
  * next sheet, using the same break rules as pdfkit (section headers and
  * experience headers keep with their content; bullets are atomic).
  */
-export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPageCount }) => {
+export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPageCount, fitToWidth = false }) => {
   const blocks = useMemo(() => buildBlocks(cv), [cv]);
   const measurerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<CvBlock[][]>([]);
+  const [fitZoom, setFitZoom] = useState<number>(zoom);
 
   useEffect(() => {
     onPageCount?.(pages.length);
   }, [pages, onPageCount]);
+
+  // Auto-fit: measure the container and scale pages to fill its width.
+  useEffect(() => {
+    if (!fitToWidth) { setFitZoom(zoom); return; }
+    const el = rootRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      if (w > 0) {
+        // leave ~16px breathing room, cap at 100%, snap to 5%
+        const z = Math.min(100, Math.floor(((w - 16) / PAGE_W) * 100 / 5) * 5);
+        setFitZoom(Math.max(40, z));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fitToWidth, zoom]);
+
+  const effectiveZoom = fitToWidth ? fitZoom : zoom;
 
   // Measure every block at 100% zoom (exact PDF metrics), then paginate.
   useLayoutEffect(() => {
@@ -151,7 +177,7 @@ export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPa
   }, [blocks]);
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div ref={rootRef} className="flex flex-col items-center gap-6 w-full">
       {/* Hidden measurer — renders every block at 100% with the exact PDF
           content width so heights are measured truthfully. */}
       <div
@@ -181,18 +207,18 @@ export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, onPa
           key={pi}
           className="bg-white shadow-2xl rounded-sm"
           style={{
-            width: pt(PAGE_W, zoom),
-            height: pt(PAGE_H, zoom),
-            padding: `${pt(MARGIN_Y, zoom)}px ${pt(MARGIN_X, zoom)}px`,
+            width: pt(PAGE_W, effectiveZoom),
+            height: pt(PAGE_H, effectiveZoom),
+            padding: `${pt(MARGIN_Y, effectiveZoom)}px ${pt(MARGIN_X, effectiveZoom)}px`,
             overflow: 'hidden',
             fontFamily: 'Helvetica, Arial, sans-serif',
             color: '#1F2937',
-            fontSize: `${pt(9.5, zoom)}px`,
+            fontSize: `${pt(9.5, effectiveZoom)}px`,
             lineHeight: 1.45,
           }}
         >
           {page.map((b) => (
-            <div key={b.key}>{b.render(zoom)}</div>
+            <div key={b.key}>{b.render(effectiveZoom)}</div>
           ))}
         </div>
       ))}
