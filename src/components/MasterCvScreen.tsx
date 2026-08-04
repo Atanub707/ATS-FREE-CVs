@@ -1619,7 +1619,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
                 }`}>
                   {compressResult.verification?.dropped?.length > 0
-                    ? <>⚠ {compressResult.verification.dropped.join(', ')} not found in compressed CV</>
+                    ? <>⚠ {compressResult.verification.dropped.slice(0, 6).join(', ')}{compressResult.verification.dropped.length > 6 ? ` …and ${compressResult.verification.dropped.length - 6} more` : ''} not found in compressed CV</>
                     : <>✓ All {compressResult.verification?.preserved?.length ?? 0} keywords preserved</>}
                 </div>
                 <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />

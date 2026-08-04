@@ -1,6 +1,6 @@
 import { ask } from '../llm/llmAdapter.js';
 import { MasterCv, TailoredCv } from '../../src/types.js';
-import { getMarketData } from './marketData.js';
+import { getMarketData, STOPWORDS } from './marketData.js';
 
 export interface CompressGuidance {
   sections: { name: string; changes: { type: 'tighten' | 'merge' | 'keep'; bulletIndexes: number[]; reason: string }[] }[];
@@ -31,8 +31,12 @@ function countWords(s: string): number {
 }
 
 function extractKeywords(text: string): string[] {
-  const tokens = text.toLowerCase().split(/[^a-z0-9+.#-]+/).filter((t) => t.length >= 3);
+  const tokens = text.toLowerCase().split(/[^a-z0-9+.#-]+/).filter((t) => t.length >= 3 && !STOPWORDS.has(t));
   return [...new Set(tokens)];
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export async function compressCv(
@@ -128,18 +132,23 @@ STRICT RULES:
   // ── Phase 3: verify (deterministic) ──
   const originalBullets = masterCv.experiences.flatMap((e) => e.responsibilities);
   const originalText = originalBullets.join(' ') + ' ' + masterCv.summary + ' ' +
-    masterCv.skills.flatMap((s) => s.items).join(' ');
+    masterCv.skills.flatMap((s) => s.items).join(' ') + ' ' +
+    (masterCv.projects || []).map((p) => [p.name, p.description, (p.technologies || []).join(' ')].join(' ')).join(' ') + ' ' +
+    masterCv.education.map((e) => [e.degree, e.institution].join(' ')).join(' ');
   const compressedText = [
     compressedCv.professionalSummary || '',
     ...(compressedCv.workExperience || []).flatMap((w) => w.highlights || []),
     ...(compressedCv.coreCompetencies || []),
     ...(compressedCv.technicalSkills || []).flatMap((t) => t.skills || []),
     ...(compressedCv.certifications || []).map((c) => (typeof c === 'string' ? c : c.name)),
+    ...(compressedCv.projects || []).map((p) => [p.name, p.description, (p.technologies || []).join(' ')].join(' ')),
+    ...(compressedCv.education || []).map((e) => [e.degree, e.institution].join(' ')),
   ].join(' ');
 
   const originalKeywords = extractKeywords(originalText);
-  const preserved = originalKeywords.filter((k) => compressedText.toLowerCase().includes(k));
-  const dropped = originalKeywords.filter((k) => !compressedText.toLowerCase().includes(k));
+  const keywordChecks = originalKeywords.map((k) => ({ kw: k, re: new RegExp(`\\b${escapeRegExp(k)}\\b`, 'i') }));
+  const preserved = keywordChecks.filter(({ re }) => re.test(compressedText)).map(({ kw }) => kw);
+  const dropped = keywordChecks.filter(({ re }) => !re.test(compressedText)).map(({ kw }) => kw);
 
   return {
     guidance,
