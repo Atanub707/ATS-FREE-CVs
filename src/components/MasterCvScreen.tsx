@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileDown,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface MasterCvScreenProps {
@@ -454,7 +455,15 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
-            <User className="w-5 h-5 text-slate-700" />
+            <button
+              onClick={onClose}
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+              title="Back to dashboard"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <User className="w-5 h-5 text-slate-700 ml-1" />
             <div>
               <h2 className="text-sm font-bold text-slate-900 leading-tight">Master Candidate CV</h2>
               <p className="text-[10.5px] text-slate-400 font-medium">Edits apply to every score &amp; tailor · autosaved on Save</p>
