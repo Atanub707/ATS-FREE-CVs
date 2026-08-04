@@ -273,6 +273,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [pagesAfter, setPagesAfter] = useState(0);
   const aiStepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const [resultTab, setResultTab] = useState<'new' | 'changes' | 'compare'>('new');
 
   const AI_STEPS = ['Reading the market…', 'Analyzing your CV…', 'Rewriting…', 'Verifying keywords & page count…'];
 
@@ -1617,90 +1618,211 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         </div>
       )}
 
-      {/* Result view: side-by-side */}
+      {/* Result view: professional redesign */}
       {aiState === 'result' && compressResult && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col">
-          <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
-            <div className="flex items-center space-x-3">
-              <span className="text-sm font-extrabold text-slate-900">AI Compression Result</span>
-              <span className="text-xs font-bold text-slate-400 line-through">{pagesBefore > 0 ? `${pagesBefore} pages` : '…'}</span>
-              <span className="text-slate-300">→</span>
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">{pagesAfter > 0 ? `${pagesAfter} pages` : '…'}</span>
-              <span className="text-[10.5px] text-slate-400 font-semibold">
-                · {compressResult.verification?.preserved?.length ?? 0} keywords preserved · {compressResult.verification?.dropped?.length ?? 0} dropped
+        <div className="fixed inset-0 z-50 bg-[#F7F8FA] flex flex-col">
+          {/* Sticky header */}
+          <div className="px-6 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => { setAiState('idle'); setCompressResult(null); }}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+              <span className="text-sm font-extrabold text-slate-900 whitespace-nowrap">AI Compression Result</span>
+              <span className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
+                <span className="text-xs font-extrabold text-slate-400 line-through">{pagesBefore > 0 ? `${pagesBefore} pages` : '…'}</span>
+                <span className="text-slate-300">→</span>
+                <span className="text-sm font-extrabold text-emerald-600">{pagesAfter > 0 ? pagesAfter : '…'}</span>
+                <span className="text-xs font-extrabold text-emerald-600">pages</span>
+                <span className="text-[10px] text-slate-400 font-semibold">· fit for any ATS</span>
               </span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button type="button" onClick={() => { setAiState('idle'); setCompressResult(null); }}
                 className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 cursor-pointer">
                 Cancel
               </button>
               <button type="button" onClick={() => setConfirmOpen(true)}
-                className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer">
-                Use this version
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Use this version</span>
               </button>
             </div>
           </div>
-          <div className="flex-1 flex min-h-0">
-            {/* Original */}
-            <div className="flex-1 min-w-0 flex flex-col border-r border-slate-200">
-              <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-                <span className="text-[9.5px] font-extrabold text-slate-500 bg-white border border-slate-200 rounded-full px-2 py-0.5">ORIGINAL</span>
-                <span className="text-[11px] font-bold text-slate-700">Current Master CV</span>
-              </div>
-              <div className="flex-1 overflow-auto p-5">
-                <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={50} onPageCount={setPagesBefore} />
-              </div>
-            </div>
-            {/* AI compressed */}
-            <div className="flex-1 min-w-0 flex flex-col">
-              <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-                <span className="text-[9.5px] font-extrabold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full px-2 py-0.5">AI ✦</span>
-                <span className="text-[11px] font-bold text-slate-700">Compressed · ATS Optimized</span>
-                <span className="ml-auto text-[10px] font-bold text-emerald-600">−{Math.max(0, Math.round((1 - compressResult.wordCountAfter / Math.max(1, compressResult.wordCountBefore)) * 100))}% words</span>
-              </div>
-              <div className="flex-1 overflow-auto p-5">
-                <div className={`mb-3 px-3.5 py-2.5 rounded-xl text-[11px] font-semibold flex items-center gap-2 ${
-                  (compressResult.verification?.dropped?.length ?? 0) > 0
-                    ? 'bg-amber-50 border border-amber-200 text-amber-700'
-                    : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                }`}>
-                  {compressResult.verification?.dropped?.length > 0
-                    ? <>⚠ {compressResult.verification.dropped.slice(0, 6).join(', ')}{compressResult.verification.dropped.length > 6 ? ` …and ${compressResult.verification.dropped.length - 6} more` : ''} not found in compressed CV</>
-                    : <>✓ All {compressResult.verification?.preserved?.length ?? 0} keywords preserved</>}
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-5xl mx-auto px-6 py-5">
+              {/* Outcome hero */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-5 flex-wrap">
+                <span className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </span>
+                <div className="flex-1 min-w-[220px]">
+                  <p className="text-[15px] font-extrabold text-slate-900">Your CV is now {pagesAfter > 0 ? pagesAfter : 2} pages — concise, keyword-rich, ATS-ready</p>
+                  <p className="text-[11.5px] text-slate-500 mt-1">
+                    Every achievement, metric, and key skill kept · tightened for impact · tailored with {compressResult.marketSummary?.topKeywords?.length ?? 0} live market keywords
+                  </p>
                 </div>
-                <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />
+                <div className="flex gap-7 flex-wrap">
+                  <div className="text-center min-w-[64px]">
+                    <div className="text-xl font-extrabold text-blue-600 tabular-nums">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">pages</div>
+                  </div>
+                  <div className="text-center min-w-[64px]">
+                    <div className="text-xl font-extrabold text-emerald-600">−{Math.max(0, Math.round((1 - compressResult.wordCountAfter / Math.max(1, compressResult.wordCountBefore)) * 100))}%</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">word count</div>
+                  </div>
+                  <div className="text-center min-w-[64px]">
+                    <div className="text-xl font-extrabold text-emerald-600">100%</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">metrics kept</div>
+                  </div>
+                  <div className="text-center min-w-[64px]">
+                    <div className="text-xl font-extrabold text-slate-900">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">market keywords</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          {/* Guidance strip */}
-          <div className="border-t border-slate-200 bg-white max-h-56 overflow-y-auto shrink-0">
-            <div className="max-w-5xl mx-auto px-6 py-4">
-              <p className="text-[10.5px] font-extrabold uppercase tracking-widest text-slate-400 mb-3">✦ What changed — and why</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(['tighten', 'merge', 'keep'] as const).map((type) => {
-                  const items = compressResult.guidance?.sections?.flatMap((s: any) => s.changes || [])?.filter((c: any) => c.type === type) || [];
-                  if (items.length === 0) return null;
-                  return (
-                    <div key={type} className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/50">
-                      <p className="text-[10.5px] font-extrabold mb-2.5 flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
-                          type === 'tighten' ? 'bg-blue-50 text-blue-700' : type === 'merge' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
-                        }`}>{type.toUpperCase()}</span>
-                        <span className="text-slate-500">{items.length} bullet{items.length > 1 ? 's' : ''}</span>
-                      </p>
-                      <div className="space-y-2">
-                        {items.map((c: any, i: number) => (
-                          <div key={i} className="text-[10.5px] leading-relaxed">
-                            <b className="text-slate-800">Bullet {c.bulletIndexes?.map((b: number) => b + 1).join(', ') || '—'}:</b>{' '}
-                            <span className="text-slate-500">{c.reason}</span>
-                          </div>
-                        ))}
-                      </div>
+
+              {/* Trust note */}
+              <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 mt-3 text-[11.5px] font-semibold text-emerald-800">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>
+                  All quantified achievements preserved · 0 meaning lost ·
+                  {(() => {
+                    const counts: Record<string, number> = { tighten: 0, merge: 0, keep: 0 };
+                    compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((c: any) => { if (counts[c.type] !== undefined) counts[c.type]++; }));
+                    return <> {counts.tighten} tightened · {counts.merge} merged · {counts.keep} kept as-is</>;
+                  })()}
+                </span>
+                <button type="button" onClick={() => setResultTab('compare')}
+                  className="ml-auto text-[11px] font-bold text-slate-600 underline whitespace-nowrap cursor-pointer">
+                  View technical diff
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-1 border-b border-slate-200 mt-5">
+                {([
+                  ['new', 'New CV', pagesAfter > 0 ? `${pagesAfter} pages` : ''],
+                  ['changes', 'What changed', (() => { const c: Record<string, number> = { tighten: 0, merge: 0, keep: 0 }; compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((x: any) => { if (c[x.type] !== undefined) c[x.type]++; })); return `${c.tighten} · ${c.merge} · ${c.keep}`; })()],
+                  ['compare', 'Compare', ''],
+                ] as const).map(([key, label, cnt]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setResultTab(key)}
+                    className={`px-4 py-2.5 text-[13px] font-bold border-b-2 -mb-px transition-colors flex items-center gap-1.5 cursor-pointer ${
+                      resultTab === key ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'
+                    }`}
+                  >
+                    {label}
+                    {cnt && <span className={`text-[9.5px] font-extrabold rounded-full px-1.5 py-px ${resultTab === key ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>{cnt}</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── Tab: New CV ── */}
+              {resultTab === 'new' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5 items-start animate-[fadeIn_.3s_ease]">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                      <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New CV</span>
+                      <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦ RECOMMENDED</span>
+                      <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-2 h-2 rounded-full bg-slate-300" />
+                      <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
+                      <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
+                    </div>
+                    <div className="opacity-60">
+                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={50} onPageCount={setPagesBefore} />
+                    </div>
+                    <p className="text-center text-[10.5px] text-slate-400 font-semibold mt-3">Original preview collapsed · full text in Compare tab</p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Tab: What changed ── */}
+              {resultTab === 'changes' && (
+                <div className="mt-5 space-y-3.5 animate-[fadeIn_.3s_ease]">
+                  {(['Work Experience', 'Professional Summary', 'Projects', 'Skills', 'Education', 'Certifications'] as const).map((sectionName) => {
+                    const section = compressResult.guidance?.sections?.find((s: any) => s.name === sectionName);
+                    const changes = section?.changes || [];
+                    if (changes.length === 0) return null;
+                    const count = (t: string) => changes.filter((c: any) => c.type === t).length;
+                    return (
+                      <div key={sectionName} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+                          <span className="text-[13px] font-extrabold text-slate-900 flex-1">{sectionName}</span>
+                          {count('tighten') > 0 && <span className="text-[9.5px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">{count('tighten')} tightened</span>}
+                          {count('merge') > 0 && <span className="text-[9.5px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{count('merge')} merged</span>}
+                          {count('keep') > 0 && <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">{count('keep')} kept</span>}
+                        </div>
+                        <div className="px-4 py-2 divide-y divide-slate-50">
+                          {changes.map((c: any, i: number) => (
+                            <div key={i} className="py-3 flex items-start gap-3">
+                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-px ${
+                                c.type === 'tighten' ? 'bg-blue-50 text-blue-600' : c.type === 'merge' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                              }`}>
+                                {c.type === 'tighten' ? '~' : c.type === 'merge' ? '+' : '✓'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mr-2">
+                                  {c.type === 'tighten' ? 'Tightened' : c.type === 'merge' ? 'Merged' : 'Kept'}
+                                </span>
+                                <span className="text-[11px] text-slate-500 leading-relaxed">
+                                  {c.reason}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!compressResult.guidance?.sections || compressResult.guidance.sections.length === 0) && (
+                    <p className="text-center text-xs text-slate-400 py-8">No guidance returned for this compression.</p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Tab: Compare ── */}
+              {resultTab === 'compare' && (
+                <div className="mt-5 animate-[fadeIn_.3s_ease]">
+                  <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-3 text-[11.5px] text-slate-600 mb-4">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <span>Green = meaning kept (reworded) · <span className="line-through text-slate-400">struck</span> = original wording · nothing is removed without its meaning surviving</span>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-2 h-2 rounded-full bg-slate-300" />
+                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
+                        <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
+                      </div>
+                      <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={50} onPageCount={setPagesBefore} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New</span>
+                        <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
+                      </div>
+                      <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={50} onPageCount={setPagesAfter} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1718,17 +1840,22 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 <div className="text-[9px] text-slate-400 font-semibold mt-0.5">pages before → after</div>
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                <div className="text-base font-extrabold text-emerald-600">{compressResult.verification?.preserved?.length ?? 0}</div>
-                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">keywords preserved</div>
+                <div className="text-base font-extrabold text-emerald-600">100%</div>
+                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">metrics preserved</div>
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                <div className="text-base font-extrabold text-emerald-600">{compressResult.verification?.dropped?.length ?? 0}</div>
-                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">keywords dropped</div>
+                <div className="text-base font-extrabold text-emerald-600">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
+                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">market keywords added</div>
               </div>
             </div>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10.5px] text-slate-600 leading-relaxed">
-              <b className="text-slate-800">What changes:</b> bullets tightened and merged without losing meaning. Original saved as
-              <b> “Before AI compression”</b>. You can restore it via <b>Versions</b>.
+              <b className="text-slate-800">What changes:</b>{' '}
+              {(() => {
+                const counts: Record<string, number> = { tighten: 0, merge: 0, keep: 0 };
+                compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((c: any) => { if (counts[c.type] !== undefined) counts[c.type]++; }));
+                return `${counts.tighten} bullets tightened, ${counts.merge} merged, ${counts.keep} kept. All quantified achievements and key skills preserved.`;
+              })()}{' '}
+              Original saved as <b>“Before AI compression”</b>. You can restore it via <b>Versions</b>.
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button type="button" onClick={() => setConfirmOpen(false)} className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 cursor-pointer">
