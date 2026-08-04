@@ -244,13 +244,22 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSaving(true);
     await onSaveMasterCv({ ...formData, downloadFilename });
     setIsSaving(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleDownloadPdf = async () => {
+    const res = await fetch('/api/cv/master/download?format=pdf');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${downloadFilename}.pdf`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   const [aiState, setAiState] = useState<'idle' | 'running' | 'result'>('idle');
@@ -263,6 +272,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [pagesBefore, setPagesBefore] = useState(0);
   const [pagesAfter, setPagesAfter] = useState(0);
   const aiStepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
 
   const AI_STEPS = ['Reading the market…', 'Analyzing your CV…', 'Rewriting…', 'Verifying keywords & page count…'];
 
@@ -555,43 +565,59 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               </span>
             )}
 
-            {/* Primary actions */}
-            <button
-              type="button"
-              onClick={handleAiCompress}
-              disabled={aiState === 'running'}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              id="btn-save-master-cv"
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Saving...' : 'Save'}</span>
-            </button>
+            {/* Save split-button: Save | dropdown (Download PDF) */}
+            <div className="relative">
+              <div className="flex items-stretch">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  id="btn-save-master-cv"
+                  className="px-3 py-1.5 rounded-l-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveMenuOpen((v) => !v)}
+                  className="px-1.5 py-1.5 rounded-r-lg text-white bg-blue-600 hover:bg-blue-700 border-l border-blue-500 transition-colors cursor-pointer"
+                  title="More options"
+                >
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${saveMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {saveMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setSaveMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1.5">
+                    <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Export
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setSaveMenuOpen(false); handleDownloadPdf(); }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-slate-700 hover:bg-slate-100 cursor-pointer text-left"
+                    >
+                      <FileDown className="w-4 h-4 text-slate-500" />
+                      Download PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSaveMenuOpen(false); handleSave(); }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-slate-700 hover:bg-slate-100 cursor-pointer text-left"
+                    >
+                      <Save className="w-4 h-4 text-slate-500" />
+                      Save changes
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             <span className="w-px h-5 bg-slate-200 mx-1" />
 
             {/* Compact utilities */}
-            <button
-              onClick={async () => {
-                const res = await fetch('/api/cv/master/download?format=pdf');
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = `${downloadFilename}.pdf`;
-                a.click(); URL.revokeObjectURL(url);
-              }}
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
-              title={`Download PDF (${downloadFilename}.pdf)`}
-            >
-              <FileDown className="w-4 h-4" />
-            </button>
             <button
               type="button"
               onClick={() => { setVersionsOpen(true); loadVersions(); }}
@@ -1496,27 +1522,55 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
       {/* RIGHT: LIVE PDF PREVIEW */}
       <div className="flex-1 bg-slate-100 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
-          <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0 gap-3">
+          <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span>Live PDF Preview — exactly what downloads</span>
+            <span>Live PDF Preview</span>
           </span>
-          <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5">
-            {([50, 75, 100] as const).map((z) => (
-              <button
-                key={z}
-                type="button"
-                onClick={() => setPreviewZoom(z)}
-                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
-                  previewZoom === z ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {z}%
-              </button>
-            ))}
+
+          <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
+            {/* PDF rename */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden lg:inline">PDF name</span>
+              <input
+                type="text"
+                value={downloadFilename}
+                onChange={(e) => setDownloadFilename(e.target.value.replace(/[^a-zA-Z0-9_\- ]/g, ''))}
+                className="w-36 bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                title="Rename the downloaded PDF (extension .pdf added automatically)"
+              />
+              <span className="text-[11px] text-slate-400 font-mono hidden xl:inline">.pdf</span>
+            </div>
+
+            {/* AI Compress */}
+            <button
+              type="button"
+              onClick={handleAiCompress}
+              disabled={aiState === 'running'}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20 whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
+            </button>
+
+            {/* Zoom */}
+            <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-0.5">
+              {([50, 75, 100] as const).map((z) => (
+                <button
+                  key={z}
+                  type="button"
+                  onClick={() => setPreviewZoom(z)}
+                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                    previewZoom === z ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  {z}%
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-6">
