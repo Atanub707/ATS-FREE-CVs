@@ -795,9 +795,11 @@ Return valid JSON only — NO markdown, NO code fences:
       // Deterministic "under 10 applicants" guarantee: LinkedIn's f_AL=true
       // filter is unreliable on the guest API, and other sources don't expose
       // applicant counts at all. Post-filter on the scraped applicantCount so
-      // the option always delivers what it promises.
+      // the option always delivers what it promises. LinkedIn jobs showing
+      // "Be among the first N applicants" are flagged lowCompetition — those
+      // are exactly the low-competition roles this option targets.
       const scrapedJobs = wantUnder10
-        ? scrapedJobsRaw.filter((j) => j.applicantCount !== undefined && j.applicantCount <= 10)
+        ? scrapedJobsRaw.filter((j) => j.lowCompetition === true || (j.applicantCount !== undefined && j.applicantCount <= 10))
         : scrapedJobsRaw;
 
       const filteredOutCount = scrapedJobsRaw.length - scrapedJobs.length;

@@ -143,6 +143,12 @@ export class LinkedInScraper extends BaseScraper {
             postedDateObj = new Date(now.getTime() - (scrapedJobs.length + 1) * 3 * 60 * 60 * 1000);
           }
 
+          // Deterministic date filter: LinkedIn's f_TPR param is unreliable
+          // on the guest API, so enforce the window on the parsed date.
+          if (maxAgeMs < Number.MAX_SAFE_INTEGER && (now.getTime() - postedDateObj.getTime()) > maxAgeMs) {
+            continue;
+          }
+
           if (title && company) {
             scrapedJobs.push({
               id: `linkedin-${jobId}`,
@@ -200,6 +206,9 @@ export class LinkedInScraper extends BaseScraper {
         if (detail.applicantCount !== undefined) {
           job.applicantCount = detail.applicantCount;
         }
+        if (detail.lowCompetition) {
+          job.lowCompetition = true;
+        }
         detailFetched++;
         console.log(`  [${detailFetched}/${scrapedJobs.length}] Fetched details for: ${job.title} @ ${job.company}`);
       } catch (err: any) {
@@ -226,6 +235,7 @@ export class LinkedInScraper extends BaseScraper {
     salaryMax?: number;
     salaryText?: string;
     applicantCount?: number;
+    lowCompetition?: boolean;
   }> {
     const url = `https://www.linkedin.com/jobs/view/${jobId}`;
     const response = await fetch(url, {
@@ -240,12 +250,21 @@ export class LinkedInScraper extends BaseScraper {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Applicant count from the "N applicants" metadata caption
+    // Applicant count from the "N applicants" metadata caption.
+    // LinkedIn shows "Be among the first N applicants" for low-competition
+    // jobs — that means FEWER than N applied, so it's a low-competition
+    // signal, not an exact count. Parse both forms.
     let applicantCount: number | undefined;
+    let lowCompetition = false;
     const applicantCaption = $('.num-applicants__caption').first().text().trim();
     if (applicantCaption) {
+      const lowMatch = applicantCaption.match(/be among the first\s+([\d,.]+)\s+applicants?/i);
       const numMatch = applicantCaption.match(/([\d,.]+)\s*applicants?/i);
-      if (numMatch) {
+      if (lowMatch) {
+        lowCompetition = true;
+        const parsed = parseInt(lowMatch[1].replace(/,/g, ''), 10);
+        if (!isNaN(parsed)) applicantCount = parsed;
+      } else if (numMatch) {
         const parsed = parseInt(numMatch[1].replace(/,/g, ''), 10);
         if (!isNaN(parsed)) applicantCount = parsed;
       }
@@ -317,6 +336,7 @@ export class LinkedInScraper extends BaseScraper {
             salaryMax,
             salaryText,
             applicantCount,
+            lowCompetition,
           };
         }
       } catch {
@@ -358,6 +378,7 @@ export class LinkedInScraper extends BaseScraper {
           return {
             description: text,
             applicantCount,
+            lowCompetition,
           };
         }
       }
@@ -369,6 +390,7 @@ export class LinkedInScraper extends BaseScraper {
       return {
         description: metaDesc.trim(),
         applicantCount,
+        lowCompetition,
       };
     }
 

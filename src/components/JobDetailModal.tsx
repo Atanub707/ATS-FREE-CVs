@@ -144,9 +144,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 </span>
               )}
               {job.applicantCount !== undefined && (
-                <span className="flex items-center space-x-1 text-slate-600">
+                <span className={`flex items-center space-x-1 ${job.lowCompetition ? 'text-emerald-600 font-semibold' : 'text-slate-600'}`}>
                   <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{job.applicantCount.toLocaleString()} applicants</span>
+                  <span>{job.lowCompetition ? 'Low competition' : `${job.applicantCount.toLocaleString()} applicants`}</span>
                 </span>
               )}
             </div>
