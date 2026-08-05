@@ -92,8 +92,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Single Account Button + Dropdown */}
-        <div className="relative" ref={rootRef}>
+        {/* App-bar actions + account */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onOpenJobPortals?.()}
+            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-600 bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
+            title="Browse 184 job portals worldwide"
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-500" />
+            <span>Job Portals</span>
+          </button>
+
+          <div className="relative" ref={rootRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
@@ -203,6 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
       <style>{`@keyframes dd { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
