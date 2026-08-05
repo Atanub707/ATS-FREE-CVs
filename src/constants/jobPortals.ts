@@ -93,7 +93,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'UK Civil Service Jobs', url: 'https://civilservicejobs.service.gov.uk', region: 'uk-ireland', category: 'uk-ireland' },
 
   // ── Europe ──
-  { name: 'StepStone (DE/EU)', url: 'https://www.stepstone.de', region: 'europe', category: 'europe' },
   { name: 'Arbeitsagentur (DE Gov)', url: 'https://www.arbeitsagentur.de', region: 'europe', category: 'europe' },
   { name: 'Monster Germany', url: 'https://www.monster.de', region: 'europe', category: 'europe' },
   { name: 'Jobs.ch (CH)', url: 'https://www.jobs.ch', region: 'europe', category: 'europe' },
@@ -101,7 +100,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Jobijoba (FR)', url: 'https://www.jobijoba.com', region: 'europe', category: 'europe' },
   { name: 'Pôle Emploi (FR Gov)', url: 'https://www.pole-emploi.fr', region: 'europe', category: 'europe' },
   { name: 'France Travail', url: 'https://www.france-travail.fr', region: 'europe', category: 'europe' },
-  { name: 'StepStone Poland', url: 'https://www.stepstone.pl', region: 'europe', category: 'europe' },
   { name: 'Pracuj.pl', url: 'https://www.pracuj.pl', region: 'europe', category: 'europe' },
   { name: 'Jobs.cz (CZ)', url: 'https://www.jobs.cz', region: 'europe', category: 'europe' },
   { name: 'Profession.hu (HU)', url: 'https://www.profession.hu', region: 'europe', category: 'europe' },
