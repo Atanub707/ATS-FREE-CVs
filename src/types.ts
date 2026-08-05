@@ -16,6 +16,7 @@ export interface Job {
   salaryText?: string;
   jobType?: string; // Full-time, Remote, Contract, etc.
   applicantCount?: number; // number of applicants who applied (LinkedIn)
+  applicantCaption?: string; // exact text LinkedIn's public page shows, e.g. "Over 200 applicants"
   lowCompetition?: boolean; // LinkedIn "Be among the first N applicants" — very few applications
   state: JobState;
   

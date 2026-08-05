@@ -182,7 +182,7 @@ export class LinkedInScraper extends BaseScraper {
               url: cleanLink,
               postedDate: postedDateObj.toISOString(),
               postedDateParsed: postedDateObj.toISOString().split('T')[0],
-              jobType: 'Full-time · Remote',
+              jobType: 'Full-time',
               state: 'pending',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -214,9 +214,12 @@ export class LinkedInScraper extends BaseScraper {
           const d = detail.description.toLowerCase();
           if (d.includes('hybrid') && !d.includes('no hybrid') && !d.includes('not hybrid')) {
             job.jobType = 'Full-time · Hybrid';
-          } else if ((d.includes('on-site') || d.includes('onsite')) && !d.includes('no on-site')) {
+          } else if ((d.includes('on-site') || d.includes('onsite') || d.includes('in office') || d.includes('office-based') || d.includes('from office')) && !d.includes('no on-site') && !d.includes('not on-site')) {
             job.jobType = 'Full-time · On-site';
+          } else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|anywhere|telecommute/.test(d)) {
+            job.jobType = 'Full-time · Remote';
           }
+          // else: work mode stays "Full-time" (not specified) — never assumed
         }
         if (detail.salaryText) {
           job.salaryText = detail.salaryText;
@@ -227,6 +230,9 @@ export class LinkedInScraper extends BaseScraper {
         }
         if (detail.applicantCount !== undefined) {
           job.applicantCount = detail.applicantCount;
+        }
+        if (detail.applicantCaption) {
+          job.applicantCaption = detail.applicantCaption;
         }
         if (detail.lowCompetition) {
           job.lowCompetition = true;
@@ -241,9 +247,10 @@ export class LinkedInScraper extends BaseScraper {
     }
 
     const postFilter = params.jobType === 'remote' || !params.jobType;
-    // Post-filter: remove non-matching work type jobs when remote selected
+    // Post-filter: remote request → keep ONLY jobs explicitly labeled
+    // Remote. Hybrid and "not specified" jobs are never assumed remote.
     const remoteJobs = postFilter
-      ? scrapedJobs.filter((j) => !j.jobType.includes('Hybrid') && !j.jobType.includes('On-site'))
+      ? scrapedJobs.filter((j) => j.jobType.includes('Remote') && !j.jobType.includes('Hybrid'))
       : scrapedJobs;
 
     console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} ${jt} jobs`);
@@ -257,6 +264,7 @@ export class LinkedInScraper extends BaseScraper {
     salaryMax?: number;
     salaryText?: string;
     applicantCount?: number;
+    applicantCaption?: string;
     lowCompetition?: boolean;
   }> {
     const url = `https://www.linkedin.com/jobs/view/${jobId}`;
@@ -277,11 +285,13 @@ export class LinkedInScraper extends BaseScraper {
     // jobs — that means FEWER than N applied, so it's a low-competition
     // signal, not an exact count. Parse both forms.
     let applicantCount: number | undefined;
+    let applicantCaption: string | undefined;
     let lowCompetition = false;
-    const applicantCaption = $('.num-applicants__caption').first().text().trim();
-    if (applicantCaption) {
-      const lowMatch = applicantCaption.match(/be among the first\s+([\d,.]+)\s+applicants?/i);
-      const numMatch = applicantCaption.match(/([\d,.]+)\s*applicants?/i);
+    const applicantCaptionRaw = $('.num-applicants__caption').first().text().trim();
+    if (applicantCaptionRaw) {
+      applicantCaption = applicantCaptionRaw.charAt(0).toUpperCase() + applicantCaptionRaw.slice(1);
+      const lowMatch = applicantCaptionRaw.match(/be among the first\s+([\d,.]+)\s+applicants?/i);
+      const numMatch = applicantCaptionRaw.match(/([\d,.]+)\s*applicants?/i);
       if (lowMatch) {
         lowCompetition = true;
         const parsed = parseInt(lowMatch[1].replace(/,/g, ''), 10);
@@ -358,6 +368,7 @@ export class LinkedInScraper extends BaseScraper {
             salaryMax,
             salaryText,
             applicantCount,
+            applicantCaption,
             lowCompetition,
           };
         }
@@ -400,6 +411,7 @@ export class LinkedInScraper extends BaseScraper {
           return {
             description: text,
             applicantCount,
+            applicantCaption,
             lowCompetition,
           };
         }
@@ -412,6 +424,7 @@ export class LinkedInScraper extends BaseScraper {
       return {
         description: metaDesc.trim(),
         applicantCount,
+        applicantCaption,
         lowCompetition,
       };
     }

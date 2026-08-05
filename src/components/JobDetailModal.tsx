@@ -143,10 +143,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   <span>{job.salaryText}</span>
                 </span>
               )}
-              {job.applicantCount !== undefined && (
+              {(job.applicantCount !== undefined || job.applicantCaption) && (
                 <span className={`flex items-center space-x-1 ${job.lowCompetition ? 'text-emerald-600 font-semibold' : 'text-slate-600'}`}>
                   <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{job.lowCompetition ? 'Low competition' : `${job.applicantCount.toLocaleString()} applicants`}</span>
+                  <span title="Applicants shown as on LinkedIn's public page — logged-in view may show more">
+                    {job.lowCompetition ? 'Low competition' : `${job.applicantCaption || `${(job.applicantCount || 0).toLocaleString()} applicants`}`}
+                  </span>
                 </span>
               )}
             </div>

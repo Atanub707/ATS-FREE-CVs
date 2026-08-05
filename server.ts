@@ -69,6 +69,7 @@ import {
   queryJobs,
   saveNewJobs,
   runStorageMigration,
+  fixMislabeledWorkTypes,
   saveManualAnalysis,
   listManualAnalyses,
   getManualAnalysis,
@@ -302,6 +303,11 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json({ limit: '10mb' }));
+
+  // One-time data fix: re-derive LinkedIn work-type labels that were
+  // incorrectly defaulted to "Full-time · Remote" (idempotent).
+  const fixedTypes = fixMislabeledWorkTypes();
+  if (fixedTypes > 0) console.log(`[data-fix] Reclassified ${fixedTypes} mislabeled jobs`);
 
   // Session middleware: resolve the auth cookie to a user and make it
   // available to every handler (and storage call) for this request.

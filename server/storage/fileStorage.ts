@@ -732,3 +732,39 @@ export function removePortalBookmark(portalName: string): boolean {
     return getDb().prepare('DELETE FROM portal_bookmarks WHERE user_id = ? AND portal_name = ?').run(userId, portalName).changes > 0;
   } catch { return false; }
 }
+
+// ─────────────────── Work-Type Data Fix (idempotent) ───────────────────
+// The old LinkedIn scraper defaulted every job to "Full-time · Remote",
+// so hybrid/on-site/unspecified jobs were mislabeled. Re-derive the label
+// from the stored description using the same rules the scraper now uses;
+// jobs with no work-mode hints become plain "Full-time" (not specified).
+// Runs once at server boot; safe to re-run.
+export function fixMislabeledWorkTypes(): number {
+  let fixed = 0;
+  try {
+    const d = getDb();
+    const users = d.prepare('SELECT DISTINCT user_id FROM jobs').all() as { user_id: string }[];
+    for (const u of users) {
+      const rows = d.prepare('SELECT data FROM jobs WHERE user_id = ?').all(u.user_id) as { data: string }[];
+      for (const r of rows) {
+        let j: Job;
+        try { j = JSON.parse(r.data); } catch { continue; }
+        if (j.source !== 'LinkedIn' || j.jobType !== 'Full-time · Remote') continue;
+        const de = (j.description || '').toLowerCase();
+        let next: string | null = null;
+        if (/\bhybrid\b/.test(de) && !/no hybrid|not hybrid/.test(de)) next = 'Full-time · Hybrid';
+        else if (/on-?site|onsite|in office|office-?based|from office/.test(de) && !/no on-?site|not on-?site/.test(de)) next = 'Full-time · On-site';
+        else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|anywhere|telecommute/.test(de)) next = 'Full-time · Remote';
+        else next = 'Full-time';
+        if (next !== j.jobType) {
+          j.jobType = next;
+          d.prepare('UPDATE jobs SET data = ? WHERE user_id = ? AND id = ?').run(JSON.stringify(j), u.user_id, j.id);
+          fixed++;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('fixMislabeledWorkTypes error:', err);
+  }
+  return fixed;
+}
