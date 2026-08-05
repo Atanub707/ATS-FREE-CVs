@@ -6,6 +6,7 @@ import { JobDetailModal } from './components/JobDetailModal';
 import { MasterCvScreen } from './components/MasterCvScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { ManualJdScreen } from './components/ManualJdScreen';
+import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
 
@@ -25,6 +26,7 @@ export default function App() {
   const [isMasterCvOpen, setIsMasterCvOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManualJdOpen, setIsManualJdOpen] = useState(false);
+  const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
 
   // Loading states
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
@@ -436,6 +438,7 @@ export default function App() {
             onOpenMasterCv={() => setIsMasterCvOpen(true)}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenManualJd={() => setIsManualJdOpen(true)}
+            onOpenJobPortals={() => setIsJobPortalsOpen(true)}
           />
 
           {/* Live Job Scraper Bar */}
@@ -511,6 +514,12 @@ export default function App() {
           <ManualJdScreen
             isOpen={isManualJdOpen}
             onClose={() => setIsManualJdOpen(false)}
+          />
+
+          {/* Job Portals Directory — full screen */}
+          <JobPortalsScreen
+            isOpen={isJobPortalsOpen}
+            onClose={() => setIsJobPortalsOpen(false)}
           />
         </>
       )}

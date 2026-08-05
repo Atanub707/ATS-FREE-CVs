@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, Settings, FileInput, LogOut, ChevronDown } from 'lucide-react';
+import { FileText, Settings, FileInput, LogOut, ChevronDown, Globe } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
   onOpenSettings: () => void;
   onOpenManualJd: () => void;
+  onOpenJobPortals?: () => void;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
   onLogout?: () => void;
 }
@@ -13,6 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMasterCv,
   onOpenSettings,
   onOpenManualJd,
+  onOpenJobPortals,
   user,
   onLogout,
 }) => {
@@ -160,6 +162,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
                 Manual JD
                 <span className="ml-auto text-[10px] text-slate-400 font-semibold">⌘J</span>
+              </button>
+              <button role="menuitem" onClick={closeAnd(() => onOpenJobPortals?.())} className={ddItemCls}>
+                <span className={ddIconCls}>
+                  <Globe className="w-4 h-4" />
+                </span>
+                Job Portals
+                <span className="ml-auto text-[10px] text-slate-400 font-semibold">190+</span>
               </button>
 
               {/* System */}
