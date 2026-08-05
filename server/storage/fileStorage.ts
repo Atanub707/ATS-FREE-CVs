@@ -737,7 +737,7 @@ export function removePortalBookmark(portalName: string): boolean {
 // The old LinkedIn scraper defaulted every job to "Full-time · Remote",
 // so hybrid/on-site/unspecified jobs were mislabeled. Re-derive the label
 // from the stored description using the same rules the scraper now uses;
-// jobs with no work-mode hints become plain "Full-time" (not specified).
+// jobs with no work-mode hints keep their current label (never invented).
 // Runs once at server boot; safe to re-run.
 export function fixMislabeledWorkTypes(): number {
   let fixed = 0;
@@ -749,14 +749,14 @@ export function fixMislabeledWorkTypes(): number {
       for (const r of rows) {
         let j: Job;
         try { j = JSON.parse(r.data); } catch { continue; }
-        if (j.source !== 'LinkedIn' || j.jobType !== 'Full-time · Remote') continue;
+        if (j.source !== 'LinkedIn') continue;
         const de = (j.description || '').toLowerCase();
         let next: string | null = null;
-        if (/\bhybrid\b/.test(de) && !/no hybrid|not hybrid/.test(de)) next = 'Full-time · Hybrid';
-        else if (/on-?site|onsite|in office|office-?based|from office/.test(de) && !/no on-?site|not on-?site/.test(de)) next = 'Full-time · On-site';
-        else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|anywhere|telecommute/.test(de)) next = 'Full-time · Remote';
-        else next = 'Full-time';
-        if (next !== j.jobType) {
+        if (/\bhybrid\b|hybrid (work|role|model)/.test(de) && !/no hybrid|not hybrid|non-hybrid/.test(de)) next = 'Full-time · Hybrid';
+        else if (/on-?site|onsite|in office|in-?office|office-?based|from office|in-person|at our office|at the office|at their office|on premise|office presence/.test(de) && !/no on-?site|not on-?site|remote on-?site/.test(de)) next = 'Full-time · On-site';
+        else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|remote-first|fully remote|work from anywhere|anywhere|telecommute|virtual\b/.test(de)) next = 'Full-time · Remote';
+        else if (j.jobType !== 'Full-time') next = 'Full-time'; // null / old buggy Remote → not stated
+        if (next !== null && next !== j.jobType) {
           j.jobType = next;
           d.prepare('UPDATE jobs SET data = ? WHERE user_id = ? AND id = ?').run(JSON.stringify(j), u.user_id, j.id);
           fixed++;

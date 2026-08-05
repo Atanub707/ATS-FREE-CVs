@@ -133,8 +133,11 @@ const JobCard = React.memo(function JobCard({
 
           {/* Job Type */}
           {job.jobType && (
-            <span className="text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-              {job.jobType}
+            <span
+              className="text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200"
+              title={job.jobType === 'Full-time' ? 'Work mode not stated on the original posting' : undefined}
+            >
+              {job.jobType === 'Full-time' ? 'Full-time · Not stated' : job.jobType}
             </span>
           )}
 

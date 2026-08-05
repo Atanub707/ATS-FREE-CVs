@@ -212,14 +212,14 @@ export class LinkedInScraper extends BaseScraper {
           job.jobType = `Full-time · ${detail.workType}`;
         } else if (detail.description) {
           const d = detail.description.toLowerCase();
-          if (d.includes('hybrid') && !d.includes('no hybrid') && !d.includes('not hybrid')) {
+          if (/\bhybrid\b|hybrid (work|role|model)/.test(d) && !/no hybrid|not hybrid|non-hybrid/.test(d)) {
             job.jobType = 'Full-time · Hybrid';
-          } else if ((d.includes('on-site') || d.includes('onsite') || d.includes('in office') || d.includes('office-based') || d.includes('from office')) && !d.includes('no on-site') && !d.includes('not on-site')) {
+          } else if (/\bon-?site\b|\bon site\b|in-?office\b|in office|office-?based|from office|in-person|at our office|at the office|at their office|on premise|office presence/.test(d) && !/no on-?site|not on-?site|remote on-?site/.test(d)) {
             job.jobType = 'Full-time · On-site';
-          } else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|anywhere|telecommute/.test(d)) {
+          } else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|remote-first|fully remote|work from anywhere|anywhere|telecommute|virtual\b/.test(d)) {
             job.jobType = 'Full-time · Remote';
           }
-          // else: work mode stays "Full-time" (not specified) — never assumed
+          // else: work mode stays "Full-time" (not stated) — never assumed
         }
         if (detail.salaryText) {
           job.salaryText = detail.salaryText;
@@ -355,10 +355,12 @@ export class LinkedInScraper extends BaseScraper {
           let workType: string | undefined;
           const empType = posting.employmentType || '';
           const locType = (posting.jobLocationType || '').toLowerCase();
-          if (locType.includes('telecommute') || locType.includes('remote')) {
+          if (locType.includes('telecommute') || locType.includes('remote') || empType.toLowerCase().includes('remote')) {
             workType = 'Remote';
-          } else if (empType.toLowerCase().includes('remote')) {
-            workType = 'Remote';
+          } else if (locType.includes('hybrid') || empType.toLowerCase().includes('hybrid')) {
+            workType = 'Hybrid';
+          } else if (locType.includes('onsite') || locType.includes('on-site') || locType.includes('in office') || locType.includes('on_premise') || empType.toLowerCase().includes('onsite')) {
+            workType = 'On-site';
           }
 
           return {
