@@ -215,7 +215,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Arc.dev', url: 'https://arc.dev', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Lemon.io', url: 'https://lemon.io', region: 'tech-remote', category: 'tech-remote' },
   { name: 'X-Team', url: 'https://x-team.com', region: 'tech-remote', category: 'tech-remote' },
-  { name: 'NOALEO', url: 'https://www.noaleo.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Remoteintech', url: 'https://remoteintech.tech', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Developer Jobs', url: 'https://www.developerjobs.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'DataJobs.com', url: 'https://www.datajobs.com', region: 'tech-remote', category: 'tech-remote' },
