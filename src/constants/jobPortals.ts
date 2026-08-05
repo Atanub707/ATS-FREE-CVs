@@ -211,7 +211,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Wellfound (Startups)', url: 'https://wellfound.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'YC Work at a Startup', url: 'https://www.workatastartup.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Toptal', url: 'https://www.toptal.com', region: 'tech-remote', category: 'tech-remote' },
-  { name: 'Triplebyte', url: 'https://triplebyte.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Turing', url: 'https://www.turing.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Arc.dev', url: 'https://arc.dev', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Lemon.io', url: 'https://lemon.io', region: 'tech-remote', category: 'tech-remote' },
