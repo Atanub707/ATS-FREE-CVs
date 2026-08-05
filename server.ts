@@ -77,6 +77,9 @@ import {
   listCvVersions,
   getCvVersion,
   deleteCvVersion,
+  listPortalBookmarks,
+  addPortalBookmark,
+  removePortalBookmark,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
@@ -718,6 +721,24 @@ Return valid JSON only — NO markdown, NO code fences:
 
   app.delete('/api/cv/versions/:id', (req, res) => {
     res.json({ success: deleteCvVersion(req.params.id) });
+  });
+
+  // ── Job portal bookmarks (per user) ──
+  app.get('/api/portals/bookmarks', (req, res) => {
+    res.json({ bookmarks: listPortalBookmarks() });
+  });
+
+  app.post('/api/portals/bookmarks', (req, res) => {
+    const { portalName } = req.body || {};
+    if (!portalName || typeof portalName !== 'string') {
+      res.status(400).json({ error: 'portalName is required.' });
+      return;
+    }
+    res.json({ success: addPortalBookmark(portalName.trim()) });
+  });
+
+  app.delete('/api/portals/bookmarks/:name', (req, res) => {
+    res.json({ success: removePortalBookmark(decodeURIComponent(req.params.name)) });
   });
 
   app.post('/api/cv/parse-text', async (req, res) => {

@@ -257,6 +257,12 @@ export function getDb(): Database.Database {
       pages INTEGER DEFAULT 0,
       created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS portal_bookmarks (
+      user_id TEXT NOT NULL,
+      portal_name TEXT NOT NULL,
+      created_at TEXT,
+      PRIMARY KEY (user_id, portal_name)
+    );
   `);
   migrateToUsers(db);
   return db;
@@ -697,5 +703,32 @@ export function deleteCvVersion(id: string): boolean {
   const userId = getCurrentUserId();
   try {
     return getDb().prepare('DELETE FROM cv_versions WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
+  } catch { return false; }
+}
+
+// ─────────────────── Job Portal Bookmarks ───────────────────
+export function listPortalBookmarks(): string[] {
+  const userId = getCurrentUserId();
+  try {
+    const rows = getDb().prepare('SELECT portal_name FROM portal_bookmarks WHERE user_id = ? ORDER BY created_at DESC').all(userId) as any[];
+    return rows.map((r) => r.portal_name);
+  } catch { return []; }
+}
+
+export function addPortalBookmark(portalName: string): boolean {
+  const userId = getCurrentUserId();
+  if (!userId) return false;
+  try {
+    getDb().prepare('INSERT OR IGNORE INTO portal_bookmarks (user_id, portal_name, created_at) VALUES (?, ?, ?)')
+      .run(userId, portalName, new Date().toISOString());
+    return true;
+  } catch { return false; }
+}
+
+export function removePortalBookmark(portalName: string): boolean {
+  const userId = getCurrentUserId();
+  if (!userId) return false;
+  try {
+    return getDb().prepare('DELETE FROM portal_bookmarks WHERE user_id = ? AND portal_name = ?').run(userId, portalName).changes > 0;
   } catch { return false; }
 }

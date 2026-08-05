@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Globe, Search, ExternalLink, Sparkles, TrendingUp, X } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ArrowLeft, Globe, Search, ExternalLink, Sparkles, TrendingUp, X, Bookmark } from 'lucide-react';
 import { JOB_PORTALS, PORTAL_CATEGORIES, JobPortal } from '../constants/jobPortals';
 
 interface JobPortalsScreenProps {
@@ -33,6 +33,37 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
   const [featured, setFeatured] = useState(true);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+
+  // Load bookmarks when the screen opens
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/portals/bookmarks')
+      .then((r) => r.json())
+      .then((d) => setBookmarks(new Set(d.bookmarks || [])))
+      .catch(() => setBookmarks(new Set()));
+  }, [isOpen]);
+
+  const toggleBookmark = async (name: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isBookmarked = bookmarks.has(name);
+    const url = isBookmarked
+      ? `/api/portals/bookmarks/${encodeURIComponent(name)}`
+      : '/api/portals/bookmarks';
+    const res = await fetch(url, {
+      method: isBookmarked ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: isBookmarked ? undefined : JSON.stringify({ portalName: name }),
+    });
+    if (res.ok) {
+      setBookmarks((prev) => {
+        const next = new Set(prev);
+        if (isBookmarked) next.delete(name); else next.add(name);
+        return next;
+      });
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -48,6 +79,11 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
     [featured, category, search]
   );
 
+  const favorited = useMemo(
+    () => (bookmarks.size > 0 && category === 'all' && !search ? JOB_PORTALS.filter((p) => bookmarks.has(p.name)) : []),
+    [bookmarks, category, search]
+  );
+
   const grouped = useMemo(() => {
     if (category !== 'all' || search) return [];
     return PORTAL_CATEGORIES.map((c) => ({ id: c.id, portals: filtered.filter((p) => p.category === c.id) }))
@@ -58,32 +94,50 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const PortalCard = ({ p, key }: { p: JobPortal; key?: React.Key }) => (
-    <a
-      href={p.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-150 cursor-pointer"
-    >
-      <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(p.name)} flex items-center justify-center text-sm font-extrabold text-white shadow-sm shrink-0`}>
-        {p.name[0]}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="block text-[13px] font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors">{p.name}</span>
-          {POPULAR_NAMES.has(p.name) && (
-            <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-          )}
+  const PortalCard = (props: { p: JobPortal; key?: React.Key }) => {
+    const { p } = props;
+    const isBookmarked = bookmarks.has(p.name);
+    return (
+      <a
+        href={p.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-150 cursor-pointer"
+      >
+        <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(p.name)} flex items-center justify-center text-sm font-extrabold text-white shadow-sm shrink-0`}>
+          {p.name[0]}
         </span>
-        <span className="block text-[10.5px] text-slate-400 truncate font-medium">
-          {p.url.replace(/^https?:\/\/(www\.)?/, '')}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="block text-[13px] font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors">{p.name}</span>
+            {POPULAR_NAMES.has(p.name) && (
+              <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+            )}
+          </span>
+          <span className="block text-[10.5px] text-slate-400 truncate font-medium">
+            {p.url.replace(/^https?:\/\/(www\.)?/, '')}
+          </span>
         </span>
-      </span>
-      <span className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 shrink-0 transition-colors">
-        <ExternalLink className="w-3.5 h-3.5" />
-      </span>
-    </a>
-  );
+        <span className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={(e) => toggleBookmark(p.name, e)}
+            title={isBookmarked ? 'Remove bookmark' : 'Bookmark this portal'}
+            className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
+              isBookmarked
+                ? 'bg-amber-50 border-amber-200 text-amber-500'
+                : 'bg-slate-50 border-slate-100 text-slate-300 hover:bg-amber-50 hover:text-amber-400 hover:border-amber-200'
+            }`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-amber-400' : ''}`} />
+          </button>
+          <span className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors">
+            <ExternalLink className="w-3.5 h-3.5" />
+          </span>
+        </span>
+      </a>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-40 bg-[#F7F8FA] text-slate-900 flex flex-col">
@@ -176,6 +230,21 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-5 space-y-7">
+          {/* Favorites */}
+          {favorited.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Bookmark className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wider">Favorites</span>
+                <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{favorited.length}</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {favorited.map((p) => <PortalCard key={p.name} p={p} />)}
+              </div>
+            </div>
+          )}
+
           {/* Popular */}
           {popular.length > 0 && (
             <div>
