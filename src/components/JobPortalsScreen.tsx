@@ -88,7 +88,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
   return (
     <div className="fixed inset-0 z-40 bg-[#F7F8FA] text-slate-900 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-3.5 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between shrink-0">
+      <div className="relative px-6 py-3.5 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -97,16 +97,21 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </button>
-          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-600/25">
-            <Globe className="w-4 h-4 text-white" />
-          </span>
-          <div>
+        </div>
+
+        {/* Centered headline */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+          <div className="flex items-center justify-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm shadow-blue-600/25">
+              <Globe className="w-3 h-3 text-white" />
+            </span>
             <h2 className="text-[15px] font-extrabold text-slate-900 leading-tight">
               Find your next job on <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{total} portals</span>
             </h2>
-            <p className="text-[10.5px] text-slate-400 font-medium">Search by name or browse by region — click any portal to apply directly</p>
           </div>
+          <p className="text-[10.5px] text-slate-400 font-medium mt-0.5">Search by name or browse by region — click any portal to apply directly</p>
         </div>
+
         <span className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
           <TrendingUp className="w-3 h-3 text-emerald-500" />
           {total} portals · {PORTAL_CATEGORIES.length} regions
