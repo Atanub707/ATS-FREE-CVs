@@ -87,7 +87,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Caterer (Hospitality)', url: 'https://www.caterer.com', region: 'uk-ireland', category: 'uk-ireland' },
   { name: 'Guardian Jobs', url: 'https://jobs.theguardian.com', region: 'uk-ireland', category: 'uk-ireland' },
   { name: 'Fish4Jobs', url: 'https://www.fish4.co.uk', region: 'uk-ireland', category: 'uk-ireland' },
-  { name: 'WorkInIreland', url: 'https://www.workinireland.ie', region: 'uk-ireland', category: 'uk-ireland' },
   { name: 'Jobs.ie', url: 'https://www.jobs.ie', region: 'uk-ireland', category: 'uk-ireland' },
   { name: 'IrishJobs', url: 'https://www.irishjobs.ie', region: 'uk-ireland', category: 'uk-ireland' },
   { name: 'UK Civil Service Jobs', url: 'https://civilservicejobs.service.gov.uk', region: 'uk-ireland', category: 'uk-ireland' },
@@ -151,7 +150,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'JobKorea (KR)', url: 'https://www.jobkorea.co.kr', region: 'asia', category: 'asia' },
   { name: '51job (CN)', url: 'https://www.51job.com', region: 'asia', category: 'asia' },
   { name: 'Zhaopin (CN)', url: 'https://www.zhaopin.com', region: 'asia', category: 'asia' },
-  { name: 'CakeResume (TW)', url: 'https://www.cakesresume.com', region: 'asia', category: 'asia' },
 
   // ── Oceania ──
   { name: 'Seek (AU)', url: 'https://www.seek.com.au', region: 'oceania', category: 'oceania' },
@@ -204,7 +202,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Jobzilla (NG)', url: 'https://www.jobzilla.ng', region: 'me-africa', category: 'me-africa' },
   { name: 'Jobberman Ghana', url: 'https://www.jobberman.com.gh', region: 'me-africa', category: 'me-africa' },
   { name: 'BrighterMonday UG', url: 'https://www.brightermonday.ug', region: 'me-africa', category: 'me-africa' },
-  { name: 'JobCentre Kenya', url: 'https://www.jobcentre.co.ke', region: 'me-africa', category: 'me-africa' },
   { name: 'Recruiter.co.za', url: 'https://www.recruiter.co.za', region: 'me-africa', category: 'me-africa' },
 
   // ── Tech & Remote specialists ──
@@ -215,8 +212,6 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Arc.dev', url: 'https://arc.dev', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Lemon.io', url: 'https://lemon.io', region: 'tech-remote', category: 'tech-remote' },
   { name: 'X-Team', url: 'https://x-team.com', region: 'tech-remote', category: 'tech-remote' },
-  { name: 'Remoteintech', url: 'https://remoteintech.tech', region: 'tech-remote', category: 'tech-remote' },
-  { name: 'Developer Jobs', url: 'https://www.developerjobs.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'DataJobs.com', url: 'https://www.datajobs.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Kandidate (Asia Tech)', url: 'https://www.kandidate.com', region: 'tech-remote', category: 'tech-remote' },
 
