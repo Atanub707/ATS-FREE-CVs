@@ -101,8 +101,10 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
             <Globe className="w-4 h-4 text-white" />
           </span>
           <div>
-            <h2 className="text-[15px] font-extrabold text-slate-900 leading-tight">Job Portals</h2>
-            <p className="text-[10.5px] text-slate-400 font-medium">Apply anywhere in the world</p>
+            <h2 className="text-[15px] font-extrabold text-slate-900 leading-tight">
+              Find your next job on <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{total} portals</span>
+            </h2>
+            <p className="text-[10.5px] text-slate-400 font-medium">Search by name or browse by region — click any portal to apply directly</p>
           </div>
         </div>
         <span className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
@@ -111,18 +113,9 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
         </span>
       </div>
 
-      {/* Hero search */}
-      <div className="px-6 pt-6 pb-0 shrink-0">
+      {/* Search */}
+      <div className="px-6 pt-5 pb-0 shrink-0">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-5">
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Find your next job on <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">184 portals</span>
-            </h1>
-            <p className="text-[12px] text-slate-500 mt-1.5">
-              Search by name or browse by region — click any portal to apply directly
-            </p>
-          </div>
-
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
             <Search className="w-4.5 h-4.5 text-slate-400" />
             <input
