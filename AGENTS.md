@@ -1,5 +1,13 @@
 # AGENTS.md — Agent Rules
 
+## 🔒 Push policy (MOST IMPORTANT — do not violate)
+
+**NEVER `git push` unless the user explicitly asks you to** ("push it", "release", "deploy").
+
+- All work is committed **locally** after passing the quality gate.
+- Pushing to GitHub happens ONLY on explicit user request — the user validates the changes first.
+- When the user asks to push: run the full gate, then push, then report what was pushed.
+
 ## 🚦 Mandatory pre-push gate (do not skip)
 
 **Never push code without passing ALL of these checks first.** Run them in this order. If any fails, fix it before pushing.
