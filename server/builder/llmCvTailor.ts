@@ -165,8 +165,10 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         },
       };
     } catch (err) {
-      console.error('Error tailoring CV with LLM, using fallback:', err);
-      return this.fallbackTailorCv(job, masterCv);
+      // No silent fallback: LLM failures (missing/expired key, provider
+      // errors) propagate to the route, which returns a structured alert.
+      console.error('Tailor CV LLM error:', err);
+      throw err;
     }
   }
 

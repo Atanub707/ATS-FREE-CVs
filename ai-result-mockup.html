@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup — AI Compress Result (Professional Redesign)</title>
+<style>
+  :root {
+    --bg:#F7F8FA; --surface:#fff; --border:#E7E9EE; --border-strong:#D6D9E0;
+    --text:#10131A; --text-2:#565D6C; --text-3:#8B92A1;
+    --accent:#2F54EB; --accent-soft:#EEF2FF; --accent-strong:#1E3FD8;
+    --positive:#0FA968; --positive-soft:#E7F7EF;
+    --warn:#D97706; --warn-soft:#FEF4E6;
+    --danger:#DC2626; --danger-soft:#FDEDED;
+    --radius:16px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; height:100vh; overflow:hidden; }
+  button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input { font:inherit; }
+
+  /* ── Top bar ── */
+  .topbar { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+  .topbar-inner { max-width:1440px; margin:0 auto; padding:0 20px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+  .tb-left { display:flex; align-items:center; gap:10px; }
+  .tb-logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#1D2B53,#2F54EB); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,84,235,.3); }
+  .tb-title { font-size:14px; font-weight:800; }
+  .tb-step { font-size:10.5px; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:99px; padding:3px 10px; }
+  .avatar { width:30px; height:30px; border-radius:9999px; background:linear-gradient(135deg,#F5A524,#D97706); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+  /* ── Result header (sticky) ── */
+  .result-head { position:sticky; top:56px; z-index:40; background:var(--surface); border-bottom:1px solid var(--border); }
+  .rh-inner { max-width:1200px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .rh-left { display:flex; align-items:center; gap:14px; min-width:0; }
+  .rh-title { font-size:15px; font-weight:800; white-space:nowrap; }
+  .page-badge { display:flex; align-items:center; gap:7px; background:var(--bg); border:1px solid var(--border); border-radius:9999px; padding:5px 13px; }
+  .page-badge .from { font-size:12px; font-weight:800; color:var(--text-3); text-decoration:line-through; }
+  .page-badge .arrow { color:var(--text-3); font-size:12px; }
+  .page-badge .to { font-size:13px; font-weight:800; color:var(--positive); }
+  .page-badge .to b { font-size:15px; }
+  .page-badge .lbl { font-size:10px; color:var(--text-3); font-weight:600; }
+  .rh-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .btn-ghost { background:var(--surface); border:1px solid var(--border); color:var(--text-2); font-size:12px; font-weight:700; border-radius:10px; padding:9px 16px; transition:all .15s var(--ease); }
+  .btn-ghost:hover { border-color:var(--border-strong); color:var(--text); }
+  .btn-primary { background:var(--accent); color:#fff; font-size:12.5px; font-weight:700; border-radius:10px; padding:9px 18px; display:flex; align-items:center; gap:7px; box-shadow:0 4px 14px rgba(47,84,235,.3); transition:all .15s var(--ease); }
+  .btn-primary:hover { filter:brightness(1.07); }
+  .btn-primary:active { transform:scale(.97); }
+  .btn-primary svg { width:13px; height:13px; }
+
+  /* ── Main layout ── */
+  .main { max-width:1200px; margin:0 auto; padding:20px 24px 60px; height:calc(100vh - 56px - 61px); overflow-y:auto; }
+
+  /* Outcome hero card */
+  .outcome { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px 26px; box-shadow:0 1px 3px rgba(16,19,26,.05); display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .outcome-icon { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#2F54EB,#6C3DF4); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 18px rgba(47,84,235,.3); }
+  .outcome-icon svg { width:24px; height:24px; color:#fff; }
+  .outcome-text { flex:1; min-width:220px; }
+  .outcome-title { font-size:16px; font-weight:800; }
+  .outcome-sub { font-size:12px; color:var(--text-2); margin-top:3px; }
+  .outcome-metrics { display:flex; gap:26px; flex-wrap:wrap; }
+  .om { text-align:center; min-width:70px; }
+  .om .v { font-size:22px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .om .v.green { color:var(--positive); }
+  .om .v.blue { color:var(--accent); }
+  .om .l { font-size:10px; color:var(--text-3); font-weight:600; margin-top:1px; }
+
+  /* Trust note */
+  .trust { display:flex; align-items:center; gap:10px; background:var(--positive-soft); border:1px solid #BFE8D2; border-radius:12px; padding:10px 16px; margin-top:14px; font-size:12px; font-weight:600; color:#0B7A4B; }
+  .trust svg { width:16px; height:16px; flex-shrink:0; }
+  .trust .link { margin-left:auto; color:var(--text-2); font-size:11px; font-weight:700; text-decoration:underline; cursor:pointer; white-space:nowrap; }
+  .trust.warn { background:var(--warn-soft); border-color:#F5DFB8; color:#A85E0B; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:4px; margin:22px 0 16px; border-bottom:1px solid var(--border); }
+  .tab { font-size:13px; font-weight:700; color:var(--text-3); padding:10px 16px; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .2s var(--ease); display:flex; align-items:center; gap:7px; }
+  .tab:hover { color:var(--text-2); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab .cnt { font-size:10px; font-weight:800; background:var(--bg); border:1px solid var(--border); border-radius:99px; padding:1px 7px; color:var(--text-3); }
+  .tab.active .cnt { background:var(--accent-soft); color:var(--accent); border-color:#D3DDFF; }
+
+  .panel { display:none; }
+  .panel.active { display:block; animation:fadeUp .3s var(--ease); }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+
+  /* ── Tab 1: New CV (page-wise preview) ── */
+  .cv-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+  .cv-col .cv-label { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; margin-bottom:12px; }
+  .cv-col .cv-label .dot { width:8px; height:8px; border-radius:99px; }
+  .cv-col.new .cv-label .dot { background:linear-gradient(135deg,#2F54EB,#6C3DF4); }
+  .cv-col.old .cv-label .dot { background:#C6CAD3; }
+  .cv-col.new .cv-label .tag { font-size:9px; font-weight:800; color:var(--accent); background:var(--accent-soft); border-radius:99px; padding:2px 8px; }
+  .cv-col.old .cv-label .meta { margin-left:auto; font-size:10px; color:var(--text-3); font-weight:700; }
+  .cv-col.new .cv-label .meta { margin-left:auto; font-size:10px; color:var(--positive); font-weight:700; }
+
+  .page { width:100%; max-width:480px; background:#fff; box-shadow:0 8px 28px rgba(16,19,26,.1); border-radius:3px; padding:30px 34px; font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; font-size:8.5px; color:#333; margin:0 auto; }
+  .page + .page { margin-top:14px; }
+  .p-head { text-align:center; border-bottom:2px solid #2F54EB; padding-bottom:8px; margin-bottom:10px; }
+  .p-name { font-size:14px; font-weight:800; text-transform:uppercase; }
+  .p-contact { font-size:7px; color:#555; margin-top:3px; }
+  .p-sec { font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#2F54EB; border-bottom:1px solid #ddd; padding-bottom:2px; margin:9px 0 5px; }
+  .p-line { font-size:8px; line-height:1.55; color:#333; margin-bottom:3px; }
+  .p-bullet { display:flex; gap:4px; font-size:8px; line-height:1.55; color:#333; margin-bottom:2px; }
+  .p-bullet .m { color:#4B5563; flex-shrink:0; }
+  .p-skill { display:inline-block; font-size:6.8px; font-weight:600; background:#F0F4FF; color:#2F54EB; border:1px solid #D9E2FD; border-radius:99px; padding:1px 5px; margin:0 1px 2px 0; }
+  .p-skill.new { background:#E7F7EF; color:#0FA968; border-color:#BFE8D2; }
+
+  /* diff highlight in new CV */
+  .hl { background:#E7F7EF; color:#0B7A4B; border-radius:2px; padding:0 1px; font-weight:700; }
+  .hl-blue { background:#EEF2FF; color:#1E3FD8; border-radius:2px; padding:0 1px; font-weight:700; }
+  .strike { color:#C6CAD3; text-decoration:line-through; }
+
+  /* ── Tab 2: What changed ── */
+  .changes { display:flex; flex-direction:column; gap:14px; }
+  .change-group { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:0 1px 3px rgba(16,19,26,.04); }
+  .cg-head { display:flex; align-items:center; gap:10px; padding:13px 18px; border-bottom:1px solid var(--border); background:#FAFBFC; cursor:pointer; }
+  .cg-head:hover { background:#F4F6F9; }
+  .cg-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cg-icon svg { width:15px; height:15px; }
+  .cg-title { font-size:13px; font-weight:800; flex:1; }
+  .cg-stats { display:flex; gap:6px; }
+  .cs-pill { font-size:9.5px; font-weight:800; border-radius:99px; padding:2px 9px; }
+  .cs-pill.tight { background:var(--accent-soft); color:var(--accent); }
+  .cs-pill.merge { background:var(--warn-soft); color:var(--warn); }
+  .cs-pill.keep { background:var(--positive-soft); color:var(--positive); }
+  .cg-chev { width:14px; height:14px; color:var(--text-3); transition:transform .25s var(--ease); }
+  .change-group.collapsed .cg-chev { transform:rotate(-90deg); }
+  .cg-body { padding:16px 18px; display:block; }
+  .change-group.collapsed .cg-body { display:none; }
+
+  .diff-pair { display:flex; flex-direction:column; gap:7px; padding:12px 0; border-bottom:1px solid #F1F3F7; }
+  .diff-pair:last-child { border-bottom:none; padding-bottom:4px; }
+  .dp-row { display:flex; gap:10px; align-items:flex-start; }
+  .dp-badge { width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; margin-top:1px; }
+  .dp-badge.tight { background:var(--accent-soft); color:var(--accent); }
+  .dp-badge.merge { background:var(--warn-soft); color:var(--warn); }
+  .dp-badge.keep { background:var(--positive-soft); color:var(--positive); }
+  .dp-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); width:52px; flex-shrink:0; padding-top:2px; }
+  .dp-before { flex:1; font-size:11.5px; color:var(--text-3); line-height:1.55; }
+  .dp-after { flex:1; font-size:11.5px; color:var(--text); line-height:1.55; background:var(--positive-soft); border-radius:8px; padding:6px 10px; }
+  .dp-after .tag-inline { font-size:9px; font-weight:800; color:var(--positive); display:block; margin-bottom:2px; }
+  .dp-why { font-size:10.5px; color:var(--text-3); margin-left:30px; margin-top:2px; line-height:1.5; }
+  .dp-why b { color:var(--text-2); }
+
+  /* ── Tab 3: Compare ── */
+  .compare-note { font-size:12px; color:var(--text-2); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; margin-bottom:14px; display:flex; gap:9px; align-items:center; }
+  .compare-note svg { width:15px; height:15px; color:var(--accent); flex-shrink:0; }
+
+  /* confirm modal */
+  .modal-overlay { position:fixed; inset:0; z-index:70; background:rgba(16,19,26,.45); display:none; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; animation:fadeIn .2s var(--ease); }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  .modal { background:#fff; border-radius:18px; width:500px; padding:26px 28px; box-shadow:0 24px 64px rgba(16,19,26,.28); }
+  .m-title { font-size:15px; font-weight:800; display:flex; align-items:center; gap:9px; }
+  .m-title .orb { width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg,#2F54EB,#6C3DF4); display:flex; align-items:center; justify-content:center; }
+  .m-title .orb svg { width:15px; height:15px; color:#fff; }
+  .m-sub { font-size:11.5px; color:var(--text-3); margin-top:5px; }
+  .m-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:18px 0; }
+  .m-stat { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+  .m-stat .v { font-size:18px; font-weight:800; }
+  .m-stat .v.blue { color:var(--accent); }
+  .m-stat .v.green { color:var(--positive); }
+  .m-stat .l { font-size:9px; color:var(--text-3); font-weight:600; margin-top:2px; }
+  .m-note { font-size:11px; color:var(--text-2); background:#FAFBFC; border:1px solid var(--border); border-radius:10px; padding:11px 13px; line-height:1.55; }
+  .m-note b { color:var(--text); }
+  .m-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
+
+  /* toast */
+  .toast { position:fixed; bottom:24px; right:24px; z-index:80; background:#171B26; color:#fff; border-radius:12px; padding:13px 17px; display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; box-shadow:0 16px 44px rgba(16,19,26,.25); opacity:0; transform:translateY(10px); transition:all .3s var(--ease); pointer-events:none; }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .toast .ic { width:26px; height:26px; border-radius:8px; background:rgba(15,169,104,.2); color:#4ADE9F; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .toast .ic svg { width:13px; height:13px; }
+
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb { background:#D6D9E0; border-radius:99px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="tb-left">
+      <div class="tb-logo">JM</div>
+      <span class="tb-title">ATS CV Tailor</span>
+      <span class="tb-step">Master Candidate CV</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:11px;color:var(--text-3);font-weight:600">Guest · Admin</span>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Result header ── -->
+<div class="result-head">
+  <div class="rh-inner">
+    <div class="rh-left">
+      <button class="btn-ghost" style="padding:8px 12px">← Back</button>
+      <span class="rh-title">AI Compression Result</span>
+      <div class="page-badge">
+        <span class="from">3 pages</span>
+        <span class="arrow">→</span>
+        <span class="to"><b>2</b> pages</span>
+        <span class="lbl">· fit for any ATS</span>
+      </div>
+    </div>
+    <div class="rh-right">
+      <button class="btn-ghost">Cancel</button>
+      <button class="btn-primary" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Use this version
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Outcome hero -->
+  <div class="outcome">
+    <div class="outcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
+    </div>
+    <div class="outcome-text">
+      <div class="outcome-title">Your CV is now 2 pages — concise, keyword-rich, ATS-ready</div>
+      <div class="outcome-sub">Every achievement, metric, and key skill kept · tightened for impact · tailored with 15 live market keywords for Senior DevSecOps Engineer</div>
+    </div>
+    <div class="outcome-metrics">
+      <div class="om"><div class="v blue">3 → 2</div><div class="l">pages</div></div>
+      <div class="om"><div class="v green">−70%</div><div class="l">word count</div></div>
+      <div class="om"><div class="v green">100%</div><div class="l">metrics kept</div></div>
+      <div class="om"><div class="v">+15</div><div class="l">market keywords</div></div>
+    </div>
+  </div>
+
+  <!-- Trust note -->
+  <div class="trust">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    All 12 quantified achievements preserved · 0 meaning lost · 9 bullets tightened, 6 merged, 7 kept as-is
+    <span class="link" onclick="toast('Full keyword diff is available in the Compare tab')">View technical diff</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="new" onclick="switchTab('new', this)">New CV <span class="cnt">2 pages</span></button>
+    <button class="tab" data-tab="changes" onclick="switchTab('changes', this)">What changed <span class="cnt">9 · 6 · 7</span></button>
+    <button class="tab" data-tab="compare" onclick="switchTab('compare', this)">Compare</button>
+  </div>
+
+  <!-- ═══ TAB 1: NEW CV ═══ -->
+  <div class="panel active" id="panel-new">
+    <div class="cv-grid">
+      <!-- New (primary) -->
+      <div class="cv-col new">
+        <div class="cv-label">
+          <span class="dot"></span> New CV <span class="tag">AI ✦ RECOMMENDED</span>
+          <span class="meta">2 pages · 511 words</span>
+        </div>
+        <div class="page">
+          <div class="p-head"><div class="p-name">Atanu Biswas</div><div class="p-contact">atanub707@gmail.com • +91 8420205661 • Kolkata, India</div></div>
+          <div class="p-sec">Professional Summary</div>
+          <div class="p-line">Senior DevSecOps Engineer with <span class="hl-blue">4+ years</span> designing <span class="hl">secure cloud-native infrastructure</span> and CI/CD platforms. Expert in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, Azure…</div>
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Built a DevSecOps CI/CD framework integrating <span class="hl">SAST, DAST, IaC scanning, Snyk, GitLab</span> — cut vulnerabilities <b>80%</b> with SLA-based tickets.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Automated GitLab CI/CD with <span class="hl">Kaniko, Docker, BuildKit</span>, ArgoCD, Crossplane, GitOps, IaC across GKE/EKS.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Led <span class="hl">GitLab SaaS migration</span> + registry moves (JFrog → Docker Hub/GitLab CR).</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Shipped <span class="hl">Airbyte connectors</span>, ArgoCD API deploys, <span class="hl">Helm</span> packaging across microservices.</span></div>
+          <div class="p-sec">Skills <span style="float:right;font-weight:700;color:#0FA968;font-size:6.5px">+2 NEW MARKET SKILLS</span></div>
+          <div><span class="p-skill">AWS</span><span class="p-skill">Kubernetes</span><span class="p-skill">Docker</span><span class="p-skill">Terraform</span><span class="p-skill">GitLab CI</span><span class="p-skill">ArgoCD</span><span class="p-skill">Helm</span><span class="p-skill new">OpenStack</span><span class="p-skill new">Networking</span></div>
+          <div class="p-sec">Education</div>
+          <div class="p-line">B.Tech Mechanical Engineering — Narula Institute of Technology, 2019–2022</div>
+        </div>
+      </div>
+
+      <!-- Original (secondary) -->
+      <div class="cv-col old">
+        <div class="cv-label"><span class="dot"></span> Original <span class="meta">3 pages · 1,480 words</span></div>
+        <div class="page" style="opacity:.55">
+          <div class="p-head"><div class="p-name">Atanu Biswas</div><div class="p-contact">atanub707@gmail.com • +91 8420205661</div></div>
+          <div class="p-sec">Professional Summary</div>
+          <div class="p-line">Senior DevSecOps Engineer with 4+ years of experience designing secure, scalable cloud-native infrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, and Azure, with expertise in DevSecOps automation, container security, and infrastructure as code. Proven track record in startup environments driving platform reliability, security compliance, and deployment automation across microservices architectures.</div>
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning, and Snyk &amp; GitLab into CI/CD pipelines for vulnerability assessment and application security; performed vulnerability management by assigning tickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Worked in startup environments with cross-functional responsibilities, including developing and maintaining Airbyte connectors (both low-code and Python-based), packaging connectors as Docker images, managing versioning and continuous deployment pipelines…</span></div>
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <span style="font-size:10.5px;color:var(--text-3);font-weight:600">Original preview collapsed · full text in Compare tab</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 2: WHAT CHANGED ═══ -->
+  <div class="panel" id="panel-changes">
+    <div class="changes">
+
+      <!-- Experience group -->
+      <div class="change-group" id="grp-exp">
+        <div class="cg-head" onclick="toggleGroup('grp-exp')">
+          <span class="cg-icon" style="background:var(--accent-soft);color:var(--accent)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </span>
+          <span class="cg-title">Work Experience</span>
+          <div class="cg-stats">
+            <span class="cs-pill tight">6 tightened</span>
+            <span class="cs-pill merge">3 merged</span>
+            <span class="cs-pill keep">6 kept</span>
+          </div>
+          <svg class="cg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="cg-body">
+          <div class="diff-pair">
+            <div class="dp-row">
+              <span class="dp-badge merge">+</span>
+              <span class="dp-label">Merged</span>
+              <div class="dp-before"><span class="strike">Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%…</span> + <span class="strike">Implemented security compliance and governance controls including IAM authorization policies using Vanta Audits…</span> + <span class="strike">Implemented alerting through Slack…</span></div>
+            </div>
+            <div class="dp-row">
+              <span class="dp-badge merge" style="visibility:hidden">+</span>
+              <span class="dp-label" style="visibility:hidden">Merged</span>
+              <div class="dp-after"><span class="tag-inline">→ One bullet, meaning fully kept</span>Built a DevSecOps CI/CD framework integrating SAST, DAST, IaC scanning, Snyk &amp; GitLab security scans, with vulnerability tickets and SLA assignment, IAM governance via Vanta audits, Slack alerting/RCA — cutting vulnerabilities <b>80%</b>.</div>
+            </div>
+            <div class="dp-why"><b>Why:</b> 4 security bullets overlapped — combined without losing any tool name, metric, or process.</div>
+          </div>
+
+          <div class="diff-pair">
+            <div class="dp-row">
+              <span class="dp-badge tight">~</span>
+              <span class="dp-label">Tightened</span>
+              <div class="dp-before"><span class="strike">Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.</span></div>
+            </div>
+            <div class="dp-row">
+              <span class="dp-badge tight" style="visibility:hidden">~</span>
+              <span class="dp-label" style="visibility:hidden">Tightened</span>
+              <div class="dp-after"><span class="tag-inline">→ Same meaning, sharper</span>Automated GitLab CI/CD with <b>Kaniko, Docker &amp; BuildKit</b> (secure non-privileged Minikube builds), ArgoCD, Crossplane, GitOps and IaC across GKE/EKS.</div>
+            </div>
+            <div class="dp-why"><b>Why:</b> removed filler ("for automated containerization…"), kept every tool and the security constraint.</div>
+          </div>
+
+          <div class="diff-pair">
+            <div class="dp-row">
+              <span class="dp-badge keep">✓</span>
+              <span class="dp-label">Kept</span>
+              <div class="dp-before">Led GitLab self-managed-to-SaaS migration (subgroup imports, CI/CD variable migration, GKE runner integration) and container registry migrations from JFrog Artifactory to Docker Hub and GitLab Container Registry across multiple microservices.</div>
+            </div>
+            <div class="dp-why"><b>Why:</b> already tight and keyword-dense — untouched.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary group -->
+      <div class="change-group" id="grp-sum">
+        <div class="cg-head" onclick="toggleGroup('grp-sum')">
+          <span class="cg-icon" style="background:var(--warn-soft);color:var(--warn)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>
+          </span>
+          <span class="cg-title">Professional Summary</span>
+          <div class="cg-stats"><span class="cs-pill tight">1 tightened</span></div>
+          <svg class="cg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="cg-body">
+          <div class="diff-pair">
+            <div class="dp-row">
+              <span class="dp-badge tight">~</span>
+              <span class="dp-label">Tightened</span>
+              <div class="dp-before"><span class="strike">Senior DevSecOps Engineer with 4+ years of experience designing secure, scalable cloud-native infrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, and Azure, with expertise in DevSecOps automation…</span></div>
+            </div>
+            <div class="dp-row">
+              <span class="dp-badge tight" style="visibility:hidden">~</span>
+              <span class="dp-label" style="visibility:hidden">Tightened</span>
+              <div class="dp-after"><span class="tag-inline">→ Same facts, stronger opening</span>Senior DevSecOps Engineer with <b>4+ years</b> designing secure cloud-native infrastructure and CI/CD platforms. Expert in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, Azure…</div>
+            </div>
+            <div class="dp-why"><b>Why:</b> "experience designing" → "designing" (−30% words) with every skill and the 4+ years preserved.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects group -->
+      <div class="change-group" id="grp-proj">
+        <div class="cg-head" onclick="toggleGroup('grp-proj')">
+          <span class="cg-icon" style="background:var(--positive-soft);color:var(--positive)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <span class="cg-title">Projects</span>
+          <div class="cg-stats">
+            <span class="cs-pill tight">2 tightened</span>
+            <span class="cs-pill keep">1 kept</span>
+          </div>
+          <svg class="cg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="cg-body">
+          <div class="diff-pair">
+            <div class="dp-row">
+              <span class="dp-badge tight">~</span>
+              <span class="dp-label">Tightened</span>
+              <div class="dp-before"><span class="strike">Expenzee — Cross-platform expense tracker &amp; bill-splitter for India. AI chat (Gemini), OCR receipt scan, 100+ currencies, cashback deals, offline-first. 44 screens, 39 services — Flutter + Firebase</span></div>
+            </div>
+            <div class="dp-row">
+              <span class="dp-badge tight" style="visibility:hidden">~</span>
+              <span class="dp-label" style="visibility:hidden">Tightened</span>
+              <div class="dp-after"><span class="tag-inline">→ Same stack & features</span>Cross-platform expense tracker &amp; bill-splitter (India) with AI chat (Gemini), OCR, 100+ currencies, offline-first, 44 screens / 39 services.</div>
+            </div>
+            <div class="dp-why"><b>Why:</b> trimmed feature-list wording; kept all 6 differentiators and the 44/39 metrics.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 3: COMPARE ═══ -->
+  <div class="panel" id="panel-compare">
+    <div class="compare-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Green = meaning kept (reworded) · <span style="color:var(--text-3);text-decoration:line-through">struck</span> = original wording · nothing is removed without its meaning surviving
+    </div>
+    <div class="cv-grid">
+      <div class="cv-col old">
+        <div class="cv-label"><span class="dot"></span> Original <span class="meta">3 pages · 1,480 words</span></div>
+        <div class="page" style="max-width:100%">
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning, and Snyk &amp; GitLab into CI/CD pipelines for vulnerability assessment and application security; performed vulnerability management by assigning tickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Worked in startup environments with cross-functional responsibilities, including developing and maintaining Airbyte connectors (both low-code and Python-based), packaging connectors as Docker images, managing versioning and continuous deployment pipelines, maintaining and enhancing the Dragster deployment flow…</span></div>
+        </div>
+      </div>
+      <div class="cv-col new">
+        <div class="cv-label"><span class="dot"></span> New <span class="meta">2 pages · 511 words</span></div>
+        <div class="page" style="max-width:100%">
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Built a DevSecOps CI/CD framework integrating <span class="hl">SAST, DAST, IaC scanning, Snyk, GitLab</span> — cut vulnerabilities <b>80%</b> with SLA-based tickets.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Automated GitLab CI/CD with <span class="hl">Kaniko, Docker, BuildKit</span>, ArgoCD, Crossplane, GitOps, IaC across GKE/EKS.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Shipped <span class="hl">Airbyte connectors</span> (low-code &amp; Python), ArgoCD API deploys, <span class="hl">Helm</span> packaging.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIRM MODAL ═══ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="m-title">
+      <span class="orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+      Apply AI-compressed CV?
+    </div>
+    <div class="m-sub">Your original 3-page version is saved automatically — restore anytime from Versions.</div>
+    <div class="m-stats">
+      <div class="m-stat"><div class="v blue">3 → 2</div><div class="l">pages before → after</div></div>
+      <div class="m-stat"><div class="v green">100%</div><div class="l">metrics preserved</div></div>
+      <div class="m-stat"><div class="v green">+15</div><div class="l">market keywords added</div></div>
+    </div>
+    <div class="m-note">
+      <b>What changes:</b> 9 bullets tightened, 6 merged, 7 kept. All 12 quantified achievements and 34 key skills preserved. Original saved as <b>"Before AI compression — 3 pages"</b>.
+    </div>
+    <div class="m-actions">
+      <button class="btn-ghost" onclick="closeModal()">Keep original</button>
+      <button class="btn-primary" onclick="accept()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Yes, apply &amp; backup
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast">
+  <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+  <span id="toastMsg">Done</span>
+</div>
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+  function toggleGroup(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+  function openModal() { document.getElementById('confirmModal').classList.add('show'); }
+  function closeModal() { document.getElementById('confirmModal').classList.remove('show'); }
+  function accept() {
+    closeModal();
+    toast('Applied! Original backed up — restore anytime via Versions');
+  }
+  let tTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+</script>
+</body>
+</html>

@@ -18,6 +18,8 @@ function resolveApiKey(configuredKey: string): string | undefined {
   return undefined;
 }
 
+export { resolveApiKey };
+
 export async function ask(prompt: string, temperature?: number): Promise<string> {
   const config = loadConfig();
   const temp = temperature ?? config.llm.temperature ?? 0.2;
@@ -26,7 +28,9 @@ export async function ask(prompt: string, temperature?: number): Promise<string>
   const model = config.llm.model || 'gemini-3.6-flash';
 
   if (!apiKey) {
-    throw new Error('No API key configured. Set one in Settings or via GEMINI_API_KEY env var.');
+    const err = new Error('No API key configured. Set one in Settings or via GEMINI_API_KEY env var.');
+    (err as any).code = 'NO_API_KEY';
+    throw err;
   }
 
   switch (provider) {

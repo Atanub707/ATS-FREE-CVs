@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
+import { llmErrorMessage } from '../lib/llmError';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
 import {
@@ -334,7 +335,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (!res.ok) { setAiState('idle'); setAiError(data.error || 'Compression failed'); return; }
+      if (!res.ok) {
+        setAiState('idle');
+        setAiError(data.error || 'Compression failed');
+        alert(llmErrorMessage(data.code, data.error));
+        return;
+      }
       setCompressResult(data);
       setAiState('result');
     } catch (e: any) {

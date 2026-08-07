@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup — Manual JD (fixed input left / insights right)</title>
+<style>
+  :root {
+    --bg:#F6F7F9; --surface:#fff; --border:#E7E9EE; --border-strong:#D6D9E0;
+    --text:#10131A; --text-2:#565D6C; --text-3:#8B92A1;
+    --accent:#2F54EB; --accent-soft:#EEF2FF;
+    --positive:#0FA968; --positive-soft:#E7F7EF;
+    --warn:#D97706; --warn-soft:#FEF4E6;
+    --danger:#DC2626; --danger-soft:#FDEDED;
+    --radius:14px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; height:100vh; overflow:hidden; }
+  button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input, textarea { font:inherit; }
+
+  /* ── Top bar ── */
+  .topbar { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+  .topbar-inner { max-width:1440px; margin:0 auto; padding:0 20px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+  .tb-left { display:flex; align-items:center; gap:10px; }
+  .tb-logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#1D2B53,#2F54EB); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,84,235,.3); }
+  .tb-title { font-size:14px; font-weight:800; }
+  .tb-badge { font-size:10.5px; font-weight:700; background:var(--accent-soft); color:var(--accent); border-radius:99px; padding:3px 10px; }
+  .avatar { width:30px; height:30px; border-radius:9999px; background:linear-gradient(135deg,#F5A524,#D97706); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+  /* ── Split layout ── */
+  .split { display:flex; height:calc(100vh - 56px); }
+  .left { width:42%; min-width:420px; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; }
+  .left-head { padding:16px 22px; border-bottom:1px solid var(--border); }
+  .left-title { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .left-title svg { width:16px; height:16px; color:var(--accent); }
+  .left-sub { font-size:11px; color:var(--text-3); margin-top:3px; }
+  .left-form { flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; }
+
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:10.5px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .field input, .field textarea {
+    width:100%; background:var(--bg); border:1px solid var(--border); border-radius:11px;
+    padding:10px 13px; font-size:12.5px; color:var(--text); outline:none;
+    transition:border-color .15s, box-shadow .15s, background .15s;
+  }
+  .field input:focus, .field textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,84,235,.12); background:#fff; }
+  .field textarea { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; line-height:1.6; resize:vertical; min-height:300px; }
+  .char { text-align:right; font-size:10px; color:var(--text-3); font-weight:600; margin-top:5px; }
+
+  .analyze-btn {
+    margin-top:auto; width:100%; background:var(--accent); color:#fff;
+    font-size:13px; font-weight:700; border-radius:11px; padding:12px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow:0 4px 14px rgba(47,84,235,.3);
+    transition:all .15s var(--ease);
+  }
+  .analyze-btn:hover { filter:brightness(1.07); }
+  .analyze-btn:active { transform:scale(.98); }
+  .analyze-btn svg { width:15px; height:15px; }
+  .analyze-btn.spinning svg { animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg) } }
+
+  .left-foot { padding:12px 22px; border-top:1px solid var(--border); background:#FAFBFC; }
+  .left-foot p { font-size:10.5px; color:var(--text-3); display:flex; align-items:center; gap:6px; }
+  .left-foot .dot { width:6px; height:6px; border-radius:99px; background:var(--positive); }
+
+  /* ── Right: insights ── */
+  .right { flex:1; background:var(--bg); overflow-y:auto; }
+  .right-inner { max-width:860px; margin:0 auto; padding:22px 26px 48px; }
+
+  .right-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .rh-title { font-size:13px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .rh-title .chip { font-size:10px; font-weight:700; background:var(--accent-soft); color:var(--accent); border-radius:99px; padding:3px 10px; }
+  .rh-steps { display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:var(--text-3); }
+  .rh-steps .s { display:flex; align-items:center; gap:4px; }
+  .rh-steps .num { width:16px; height:16px; border-radius:99px; background:#E6E8EE; color:var(--text-3); font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .rh-steps .s.on { color:var(--accent); }
+  .rh-steps .s.on .num { background:var(--accent); color:#fff; }
+  .rh-steps .arr { color:#C6CAD3; }
+
+  /* placeholder */
+  .placeholder { background:var(--surface); border:1.5px dashed var(--border-strong); border-radius:16px; min-height:420px; display:flex; align-items:center; justify-content:center; text-align:center; padding:40px; }
+  .placeholder .icon { width:56px; height:56px; border-radius:16px; background:var(--bg); border:1px solid var(--border); color:#C6CAD3; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+  .placeholder .icon svg { width:26px; height:26px; }
+  .placeholder h3 { font-size:14px; font-weight:800; }
+  .placeholder p { font-size:11.5px; color:var(--text-3); margin-top:5px; }
+
+  /* results */
+  .results { display:none; animation:fadeUp .35s var(--ease); }
+  .results.show { display:block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+
+  .score-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; box-shadow:0 1px 3px rgba(16,19,26,.05); display:flex; align-items:center; gap:18px; }
+  .ring { position:relative; width:76px; height:76px; flex-shrink:0; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring .bgc { stroke:#EFF1F5; }
+  .ring .fgc { stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset 1.2s var(--ease); }
+  .ring span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800; }
+  .sc-meta { flex:1; min-width:0; }
+  .sc-verdict { font-size:14.5px; font-weight:800; }
+  .sc-note { font-size:11px; color:var(--text-3); margin-top:3px; }
+  .sc-tags { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .tag { font-size:9.5px; font-weight:800; border-radius:99px; padding:3px 9px; }
+  .tag.blue { background:var(--accent-soft); color:var(--accent); }
+  .tag.green { background:var(--positive-soft); color:var(--positive); }
+  .tag.amber { background:var(--warn-soft); color:var(--warn); }
+
+  .section-label { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--text-3); margin:18px 0 9px; display:flex; align-items:center; gap:7px; }
+  .section-label .line { flex:1; height:1px; background:var(--border); }
+
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .insight-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 1px 3px rgba(16,19,26,.04); }
+  .ic-title { font-size:11.5px; font-weight:800; display:flex; align-items:center; gap:7px; margin-bottom:10px; }
+  .ic-title .ic { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+  .ic-title .ic svg { width:12px; height:12px; }
+  .chips { display:flex; flex-wrap:wrap; gap:5px; }
+  .chip { font-size:10.5px; font-weight:600; border-radius:99px; padding:4px 10px; position:relative; }
+  .chip.good { background:var(--positive-soft); color:var(--positive); border:1px solid #BFE8D2; }
+  .chip.bad { background:var(--danger-soft); color:var(--danger); border:1px solid #F5C9C9; }
+  .chip .cnt { font-size:8.5px; font-weight:800; background:rgba(0,0,0,.08); border-radius:99px; padding:1px 5px; margin-left:3px; }
+  .chip .why { font-size:8.5px; font-weight:800; background:rgba(220,38,38,.14); border-radius:99px; padding:1px 5px; cursor:help; }
+  .tooltip-wrap { position:relative; }
+  .tooltip {
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(4px);
+    background:#171B26; color:#E8EBF2; font-size:10.5px; line-height:1.5; font-weight:500;
+    padding:8px 10px; border-radius:8px; width:190px; opacity:0; pointer-events:none; transition:all .18s var(--ease); z-index:30; box-shadow:0 16px 44px rgba(16,19,26,.2);
+  }
+  .tooltip-wrap:hover .tooltip { opacity:1; transform:translateX(-50%) translateY(0); }
+  .tooltip b { color:#4ADE9F; font-weight:700; }
+
+  .rec-list { list-style:none; }
+  .rec-item { display:flex; gap:9px; padding:7px 0; font-size:11.5px; color:var(--text-2); line-height:1.5; align-items:flex-start; border-bottom:1px solid #F5F6F8; }
+  .rec-item:last-child { border-bottom:none; }
+  .rec-item .n { width:18px; height:18px; border-radius:6px; background:var(--accent-soft); color:var(--accent); font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+
+  .tailor-cta { background:linear-gradient(135deg,#10131A,#1D2B53); color:#fff; border-radius:16px; padding:18px; margin-top:16px; display:flex; align-items:center; gap:15px; box-shadow:0 8px 28px rgba(16,19,26,.15); }
+  .tailor-cta .t-icon { width:40px; height:40px; border-radius:11px; background:rgba(47,84,235,.25); color:#8FA3F7; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .tailor-cta .t-icon svg { width:19px; height:19px; }
+  .tc-text { flex:1; min-width:0; }
+  .tc-text b { font-size:13px; display:block; }
+  .tc-text small { font-size:11px; color:#A8B2C9; }
+  .btn-tailor { background:var(--accent); color:#fff; font-size:12px; font-weight:700; border-radius:10px; padding:10px 17px; display:flex; align-items:center; gap:7px; flex-shrink:0; transition:all .15s var(--ease); box-shadow:0 4px 14px rgba(47,84,235,.4); }
+  .btn-tailor:hover { filter:brightness(1.08); }
+  .btn-tailor:active { transform:scale(.97); }
+  .btn-tailor svg { width:13px; height:13px; }
+
+  .diff { display:none; }
+  .diff.show { display:block; animation:fadeUp .35s var(--ease); }
+  .diff-summary { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:15px 17px; margin-top:16px; box-shadow:0 1px 3px rgba(16,19,26,.05); }
+  .ds-title { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); margin-bottom:11px; display:flex; align-items:center; gap:6px; }
+  .ds-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .ds-stat { background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:10px 12px; }
+  .ds-stat .v { font-size:17px; font-weight:800; }
+  .ds-stat .v.plus { color:var(--positive); }
+  .ds-stat .l { font-size:9.5px; color:var(--text-3); font-weight:600; margin-top:2px; }
+
+  .diff-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-top:12px; overflow:hidden; box-shadow:0 1px 3px rgba(16,19,26,.04); }
+  .dc-head { display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--border); background:#FAFBFC; }
+  .dc-head .ic { width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+  .dc-head .ic svg { width:13px; height:13px; }
+  .dc-head .t { font-size:12px; font-weight:700; flex:1; }
+  .dc-head .b { font-size:10px; font-weight:800; border-radius:99px; padding:2px 9px; }
+  .dc-head .b.add { background:var(--positive-soft); color:var(--positive); }
+  .dc-head .b.mod { background:var(--warn-soft); color:var(--warn); }
+  .dc-body { padding:12px 14px; }
+  .diff-row { display:flex; align-items:flex-start; gap:9px; padding:6px 0; border-bottom:1px solid #F5F6F8; }
+  .diff-row:last-child { border-bottom:none; }
+  .diff-badge { width:20px; height:20px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; margin-top:1px; }
+  .diff-badge.add { background:var(--positive-soft); color:var(--positive); }
+  .diff-badge.mod { background:var(--warn-soft); color:var(--warn); }
+  .diff-text { flex:1; font-size:11.5px; line-height:1.5; }
+  .diff-text b { font-weight:700; }
+  .diff-why { font-size:10.5px; color:var(--text-3); margin-top:2px; }
+  .diff-why .req { display:inline-flex; align-items:center; gap:3px; background:var(--warn-soft); color:var(--warn); font-size:9.5px; font-weight:700; border-radius:5px; padding:1px 6px; margin-right:4px; }
+  .diff-weight { font-size:9.5px; font-weight:800; color:var(--text-3); border:1px solid var(--border); border-radius:5px; padding:1px 6px; white-space:nowrap; align-self:center; }
+
+  .honesty { background:var(--positive-soft); border:1px solid #BFE8D2; border-radius:14px; padding:13px 15px; margin-top:12px; }
+  .honesty b { font-size:11px; color:var(--positive); display:flex; align-items:center; gap:6px; }
+  .honesty p { font-size:10.5px; color:var(--text-2); margin-top:4px; line-height:1.6; }
+
+  .download-row { display:flex; gap:10px; margin-top:16px; }
+  .btn-download { flex:1; background:var(--accent); color:#fff; font-size:12.5px; font-weight:700; border-radius:11px; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 14px rgba(47,84,235,.3); transition:all .15s var(--ease); }
+  .btn-download:hover { filter:brightness(1.07); }
+  .btn-download:active { transform:scale(.98); }
+  .btn-download svg { width:14px; height:14px; }
+
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#D6D9E0; border-radius:99px; border:2px solid transparent; background-clip:content-box; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="tb-left">
+      <div class="tb-logo">JM</div>
+      <span class="tb-title">ATS CV Tailor</span>
+      <span class="tb-badge">Manual Job Analysis</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:11px;color:var(--text-3);font-weight:600">Guest · Admin</span>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+</nav>
+
+<div class="split">
+
+  <!-- ════════ LEFT: INPUTS ONLY (always visible, never changes) ════════ -->
+  <aside class="left">
+    <div class="left-head">
+      <div class="left-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><polyline points="10 9 9 9 8 11.5"/><path d="M14 8h1"/><path d="M10 13h5"/><path d="M10 17h5"/></svg>
+        Job Description Input
+      </div>
+      <div class="left-sub">Paste the JD — insights appear on the right side</div>
+    </div>
+
+    <div class="left-form">
+      <div class="field">
+        <label>Role Name *</label>
+        <input id="inpRole" type="text" value="Senior DevOps Engineer" placeholder="e.g. Senior DevOps Engineer" />
+      </div>
+      <div class="field">
+        <label>Company Name</label>
+        <input id="inpCompany" type="text" value="FinTech Solutions" placeholder="e.g. Google" />
+      </div>
+      <div class="field">
+        <label>Job Description *</label>
+        <textarea id="inpJd" rows="16">We are looking for a Senior DevOps Engineer to own our AWS infrastructure and delivery pipelines.
+
+REQUIREMENTS
+• 5+ years in DevOps / SRE roles
+• Strong experience with Kubernetes and Docker
+• Expertise in Terraform and Infrastructure as Code
+• Hands-on CI/CD with GitHub Actions
+• Solid scripting in Python and Bash
+• Experience with Helm charts
+• Knowledge of ArgoCD and GitOps practices
+• Prometheus, Grafana monitoring stack
+• Experience with PostgreSQL operations
+• Nice to have: Go, Vault, Kafka</textarea>
+        <div class="char" id="charCount">1,248 chars</div>
+      </div>
+
+      <button class="analyze-btn" id="btnAnalyze">
+        <svg id="analyzeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 6 14 10 18 15 10 21 16"/><polyline points="18 16 21 16 21 19"/></svg>
+        <span id="analyzeLabel">Analyze Match</span>
+      </button>
+    </div>
+
+    <div class="left-foot">
+      <p><span class="dot"></span>Left side stays as-is — all results land on the right</p>
+    </div>
+  </aside>
+
+  <!-- ════════ RIGHT: ALL INSIGHTS ════════ -->
+  <main class="right">
+    <div class="right-inner">
+
+      <div class="right-head">
+        <div class="rh-title">Insights <span class="chip">Analysis → Tailoring</span></div>
+        <div class="rh-steps">
+          <span class="s on"><span class="num">1</span> Analyze</span>
+          <span class="arr">→</span>
+          <span class="s"><span class="num">2</span> Tailor</span>
+          <span class="arr">→</span>
+          <span class="s"><span class="num">3</span> Download</span>
+        </div>
+      </div>
+
+      <!-- Placeholder state -->
+      <div class="placeholder" id="placeholder">
+        <div>
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg></div>
+          <h3>Insights will appear here</h3>
+          <p>Score, skill gaps, recommendations, and the tailoring diff —<br/>all shown on this side after you click <b>Analyze Match</b>.</p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results" id="results">
+        <!-- Score card -->
+        <div class="score-card">
+          <div class="ring">
+            <svg width="76" height="76" viewBox="0 0 76 76">
+              <circle class="bgc" cx="38" cy="38" r="32" fill="none" stroke-width="7"/>
+              <circle class="fgc" cx="38" cy="38" r="32" fill="none" stroke-width="7" stroke-dasharray="201" stroke-dashoffset="201" data-score="68"/>
+            </svg>
+            <span>68%</span>
+          </div>
+          <div class="sc-meta">
+            <div class="sc-verdict">Strong fit — worth tailoring</div>
+            <div class="sc-note">11 of 16 required skills already present in your CV</div>
+            <div class="sc-tags">
+              <span class="tag blue">Role: Senior DevOps Engineer</span>
+              <span class="tag green">11 matched</span>
+              <span class="tag amber">5 missing</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chips -->
+        <div class="section-label">Skill Coverage <span class="line"></span></div>
+        <div class="grid-2">
+          <div class="insight-card">
+            <div class="ic-title">
+              <span class="ic" style="background:var(--positive-soft);color:var(--positive)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              Already Matched (11)
+            </div>
+            <div class="chips">
+              <span class="chip good">AWS</span><span class="chip good">Kubernetes</span><span class="chip good">Docker</span><span class="chip good">Terraform</span><span class="chip good">CI/CD</span><span class="chip good">Python</span><span class="chip good">Bash</span><span class="chip good">Prometheus</span><span class="chip good">Grafana</span><span class="chip good">GitHub Actions</span><span class="chip good">Linux</span>
+            </div>
+          </div>
+          <div class="insight-card">
+            <div class="ic-title">
+              <span class="ic" style="background:var(--danger-soft);color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+              Missing — we will add (5)
+            </div>
+            <div class="chips">
+              <span class="chip bad tooltip-wrap">Helm <span class="cnt">×2</span> <span class="why">?</span><span class="tooltip"><b>Why add:</b> required 2× in JD ("Helm charts"). Added to <b>Skills</b> — full weight.</span></span>
+              <span class="chip bad tooltip-wrap">ArgoCD <span class="cnt">×1</span> <span class="why">?</span><span class="tooltip"><b>Why add:</b> "ArgoCD and GitOps". Added to <b>Skills</b> — full weight.</span></span>
+              <span class="chip bad tooltip-wrap">GitOps <span class="cnt">×1</span> <span class="why">?</span><span class="tooltip"><b>Why add:</b> "GitOps practices". Added to <b>Skills</b> — full weight.</span></span>
+              <span class="chip bad tooltip-wrap">PostgreSQL <span class="cnt">×1</span> <span class="why">?</span><span class="tooltip"><b>Why add:</b> "PostgreSQL operations". Added to <b>Skills</b> — full weight.</span></span>
+              <span class="chip bad tooltip-wrap">Go <span class="cnt">×1</span> <span class="why">?</span><span class="tooltip"><b>Why add:</b> "Nice to have: Go" — optional, half weight.</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="section-label">Recommendations <span class="line"></span></div>
+        <div class="insight-card">
+          <ul class="rec-list">
+            <li class="rec-item"><span class="n">1</span><span>Add a bullet in <b>Human Managed</b> mentioning Helm chart management for your microservices platform.</span></li>
+            <li class="rec-item"><span class="n">2</span><span>Quantify your GitOps / ArgoCD experience — deployment frequency and rollback stats.</span></li>
+            <li class="rec-item"><span class="n">3</span><span>Mention PostgreSQL operations (backups, replication, tuning) in an existing role.</span></li>
+          </ul>
+        </div>
+
+        <!-- Tailor CTA -->
+        <div class="tailor-cta">
+          <span class="t-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
+          <div class="tc-text">
+            <b>Your CV is 68% match — we can improve it</b>
+            <small>Tailoring adds 5 missing skills &amp; weaves keywords into bullets.</small>
+          </div>
+          <button class="btn-tailor" id="btnTailor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Tailor CV
+          </button>
+        </div>
+
+        <!-- Diff (appears after Tailor) -->
+        <div class="diff" id="diff">
+          <div class="diff-summary">
+            <div class="ds-title">✦ What we added — and why</div>
+            <div class="ds-stats">
+              <div class="ds-stat"><div class="v plus">+5</div><div class="l">skills added to Skills section</div></div>
+              <div class="ds-stat"><div class="v plus">+2</div><div class="l">bullets rewritten with keywords</div></div>
+              <div class="ds-stat"><div class="v plus">+24%</div><div class="l">ATS score gain (68% → 92%)</div></div>
+              <div class="ds-stat"><div class="v">0</div><div class="l">skipped — could not be added</div></div>
+            </div>
+          </div>
+
+          <div class="diff-card">
+            <div class="dc-head">
+              <span class="ic" style="background:var(--accent-soft);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+              <span class="t">Skills section — 5 additions</span>
+              <span class="b add">+5 NEW</span>
+            </div>
+            <div class="dc-body">
+              <div class="diff-row"><span class="diff-badge add">+</span><div class="diff-text"><b>Helm</b><div class="diff-why"><span class="req">⚡ required ×2</span> "Experience with Helm charts"</div></div><span class="diff-weight">Full weight</span></div>
+              <div class="diff-row"><span class="diff-badge add">+</span><div class="diff-text"><b>ArgoCD</b><div class="diff-why"><span class="req">⚡ required</span> "ArgoCD and GitOps practices"</div></div><span class="diff-weight">Full weight</span></div>
+              <div class="diff-row"><span class="diff-badge add">+</span><div class="diff-text"><b>GitOps</b><div class="diff-why"><span class="req">⚡ required</span> "GitOps practices"</div></div><span class="diff-weight">Full weight</span></div>
+              <div class="diff-row"><span class="diff-badge add">+</span><div class="diff-text"><b>PostgreSQL</b><div class="diff-why"><span class="req">⚡ required</span> "PostgreSQL operations"</div></div><span class="diff-weight">Full weight</span></div>
+              <div class="diff-row"><span class="diff-badge add">+</span><div class="diff-text"><b>Go</b> <span style="color:var(--text-3)">(nice-to-have)</span><div class="diff-why"><span class="req">⭐ optional</span> "Nice to have: Go"</div></div><span class="diff-weight">Half weight</span></div>
+            </div>
+          </div>
+
+          <div class="diff-card">
+            <div class="dc-head">
+              <span class="ic" style="background:var(--warn-soft);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+              <span class="t">Experience bullets — 2 rewrites</span>
+              <span class="b mod">2 MODIFIED</span>
+            </div>
+            <div class="dc-body">
+              <div class="diff-row">
+                <span class="diff-badge mod">~</span>
+                <div class="diff-text">
+                  <b>Apex Cloud Systems · bullet 1</b>
+                  <div style="margin-top:3px;color:var(--text-3)">“Architected Kubernetes platform… serving 120+ microservices”</div>
+                  <div style="margin-top:3px;background:var(--positive-soft);border-radius:6px;padding:4px 8px;color:var(--positive);font-weight:600">→ “…managed via Helm charts with GitOps (ArgoCD) rollouts.”</div>
+                </div>
+              </div>
+              <div class="diff-row">
+                <span class="diff-badge mod">~</span>
+                <div class="diff-text">
+                  <b>Nexus Digital · bullet 2</b>
+                  <div style="margin-top:3px;color:var(--text-3)">“Automated EC2-to-Kubernetes migration of legacy services.”</div>
+                  <div style="margin-top:3px;background:var(--positive-soft);border-radius:6px;padding:4px 8px;color:var(--positive);font-weight:600">→ “…including PostgreSQL failover and zero-downtime data migration.”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="honesty">
+            <b>✓ Honesty guarantee</b>
+            <p>Every addition comes from your existing CV content — we surface skills you already have but haven't highlighted. We never invent experience.</p>
+          </div>
+
+          <div class="download-row">
+            <button class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Tailored CV (PDF)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // char count
+  const jd = document.getElementById('inpJd');
+  const cc = document.getElementById('charCount');
+  jd.addEventListener('input', () => {
+    cc.textContent = jd.value.length.toLocaleString() + ' chars';
+  });
+
+  // Analyze → show insights on right, keep left untouched
+  const btn = document.getElementById('btnAnalyze');
+  const label = document.getElementById('analyzeLabel');
+  const icon = document.getElementById('analyzeIcon');
+  btn.addEventListener('click', () => {
+    icon.classList.add('spin');
+    label.textContent = 'Analyzing against your CV…';
+    btn.disabled = true;
+    setTimeout(() => {
+      icon.classList.remove('spin');
+      label.textContent = 'Analyze Match';
+      btn.disabled = false;
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('results').classList.add('show');
+      // animate ring
+      const ring = document.querySelector('.ring .fgc');
+      const C = 2 * Math.PI * 32;
+      const score = parseFloat(ring.dataset.score) / 100;
+      ring.style.transition = 'none';
+      ring.style.strokeDashoffset = C;
+      requestAnimationFrame(() => {
+        ring.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.22,.61,.36,1)';
+        ring.style.strokeDashoffset = C * (1 - score);
+      });
+    }, 1200);
+  });
+
+  // Tailor → reveal diff
+  document.getElementById('btnTailor').addEventListener('click', () => {
+    document.getElementById('diff').classList.add('show');
+    document.getElementById('btnTailor').innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Tailored ✓';
+  });
+</script>
+
+</body>
+</html>

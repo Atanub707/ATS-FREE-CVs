@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Sparkles, Download, FileText, Zap, AlertTriangle, CheckCircle2, TrendingUp, ArrowRight, History, Trash2, Clock, ArrowLeft } from 'lucide-react';
+import { llmErrorMessage } from '../lib/llmError';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
@@ -152,7 +153,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
         body: JSON.stringify({ title: title.trim(), company: company.trim(), description: description.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Analysis failed'); return; }
+      if (!res.ok) { setError(data.error || 'Analysis failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setResult(data);
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
@@ -176,7 +177,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Tailoring failed'); return; }
+      if (!res.ok) { setError(data.error || 'Tailoring failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setDownloadToken(data.downloadToken);
       if (data.diff) setDiff(data.diff);
       if (data.historyId) setHistoryId(data.historyId);

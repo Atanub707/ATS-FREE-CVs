@@ -97,8 +97,9 @@ Return valid JSON only with these exact fields — NO markdown, NO code fences, 
         isEarlyBlocked,
       };
     } catch (err) {
-      console.error('LLM matching error, using fallback:', err);
-      return this.fallbackHeuristicMatch(job, masterCv, earlyBlockThreshold);
+      // No silent fallback: LLM failures (missing/expired key, provider
+      // errors) propagate to the route, which returns a structured alert.
+      throw err;
     }
   }
 

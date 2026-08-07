@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup — MasterCV &amp; Manual JD Full Screens</title>
+<style>
+  :root {
+    --bg: #F6F7F9; --surface: #FFFFFF; --border: #E7E9EE; --border-strong: #D6D9E0;
+    --text: #10131A; --text-2: #565D6C; --text-3: #8B92A1;
+    --accent: #2F54EB; --accent-soft: #EEF2FF;
+    --positive: #0FA968; --positive-soft: #E7F7EF;
+    --warn: #D97706; --warn-soft: #FEF4E6;
+    --danger: #DC2626; --danger-soft: #FDEDED;
+    --radius: 14px;
+    --shadow-1: 0 1px 2px rgba(16,19,26,.04), 0 1px 3px rgba(16,19,26,.05);
+    --shadow-2: 0 8px 28px rgba(16,19,26,.08), 0 2px 8px rgba(16,19,26,.05);
+    --shadow-3: 0 16px 44px rgba(16,19,26,.12), 0 4px 12px rgba(16,19,26,.06);
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
+  button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input, textarea { font:inherit; }
+
+  /* ── View switcher (mock) ── */
+  .topbar { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.9); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+  .topbar-inner { max-width:1440px; margin:0 auto; padding:0 20px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+  .tb-left { display:flex; align-items:center; gap:10px; }
+  .tb-logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#1D2B53,#2F54EB); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,84,235,.3); }
+  .tb-title { font-size:14px; font-weight:800; }
+  .view-switch { display:inline-flex; background:#ECEEF2; border-radius:10px; padding:3px; margin-left:14px; }
+  .view-switch button { font-size:12px; font-weight:600; color:var(--text-2); padding:6px 14px; border-radius:8px; transition:all .2s var(--ease); }
+  .view-switch button.active { background:#fff; color:var(--text); box-shadow:0 1px 4px rgba(16,19,26,.12); }
+  .tb-right { display:flex; align-items:center; gap:8px; }
+  .avatar { width:30px; height:30px; border-radius:9999px; background:linear-gradient(135deg,#F5A524,#D97706); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+  .screen { display:none; }
+  .screen.active { display:block; animation:fadeIn .3s var(--ease); }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+  /* ══════════ MASTER CV SCREEN ══════════ */
+  .cv-screen { display:flex; height:calc(100vh - 56px); }
+  .cv-panel { width:46%; min-width:430px; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; }
+  .cv-panel-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); }
+  .cv-panel-title { font-size:14px; font-weight:800; }
+  .cv-panel-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+  .btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; border-radius:10px; padding:8px 14px; transition:all .15s var(--ease); }
+  .btn:active { transform:scale(.97); }
+  .btn-primary { background:var(--accent); color:#fff; box-shadow:0 3px 10px rgba(47,84,235,.28); }
+  .btn-primary:hover { filter:brightness(1.06); }
+  .btn-ghost { background:var(--surface); border:1px solid var(--border); color:var(--text-2); }
+  .btn-ghost:hover { border-color:var(--border-strong); color:var(--text); }
+  .btn svg { width:13px; height:13px; }
+  .unsaved-dot { width:7px; height:7px; border-radius:99px; background:var(--warn); display:none; }
+  .unsaved-dot.show { display:inline-block; animation:pulse 1.6s infinite; }
+
+  .cv-form { flex:1; overflow-y:auto; padding:18px 20px 60px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:11px; font-weight:700; color:var(--text-2); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+  .field input, .field textarea, .field select {
+    width:100%; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:9px 12px; font-size:12.5px; color:var(--text);
+    transition:border-color .15s, box-shadow .15s, background .15s; outline:none;
+  }
+  .field input:focus, .field textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,84,235,.12); background:#fff; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .form-section { border:1px solid var(--border); border-radius:12px; margin-bottom:14px; overflow:hidden; }
+  .fs-head { display:flex; align-items:center; gap:8px; padding:11px 14px; background:#FAFBFC; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+  .fs-head:hover { background:#F4F6F9; }
+  .fs-icon { width:26px; height:26px; border-radius:7px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; }
+  .fs-icon svg { width:13px; height:13px; }
+  .fs-title { font-size:12.5px; font-weight:700; flex:1; }
+  .fs-count { font-size:10.5px; font-weight:700; color:var(--text-3); background:var(--bg); border:1px solid var(--border); border-radius:99px; padding:2px 8px; }
+  .fs-chev { width:13px; height:13px; color:var(--text-3); transition:transform .2s var(--ease); }
+  .fs-head.collapsed .fs-chev { transform:rotate(-90deg); }
+  .fs-body { padding:14px; display:block; }
+  .fs-head.collapsed + .fs-body { display:none; }
+
+  .exp-item { border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; background:#fff; position:relative; }
+  .exp-item .drag { position:absolute; left:6px; top:50%; transform:translateY(-50%); color:#C6CAD3; cursor:grab; }
+  .exp-item .drag svg { width:13px; height:13px; }
+  .exp-item .del { position:absolute; right:8px; top:8px; color:var(--text-3); width:22px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .exp-item .del:hover { background:var(--danger-soft); color:var(--danger); }
+  .exp-item .del svg { width:12px; height:12px; }
+  .add-btn { width:100%; border:1.5px dashed var(--border-strong); border-radius:10px; padding:9px; font-size:12px; font-weight:600; color:var(--text-2); display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
+  .add-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .add-btn svg { width:12px; height:12px; }
+
+  /* ── Right: PDF PREVIEW ── */
+  .cv-preview { flex:1; background:#ECEEF2; display:flex; flex-direction:column; align-items:center; padding:22px 24px 40px; overflow-y:auto; }
+  .preview-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; width:100%; max-width:820px; }
+  .pv-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:6px; }
+  .pv-label .live { width:6px; height:6px; border-radius:99px; background:var(--positive); animation:pulse 2s infinite; }
+  .pv-spacer { flex:1; }
+  .zoom { display:flex; align-items:center; gap:4px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:3px; }
+  .zoom button { width:24px; height:24px; border-radius:6px; color:var(--text-2); display:flex; align-items:center; justify-content:center; }
+  .zoom button:hover { background:var(--bg); }
+  .zoom button svg { width:11px; height:11px; }
+  .zoom span { font-size:11px; font-weight:700; color:var(--text-2); min-width:34px; text-align:center; }
+
+  .paper { width:820px; min-height:1060px; background:#fff; border-radius:4px; box-shadow:var(--shadow-3); padding:56px 60px; transition:width .25s var(--ease); font-family:"Helvetica Neue", Helvetica, Arial, sans-serif; color:#1a1a1a; }
+  .paper.zoom-75 { width:640px; }
+  .paper.zoom-50 { width:500px; }
+  @media print { .paper { box-shadow:none } }
+
+  .p-head { text-align:center; border-bottom:2px solid #2F54EB; padding-bottom:14px; margin-bottom:18px; }
+  .p-name { font-size:26px; font-weight:800; letter-spacing:.02em; }
+  .p-contact { font-size:10.5px; color:#555; margin-top:6px; line-height:1.7; }
+  .p-contact .sep { margin:0 5px; color:#bbb; }
+  .p-section-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; color:#2F54EB; border-bottom:1px solid #ddd; padding-bottom:4px; margin:16px 0 8px; }
+  .p-summary { font-size:10.5px; line-height:1.65; color:#333; }
+  .p-exp { margin-bottom:10px; }
+  .p-exp-top { display:flex; justify-content:space-between; align-items:baseline; }
+  .p-exp-title { font-size:11.5px; font-weight:800; }
+  .p-exp-co { font-size:10.5px; color:#333; }
+  .p-exp-date { font-size:10px; color:#777; font-weight:600; white-space:nowrap; }
+  .p-exp ul { margin:4px 0 0 14px; }
+  .p-exp li { font-size:10.5px; line-height:1.6; color:#333; }
+  .p-skills { display:flex; flex-wrap:wrap; gap:5px; }
+  .p-skill { font-size:9.5px; font-weight:600; background:#F0F4FF; color:#2F54EB; border:1px solid #D9E2FD; border-radius:99px; padding:3px 9px; }
+  .p-edu { font-size:10.5px; color:#333; line-height:1.6; }
+
+  /* live-edit highlight */
+  .live-flash { animation:flashBg 1.2s var(--ease); }
+  @keyframes flashBg { 0% { background:#FFF7E0 } 100% { background:transparent } }
+
+  /* ══════════ MANUAL JD SCREEN ══════════ */
+  .jd-screen { display:flex; height:calc(100vh - 56px); }
+  .jd-left { width:44%; min-width:420px; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; }
+  .jd-left-head { padding:14px 20px; border-bottom:1px solid var(--border); }
+  .jd-title { font-size:14px; font-weight:800; }
+  .jd-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+  .jd-input { flex:1; overflow-y:auto; padding:18px 20px 40px; }
+
+  .jd-desc-box { position:relative; }
+  .jd-desc-box textarea { min-height:280px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; line-height:1.6; resize:vertical; }
+  .char-count { position:absolute; right:10px; bottom:8px; font-size:10px; color:var(--text-3); font-weight:600; background:rgba(255,255,255,.9); padding:1px 6px; border-radius:5px; }
+
+  .analyze-btn { width:100%; background:var(--accent); color:#fff; font-size:13px; font-weight:700; border-radius:11px; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 14px rgba(47,84,235,.3); transition:all .15s var(--ease); }
+  .analyze-btn:hover { filter:brightness(1.07); }
+  .analyze-btn:active { transform:scale(.98); }
+  .analyze-btn svg { width:15px; height:15px; }
+
+  /* Analysis results (left bottom) */
+  .jd-results { display:none; padding:16px 20px 24px; border-top:1px solid var(--border); background:#FAFBFC; }
+  .jd-results.show { display:block; animation:fadeIn .3s var(--ease); }
+  .score-row { display:flex; align-items:center; gap:16px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; }
+  .ring { position:relative; width:64px; height:64px; flex-shrink:0; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring .bgc { stroke:#EFF1F5; }
+  .ring .fgc { stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset 1.2s var(--ease); }
+  .ring span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; }
+  .score-meta { flex:1; }
+  .score-big { font-size:20px; font-weight:800; }
+  .score-note { font-size:11px; color:var(--text-3); margin-top:2px; }
+  .verdict { font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:99px; }
+  .verdict.strong { background:var(--positive-soft); color:var(--positive); }
+  .verdict.medium { background:var(--warn-soft); color:var(--warn); }
+
+  .chip-groups { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .chip-group { background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px; }
+  .cg-title { font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .cg-title .dot { width:7px; height:7px; border-radius:99px; }
+  .cg-title.good .dot { background:var(--positive); }
+  .cg-title.bad .dot { background:var(--danger); }
+  .chip { display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600; border-radius:99px; padding:3px 9px; margin:0 4px 5px 0; }
+  .chip.good { background:var(--positive-soft); color:var(--positive); border:1px solid #BFE8D2; }
+  .chip.bad { background:var(--danger-soft); color:var(--danger); border:1px solid #F5C9C9; }
+  .chip.bad .why { font-size:8.5px; font-weight:800; background:rgba(220,38,38,.12); border-radius:99px; padding:1px 5px; cursor:help; }
+
+  .recommend { margin-top:14px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .recommend-title { font-size:11px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .recommend-item { display:flex; gap:8px; font-size:11px; color:var(--text-2); padding:5px 0; line-height:1.5; align-items:flex-start; }
+  .recommend-item .n { width:18px; height:18px; border-radius:6px; background:var(--accent-soft); color:var(--accent); font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+
+  /* Right: tailor preview */
+  .jd-right { flex:1; background:#ECEEF2; display:flex; flex-direction:column; padding:20px 24px 32px; overflow-y:auto; }
+  .jd-right-placeholder { flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-3); }
+  .jd-right-placeholder .inner { text-align:center; }
+  .jd-right-placeholder svg { width:44px; height:44px; color:#C6CAD3; margin-bottom:12px; }
+  .jd-right-placeholder p { font-size:12.5px; font-weight:600; }
+  .jd-right-placeholder small { font-size:11px; color:var(--text-3); }
+
+  .jd-right-content { display:none; }
+  .jd-right-content.show { display:block; animation:fadeIn .35s var(--ease); }
+
+  .tailor-cta { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:var(--shadow-1); margin-bottom:14px; display:flex; align-items:center; gap:14px; }
+  .tailor-cta .t-icon { width:38px; height:38px; border-radius:10px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .tailor-cta .t-icon svg { width:18px; height:18px; }
+  .tailor-cta .t-text { flex:1; }
+  .tailor-cta .t-text b { font-size:12.5px; display:block; }
+  .tailor-cta .t-text small { font-size:11px; color:var(--text-3); }
+  .btn-tailor { background:#10131A; color:#fff; font-size:12px; font-weight:700; border-radius:10px; padding:9px 16px; display:flex; align-items:center; gap:7px; transition:all .15s var(--ease); }
+  .btn-tailor:hover { background:#1F2530; }
+  .btn-tailor:active { transform:scale(.97); }
+  .btn-tailor svg { width:13px; height:13px; }
+
+  /* Diff summary banner */
+  .diff-summary { background:linear-gradient(135deg,#10131A,#1D2B53); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:14px; box-shadow:var(--shadow-2); }
+  .diff-summary-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#93A6F5; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+  .diff-stats { display:flex; gap:10px; flex-wrap:wrap; }
+  .diff-stat { flex:1; min-width:110px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px 12px; }
+  .diff-stat .v { font-size:19px; font-weight:800; }
+  .diff-stat .v.plus { color:#4ADE9F; }
+  .diff-stat .l { font-size:10px; color:#A8B2C9; font-weight:600; margin-top:2px; }
+  .diff-stat .l b { color:#fff; }
+
+  /* Section diff cards */
+  .diff-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow-1); }
+  .diff-card-head { display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--border); background:#FAFBFC; }
+  .diff-card-head .ic { width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+  .diff-card-head .ic svg { width:13px; height:13px; }
+  .diff-card-head .t { font-size:12px; font-weight:700; flex:1; }
+  .diff-card-head .b { font-size:10.5px; font-weight:700; border-radius:99px; padding:2px 9px; }
+  .diff-card-head .b.add { background:var(--positive-soft); color:var(--positive); }
+  .diff-card-head .b.mod { background:var(--warn-soft); color:var(--warn); }
+  .diff-card-body { padding:12px 14px; }
+  .diff-row { display:flex; align-items:flex-start; gap:9px; padding:6px 0; border-bottom:1px solid #F5F6F8; }
+  .diff-row:last-child { border-bottom:none; }
+  .diff-badge { width:20px; height:20px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; margin-top:1px; }
+  .diff-badge.add { background:var(--positive-soft); color:var(--positive); }
+  .diff-badge.mod { background:var(--warn-soft); color:var(--warn); }
+  .diff-text { flex:1; font-size:11.5px; line-height:1.5; }
+  .diff-text b { font-weight:700; }
+  .diff-text .orig { color:var(--text-3); text-decoration:line-through; }
+  .diff-why { font-size:10.5px; color:var(--text-3); margin-top:2px; display:flex; align-items:center; gap:5px; }
+  .diff-why .req { display:inline-flex; align-items:center; gap:3px; background:var(--warn-soft); color:var(--warn); font-size:9.5px; font-weight:700; border-radius:5px; padding:1px 6px; }
+  .diff-why .req svg { width:9px; height:9px; }
+  .diff-weight { font-size:9.5px; font-weight:800; color:var(--text-3); border:1px solid var(--border); border-radius:5px; padding:1px 6px; white-space:nowrap; align-self:center; }
+
+  /* tooltip */
+  .tooltip-wrap { position:relative; }
+  .tooltip {
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(4px);
+    background:#171B26; color:#E8EBF2; font-size:10.5px; line-height:1.5; font-weight:500;
+    padding:8px 10px; border-radius:8px; width:190px; opacity:0; pointer-events:none; transition:all .18s var(--ease); z-index:30;
+    box-shadow:var(--shadow-3);
+  }
+  .tooltip-wrap:hover .tooltip { opacity:1; transform:translateX(-50%) translateY(0); }
+  .tooltip b { color:#4ADE9F; font-weight:700; }
+
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#D6D9E0; border-radius:99px; border:2px solid transparent; background-clip:content-box; }
+  ::-webkit-scrollbar-thumb:hover { background:#B9BEC9; border:2px solid transparent; background-clip:content-box; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar with view switcher ── -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="tb-left">
+      <div class="tb-logo">JM</div>
+      <span class="tb-title">ATS CV Tailor</span>
+      <div class="view-switch">
+        <button id="swMaster" class="active">Master CV</button>
+        <button id="swJd">Manual JD</button>
+      </div>
+    </div>
+    <div class="tb-right">
+      <span style="font-size:11px;color:var(--text-3);font-weight:600">Guest · Admin</span>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 1 — MASTER CV (full screen: editor + PDF preview)
+═══════════════════════════════════════════════════ -->
+<div class="screen active" id="screenMaster">
+  <div class="cv-screen">
+
+    <!-- LEFT: EDITOR -->
+    <div class="cv-panel">
+      <div class="cv-panel-head">
+        <div>
+          <div class="cv-panel-title">Master Candidate CV <span class="unsaved-dot" id="unsavedDot"></span></div>
+          <div class="cv-panel-sub">Edits apply to every score &amp; tailor · autosaved</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>
+          <button class="btn btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Save</button>
+        </div>
+      </div>
+
+      <div class="cv-form" id="cvForm">
+        <!-- Personal -->
+        <div class="form-section">
+          <div class="fs-head">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <span class="fs-title">Personal Information</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <div class="grid-2">
+              <div class="field"><label>Full Name</label><input id="inpName" value="Atanu Biswas" /></div>
+              <div class="field"><label>Email</label><input id="inpEmail" value="atanub707@gmail.com" /></div>
+              <div class="field"><label>Phone</label><input value="+91 8420205661" /></div>
+              <div class="field"><label>Location</label><input value="Kolkata, India (Open to Remote)" /></div>
+            </div>
+            <div class="grid-2">
+              <div class="field"><label>LinkedIn</label><input value="linkedin.com/in/atanubiswas" /></div>
+              <div class="field"><label>GitHub / Website</label><input value="github.com/atanubiswas" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="form-section">
+          <div class="fs-head">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
+            <span class="fs-title">Professional Summary</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <div class="field">
+              <textarea id="inpSummary" rows="4">DevOps &amp; Cloud Engineer with 5+ years designing CI/CD pipelines, Kubernetes platforms, and AWS infrastructure. Passionate about automation, observability, and reliability engineering.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="form-section">
+          <div class="fs-head">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+            <span class="fs-title">Work Experience</span>
+            <span class="fs-count">3</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <div class="exp-item">
+              <span class="drag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              <div class="grid-2">
+                <div class="field"><label>Job Title</label><input value="Senior DevOps Engineer" /></div>
+                <div class="field"><label>Company</label><input value="Apex Cloud Systems" /></div>
+                <div class="field"><label>Location</label><input value="Kolkata, IN (Remote)" /></div>
+                <div class="field"><label>Dates</label><input value="2022 — Present" /></div>
+              </div>
+              <div class="field"><label>Key Achievements</label><textarea rows="3">Architected Kubernetes platform serving 120+ microservices with 99.95% uptime.&#10;Cut CI/CD pipeline time 64% via GitHub Actions caching and parallelization.&#10;Led migration of 40 services to IaC (Terraform), eliminating manual provisioning.</textarea></div>
+            </div>
+            <div class="exp-item">
+              <span class="drag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              <div class="grid-2">
+                <div class="field"><label>Job Title</label><input value="Cloud Infrastructure Engineer" /></div>
+                <div class="field"><label>Company</label><input value="Nexus Digital" /></div>
+                <div class="field"><label>Location</label><input value="Bengaluru, IN" /></div>
+                <div class="field"><label>Dates</label><input value="2019 — 2022" /></div>
+              </div>
+              <div class="field"><label>Key Achievements</label><textarea rows="3">Built observability stack (Prometheus, Grafana, Loki) across 3 environments.&#10;Automated EC2-to-Kubernetes migration of legacy services.&#10;Reduced infrastructure cost 28% through right-sizing and spot instances.</textarea></div>
+            </div>
+            <button class="add-btn" onclick="flashToast('Add Work Experience')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Experience</button>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="form-section">
+          <div class="fs-head">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+            <span class="fs-title">Skills</span>
+            <span class="fs-count">4</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <div class="exp-item">
+              <span class="drag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              <div class="field"><label>Category</label><input value="Cloud &amp; Infrastructure" /></div>
+              <div class="field"><label>Skills (comma separated)</label><input value="AWS, Kubernetes, Docker, Terraform, CI/CD, Linux, Nginx" /></div>
+            </div>
+            <div class="exp-item">
+              <span class="drag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              <div class="field"><label>Category</label><input value="Languages &amp; Scripting" /></div>
+              <div class="field"><label>Skills (comma separated)</label><input value="Python, Bash, Go, JavaScript, SQL" /></div>
+            </div>
+            <button class="add-btn" onclick="flashToast('Add Skill Category')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Category</button>
+          </div>
+        </div>
+
+        <!-- Education / Projects / Certs (collapsed) -->
+        <div class="form-section">
+          <div class="fs-head collapsed">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <span class="fs-title">Education</span>
+            <span class="fs-count">1</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <div class="exp-item"><div class="grid-2"><div class="field"><label>Degree</label><input value="B.Tech Computer Science" /></div><div class="field"><label>Institution</label><input value="IIEST Shibpur" /></div><div class="field"><label>Dates</label><input value="2015 — 2019" /></div></div></div>
+            <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Education</button>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="fs-head collapsed">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+            <span class="fs-title">Projects</span>
+            <span class="fs-count">2</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Project</button>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="fs-head collapsed">
+            <span class="fs-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
+            <span class="fs-title">Certifications</span>
+            <span class="fs-count">2</span>
+            <span class="fs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+          </div>
+          <div class="fs-body">
+            <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Certification</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: LIVE PDF PREVIEW -->
+    <div class="cv-preview">
+      <div class="preview-toolbar">
+        <span class="pv-label"><span class="live"></span>Live PDF Preview — exactly what downloads</span>
+        <div class="pv-spacer"></div>
+        <div class="zoom">
+          <button onclick="setZoom(50)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+          <button onclick="setZoom(75)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/></svg></button>
+          <button onclick="setZoom(100)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <span id="zoomLabel">100%</span>
+        </div>
+      </div>
+
+      <div class="paper" id="paper">
+        <div class="p-head">
+          <div class="p-name" id="pvName">ATANU BISWAS</div>
+          <div class="p-contact">
+            <span id="pvEmail">atanub707@gmail.com</span><span class="sep">•</span>
+            <span>+91 8420205661</span><span class="sep">•</span>
+            <span>Kolkata, India (Open to Remote)</span><br/>
+            <span>linkedin.com/in/atanubiswas</span><span class="sep">•</span>
+            <span>github.com/atanubiswas</span>
+          </div>
+        </div>
+
+        <div class="p-section-title">Professional Summary</div>
+        <p class="p-summary" id="pvSummary">DevOps &amp; Cloud Engineer with 5+ years designing CI/CD pipelines, Kubernetes platforms, and AWS infrastructure. Passionate about automation, observability, and reliability engineering.</p>
+
+        <div class="p-section-title">Work Experience</div>
+        <div class="p-exp">
+          <div class="p-exp-top"><span><span class="p-exp-title">Senior DevOps Engineer</span> · <span class="p-exp-co">Apex Cloud Systems</span></span><span class="p-exp-date">2022 — Present</span></div>
+          <ul>
+            <li>Architected Kubernetes platform serving 120+ microservices with 99.95% uptime.</li>
+            <li>Cut CI/CD pipeline time 64% via GitHub Actions caching and parallelization.</li>
+            <li>Led migration of 40 services to IaC (Terraform), eliminating manual provisioning.</li>
+          </ul>
+        </div>
+        <div class="p-exp">
+          <div class="p-exp-top"><span><span class="p-exp-title">Cloud Infrastructure Engineer</span> · <span class="p-exp-co">Nexus Digital</span></span><span class="p-exp-date">2019 — 2022</span></div>
+          <ul>
+            <li>Built observability stack (Prometheus, Grafana, Loki) across 3 environments.</li>
+            <li>Automated EC2-to-Kubernetes migration of legacy services.</li>
+            <li>Reduced infrastructure cost 28% through right-sizing and spot instances.</li>
+          </ul>
+        </div>
+
+        <div class="p-section-title">Skills</div>
+        <div class="p-skills">
+          <span class="p-skill">AWS</span><span class="p-skill">Kubernetes</span><span class="p-skill">Docker</span><span class="p-skill">Terraform</span><span class="p-skill">CI/CD</span><span class="p-skill">Linux</span><span class="p-skill">Nginx</span><span class="p-skill">Python</span><span class="p-skill">Bash</span><span class="p-skill">Go</span><span class="p-skill">JavaScript</span><span class="p-skill">SQL</span>
+        </div>
+
+        <div class="p-section-title">Education</div>
+        <p class="p-edu"><b>B.Tech Computer Science</b> — IIEST Shibpur, 2015 — 2019</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 2 — MANUAL JD (full screen: input + analysis + tailor diff)
+═══════════════════════════════════════════════════ -->
+<div class="screen" id="screenJd">
+  <div class="jd-screen">
+
+    <!-- LEFT: INPUT + ANALYSIS -->
+    <div class="jd-left">
+      <div class="jd-left-head">
+        <div class="jd-title">Manual Job Analysis</div>
+        <div class="jd-sub">Paste a job description — get scored, then see exactly what your CV gains</div>
+      </div>
+
+      <div class="jd-input">
+        <div class="grid-2">
+          <div class="field"><label>Job Title</label><input id="jdTitle" value="Senior DevOps Engineer" /></div>
+          <div class="field"><label>Company</label><input value="FinTech Solutions" /></div>
+        </div>
+        <div class="field">
+          <label>Job Description</label>
+          <div class="jd-desc-box">
+            <textarea id="jdDesc">We are looking for a Senior DevOps Engineer to own our AWS infrastructure and delivery pipelines.
+
+REQUIREMENTS
+• 5+ years in DevOps / SRE roles
+• Strong experience with Kubernetes and Docker
+• Expertise in Terraform and Infrastructure as Code
+• Hands-on CI/CD with GitHub Actions
+• Solid scripting in Python and Bash
+• Experience with Helm charts
+• Knowledge of ArgoCD and GitOps practices
+• Prometheus, Grafana monitoring stack
+• Experience with PostgreSQL operations
+• Nice to have: Go, Vault, Kafka
+
+THE ROLE
+You will architect CI/CD, improve release velocity, and mentor junior engineers. Familiarity with Agile delivery and incident response is a plus.</textarea>
+            <span class="char-count">1,248 chars</span>
+          </div>
+        </div>
+        <button class="analyze-btn" id="btnAnalyze">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 6 14 10 18 15 10 21 16"/><polyline points="18 16 21 16 21 19"/></svg>
+          Analyze Match
+        </button>
+      </div>
+
+      <!-- Results -->
+      <div class="jd-results" id="jdResults">
+        <div class="score-row">
+          <div class="ring">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="bgc" cx="32" cy="32" r="27" fill="none" stroke-width="6"/>
+              <circle class="fgc" cx="32" cy="32" r="27" fill="none" stroke-width="6" stroke-dasharray="169.6" stroke-dashoffset="169.6" data-score="68"/>
+            </svg>
+            <span>68%</span>
+          </div>
+          <div class="score-meta">
+            <div class="score-big">Strong fit — worth tailoring</div>
+            <div class="score-note">11 of 16 required skills already present in your CV</div>
+          </div>
+          <span class="verdict medium">TAILOR BOOST: +24%</span>
+        </div>
+
+        <div class="chip-groups">
+          <div class="chip-group">
+            <div class="cg-title good"><span class="dot"></span>Already Matched (11)</div>
+            <span class="chip good">AWS</span><span class="chip good">Kubernetes</span><span class="chip good">Docker</span><span class="chip good">Terraform</span><span class="chip good">CI/CD</span><span class="chip good">Python</span><span class="chip good">Bash</span><span class="chip good">Prometheus</span><span class="chip good">Grafana</span><span class="chip good">GitHub Actions</span><span class="chip good">Linux</span>
+          </div>
+          <div class="chip-group">
+            <div class="cg-title bad"><span class="dot"></span>Missing — we will add (5)</div>
+            <span class="chip bad tooltip-wrap">Helm <span class="why">?</span><span class="tooltip"><b>Why add:</b> required 2× in JD ("Helm charts"). Added to <b>Skills</b> — full weight.</span></span>
+            <span class="chip bad tooltip-wrap">ArgoCD <span class="why">?</span><span class="tooltip"><b>Why add:</b> JD asks for "ArgoCD and GitOps". Added to <b>Skills</b> — full weight.</span></span>
+            <span class="chip bad tooltip-wrap">GitOps <span class="why">?</span><span class="tooltip"><b>Why add:</b> core requirement "GitOps practices". Added to <b>Skills</b> — full weight.</span></span>
+            <span class="chip bad tooltip-wrap">PostgreSQL <span class="why">?</span><span class="tooltip"><b>Why add:</b> "PostgreSQL operations" required. Added to <b>Skills</b> — full weight.</span></span>
+            <span class="chip bad tooltip-wrap">Go <span class="why">?</span><span class="tooltip"><b>Why add:</b> "Nice to have: Go" — optional, but low risk. Added to <b>Skills</b> — half weight.</span></span>
+          </div>
+        </div>
+
+        <div class="recommend">
+          <div class="recommend-title">📌 Recommendations</div>
+          <div class="recommend-item"><span class="n">1</span><span>Add a bullet in Apex Cloud Systems mentioning <b>Helm chart management</b> for your 120+ microservices platform.</span></div>
+          <div class="recommend-item"><span class="n">2</span><span>Quantify your <b>GitOps/ArgoCD</b> experience — deployment frequency and rollback stats.</span></div>
+          <div class="recommend-item"><span class="n">3</span><span>Mention <b>PostgreSQL</b> operations (backups, replication, tuning) in Nexus Digital role.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TAILORING DIFF -->
+    <div class="jd-right">
+      <div class="jd-right-placeholder" id="jdPlaceholder">
+        <div class="inner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h6"/></svg>
+          <p>Run the analysis to see your tailoring plan</p>
+          <small>After scoring, click <b>Tailor CV</b> to preview every change before you apply it</small>
+        </div>
+      </div>
+
+      <div class="jd-right-content" id="jdRightContent">
+        <!-- CTA -->
+        <div class="tailor-cta">
+          <span class="t-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span>
+          <div class="t-text">
+            <b>Your CV is 68% match — we can improve it</b>
+            <small>Tailoring adds 5 missing skills &amp; rewrites 2 bullets. Preview below, then confirm.</small>
+          </div>
+          <button class="btn-tailor" onclick="flashToast('Tailored CV generated — 5 additions')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>Tailor CV</button>
+        </div>
+
+        <!-- Summary banner -->
+        <div class="diff-summary">
+          <div class="diff-summary-title">✦ What we will add — and why</div>
+          <div class="diff-stats">
+            <div class="diff-stat"><div class="v plus">+5</div><div class="l">Skills added to <b>Skills</b> section</div></div>
+            <div class="diff-stat"><div class="v plus">+2</div><div class="l">Keywords woven into <b>Experience bullets</b></div></div>
+            <div class="diff-stat"><div class="v plus">+24%</div><div class="l">Projected ATS score gain (68% → 92%)</div></div>
+            <div class="diff-stat"><div class="v">0</div><div class="l">Fabricated claims — only real CV items</div></div>
+          </div>
+        </div>
+
+        <!-- Skill additions -->
+        <div class="diff-card">
+          <div class="diff-card-head">
+            <span class="ic" style="background:var(--accent-soft);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+            <span class="t">Skills section — 5 additions</span>
+            <span class="b add">+5 NEW</span>
+          </div>
+          <div class="diff-card-body">
+            <div class="diff-row">
+              <span class="diff-badge add">+</span>
+              <div class="diff-text"><b>Helm</b> <span class="orig">(no change)</span>
+                <div class="diff-why"><span class="req">⚡ required 2× in JD</span> "Experience with Helm charts"</div>
+              </div>
+              <span class="diff-weight">Full weight</span>
+            </div>
+            <div class="diff-row">
+              <span class="diff-badge add">+</span>
+              <div class="diff-text"><b>ArgoCD</b>
+                <div class="diff-why"><span class="req">⚡ required</span> "Knowledge of ArgoCD and GitOps practices"</div>
+              </div>
+              <span class="diff-weight">Full weight</span>
+            </div>
+            <div class="diff-row">
+              <span class="diff-badge add">+</span>
+              <div class="diff-text"><b>GitOps</b>
+                <div class="diff-why"><span class="req">⚡ required</span> "GitOps practices"</div>
+              </div>
+              <span class="diff-weight">Full weight</span>
+            </div>
+            <div class="diff-row">
+              <span class="diff-badge add">+</span>
+              <div class="diff-text"><b>PostgreSQL</b>
+                <div class="diff-why"><span class="req">⚡ required</span> "Experience with PostgreSQL operations"</div>
+              </div>
+              <span class="diff-weight">Full weight</span>
+            </div>
+            <div class="diff-row">
+              <span class="diff-badge add">+</span>
+              <div class="diff-text"><b>Go</b> <span class="orig">(nice-to-have)</span>
+                <div class="diff-why"><span class="req">⭐ optional</span> "Nice to have: Go" — low risk, boosts keyword density</div>
+              </div>
+              <span class="diff-weight">Half weight</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience rewrites -->
+        <div class="diff-card">
+          <div class="diff-card-head">
+            <span class="ic" style="background:var(--warn-soft);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+            <span class="t">Experience bullets — 2 rewrites</span>
+            <span class="b mod">2 MODIFIED</span>
+          </div>
+          <div class="diff-card-body">
+            <div class="diff-row">
+              <span class="diff-badge mod">~</span>
+              <div class="diff-text">
+                <b>Apex Cloud Systems · bullet 1</b>
+                <div style="margin-top:3px">“Architected Kubernetes platform… <span class="orig">serving 120+ microservices</span>”</div>
+                <div style="margin-top:3px;background:var(--positive-soft);border-radius:6px;padding:4px 8px;color:var(--positive);font-weight:600">→ “…serving 120+ microservices, managed via <b>Helm</b> charts with <b>GitOps</b> (ArgoCD) rollouts.”</div>
+                <div class="diff-why"><span class="req">⚡ keyword integration</span> Adds Helm + GitOps + ArgoCD naturally — no fabrication</div>
+              </div>
+            </div>
+            <div class="diff-row">
+              <span class="diff-badge mod">~</span>
+              <div class="diff-text">
+                <b>Nexus Digital · bullet 2</b>
+                <div style="margin-top:3px">“Automated EC2-to-Kubernetes migration of legacy services.”</div>
+                <div style="margin-top:3px;background:var(--positive-soft);border-radius:6px;padding:4px 8px;color:var(--positive);font-weight:600">→ “…including <b>PostgreSQL</b> failover and zero-downtime data migration.”</div>
+                <div class="diff-why"><span class="req">⚡ keyword integration</span> Adds PostgreSQL naturally — matches your existing DB work</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Honesty note -->
+        <div class="diff-card" style="border-color:#BFE8D2;background:#F7FDF9">
+          <div class="diff-card-head" style="border-color:#BFE8D2;background:#F7FDF9">
+            <span class="ic" style="background:var(--positive-soft);color:var(--positive)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span class="t" style="color:var(--positive)">Honesty guarantee</span>
+          </div>
+          <div class="diff-card-body">
+            <p style="font-size:11px;color:var(--text-2);line-height:1.6">Every addition above comes from <b>your existing CV content</b> — we surface skills and achievements you already have but haven't highlighted. We never invent experience. The projected score (92%) is the fill-ratio after integration, not a promise of interview success.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="position:fixed;top:68px;right:20px;z-index:100;background:#171B26;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;box-shadow:0 16px 44px rgba(16,19,26,.2);opacity:0;transform:translateY(-8px);transition:all .3s var(--ease);pointer-events:none">
+  <span style="width:26px;height:26px;border-radius:8px;background:rgba(15,169,104,.2);color:#4ADE9F;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+  <span id="toastMsg">Done</span>
+</div>
+
+<script>
+  // ── View switching ──
+  const swMaster = document.getElementById('swMaster');
+  const swJd = document.getElementById('swJd');
+  swMaster.addEventListener('click', () => switchView('Master'));
+  swJd.addEventListener('click', () => switchView('Jd'));
+  function switchView(v) {
+    document.getElementById('screenMaster').classList.toggle('active', v === 'Master');
+    document.getElementById('screenJd').classList.toggle('active', v === 'Jd');
+    swMaster.classList.toggle('active', v === 'Master');
+    swJd.classList.toggle('active', v === 'Jd');
+  }
+
+  // ── Collapsible form sections ──
+  document.querySelectorAll('.fs-head').forEach((h) => {
+    h.addEventListener('click', () => h.classList.toggle('collapsed'));
+  });
+
+  // ── LIVE PDF preview sync (name / email / summary) ──
+  const inpName = document.getElementById('inpName');
+  const inpEmail = document.getElementById('inpEmail');
+  const inpSummary = document.getElementById('inpSummary');
+  const pvName = document.getElementById('pvName');
+  const pvEmail = document.getElementById('pvEmail');
+  const pvSummary = document.getElementById('pvSummary');
+  const unsavedDot = document.getElementById('unsavedDot');
+  let saveTimer;
+
+  function syncLive() {
+    pvName.textContent = inpName.value.trim().toUpperCase() || 'YOUR NAME';
+    pvEmail.textContent = inpEmail.value.trim();
+    pvSummary.textContent = inpSummary.value.trim();
+    // flash the edited element
+    const t = document.activeElement;
+    if (t) {
+      let target = null;
+      if (t === inpName) target = pvName;
+      if (t === inpEmail) target = pvEmail;
+      if (t === inpSummary) target = pvSummary;
+      if (target) { target.classList.remove('live-flash'); void target.offsetWidth; target.classList.add('live-flash'); }
+    }
+    unsavedDot.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => unsavedDot.classList.remove('show'), 2000);
+  }
+  [inpName, inpEmail, inpSummary].forEach((el) => el.addEventListener('input', syncLive));
+
+  // ── Zoom ──
+  function setZoom(pct) {
+    const paper = document.getElementById('paper');
+    paper.classList.remove('zoom-75', 'zoom-50');
+    if (pct === 75) paper.classList.add('zoom-75');
+    if (pct === 50) paper.classList.add('zoom-50');
+    document.getElementById('zoomLabel').textContent = pct + '%';
+  }
+
+  // ── Manual JD: analyze → show results + right panel ──
+  const btnAnalyze = document.getElementById('btnAnalyze');
+  btnAnalyze.addEventListener('click', () => {
+    const results = document.getElementById('jdResults');
+    const content = document.getElementById('jdRightContent');
+    const placeholder = document.getElementById('jdPlaceholder');
+    results.classList.add('show');
+    content.classList.add('show');
+    placeholder.style.display = 'none';
+    // animate score ring
+    const ring = document.querySelector('#jdResults .fgc');
+    const score = parseFloat(ring.dataset.score) / 100;
+    const C = 2 * Math.PI * 27;
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = C;
+    requestAnimationFrame(() => {
+      ring.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.22,.61,.36,1)';
+      ring.style.strokeDashoffset = C * (1 - score);
+    });
+    flashToast('Analysis complete — 68% match');
+  });
+
+  // ── Toast ──
+  let toastTimer;
+  function flashToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.style.opacity = '1'; t.style.transform = 'translateY(0)';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-8px)'; }, 2600);
+  }
+</script>
+</body>
+</html>

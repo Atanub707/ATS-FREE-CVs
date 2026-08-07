@@ -84,6 +84,7 @@ import {
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
+import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
@@ -608,6 +609,10 @@ Return valid JSON only — NO markdown, NO code fences:
 
   // ── AI CV Compression ──
   app.post('/api/cv/ai/analyze', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const masterCv = getMasterCv();
       if (!masterCv) {
@@ -624,7 +629,8 @@ Return valid JSON only — NO markdown, NO code fences:
       res.json({ success: true, ...result });
     } catch (err: any) {
       console.error('AI compress analyze error:', err);
-      res.status(500).json({ error: err.message });
+      const mapped = mapLlmError(err);
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
@@ -927,6 +933,10 @@ Return valid JSON only — NO markdown, NO code fences:
 
   // Single Job Match Scoring
   app.post('/api/jobs/:id/match', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const job = getJobById(req.params.id);
       if (!job) {
@@ -960,13 +970,18 @@ Return valid JSON only — NO markdown, NO code fences:
         job: updatedJob,
       });
     } catch (err: any) {
+      const mapped = mapLlmError(err);
       console.error('Match error:', err);
-      res.status(500).json({ error: err.message || 'Matching failed.' });
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
   // Batch Job Match Scoring (Score all pending)
   app.post('/api/jobs/batch-match', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const { jobIds } = req.body || {};
       const allJobs = getAllJobs();
@@ -1017,13 +1032,18 @@ Return valid JSON only — NO markdown, NO code fences:
         jobs: updatedResults,
       });
     } catch (err: any) {
+      const mapped = mapLlmError(err);
       console.error('Batch match error:', err);
-      res.status(500).json({ error: err.message });
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
   // Tailor CV for Single Job
   app.post('/api/jobs/:id/tailor', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const job = getJobById(req.params.id);
       if (!job) {
@@ -1063,13 +1083,18 @@ Return valid JSON only — NO markdown, NO code fences:
         job: updatedJob,
       });
     } catch (err: any) {
+      const mapped = mapLlmError(err);
       console.error('Tailor CV error:', err);
-      res.status(500).json({ error: err.message || 'CV Tailoring failed.' });
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
   // Batch Tailor CVs for Matched Jobs (>= threshold)
   app.post('/api/jobs/batch-tailor', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const config = loadConfig();
       const minScore = config.thresholds.minMatchForTailor;
@@ -1116,8 +1141,9 @@ Return valid JSON only — NO markdown, NO code fences:
         jobs: tailoredResults,
       });
     } catch (err: any) {
+      const mapped = mapLlmError(err);
       console.error('Batch tailor error:', err);
-      res.status(500).json({ error: err.message });
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
@@ -1125,6 +1151,10 @@ Return valid JSON only — NO markdown, NO code fences:
   const manualResults = new Map<string, { tailoredCv: any; title: string; company: string }>();
 
   app.post('/api/analyze-jd', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const { title, company, description } = req.body;
       if (!title || !description) {
@@ -1182,12 +1212,17 @@ Return valid JSON only — NO markdown, NO code fences:
       });
     } catch (err: any) {
       console.error('Analyze JD error:', err);
-      res.status(500).json({ error: err.message });
+      const mapped = mapLlmError(err);
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 
   // Tailor a manually analyzed JD (separate step after user updates master CV)
   app.post('/api/analyze-jd/tailor', async (req, res) => {
+    if (!hasApiKeyConfigured()) {
+      res.status(428).json({ error: 'No API token configured — add your API key in Settings. This process will not run.', code: 'no_api_key' });
+      return;
+    }
     try {
       const { title, company, description, gapAnalysis, matchScore, historyId } = req.body;
       if (!title || !description) {
@@ -1295,7 +1330,8 @@ Return valid JSON only — NO markdown, NO code fences:
       });
     } catch (err: any) {
       console.error('Tailor JD error:', err);
-      res.status(500).json({ error: err.message });
+      const mapped = mapLlmError(err);
+      res.status(mapped.status).json({ error: mapped.message, code: mapped.code });
     }
   });
 

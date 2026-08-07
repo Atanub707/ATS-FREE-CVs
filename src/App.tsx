@@ -9,6 +9,7 @@ import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
+import { llmErrorMessage } from './lib/llmError';
 
 export default function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -210,6 +211,10 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(llmErrorMessage(data.code, data.error));
+        throw new Error(data.error || 'Match failed');
       }
     }, setScoreMessages);
   };
@@ -231,6 +236,9 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(llmErrorMessage(data.code, data.error));
       }
     } catch (err) {
       console.error('Batch match error:', err);
@@ -255,6 +263,10 @@ export default function App() {
         const data = await res.json();
         setJobs((prev) => prev.map((j) => (j.id === jobId ? data.job : j)));
         if (selectedJob && selectedJob.id === jobId) setSelectedJob(data.job);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(llmErrorMessage(data.code, data.error));
+        throw new Error(data.error || 'Tailor failed');
       }
     }, setTailorMessages);
   };
@@ -272,6 +284,9 @@ export default function App() {
             return prev.map((j) => updated.get(j.id) || j);
           });
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(llmErrorMessage(data.code, data.error));
       }
     } catch (err) {
       console.error('Batch tailor error:', err);

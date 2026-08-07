@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockup — AI CV Compression Assistant</title>
+<style>
+  :root {
+    --bg:#F6F7F9; --surface:#fff; --border:#E7E9EE; --border-strong:#D6D9E0;
+    --text:#10131A; --text-2:#565D6C; --text-3:#8B92A1;
+    --accent:#2F54EB; --accent-soft:#EEF2FF;
+    --positive:#0FA968; --positive-soft:#E7F7EF;
+    --warn:#D97706; --warn-soft:#FEF4E6;
+    --danger:#DC2626; --danger-soft:#FDEDED;
+    --radius:14px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; height:100vh; overflow:hidden; }
+  button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+  input { font:inherit; }
+
+  /* ── Top bar ── */
+  .topbar { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+  .topbar-inner { max-width:1440px; margin:0 auto; padding:0 20px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+  .tb-left { display:flex; align-items:center; gap:10px; }
+  .tb-logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#1D2B53,#2F54EB); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,84,235,.3); }
+  .tb-title { font-size:14px; font-weight:800; }
+  .tb-badge { font-size:10.5px; font-weight:700; background:var(--accent-soft); color:var(--accent); border-radius:99px; padding:3px 10px; }
+  .avatar { width:30px; height:30px; border-radius:9999px; background:linear-gradient(135deg,#F5A524,#D97706); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+  /* ── Master CV screen ── */
+  .cv-screen { display:flex; height:calc(100vh - 56px); }
+  .left { width:38%; min-width:380px; border-right:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; }
+  .left-head { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .lh-title { font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .lh-title svg { width:16px; height:16px; color:var(--accent); }
+  .lh-sub { font-size:10.5px; color:var(--text-3); margin-top:2px; }
+  .lh-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .btn { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; border-radius:9px; padding:7px 12px; transition:all .15s var(--ease); }
+  .btn:active { transform:scale(.96); }
+  .btn svg { width:12px; height:12px; }
+  .btn-ghost { background:var(--surface); border:1px solid var(--border); color:var(--text-2); }
+  .btn-ghost:hover { border-color:var(--border-strong); color:var(--text); }
+  .btn-ai { background:linear-gradient(135deg,#2F54EB,#6C3DF4); color:#fff; box-shadow:0 4px 14px rgba(47,84,235,.35); }
+  .btn-ai:hover { filter:brightness(1.08); }
+  .btn-ai .spark { animation:sparkPulse 2s infinite; }
+  @keyframes sparkPulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+
+  .left-body { flex:1; overflow-y:auto; padding:14px 18px; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:9.5px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+  .field input, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:11.5px; color:var(--text); outline:none; }
+  .field textarea { resize:vertical; min-height:70px; }
+  .mini-section { border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:10px; background:#FAFBFC; }
+  .mini-section .ms-head { font-size:10.5px; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .mini-section .ms-head .ic { width:20px; height:20px; border-radius:6px; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; }
+  .mini-section .ms-head .ic svg { width:10px; height:10px; }
+  .mini-section .bullet { font-size:10px; color:var(--text-2); line-height:1.5; padding:2px 0 2px 10px; border-left:2px solid var(--border); margin-bottom:3px; }
+
+  /* ── Progress steps ── */
+  .progress-overlay { position:fixed; inset:0; z-index:60; background:rgba(16,19,26,.35); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; }
+  .progress-overlay.show { display:flex; animation:fadeIn .25s var(--ease); }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  .progress-card { background:#fff; border-radius:18px; width:420px; padding:26px 28px; box-shadow:0 24px 64px rgba(16,19,26,.25); }
+  .pc-title { font-size:14px; font-weight:800; display:flex; align-items:center; gap:9px; }
+  .pc-title .orb { width:30px; height:30px; border-radius:10px; background:linear-gradient(135deg,#2F54EB,#6C3DF4); display:flex; align-items:center; justify-content:center; }
+  .pc-title .orb svg { width:15px; height:15px; color:#fff; }
+  .pc-sub { font-size:11px; color:var(--text-3); margin-top:3px; }
+  .steps { margin-top:20px; }
+  .step { display:flex; align-items:center; gap:12px; padding:8px 0; }
+  .step .dot { width:22px; height:22px; border-radius:99px; border:2px solid var(--border-strong); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; font-weight:800; color:var(--text-3); transition:all .3s var(--ease); }
+  .step .dot svg { width:11px; height:11px; display:none; }
+  .step.on .dot { border-color:var(--accent); color:var(--accent); }
+  .step.done .dot { border-color:var(--positive); background:var(--positive); color:#fff; }
+  .step.done .dot svg { display:block; }
+  .step-label { font-size:12px; font-weight:600; color:var(--text-3); }
+  .step.on .step-label { color:var(--text); }
+  .step.done .step-label { color:var(--text-2); }
+  .step-bar { flex:1; height:2px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .step-bar .fill { height:100%; width:0; background:var(--accent); transition:width .4s var(--ease); }
+  .step.on .step-bar .fill { animation:indeterminate 1.4s ease-in-out infinite; }
+  @keyframes indeterminate { 0% { width:0 } 60% { width:70% } 100% { width:100% } }
+  .step.done .step-bar .fill { width:100%; background:var(--positive); }
+
+  /* ── Side-by-side result ── */
+  .result-view { display:none; }
+  .result-view.show { display:block; animation:fadeIn .3s var(--ease); }
+  .compare-bar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:#fff; border-bottom:1px solid var(--border); }
+  .cb-left { display:flex; align-items:center; gap:10px; }
+  .cb-title { font-size:13px; font-weight:800; }
+  .page-badge { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; }
+  .page-badge .from { color:var(--text-3); text-decoration:line-through; }
+  .page-badge .arrow { color:var(--text-3); }
+  .page-badge .to { color:var(--positive); background:var(--positive-soft); border:1px solid #BFE8D2; border-radius:99px; padding:2px 9px; }
+  .cb-right { display:flex; gap:8px; }
+  .btn-accept { background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; border-radius:9px; padding:8px 16px; display:flex; align-items:center; gap:6px; box-shadow:0 4px 12px rgba(47,84,235,.3); }
+  .btn-accept:hover { filter:brightness(1.07); }
+  .btn-accept svg { width:12px; height:12px; }
+  .btn-cancel { background:var(--surface); border:1px solid var(--border); color:var(--text-2); font-size:11.5px; font-weight:700; border-radius:9px; padding:8px 14px; }
+  .btn-cancel:hover { border-color:var(--border-strong); color:var(--text); }
+
+  .compare { display:flex; height:calc(100vh - 56px - 61px); }
+  .half { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .half + .half { border-left:1px solid var(--border); }
+  .half-head { display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border); background:#FAFBFC; font-size:11px; font-weight:800; }
+  .half-head .tag { font-size:9.5px; font-weight:800; border-radius:99px; padding:2px 8px; }
+  .half-head .tag.orig { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
+  .half-head .tag.ai { background:linear-gradient(135deg,#2F54EB,#6C3DF4); color:#fff; }
+  .half-head .n { margin-left:auto; font-size:10px; color:var(--text-3); font-weight:700; }
+  .half-body { flex:1; overflow:auto; padding:18px; background:var(--bg); }
+  .page { width:100%; max-width:480px; margin:0 auto 16px; background:#fff; box-shadow:0 8px 28px rgba(16,19,26,.1); border-radius:3px; padding:30px 34px; font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; font-size:9px; color:#333; }
+  .p-head { text-align:center; border-bottom:2px solid #2F54EB; padding-bottom:8px; margin-bottom:10px; }
+  .p-name { font-size:15px; font-weight:800; text-transform:uppercase; }
+  .p-contact { font-size:7.5px; color:#555; margin-top:3px; }
+  .p-sec { font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#2F54EB; border-bottom:1px solid #ddd; padding-bottom:2px; margin:10px 0 6px; }
+  .p-line { font-size:8.5px; line-height:1.55; color:#333; margin-bottom:3px; }
+  .p-bullet { display:flex; gap:4px; font-size:8.5px; line-height:1.55; color:#333; margin-bottom:2px; }
+  .p-bullet .m { color:#4B5563; flex-shrink:0; }
+  .p-skill { display:inline-block; font-size:7.5px; font-weight:600; background:#F0F4FF; color:#2F54EB; border:1px solid #D9E2FD; border-radius:99px; padding:1px 6px; margin:0 2px 3px 0; }
+  .p-skill.new { background:#E7F7EF; color:#0FA968; border-color:#BFE8D2; }
+  .tight { color:#2F54EB; font-weight:700; }
+  .ghost-text { color:#C6CAD3; font-style:italic; }
+
+  /* guidance */
+  .guidance-wrap { border-top:1px solid var(--border); background:#fff; max-height:280px; overflow:auto; }
+  .guidance-inner { max-width:1000px; margin:0 auto; padding:14px 20px; }
+  .g-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+  .g-title .line { flex:1; height:1px; background:var(--border); }
+  .g-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .g-card { border:1px solid var(--border); border-radius:11px; padding:11px 13px; background:#FAFBFC; }
+  .g-card-head { display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800; margin-bottom:7px; }
+  .g-badge { font-size:8.5px; font-weight:800; border-radius:99px; padding:2px 8px; }
+  .g-badge.tight { background:var(--accent-soft); color:var(--accent); }
+  .g-badge.merge { background:var(--warn-soft); color:var(--warn); }
+  .g-badge.keep { background:var(--positive-soft); color:var(--positive); }
+  .g-item { font-size:10px; color:var(--text-2); line-height:1.5; padding:4px 0; border-bottom:1px solid #F1F3F7; }
+  .g-item:last-child { border-bottom:none; }
+  .g-item b { color:var(--text); font-weight:700; }
+  .g-item .why { color:var(--text-3); font-size:9.5px; display:block; margin-top:1px; }
+
+  /* verification banner */
+  .verify { display:flex; align-items:center; gap:10px; background:var(--positive-soft); border:1px solid #BFE8D2; border-radius:11px; padding:9px 13px; margin-bottom:10px; font-size:10.5px; font-weight:600; color:var(--positive); }
+  .verify svg { width:14px; height:14px; flex-shrink:0; }
+  .verify.warn { background:var(--warn-soft); border-color:#F5DFB8; color:var(--warn); }
+
+  /* confirm modal */
+  .modal-overlay { position:fixed; inset:0; z-index:70; background:rgba(16,19,26,.4); display:none; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; animation:fadeIn .2s var(--ease); }
+  .modal { background:#fff; border-radius:18px; width:520px; padding:24px 26px; box-shadow:0 24px 64px rgba(16,19,26,.28); }
+  .m-title { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .m-title svg { width:16px; height:16px; color:var(--accent); }
+  .m-sub { font-size:11px; color:var(--text-3); margin-top:4px; }
+  .m-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:18px 0; }
+  .m-stat { background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:11px 13px; text-align:center; }
+  .m-stat .v { font-size:17px; font-weight:800; }
+  .m-stat .v.green { color:var(--positive); }
+  .m-stat .v.blue { color:var(--accent); }
+  .m-stat .l { font-size:9px; color:var(--text-3); font-weight:600; margin-top:2px; }
+  .m-note { font-size:10.5px; color:var(--text-2); background:#FAFBFC; border:1px solid var(--border); border-radius:10px; padding:10px 12px; line-height:1.55; }
+  .m-note b { color:var(--text); }
+  .m-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+  .btn-solid { background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; border-radius:9px; padding:9px 18px; display:flex; align-items:center; gap:6px; }
+  .btn-solid:hover { filter:brightness(1.07); }
+  .btn-solid svg { width:12px; height:12px; }
+  .btn-plain { background:var(--surface); border:1px solid var(--border); color:var(--text-2); font-size:11.5px; font-weight:700; border-radius:9px; padding:9px 14px; }
+
+  /* history drawer */
+  .history { position:fixed; top:0; right:0; bottom:0; width:360px; background:#fff; z-index:65; box-shadow:-16px 0 48px rgba(16,19,26,.15); transform:translateX(100%); transition:transform .3s var(--ease); }
+  .history.open { transform:translateX(0); }
+  .hist-head { padding:16px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .hist-title { font-size:13px; font-weight:800; display:flex; align-items:center; gap:8px; }
+  .hist-title svg { width:15px; height:15px; color:var(--accent); }
+  .hist-list { padding:12px; overflow:auto; height:calc(100% - 60px); }
+  .hist-item { border:1px solid var(--border); border-radius:11px; padding:12px 14px; margin-bottom:8px; background:#FAFBFC; }
+  .hist-item .h-date { font-size:11px; font-weight:800; }
+  .hist-item .h-note { font-size:10px; color:var(--text-3); margin-top:2px; }
+  .hist-item .h-actions { display:flex; gap:6px; margin-top:9px; }
+  .hist-item .h-restore { font-size:10px; font-weight:700; background:var(--accent-soft); color:var(--accent); border-radius:7px; padding:5px 11px; }
+  .hist-item .h-restore:hover { background:#DFE7FF; }
+
+  /* toast */
+  .toast { position:fixed; bottom:24px; right:24px; z-index:80; background:#171B26; color:#fff; border-radius:12px; padding:13px 17px; display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; box-shadow:0 16px 44px rgba(16,19,26,.25); opacity:0; transform:translateY(10px); transition:all .3s var(--ease); pointer-events:none; }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .toast .ic { width:26px; height:26px; border-radius:8px; background:rgba(15,169,104,.2); color:#4ADE9F; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .toast .ic svg { width:13px; height:13px; }
+
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb { background:#D6D9E0; border-radius:99px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ── -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="tb-left">
+      <div class="tb-logo">JM</div>
+      <span class="tb-title">ATS CV Tailor</span>
+      <span class="tb-badge">Master Candidate CV</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:11px;color:var(--text-3);font-weight:600">Guest · Admin</span>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════ MASTER CV SCREEN (idle) ═══════ -->
+<div class="cv-screen" id="idleScreen">
+  <div class="left">
+    <div class="left-head">
+      <div>
+        <div class="lh-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Master Candidate CV
+        </div>
+        <div class="lh-sub">3 pages · 2 roles · 14 bullets</div>
+      </div>
+      <div class="lh-actions">
+        <button class="btn btn-ghost" onclick="openHistory()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Versions
+        </button>
+        <button class="btn btn-ai" id="btnCompress">
+          <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
+          AI Compress
+        </button>
+      </div>
+    </div>
+    <div class="left-body">
+      <div class="field"><label>Full Name</label><input value="Atanu Biswas" /></div>
+      <div class="mini-section">
+        <div class="ms-head"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>DevSecOps Engineer · Human Managed <span style="margin-left:auto;font-size:9px;color:var(--text-3)">2024 – Present</span></div>
+        <div class="bullet">Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning, and Snyk &amp; GitLab into CI/CD pipelines for vulnerability assessment and application security; performed vulnerability management by assigning tickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.</div>
+        <div class="bullet">Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.</div>
+        <div class="bullet">Lead GitLab self-managed to SaaS migration (subgroup imports, CI/CD variable migration, GKE runner integration) and container registry migrations from JFrog Artifactory to Docker Hub and GitLab Container Registry across multiple microservices.</div>
+      </div>
+      <div class="mini-section">
+        <div class="ms-head"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>DevOps Engineer · PearlThoughts <span style="margin-left:auto;font-size:9px;color:var(--text-3)">2022 – 2023</span></div>
+        <div class="bullet">Developed and implemented a continuous integration and deployment (CI/CD) infrastructure pipeline for a new application, reducing deployment time and scalability by 70% and increasing team productivity by 45%.</div>
+        <div class="bullet">Set up and maintained testing, development, staging, and production environments, ensuring seamless application deployment and improving overall system reliability through containerization of microservices including load balancing and clustering.</div>
+        <div class="bullet">Collaborative with development teams to problem-solve, debug, and continuously improve software applications solutions, migrations and troubleshooting resulting in a 55% increase in user satisfaction and a 80% increase in revenue through proper teamwork using tools like PowerShell and VMware.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- right: preview -->
+  <div style="flex:1;background:var(--bg);overflow:auto;padding:20px">
+    <div style="max-width:560px;margin:0 auto">
+      <div class="page" style="margin-bottom:16px">
+        <div class="p-head"><div class="p-name">Atanu Biswas</div><div class="p-contact">atanub707@gmail.com • +91 8420205661 • Kolkata, India</div></div>
+        <div class="p-sec">Professional Summary</div>
+        <div class="p-line">DevSecOps Engineer with 4+ years of experience designing secure, scalable cloud-native infrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, and Azure…</div>
+        <div class="p-sec">Professional Experience</div>
+        <div class="p-bullet"><span class="m">•</span><span>Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning…</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit…</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Lead GitLab self-managed to SaaS migration (subgroup imports, CI/CD variable migration, GKE runner integration)…</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Worked in startup environments with cross-functional responsibilities, including developing and maintaining Airbyte connectors…</span></div>
+      </div>
+      <div class="page">
+        <div class="p-sec">Professional Experience (cont.)</div>
+        <div class="p-bullet"><span class="m">•</span><span>Implemented security compliance and governance controls including IAM authorization policies using Vanta Audits…</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Implemented alerting through Slack for CI/CD pipelines and conducted Root Cause Analysis (RCA)…</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Collaborating and communicating with development teams on Agile SDLC workflows…</span></div>
+        <div class="p-sec">Projects</div>
+        <div class="p-bullet"><span class="m">•</span><span>On-Going SAAS Level Applications &amp; Mobile apps. Status In QA - Solo development…</span></div>
+        <div class="p-sec">Education</div>
+        <div class="p-line">B.Tech in Mechanical Engineering — Narula Institute of Technology, 2019–2022</div>
+      </div>
+      <div class="page">
+        <div class="p-sec">Skills &amp; Certifications</div>
+        <div><span class="p-skill">AWS</span><span class="p-skill">Kubernetes</span><span class="p-skill">Docker</span><span class="p-skill">Terraform</span><span class="p-skill">GitLab CI</span><span class="p-skill">ArgoCD</span><span class="p-skill">Helm</span><span class="p-skill">Python</span><span class="p-skill">Bash</span><span class="p-skill">Snyk</span><span class="p-skill">Trivy</span><span class="p-skill">Grafana</span><span class="p-skill">Prometheus</span></div>
+        <div class="p-bullet" style="margin-top:6px"><span class="m">•</span><span>Agile Methodology Virtual Experience Program — Cognizant, 2023</span></div>
+        <div class="p-bullet"><span class="m">•</span><span>Generative AI for DevOps — TWS, 2024</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ RESULT VIEW (side-by-side) ═══════ -->
+<div class="result-view" id="resultView">
+  <div class="compare-bar">
+    <div class="cb-left">
+      <span class="cb-title">AI Compression Result</span>
+      <div class="page-badge">
+        <span class="from">3 pages</span>
+        <span class="arrow">→</span>
+        <span class="to">2 pages</span>
+        <span style="font-size:10px;color:var(--text-3);font-weight:600;margin-left:4px">· based on 14 bullets → 14 kept · 0 dropped</span>
+      </div>
+    </div>
+    <div class="cb-right">
+      <button class="btn-cancel" onclick="showIdle()">Cancel</button>
+      <button class="btn-accept" onclick="openConfirm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Use this version
+      </button>
+    </div>
+  </div>
+
+  <div class="compare">
+    <!-- ORIGINAL -->
+    <div class="half">
+      <div class="half-head">
+        <span class="tag orig">ORIGINAL</span>
+        <span>Current Master CV</span>
+        <span class="n">3 pages · 1,042 words</span>
+      </div>
+      <div class="half-body">
+        <div class="page">
+          <div class="p-head"><div class="p-name">Atanu Biswas</div><div class="p-contact">atanub707@gmail.com • +91 8420205661</div></div>
+          <div class="p-sec">Professional Summary</div>
+          <div class="p-line">DevSecOps Engineer with 4+ years of experience designing secure, scalable cloud-native infrastructure and CI/CD platforms. Skilled in Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, and Azure, with expertise in DevSecOps automation, container security, and infrastructure as code. Proven track record in startup environments driving platform reliability…</div>
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Established an internal CI/CD workflow with automated vulnerability scans, reducing vulnerabilities by 80%. Integrated SAST, DAST, IaC scanning, and Snyk &amp; GitLab into CI/CD pipelines for vulnerability assessment and application security; performed vulnerability management by assigning tickets to developers with defined SLAs upon vulnerability detection, reducing vulnerabilities by 80%.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Designed and maintained GitLab CI/CD pipelines with continuous integration using Kaniko, Docker, and BuildKit for automated containerization, image builds, and deployment workflows, including secure Minikube + BuildKit environments for non-privileged container builds.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Lead GitLab self-managed to SaaS migration (subgroup imports, CI/CD variable migration, GKE runner integration) and container registry migrations from JFrog Artifactory to Docker Hub and GitLab Container Registry across multiple microservices.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Worked in startup environments with cross-functional responsibilities, including developing and maintaining Airbyte connectors (both low-code and Python-based), packaging connectors as Docker images, managing versioning and continuous deployment pipelines, maintaining and enhancing the Dragster deployment flow while following established microservice architecture patterns, deploying and managing APIs with ArgoCD using a consistent microservice deployment strategy, and packaging applications using Helm Charts to ensure standardized, scalable, and reliable deployments across environments.</span></div>
+        </div>
+        <div class="page"><div class="p-sec">Professional Experience (cont.)</div><div class="p-bullet"><span class="m">•</span><span>Implemented security compliance and governance controls including IAM authorization policies using Vanta Audits…</span></div><div class="p-bullet"><span class="m">•</span><span>Implemented alerting through Slack for CI/CD pipelines and conducted Root Cause Analysis (RCA)…</span></div><div class="p-sec">Education</div><div class="p-line">B.Tech in Mechanical Engineering — Narula Institute of Technology, 2019–2022</div></div>
+        <div class="page"><div class="p-sec">Skills &amp; Certifications</div><div><span class="p-skill">AWS</span><span class="p-skill">Kubernetes</span><span class="p-skill">Docker</span><span class="p-skill">Terraform</span><span class="p-skill">GitLab CI</span><span class="p-skill">ArgoCD</span><span class="p-skill">Helm</span><span class="p-skill">Python</span><span class="p-skill">Bash</span><span class="p-skill">Snyk</span><span class="p-skill">Trivy</span><span class="p-skill">Grafana</span><span class="p-skill">Prometheus</span></div><div class="p-bullet"><span class="m">•</span><span>Agile Methodology Virtual Experience Program — Cognizant, 2023</span></div></div>
+      </div>
+    </div>
+
+    <!-- AI COMPRESSED -->
+    <div class="half">
+      <div class="half-head">
+        <span class="tag ai">AI ✦</span>
+        <span>Compressed · ATS Optimized</span>
+        <span class="n">2 pages · 742 words <span style="color:var(--positive)">(−29%)</span></span>
+      </div>
+      <div class="half-body">
+        <div class="verify">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          All 34 keywords preserved · 4 bullets tightened · 3 merged · 0 dropped
+        </div>
+        <div class="page">
+          <div class="p-head"><div class="p-name">Atanu Biswas</div><div class="p-contact">atanub707@gmail.com • +91 8420205661 • Kolkata, India</div></div>
+          <div class="p-sec">Professional Summary</div>
+          <div class="p-line">DevSecOps Engineer with 4+ years designing <span class="tight">secure cloud-native infrastructure</span> and CI/CD platforms. Skilled in <span class="tight">Kubernetes, Docker, GitOps, ArgoCD, Terraform, AWS, GCP, Azure</span>, DevSecOps automation, container security, and IaC.</div>
+          <div class="p-sec">Professional Experience</div>
+          <div class="p-bullet"><span class="m">•</span><span>Built CI/CD workflows with automated <span class="tight">SAST, DAST, IaC scanning, Snyk, GitLab</span> vulnerability scans — cut vulnerabilities <b>80%</b> and enforced SLA-based ticket assignment.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Maintained GitLab CI/CD with <span class="tight">Kaniko, Docker, BuildKit</span> containerization and secure non-privileged Minikube builds.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Led <span class="tight">GitLab SaaS migration</span> (CI/CD variables, GKE runners) and registry migrations (JFrog → Docker Hub, GitLab CR).</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Shipped <span class="tight">Airbyte connectors</span> (low-code + Python), ArgoCD API deployments, and <span class="tight">Helm Charts</span> across microservices.</span></div>
+        </div>
+        <div class="page">
+          <div class="p-sec">Professional Experience (cont.)</div>
+          <div class="p-bullet"><span class="m">•</span><span>Implemented <span class="tight">IAM governance (Vanta)</span> and automated Slack security alerts tied to GitLab scan triggers.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Drove <span class="tight">Agile SDLC</span> workflows, code reviews, RCA, and AI-assisted automation.</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Built CI/CD pipelines cutting deployment time <b>70%</b>; containerized microservices with load balancing and clustering; cut downtime <b>50%</b> via proactive monitoring.</span></div>
+          <div class="p-sec">Skills</div>
+          <div><span class="p-skill">AWS</span><span class="p-skill">Kubernetes</span><span class="p-skill">Docker</span><span class="p-skill">Terraform</span><span class="p-skill">GitLab CI</span><span class="p-skill">ArgoCD</span><span class="p-skill">Helm</span><span class="p-skill">Python</span><span class="p-skill">Bash</span><span class="p-skill">Snyk</span><span class="p-skill">Trivy</span><span class="p-skill">Grafana</span><span class="p-skill">Prometheus</span><span class="p-skill new">OpenStack</span><span class="p-skill new">Networking</span></div>
+          <div class="p-sec">Education</div>
+          <div class="p-line">B.Tech Mechanical Engineering — Narula Institute of Technology, 2019–2022</div>
+          <div class="p-sec">Certifications</div>
+          <div class="p-bullet"><span class="m">•</span><span>Agile Methodology Virtual Experience — Cognizant, 2023</span></div>
+          <div class="p-bullet"><span class="m">•</span><span>Generative AI for DevOps — TWS, 2024</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- guidance strip -->
+  <div class="guidance-wrap">
+    <div class="guidance-inner">
+      <div class="g-title">✦ What changed — and why <span class="line"></span></div>
+      <div class="g-grid">
+        <div class="g-card">
+          <div class="g-card-head">
+            <span class="g-badge tight">TIGHTENED</span> 4 bullets
+          </div>
+          <div class="g-item"><b>CI/CD workflow bullet</b><span class="why">Long 2-sentence bullet → one sharp line; kept SAST/DAST/IaC/Snyk/GitLab + 80% metric.</span></div>
+          <div class="g-item"><b>Airbyte startup bullet</b><span class="why">Removed repeated "startup environments" context; kept Airbyte, ArgoCD, Helm, Docker keywords.</span></div>
+        </div>
+        <div class="g-card">
+          <div class="g-card-head">
+            <span class="g-badge merge">MERGED</span> 3 bullets
+          </div>
+          <div class="g-item"><b>Slack alerting + Vanta compliance</b><span class="why">Both are security-governance items — one bullet preserves IAM, Vanta, Slack, GitLab scans.</span></div>
+          <div class="g-item"><b>2 DevOps-env bullets (PearlThoughts)</b><span class="why">Env setup + monitoring overlapped — merged, kept 70%/50% metrics and load-balancing keywords.</span></div>
+        </div>
+        <div class="g-card">
+          <div class="g-card-head">
+            <span class="g-badge keep">KEPT AS-IS</span> 7 bullets
+          </div>
+          <div class="g-item"><b>GitLab SaaS migration</b><span class="why">Already tight and keyword-dense — untouched.</span></div>
+          <div class="g-item"><b>Kaniko/BuildKit pipeline</b><span class="why">No redundancy found — untouched.</span></div>
+          <div class="g-item"><b>Skills + education + certs</b><span class="why">Already minimal.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PROGRESS OVERLAY ═══════ -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-card">
+    <div class="pc-title">
+      <span class="orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg></span>
+      AI Compressing your CV
+      <span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--text-3)" id="stepPct">0%</span>
+    </div>
+    <div class="pc-sub">Analyzing 14 bullets against 23 live DevOps job postings from this week</div>
+    <div class="steps" id="steps">
+      <div class="step" data-i="0"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="step-label">Reading the market — 23 live job postings</span><span class="step-bar"><span class="fill"></span></span></div>
+      <div class="step" data-i="1"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="step-label">Analyzing your CV (14 bullets, 3 sections)</span><span class="step-bar"><span class="fill"></span></span></div>
+      <div class="step" data-i="2"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="step-label">Rewriting — tightening &amp; merging without losing meaning</span><span class="step-bar"><span class="fill"></span></span></div>
+      <div class="step" data-i="3"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="step-label">Verifying keywords &amp; page count</span><span class="step-bar"><span class="fill"></span></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CONFIRM MODAL ═══════ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="m-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Apply AI-compressed CV?
+    </div>
+    <div class="m-sub">The original 3-page version will be saved automatically — you can restore it anytime.</div>
+    <div class="m-stats">
+      <div class="m-stat"><div class="v blue">3 → 2</div><div class="l">pages before → after</div></div>
+      <div class="m-stat"><div class="v green">14/14</div><div class="l">bullets kept</div></div>
+      <div class="m-stat"><div class="v green">34</div><div class="l">keywords preserved</div></div>
+    </div>
+    <div class="m-note">
+      <b>What changes:</b> 4 bullets tightened, 3 merged, 0 dropped. Meaning and key metrics (80%, 70%, 50%) preserved. <b>+2 market keywords</b> (OpenStack, Networking) added from live postings. Original saved as <b>“Before AI compression — 3 pages”</b>.
+    </div>
+    <div class="m-actions">
+      <button class="btn-plain" onclick="closeConfirm()">Keep original</button>
+      <button class="btn-solid" onclick="accept()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Yes, apply &amp; backup
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ HISTORY DRAWER ═══════ -->
+<div class="history" id="historyDrawer">
+  <div class="hist-head">
+    <span class="hist-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      CV Versions
+    </span>
+    <button onclick="closeHistory()" style="padding:6px;color:var(--text-3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="hist-list">
+    <div class="hist-item" style="border-color:var(--accent);background:var(--accent-soft)">
+      <div class="h-date">Current · AI compressed (2 pages) <span style="float:right;font-size:9px;color:var(--accent);font-weight:800">ACTIVE</span></div>
+      <div class="h-note">Applied AI compression · Aug 4, 2026 10:42</div>
+    </div>
+    <div class="hist-item">
+      <div class="h-date">Before AI compression (3 pages)</div>
+      <div class="h-note">Original Master CV · Aug 4, 2026 10:42 · auto-backup</div>
+      <div class="h-actions"><button class="h-restore" onclick="toast('Original restored')">Restore</button></div>
+    </div>
+    <div class="hist-item">
+      <div class="h-date">Manual save (3 pages)</div>
+      <div class="h-note">Jul 30, 2026 18:15</div>
+      <div class="h-actions"><button class="h-restore" onclick="toast('Version restored')">Restore</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast">
+  <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+  <span id="toastMsg">Done</span>
+</div>
+
+<script>
+  // ── AI Compress → progress → result ──
+  document.getElementById('btnCompress').addEventListener('click', () => {
+    document.getElementById('idleScreen').style.display = 'none';
+    const overlay = document.getElementById('progressOverlay');
+    overlay.classList.add('show');
+    const steps = [...document.querySelectorAll('#steps .step')];
+    const pct = document.getElementById('stepPct');
+    let i = 0;
+    const run = setInterval(() => {
+      if (i > 0) steps[i - 1].classList.remove('on');
+      if (i < steps.length) {
+        steps[i].classList.remove('on');
+        steps[i].classList.add('on');
+        pct.textContent = Math.round((i + 0.5) / steps.length * 100) + '%';
+      }
+      if (i >= steps.length) {
+        clearInterval(run);
+        steps.forEach(s => { s.classList.remove('on'); s.classList.add('done'); });
+        pct.textContent = '100%';
+        setTimeout(() => {
+          overlay.classList.remove('show');
+          document.getElementById('resultView').classList.add('show');
+          toast('Compression ready — 3 pages → 2 pages');
+        }, 600);
+      }
+      i++;
+    }, 900);
+  });
+
+  function showIdle() {
+    document.getElementById('resultView').classList.remove('show');
+    document.getElementById('idleScreen').style.display = 'flex';
+  }
+
+  // ── Confirm / Accept ──
+  function openConfirm() { document.getElementById('confirmModal').classList.add('show'); }
+  function closeConfirm() { document.getElementById('confirmModal').classList.remove('show'); }
+  function accept() {
+    closeConfirm();
+    showIdle();
+    toast('Applied! Original backed up — restore anytime via Versions');
+  }
+
+  // ── History ──
+  function openHistory() { document.getElementById('historyDrawer').classList.add('open'); }
+  function closeHistory() { document.getElementById('historyDrawer').classList.remove('open'); }
+
+  // ── Toast ──
+  let tTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+</script>
+</body>
+</html>
