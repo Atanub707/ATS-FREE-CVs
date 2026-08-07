@@ -22,7 +22,7 @@ interface ScraperBarProps {
     maxJobsPerSource?: number;
     experienceLevel?: string;
     under10Applicants?: boolean;
-  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number } | void>;
+  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[] } | void>;
   isLoading: boolean;
 }
 
@@ -75,11 +75,14 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       } else {
         setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! (All ${result.skippedDuplicates} were already in your job list).${filterNote}`);
       }
+    } else if (result?.skippedSources && result.skippedSources.length > 0) {
+      const skippedNames = result.skippedSources.map((s) => s.source).join(', ');
+      setScrapeSuccessMsg(`Searched — ${skippedNames} skipped: their robots.txt disallows automated access. You can disable robots.txt respect in Settings to include them (you take responsibility for their Terms of Service).`);
     } else {
       const srcList = selectedSources.join(' + ');
-      setScrapeSuccessMsg(`Searched ${srcList} — No results found. Try changing filters or keywords.`);
+      setScrapeSuccessMsg(`Searched ${srcList} — No results found in the selected window. Try different keywords, a wider posted window, or search again later.`);
     }
-    setTimeout(() => setScrapeSuccessMsg(null), 7000);
+    setTimeout(() => setScrapeSuccessMsg(null), 10000);
   };
 
   const selectClass =

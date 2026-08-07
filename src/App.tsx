@@ -183,7 +183,7 @@ export default function App() {
         const data = await res.json();
         setActiveStateTab('all');
         await fetchAllData();
-        return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0 };
+        return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0, filteredOutCount: data.filteredOutCount || 0, skippedSources: data.skippedSources || [] };
       } else {
         const err = await res.json();
         alert(`Scrape error: ${err.error}`);

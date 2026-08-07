@@ -206,6 +206,7 @@ export interface AppConfig {
   scraper: {
     stealthMode: boolean;
     maxRetries: number;
+    respectRobotsTxt: boolean;
   };
 }
 

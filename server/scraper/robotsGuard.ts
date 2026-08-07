@@ -34,10 +34,13 @@ export async function isCrawlingAllowed(domain: string): Promise<boolean> {
     const text = await fetchRobotsTxt(domain);
     if (text) {
       // Check User-agent: * groups for a blanket Disallow: /
+      // Per RFC 9309: an EMPTY "Disallow:" means "allow everything";
+      // only a literal "/" blocks all paths. "Allow: /" in the same
+      // group overrides a blanket disallow.
       const groups = text.split(/User-agent:\s*\*/i);
       for (const group of groups.slice(1)) {
         const disallow = group.match(/Disallow:\s*(\S*)/i);
-        if (disallow && (disallow[1] === '/' || disallow[1] === '')) {
+        if (disallow && disallow[1] === '/' && !/Allow:\s*\/\s*$/m.test(group)) {
           allowed = false;
           break;
         }

@@ -950,8 +950,8 @@ Return valid JSON only — NO markdown, NO code fences:
         scrapedTotal: scrapedJobs.length,
         addedCount: added.length,
         skippedDuplicates: skipped,
-        filteredOutCount: wantUnder10 ? filteredOutCount : 0,
-        addedJobs: added,
+        filteredOutCount,
+        skippedSources: ScraperFactory.lastSkippedSources,
       });
     } catch (err: any) {
       console.error('Scrape error:', err);

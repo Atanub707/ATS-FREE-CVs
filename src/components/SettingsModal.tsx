@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2 } from 'lucide-react';
+import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2, Globe } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface SettingsModalProps {
@@ -227,6 +227,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
             </div>
+          </div>
+
+          {/* Scraper behavior */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <Globe className="w-3.5 h-3.5 text-sky-600" />
+              <span>Scraper Behavior</span>
+            </h3>
+            <label className="flex items-start justify-between gap-3 cursor-pointer">
+              <span>
+                <span className="block font-semibold text-slate-800 text-xs">Respect robots.txt</span>
+                <span className="block text-[10.5px] text-slate-500 leading-relaxed">
+                  Skips sources whose site explicitly disallows automated access (e.g. LinkedIn).
+                  Recommended ON — disabling means you take responsibility for each site's Terms of Service.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={formData.scraper.respectRobotsTxt !== false}
+                onChange={(e) => setFormData({ ...formData, scraper: { ...formData.scraper, respectRobotsTxt: e.target.checked } })}
+                className="w-4 h-4 mt-0.5 cursor-pointer accent-sky-600"
+              />
+            </label>
           </div>
 
           {/* Password Recovery Questions (password accounts only) */}

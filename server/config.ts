@@ -25,6 +25,7 @@ const DEFAULT_CONFIG: AppConfig = {
   scraper: {
     stealthMode: true,
     maxRetries: 3,
+    respectRobotsTxt: true,
   },
 };
 
@@ -55,8 +56,10 @@ export function loadConfig(): AppConfig {
         jsonDbPath: parsed.storage?.jsonDbPath ?? DEFAULT_CONFIG.storage.jsonDbPath,
       },
       scraper: {
-        stealthMode: parsed.scraper?.stealthMode === 'false' ? false : true,
+        // ini.parse coerces true/false into real booleans — handle both.
+        stealthMode: String(parsed.scraper?.stealthMode ?? 'true').toLowerCase() !== 'false',
         maxRetries: Number(parsed.scraper?.maxRetries ?? DEFAULT_CONFIG.scraper.maxRetries),
+        respectRobotsTxt: String(parsed.scraper?.respectRobotsTxt ?? 'true').toLowerCase() !== 'false',
       },
     };
   } catch (err) {

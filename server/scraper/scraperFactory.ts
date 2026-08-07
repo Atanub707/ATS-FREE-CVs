@@ -13,14 +13,19 @@ import { JobsChScraper } from './jobsChScraper.js';
 import { DaijobScraper } from './daijobScraper.js';
 import { MyJobMagScraper } from './myJobMagScraper.js';
 import { Job, ScraperParams } from '../../src/types.js';
+import { loadConfig } from '../config.js';
 
 export class ScraperFactory {
+  // Populated by the last runScrape: sources skipped by the robots.txt guard.
+  static lastSkippedSources: { source: string; reason: string }[] = [];
   static async runScrape(params: ScraperParams): Promise<Job[]> {
     const sources = params.sources || ['LinkedIn'];
     const allJobs: Job[] = [];
+    ScraperFactory.lastSkippedSources = [];
 
     // Good-faith crawler check: resolve robots.txt once per domain (parallel,
-    // cached 1h) and skip sources whose sites disallow crawling.
+    // cached 1h) and skip sources whose sites disallow crawling. Honor the
+    // user's setting — robots.txt respect can be disabled in Settings.
     const SOURCE_DOMAINS: Record<string, string> = {
       LinkedIn: 'www.linkedin.com',
       Arbeitnow: 'arbeitnow.com',
@@ -36,16 +41,21 @@ export class ScraperFactory {
       Daijob: 'daijob.com',
       MyJobMag: 'myjobmag.com',
     };
-    const domains = [...new Set(sources.map((s) => SOURCE_DOMAINS[s]).filter(Boolean))];
-    const robotsResults = await Promise.all(
-      domains.map(async (d) => [d, await isCrawlingAllowed(d)] as const)
-    );
-    const robotsAllowed = new Map<string, boolean>(robotsResults);
+    let robotsAllowed = new Map<string, boolean>();
+    const respectRobotsTxt = loadConfig().scraper.respectRobotsTxt !== false;
+    if (respectRobotsTxt) {
+      const domains = [...new Set(sources.map((s) => SOURCE_DOMAINS[s]).filter(Boolean))];
+      const robotsResults = await Promise.all(
+        domains.map(async (d) => [d, await isCrawlingAllowed(d)] as const)
+      );
+      robotsAllowed = new Map<string, boolean>(robotsResults);
+    }
 
     for (const source of sources) {
       const domain = SOURCE_DOMAINS[source];
-      if (domain && robotsAllowed.get(domain) === false) {
+      if (respectRobotsTxt && domain && robotsAllowed.get(domain) === false) {
         console.warn(`[ScraperFactory] ${source}: skipped — robots.txt disallows crawling (${domain}/robots.txt)`);
+        ScraperFactory.lastSkippedSources.push({ source, reason: `robots.txt disallows automated access (${domain})` });
         continue;
       }
       try {
