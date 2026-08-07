@@ -2,7 +2,7 @@
   <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="Tailor Dashboard"/>
 </p>
 
-<h1 align="center">Tailor</h1>
+<h1 align="center">Tailor CV</h1>
 
 <p align="center">
   <strong>Multi-source job scraper · AI-powered ATS matching · CV tailoring — all running locally.</strong>

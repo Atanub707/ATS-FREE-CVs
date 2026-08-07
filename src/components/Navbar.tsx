@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileText, Settings, FileInput, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { AtanuBadge } from './AtanuBadge';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -80,11 +81,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-sm font-bold text-slate-900 tracking-tight font-sans">
-                Tailor
+                Tailor CV
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                by @Atanu
-              </span>
+              <AtanuBadge />
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
               Job Search • AI ATS Matching • CV Tailoring & Export

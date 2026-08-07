@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, LogIn, Sparkles, Users, KeyRound, ArrowLeft, ShieldQuestion } from 'lucide-react';
+import { Mail, Lock, User, LogIn, Users, KeyRound, ArrowLeft, ShieldQuestion } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
+import { AtanuBadge } from './AtanuBadge';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => Promise<{ error?: string } | null>;
@@ -151,11 +152,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-slate-900 text-white shadow-lg shadow-blue-600/30 mb-4">
             <span className="font-bold text-xl">T</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Tailor</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Tailor CV</h1>
           <p className="text-slate-400 text-sm mt-1">
             Sign in to your workspace — each account has its own CV, jobs, and match history.
           </p>
-          <p className="text-slate-500 text-[11px] mt-2">by @Atanu</p>
+          <div className="flex justify-center mt-3">
+            <AtanuBadge size="md" />
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
