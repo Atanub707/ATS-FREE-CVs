@@ -83,6 +83,7 @@ export function saveConfig(config: AppConfig): void {
       llm: config.llm,
       storage: config.storage,
       scraper: config.scraper,
+      apify: config.apify,
     });
     fs.writeFileSync(CONFIG_FILE_PATH, iniData, 'utf-8');
   } catch (err) {
