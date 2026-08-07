@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Sliders, Key, Cpu } from 'lucide-react';
+import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2 } from 'lucide-react';
+import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -58,6 +59,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const [formData, setFormData] = useState<AppConfig>(config);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Recovery questions (password accounts only)
+  const [recCurrentPassword, setRecCurrentPassword] = useState('');
+  const [recQ1, setRecQ1] = useState(RECOVERY_QUESTIONS[0]);
+  const [recA1, setRecA1] = useState('');
+  const [recQ2, setRecQ2] = useState(RECOVERY_QUESTIONS[1]);
+  const [recA2, setRecA2] = useState('');
+  const [recMsg, setRecMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [recSaving, setRecSaving] = useState(false);
+
+  const handleSaveRecovery = async () => {
+    setRecMsg(null);
+    if (!recCurrentPassword || recA1.trim().length < 3 || recA2.trim().length < 3) {
+      setRecMsg({ ok: false, text: 'Enter your current password and answers of at least 3 characters.' });
+      return;
+    }
+    setRecSaving(true);
+    try {
+      const res = await fetch('/api/auth/recovery-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: recCurrentPassword, recoveryQ1: recQ1, recoveryA1: recA1, recoveryQ2: recQ2, recoveryA2: recA2 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRecMsg({ ok: false, text: data.error || 'Failed to save recovery questions.' });
+      } else {
+        setRecMsg({ ok: true, text: 'Recovery questions saved.' });
+        setRecCurrentPassword(''); setRecA1(''); setRecA2('');
+      }
+    } catch (e: any) {
+      setRecMsg({ ok: false, text: e.message || 'Failed to save recovery questions.' });
+    } finally {
+      setRecSaving(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,6 +227,77 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
             </div>
+          </div>
+
+          {/* Password Recovery Questions (password accounts only) */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <ShieldQuestion className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Password Recovery Questions</span>
+            </h3>
+            <p className="text-[10.5px] text-slate-500 leading-relaxed">
+              Used to reset your password locally if you forget it (no email service needed).
+            </p>
+            <div className="relative">
+              <Key className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                value={recCurrentPassword}
+                onChange={(e) => setRecCurrentPassword(e.target.value)}
+                placeholder="Current password"
+                className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+              />
+            </div>
+            <div>
+              <select
+                value={recQ1}
+                onChange={(e) => setRecQ1(e.target.value)}
+                className="w-full px-2.5 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {RECOVERY_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
+              </select>
+              <div className="relative mt-2">
+                <User className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  value={recA1}
+                  onChange={(e) => setRecA1(e.target.value)}
+                  placeholder="Answer 1"
+                  className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                />
+              </div>
+            </div>
+            <div>
+              <select
+                value={recQ2}
+                onChange={(e) => setRecQ2(e.target.value)}
+                className="w-full px-2.5 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {RECOVERY_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
+              </select>
+              <div className="relative mt-2">
+                <User className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  value={recA2}
+                  onChange={(e) => setRecA2(e.target.value)}
+                  placeholder="Answer 2"
+                  className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                />
+              </div>
+            </div>
+            {recMsg && (
+              <div className={`text-[11px] font-medium px-3 py-2 rounded-lg border ${recMsg.ok ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'}`}>
+                {recMsg.text}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveRecovery}
+              disabled={recSaving}
+              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{recSaving ? 'Saving…' : 'Save Recovery Questions'}</span>
+            </button>
           </div>
 
           {/* Submit */}

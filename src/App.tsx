@@ -381,11 +381,11 @@ export default function App() {
     return null;
   };
 
-  const handleRegister = async (name: string, email: string, password: string) => {
+  const handleRegister = async (name: string, email: string, password: string, recovery?: { q1: string; a1: string; q2: string; a2: string }) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, ...(recovery || {}) }),
     });
     const data = await res.json();
     if (!res.ok) return { error: data.error || 'Registration failed.' };

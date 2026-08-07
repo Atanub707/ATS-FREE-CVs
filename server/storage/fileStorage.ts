@@ -57,7 +57,14 @@ function hashPassword(password: string, salt: string): string {
   return crypto.scryptSync(password, salt, 32).toString('hex');
 }
 
-export function createUser(email: string, name: string, password?: string): User {
+export interface RecoveryQuestionsInput {
+  q1: string;
+  a1: string;
+  q2: string;
+  a2: string;
+}
+
+export function createUser(email: string, name: string, password?: string, recovery?: RecoveryQuestionsInput): User {
   const d = getDb();
   const existing = d.prepare('SELECT 1 FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (existing) throw new Error('An account with this email already exists.');
@@ -66,8 +73,14 @@ export function createUser(email: string, name: string, password?: string): User
   const salt = isGuest ? '' : crypto.randomBytes(8).toString('hex');
   const passHash = isGuest ? '' : hashPassword(password!, salt);
   const createdAt = new Date().toISOString();
-  d.prepare('INSERT INTO users (id, email, name, salt, pass_hash, is_guest, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(id, email.toLowerCase().trim(), name, salt, passHash, isGuest ? 1 : 0, createdAt);
+  // Answers are hashed with the same per-account salt (never stored plain),
+  // normalized the same way at write and verify time.
+  const normA1 = recovery?.a1.trim().toLowerCase() ?? '';
+  const normA2 = recovery?.a2.trim().toLowerCase() ?? '';
+  const a1 = !isGuest && recovery ? hashPassword(normA1, salt) : '';
+  const a2 = !isGuest && recovery ? hashPassword(normA2, salt) : '';
+  d.prepare('INSERT INTO users (id, email, name, salt, pass_hash, is_guest, created_at, recovery_q1, recovery_a1, recovery_q2, recovery_a2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, email.toLowerCase().trim(), name, salt, passHash, isGuest ? 1 : 0, createdAt, recovery?.q1 ?? null, a1 || null, recovery?.q2 ?? null, a2 || null);
   return { id, email: email.toLowerCase().trim(), name, isGuest, createdAt };
 }
 
@@ -79,6 +92,67 @@ export function verifyLogin(email: string, password: string): User | null {
   const hash = hashPassword(password, row.salt);
   if (hash !== row.pass_hash) return null;
   return { id: row.id, email: row.email, name: row.name, isGuest: false, createdAt: row.created_at };
+}
+
+// ─── Password recovery (security questions) ───
+
+export interface RecoveryInfo {
+  exists: boolean;
+  hasRecovery: boolean;
+  q1?: string;
+  q2?: string;
+}
+
+export function getRecoveryInfo(email: string): RecoveryInfo {
+  const d = getDb();
+  const row = d.prepare('SELECT is_guest, recovery_q1, recovery_q2 FROM users WHERE email = ?')
+    .get(email.toLowerCase().trim()) as { is_guest: number; recovery_q1: string | null; recovery_q2: string | null } | undefined;
+  if (!row || row.is_guest === 1) return { exists: false, hasRecovery: false };
+  return {
+    exists: true,
+    hasRecovery: !!row.recovery_q1 && !!row.recovery_q2,
+    q1: row.recovery_q1 || undefined,
+    q2: row.recovery_q2 || undefined,
+  };
+}
+
+// Verifies both answers; on success sets a new password. Throws with a
+// user-facing message on mismatch so the route can count attempts.
+export function resetPasswordWithRecovery(email: string, answer1: string, answer2: string, newPassword: string): User {
+  const d = getDb();
+  const row = d.prepare('SELECT id, email, name, salt, pass_hash, is_guest, recovery_a1, recovery_a2, created_at FROM users WHERE email = ?')
+    .get(email.toLowerCase().trim()) as { id: string; email: string; name: string; salt: string; pass_hash: string; is_guest: number; recovery_a1: string | null; recovery_a2: string | null; created_at: string } | undefined;
+  if (!row || row.is_guest === 1 || !row.recovery_a1 || !row.recovery_a2) {
+    throw new Error('This account has no recovery questions set.');
+  }
+  const ok1 = hashPassword(answer1.trim().toLowerCase(), row.salt) === row.recovery_a1;
+  const ok2 = hashPassword(answer2.trim().toLowerCase(), row.salt) === row.recovery_a2;
+  if (!ok1 || !ok2) {
+    throw new Error('Recovery answers do not match.');
+  }
+  const newSalt = crypto.randomBytes(8).toString('hex');
+  // Re-hash the answers with the NEW salt (they were salted with the old one).
+  d.prepare('UPDATE users SET salt = ?, pass_hash = ?, recovery_a1 = ?, recovery_a2 = ? WHERE id = ?')
+    .run(
+      newSalt,
+      hashPassword(newPassword, newSalt),
+      hashPassword(answer1.trim().toLowerCase(), newSalt),
+      hashPassword(answer2.trim().toLowerCase(), newSalt),
+      row.id
+    );
+  return { id: row.id, email: row.email, name: row.name, isGuest: false, createdAt: row.created_at };
+}
+
+// Authed: set/update recovery questions (requires the current password).
+export function setRecoveryQuestions(userId: string, currentPassword: string, recovery: RecoveryQuestionsInput): void {
+  const d = getDb();
+  const row = d.prepare('SELECT salt, pass_hash, is_guest FROM users WHERE id = ?').get(userId) as { salt: string; pass_hash: string; is_guest: number } | undefined;
+  if (!row || row.is_guest === 1) throw new Error('Only password accounts can set recovery questions.');
+  if (hashPassword(currentPassword, row.salt) !== row.pass_hash) {
+    throw new Error('Current password is incorrect.');
+  }
+  d.prepare('UPDATE users SET recovery_q1 = ?, recovery_a1 = ?, recovery_q2 = ?, recovery_a2 = ? WHERE id = ?')
+    .run(recovery.q1, hashPassword(recovery.a1.trim().toLowerCase(), row.salt), recovery.q2, hashPassword(recovery.a2.trim().toLowerCase(), row.salt), userId);
 }
 
 export function listUsers(): User[] {
@@ -220,7 +294,11 @@ export function getDb(): Database.Database {
       salt TEXT,
       pass_hash TEXT,
       is_guest INTEGER DEFAULT 0,
-      created_at TEXT
+      created_at TEXT,
+      recovery_q1 TEXT,
+      recovery_a1 TEXT,
+      recovery_q2 TEXT,
+      recovery_a2 TEXT
     );
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -265,7 +343,23 @@ export function getDb(): Database.Database {
     );
   `);
   migrateToUsers(db);
+  migrateRecoveryColumns(db);
   return db;
+}
+
+// Idempotent: adds the recovery-question columns to users tables created
+// before the forgot-password feature existed.
+function migrateRecoveryColumns(d: Database.Database): void {
+  const cols = new Set((d.pragma('table_info(users)') as any[]).map((c) => c.name));
+  const add = (name: string) => {
+    if (!cols.has(name)) {
+      d.exec(`ALTER TABLE users ADD COLUMN ${name} TEXT`);
+    }
+  };
+  add('recovery_q1');
+  add('recovery_a1');
+  add('recovery_q2');
+  add('recovery_a2');
 }
 
 /**

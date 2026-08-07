@@ -54,6 +54,9 @@ import {
   saveMasterCv,
   createUser,
   verifyLogin,
+  getRecoveryInfo,
+  resetPasswordWithRecovery,
+  setRecoveryQuestions,
   listUsers,
   getUserById,
   createSession,
@@ -402,20 +405,114 @@ async function startServer() {
 
   app.post('/api/auth/register', (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const { email, password, name, recoveryQ1, recoveryA1, recoveryQ2, recoveryA2 } = req.body;
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ error: 'A valid email is required.' });
       }
       if (!password || password.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters.' });
       }
+      // Recovery questions are mandatory for password accounts (local
+      // forgot-password mechanism — no email service exists).
+      if (!recoveryQ1 || !recoveryA1 || !recoveryQ2 || !recoveryA2) {
+        return res.status(400).json({ error: 'Please set two recovery questions (answers at least 3 characters).' });
+      }
+      if (String(recoveryA1).trim().length < 3 || String(recoveryA2).trim().length < 3) {
+        return res.status(400).json({ error: 'Recovery answers must be at least 3 characters.' });
+      }
       const displayName = (name || '').trim() || email.split('@')[0];
-      const user = createUser(email, displayName, password);
+      const user = createUser(email, displayName, password, {
+        q1: String(recoveryQ1).trim(),
+        a1: String(recoveryA1),
+        q2: String(recoveryQ2).trim(),
+        a2: String(recoveryA2),
+      });
       const token = createSession(user.id);
       res.cookie('ats_session', token, { httpOnly: true, sameSite: 'lax', maxAge: 90 * 24 * 60 * 60 * 1000 });
       res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest } });
     } catch (err: any) {
       res.status(409).json({ error: err.message });
+    }
+  });
+
+  // ── Password recovery (security questions, fully local) ──
+  const recoveryAttempts = new Map<string, { count: number; lockedUntil: number }>();
+  const MAX_RECOVERY_ATTEMPTS = 5;
+  const RECOVERY_LOCK_MS = 5 * 60 * 1000;
+
+  // Step 1: does this email exist and have recovery questions set?
+  app.post('/api/auth/forgot-password/check', (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
+    const info = getRecoveryInfo(email);
+    if (!info.exists) return res.status(404).json({ error: 'No account found with this email.' });
+    if (!info.hasRecovery) {
+      return res.status(400).json({ error: 'This account has no recovery questions set. Sign in and add them in Settings.' });
+    }
+    const lock = recoveryAttempts.get(email);
+    if (lock && lock.lockedUntil > Date.now()) {
+      const mins = Math.ceil((lock.lockedUntil - Date.now()) / 60000);
+      return res.status(429).json({ error: `Too many attempts — try again in ${mins} minute(s).` });
+    }
+    res.json({ success: true, q1: info.q1, q2: info.q2 });
+  });
+
+  // Step 2: verify answers + set new password
+  app.post('/api/auth/forgot-password/reset', (req, res) => {
+    try {
+      const { email, answer1, answer2, newPassword } = req.body;
+      const cleanEmail = String(email || '').trim().toLowerCase();
+      if (!cleanEmail) return res.status(400).json({ error: 'Email is required.' });
+      if (!newPassword || String(newPassword).length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+      }
+      const lock = recoveryAttempts.get(cleanEmail);
+      if (lock && lock.lockedUntil > Date.now()) {
+        const mins = Math.ceil((lock.lockedUntil - Date.now()) / 60000);
+        return res.status(429).json({ error: `Too many attempts — try again in ${mins} minute(s).` });
+      }
+      try {
+        const user = resetPasswordWithRecovery(cleanEmail, String(answer1 || ''), String(answer2 || ''), String(newPassword));
+        recoveryAttempts.delete(cleanEmail);
+        res.json({ success: true, email: user.email });
+      } catch (err: any) {
+        const entry = recoveryAttempts.get(cleanEmail) || { count: 0, lockedUntil: 0 };
+        entry.count += 1;
+        if (entry.count >= MAX_RECOVERY_ATTEMPTS) {
+          entry.lockedUntil = Date.now() + RECOVERY_LOCK_MS;
+          entry.count = 0;
+          recoveryAttempts.set(cleanEmail, entry);
+          return res.status(429).json({ error: 'Too many wrong answers — locked for 5 minutes.' });
+        }
+        recoveryAttempts.set(cleanEmail, entry);
+        return res.status(400).json({ error: err.message });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Authed: set/update recovery questions from Settings (needs current password)
+  app.post('/api/auth/recovery-questions', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const { currentPassword, recoveryQ1, recoveryA1, recoveryQ2, recoveryA2 } = req.body;
+      if (!currentPassword || !recoveryQ1 || !recoveryA1 || !recoveryQ2 || !recoveryA2) {
+        return res.status(400).json({ error: 'All fields are required.' });
+      }
+      if (String(recoveryA1).trim().length < 3 || String(recoveryA2).trim().length < 3) {
+        return res.status(400).json({ error: 'Recovery answers must be at least 3 characters.' });
+      }
+      setRecoveryQuestions(userId, String(currentPassword), {
+        q1: String(recoveryQ1).trim(),
+        a1: String(recoveryA1),
+        q2: String(recoveryQ2).trim(),
+        a2: String(recoveryA2),
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
     }
   });
 
