@@ -246,11 +246,18 @@ export class LinkedInScraper extends BaseScraper {
       }
     }
 
-    const postFilter = params.jobType === 'remote' || !params.jobType;
-    // Post-filter: remote request → keep ONLY jobs explicitly labeled
-    // Remote. Hybrid and "not specified" jobs are never assumed remote.
-    const remoteJobs = postFilter
-      ? scrapedJobs.filter((j) => j.jobType.includes('Remote') && !j.jobType.includes('Hybrid'))
+    // Post-filter: LinkedIn's OWN search filter (f_WT) already guarantees
+    // the requested work mode, so drop only jobs EXPLICITLY contradicted
+    // by their description. Unknown labels pass — most postings never
+    // mention their work mode in the description text.
+    const contradicts = (j: Job, wanted: string) => {
+      if (wanted === 'remote') return j.jobType.includes('Hybrid') || j.jobType.includes('On-site');
+      if (wanted === 'onsite') return j.jobType.includes('Remote') || j.jobType.includes('Hybrid');
+      if (wanted === 'hybrid') return j.jobType.includes('Remote') || j.jobType.includes('On-site');
+      return false;
+    };
+    const remoteJobs = params.jobType && params.jobType !== 'all'
+      ? scrapedJobs.filter((j) => !contradicts(j, params.jobType as string))
       : scrapedJobs;
 
     console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} ${jt} jobs`);
