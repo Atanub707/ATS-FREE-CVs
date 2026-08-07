@@ -85,9 +85,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </h1>
               <AtanuBadge />
             </div>
-            <p className="text-[11px] text-slate-500 hidden sm:block">
-              Job Search • AI ATS Matching • CV Tailoring & Export
-            </p>
           </div>
         </div>
 
