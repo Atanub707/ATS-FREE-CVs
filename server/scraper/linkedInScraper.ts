@@ -260,19 +260,12 @@ export class LinkedInScraper extends BaseScraper {
       ? scrapedJobs.filter((j) => !contradicts(j, params.jobType as string))
       : scrapedJobs;
 
-    // Source-guaranteed labeling: LinkedIn's OWN filter (f_WT) already
-    // confirmed the requested work mode, so any remaining unlabeled job is
-    // labeled with it (e.g. remote search -> "Full-time · Remote"). This is
-    // NOT an assumption — it carries the source's guarantee into the label.
-    const wantedMode = params.jobType && params.jobType !== 'all' ? params.jobType : null;
-    if (wantedMode) {
-      const label = wantedMode === 'onsite' ? 'On-site' : wantedMode.charAt(0).toUpperCase() + wantedMode.slice(1);
-      for (const job of remoteJobs) {
-        if (job.jobType === 'Full-time') {
-          job.jobType = `Full-time · ${label}`;
-        }
-      }
-    }
+    // NOTE: no source-guarantee labeling. LinkedIn's own search filter
+    // (f_WT) is UNRELIABLE — a "remote" search returned an on-site posting
+    // (BarmeniaGothaer Cloud Platform Engineer). Labeling unknown jobs from
+    // the search context would mislead. Work mode is labeled ONLY from
+    // explicit page evidence (JSON-LD / description hints); otherwise the
+    // job honestly stays "Full-time · Not stated".
 
     console.log(`[LinkedIn] Scraped ${scrapedJobs.length}, filtered to ${remoteJobs.length} ${jt} jobs`);
     return remoteJobs;
