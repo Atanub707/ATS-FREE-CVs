@@ -7,7 +7,7 @@ import { LinkedInScraper } from './linkedInScraper.js';
 // Used when the user enables it in Settings and provides an Apify API token.
 // Falls back to the built-in free LinkedIn scraper on any failure.
 
-const ACTOR_ID = 'valig/linkedin-jobs-scraper';
+const ACTOR_ID = 'valig~linkedin-jobs-scraper'; // REST API uses ~ (not /) between username and actor name
 const RUN_SYNC_URL = (token: string) =>
   `https://api.apify.com/v2/acts/${ACTOR_ID}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}`;
 
