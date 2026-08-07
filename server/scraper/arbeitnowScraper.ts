@@ -46,10 +46,14 @@ export class ArbeitnowScraper extends BaseScraper {
           const description = job.description || '';
           const company = job.company_name || 'Unknown';
 
-          // Term-based matching: any significant keyword term must appear (phrase match missed jobs like "DevOps Lead")
+          // Term-based matching: the FIRST significant word is the role
+          // keyword and MUST appear in the title/company ("devops engineer"
+          // must never return "Software Engineer" just because of the word
+          // "engineer"). Remaining words are optional refinements.
           const terms = keywordsLower.split(/\s+/).filter((t) => t.length > 2);
           const searchText = `${title} ${company}`.toLowerCase();
-          const match = terms.length === 0 || terms.some((t) => searchText.includes(t));
+          const primaryTerm = terms[0];
+          const match = terms.length === 0 || (primaryTerm ? searchText.includes(primaryTerm) : true);
           if (!match) continue;
 
           const jobUrl = job.url || '';
