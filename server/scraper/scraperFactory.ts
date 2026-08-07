@@ -1,4 +1,5 @@
 import { LinkedInScraper } from './linkedInScraper.js';
+import { isCrawlingAllowed } from './robotsGuard.js';
 import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { SimplyHiredScraper } from './simplyHiredScraper.js';
 import { DiceScraper } from './diceScraper.js';
@@ -18,7 +19,35 @@ export class ScraperFactory {
     const sources = params.sources || ['LinkedIn'];
     const allJobs: Job[] = [];
 
+    // Good-faith crawler check: resolve robots.txt once per domain (parallel,
+    // cached 1h) and skip sources whose sites disallow crawling.
+    const SOURCE_DOMAINS: Record<string, string> = {
+      LinkedIn: 'www.linkedin.com',
+      Arbeitnow: 'arbeitnow.com',
+      SimplyHired: 'www.simplyhired.com',
+      Dice: 'www.dice.com',
+      Reed: 'www.reed.co.uk',
+      RemoteOK: 'remoteok.com',
+      WeWorkRemotely: 'weworkremotely.com',
+      MyCareersFuture: 'www.mycareersfuture.gov.sg',
+      Cutshort: 'cutshort.io',
+      Gupy: 'portal.gupy.io',
+      JobsCh: 'jobs.ch',
+      Daijob: 'daijob.com',
+      MyJobMag: 'myjobmag.com',
+    };
+    const domains = [...new Set(sources.map((s) => SOURCE_DOMAINS[s]).filter(Boolean))];
+    const robotsResults = await Promise.all(
+      domains.map(async (d) => [d, await isCrawlingAllowed(d)] as const)
+    );
+    const robotsAllowed = new Map<string, boolean>(robotsResults);
+
     for (const source of sources) {
+      const domain = SOURCE_DOMAINS[source];
+      if (domain && robotsAllowed.get(domain) === false) {
+        console.warn(`[ScraperFactory] ${source}: skipped — robots.txt disallows crawling (${domain}/robots.txt)`);
+        continue;
+      }
       try {
         let jobs: Job[] = [];
         if (source === 'LinkedIn') {

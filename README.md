@@ -306,3 +306,16 @@ MIT
 <p align="center">
   Built with ❤️ for developers who hate manual job applications.
 </p>
+
+---
+
+## ⚖️ Legal & Terms of Use
+
+**Read this before using or contributing.**
+
+- **Purpose:** This tool is built for **personal, local use** — it runs on your own machine and your scraped data stays on your machine. It is **not** a cloud service and does **not** ship or redistribute scraped data.
+- **Scraping & Terms of Service:** The tool retrieves publicly visible job listings from websites that are often third-party services (e.g. LinkedIn). Such retrieval is **automated access** and may violate the target site's Terms of Service. **You are responsible for your own use** — ensure the sites you scrape permit it (check each site's robots.txt and Terms) and that you comply with all applicable laws (including privacy laws such as the EU GDPR and India's DPDP Act 2023).
+- **Good-faith safeguards built in:** the tool respects `robots.txt` (sources that disallow crawling are skipped), throttles requests with delays, and **strips personal contact data** (emails, phone numbers, recruiter contacts) from stored listings.
+- **No affiliation:** This project is not affiliated with, endorsed by, or connected to LinkedIn, Indeed, Arbeitnow, or any other job board.
+- **No warranty:** Provided "as is" without warranty of any kind. The author is not liable for how you use this software or for any consequences of scraping.
+- **Removal requests:** If you are a site owner and believe this tool is being used against your site in a way you do not permit, please open an issue — we will act promptly.

@@ -85,6 +85,7 @@ import {
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
+import { sanitizeJobs } from './server/scraper/sanitizer.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
@@ -837,7 +838,11 @@ Return valid JSON only — NO markdown, NO code fences:
 
       const filteredOutCount = scrapedJobsRaw.length - scrapedJobs.length;
 
-      const { added, skipped } = saveNewJobs(scrapedJobs);
+      // Legal-readiness: never store personal contact data found inside
+      // scraped descriptions (recruiter emails/phones).
+      const sanitizedJobs = sanitizeJobs(scrapedJobs);
+
+      const { added, skipped } = saveNewJobs(sanitizedJobs);
 
       res.json({
         success: true,
