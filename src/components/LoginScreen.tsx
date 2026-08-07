@@ -156,8 +156,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
           <p className="text-slate-400 text-sm mt-1">
             Sign in to your workspace — each account has its own CV, jobs, and match history.
           </p>
-          <div className="flex justify-center mt-3">
-            <AtanuBadge size="md" />
+          <div className="flex justify-center mt-2">
+            <AtanuBadge tone="dark" />
           </div>
         </div>
 
