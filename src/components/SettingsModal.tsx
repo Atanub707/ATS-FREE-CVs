@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2, Globe } from 'lucide-react';
+import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2, Globe, Rocket } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface SettingsModalProps {
@@ -250,6 +250,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-4 h-4 mt-0.5 cursor-pointer accent-sky-600"
               />
             </label>
+          </div>
+
+          {/* Apify (optional LinkedIn source) */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <Rocket className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Apify — Reliable LinkedIn Source (Optional)</span>
+            </h3>
+            <p className="text-[10.5px] text-slate-500 leading-relaxed">
+              Routes LinkedIn searches through Apify's cloud scraper: no more “No results found” blocks,
+              and it returns the true work mode (Remote / Hybrid / On-site). Costs ~$0.40 per 1,000 jobs
+              from Apify's free $5 monthly credit. Falls back to the built-in free scraper automatically.
+            </p>
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <span className="font-semibold text-slate-800 text-xs">Use Apify for LinkedIn</span>
+              <input
+                type="checkbox"
+                checked={formData.apify.enabled}
+                onChange={(e) => setFormData({ ...formData, apify: { ...formData.apify, enabled: e.target.checked } })}
+                className="w-4 h-4 cursor-pointer accent-indigo-600"
+              />
+            </label>
+            <div className="relative">
+              <Key className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                value={formData.apify.token}
+                onChange={(e) => setFormData({ ...formData, apify: { ...formData.apify, token: e.target.value } })}
+                placeholder="Apify API token (console.apify.com → Settings → Integrations)"
+                className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white font-mono"
+              />
+            </div>
           </div>
 
           {/* Password Recovery Questions (password accounts only) */}

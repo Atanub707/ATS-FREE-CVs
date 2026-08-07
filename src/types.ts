@@ -208,6 +208,10 @@ export interface AppConfig {
     maxRetries: number;
     respectRobotsTxt: boolean;
   };
+  apify: {
+    token: string;
+    enabled: boolean;
+  };
 }
 
 export interface JobFilterQueryParams {

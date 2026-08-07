@@ -1,4 +1,5 @@
 import { LinkedInScraper } from './linkedInScraper.js';
+import { ApifyLinkedInScraper } from './apifyScraper.js';
 import { isCrawlingAllowed } from './robotsGuard.js';
 import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { SimplyHiredScraper } from './simplyHiredScraper.js';
@@ -61,7 +62,18 @@ export class ScraperFactory {
       try {
         let jobs: Job[] = [];
         if (source === 'LinkedIn') {
-          jobs = await new LinkedInScraper().scrape(params);
+          // Apify (optional, user-enabled) first — reliable + accurate work
+          // mode; falls back to the built-in free scraper on any failure.
+          const apify = new ApifyLinkedInScraper();
+          const apifyConfig = loadConfig().apify;
+          if (apifyConfig.enabled && apifyConfig.token?.trim()) {
+            jobs = await apify.scrape(params);
+            if (jobs.length === 0) {
+              jobs = await new LinkedInScraper().scrape(params);
+            }
+          } else {
+            jobs = await new LinkedInScraper().scrape(params);
+          }
         } else if (source === 'Arbeitnow') {
           jobs = await new ArbeitnowScraper().scrape(params);
         } else if (source === 'SimplyHired') {

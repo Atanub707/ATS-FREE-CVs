@@ -27,6 +27,10 @@ const DEFAULT_CONFIG: AppConfig = {
     maxRetries: 3,
     respectRobotsTxt: true,
   },
+  apify: {
+    token: '',
+    enabled: false,
+  },
 };
 
 export function loadConfig(): AppConfig {
@@ -60,6 +64,10 @@ export function loadConfig(): AppConfig {
         stealthMode: String(parsed.scraper?.stealthMode ?? 'true').toLowerCase() !== 'false',
         maxRetries: Number(parsed.scraper?.maxRetries ?? DEFAULT_CONFIG.scraper.maxRetries),
         respectRobotsTxt: String(parsed.scraper?.respectRobotsTxt ?? 'true').toLowerCase() !== 'false',
+      },
+      apify: {
+        token: parsed.apify?.token || '',
+        enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
       },
     };
   } catch (err) {
