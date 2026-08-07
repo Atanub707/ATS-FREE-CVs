@@ -111,6 +111,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             placeholder="Search role, skills, or job title — e.g. 'DevOps Engineer'"
+            autoComplete="off"
+            name="ats-search-keywords"
             className="flex-1 border-none outline-none bg-transparent text-[15px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal py-2"
             required
           />
@@ -148,6 +150,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Worldwide"
+                autoComplete="off"
+                name="ats-search-location"
                 className="w-full bg-white border-[1.5px] border-slate-200 rounded-[10px] pl-8 pr-3 py-[9px] text-[13px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal transition-all hover:border-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10"
               />
             </div>
