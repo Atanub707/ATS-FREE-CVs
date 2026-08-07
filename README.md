@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="ATS CV Tailor Dashboard"/>
+  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="Tailor Dashboard"/>
 </p>
 
-<h1 align="center">ATS CV Tailor</h1>
+<h1 align="center">Tailor</h1>
 
 <p align="center">
   <strong>Multi-source job scraper · AI-powered ATS matching · CV tailoring — all running locally.</strong>
@@ -20,7 +20,7 @@
 
 ## 📋 Overview
 
-ATS CV Tailor scrapes job listings from 10 global sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine — your data never leaves your computer. Each person gets their own **local account** with fully isolated CV, jobs, and match history.
+Tailor scrapes job listings from 10 global sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine — your data never leaves your computer. Each person gets their own **local account** with fully isolated CV, jobs, and match history.
 
 ---
 

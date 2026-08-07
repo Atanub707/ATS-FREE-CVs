@@ -74,16 +74,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand & Clean Title */}
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-xs tracking-wider shadow-xs">
-            JM
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+            T
           </div>
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-sm font-bold text-slate-900 tracking-tight font-sans">
-                ATS CV Tailor
+                Tailor
               </h1>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                Multi-Source
+                by @Atanu
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">

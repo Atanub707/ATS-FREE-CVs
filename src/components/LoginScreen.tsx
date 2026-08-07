@@ -148,13 +148,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/30 mb-4">
-            <Sparkles className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-slate-900 text-white shadow-lg shadow-blue-600/30 mb-4">
+            <span className="font-bold text-xl">T</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">ATS CV Tailor</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Tailor</h1>
           <p className="text-slate-400 text-sm mt-1">
             Sign in to your workspace — each account has its own CV, jobs, and match history.
           </p>
+          <p className="text-slate-500 text-[11px] mt-2">by @Atanu</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
