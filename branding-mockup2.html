@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atanu Credit — 10 Design Directions</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #0f172a; padding: 40px 24px; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 700; }
+  .sub { color: #64748b; font-size: 13px; margin: 6px 0 8px; }
+  .hint { color: #94a3b8; font-size: 12px; margin-bottom: 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
+  .num { font-size: 10px; font-weight: 800; color: #2563eb; letter-spacing: .08em; }
+  .preview { border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 14px; margin-top: 10px; background: #fff; display: flex; align-items: center; justify-content: space-between; }
+  .preview.dark { background: #0f172a; border-color: #1e293b; }
+  .psych { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.5; }
+  .psych b { color: #334155; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .tile { width: 26px; height: 26px; border-radius: 6px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+  .name { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+  .name.dark { color: #fff; }
+  .credit { display: inline-flex; align-items: baseline; }
+  .sig { font-family: "Snell Roundhand", "Brush Script MT", "Apple Chancery", cursive; }
+  /* V1 classic script */
+  .v1 { font-size: 17px; font-weight: 600; color: #0f172a; }
+  .v1.dark { color: #f8fafc; }
+  /* V2 script + hand underline */
+  .v2 { position: relative; font-size: 17px; font-weight: 600; color: #0f172a; padding-bottom: 3px; }
+  .v2 svg { position: absolute; left: 0; bottom: 0; width: 100%; height: 5px; }
+  .v2.dark { color: #f8fafc; }
+  /* V3 by + script */
+  .v3 .by { font-size: 10px; color: #94a3b8; margin-right: 5px; }
+  .v3 .n { font-size: 16px; font-weight: 600; color: #334155; }
+  .v3.dark .by { color: #64748b; } .v3.dark .n { color: #e2e8f0; }
+  /* V4 seal + script */
+  .v4 { display: inline-flex; align-items: center; gap: 8px; }
+  .v4 .seal { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #2563eb; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-style: italic; }
+  .v4 .n { font-size: 16px; font-weight: 600; color: #334155; }
+  .v4.dark .seal { border-color: #60a5fa; color: #60a5fa; } .v4.dark .n { color: #e2e8f0; }
+  /* V5 dot + script */
+  .v5 { display: inline-flex; align-items: center; gap: 7px; }
+  .v5 .dot { width: 7px; height: 7px; border-radius: 50%; background: #2563eb; }
+  .v5 .n { font-size: 16px; font-weight: 600; color: #334155; }
+  .v5.dark .dot { background: #60a5fa; } .v5.dark .n { color: #e2e8f0; }
+  /* V6 stacked */
+  .v6 { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+  .v6 .by { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; }
+  .v6 .n { font-size: 18px; font-weight: 600; color: #0f172a; }
+  .v6.dark .by { color: #64748b; } .v6.dark .n { color: #f8fafc; }
+  /* V7 by in blue + script */
+  .v7 .by { font-size: 10px; font-weight: 700; color: #2563eb; margin-right: 5px; }
+  .v7 .n { font-size: 16px; font-weight: 600; color: #0f172a; }
+  .v7.dark .by { color: #60a5fa; } .v7.dark .n { color: #f8fafc; }
+  /* V8 white-on-dark signature */
+  .v8 { font-size: 18px; font-weight: 600; color: #f8fafc; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  /* V9 separator rule */
+  .v9 { display: inline-flex; align-items: center; gap: 9px; }
+  .v9 .rule { width: 1px; height: 14px; background: #cbd5e1; }
+  .v9 .n { font-size: 15px; font-weight: 600; color: #334155; }
+  .v9.dark .rule { background: #334155; } .v9.dark .n { color: #e2e8f0; }
+  /* V10 linkedin hint */
+  .v10 { display: inline-flex; align-items: center; gap: 7px; }
+  .v10 .n { font-size: 16px; font-weight: 600; color: #334155; }
+  .v10 .h { font-size: 9px; color: #2563eb; font-weight: 600; border: 1px solid #bfdbfe; background: #eff6ff; padding: 2px 6px; border-radius: 999px; }
+  .v10.dark .n { color: #e2e8f0; } .v10.dark .h { color: #93c5fd; border-color: #1e40af; background: #1e3a8a; }
+  .linkedin-badge { font-size: 9px; color: #94a3b8; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>“Atanu” Credit — 10 Design Directions</h1>
+  <p class="sub">Each shown exactly as it would sit beside “Tailor CV” in the navbar.</p>
+  <p class="hint">Problem being solved: the current cursive credit is too small/thin to read. Every direction below applies a psychological principle — signature = ownership, contrast = legibility, restraint = premium.</p>
+
+  <div class="grid">
+
+    <div class="card"><div class="num">01</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit sig v1">— Atanu</span></div>
+      <div class="psych"><b>Big-signature confidence.</b> Large (17px) bold script in near-black. People trust handwritten signatures; bigger + darker = stronger ownership. Highest legibility of all script options.</div>
+    </div>
+
+    <div class="card"><div class="num">02</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v2 sig">— Atanu<svg viewBox="0 0 60 5" preserveAspectRatio="none"><path d="M1 4 C 10 1, 20 4, 30 2 S 50 4, 59 3" stroke="#2563eb" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span></div>
+      <div class="psych"><b>Hand-drawn authenticity.</b> A blue hand-drawn underline under the signature signals “crafted by hand”. Blue ties to the brand; the wobble reads human, not machine.</div>
+    </div>
+
+    <div class="card"><div class="num">03</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v3"><span class="by">by</span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Classic colophon.</b> Muted “by” + medium script name. The quiet “by” creates a book-credit hierarchy: product first, maker second, both readable.</div>
+    </div>
+
+    <div class="card"><div class="num">04</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v4"><span class="seal">A</span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Personal seal.</b> A monogram ring acts like a wax stamp — authority + identity. The italic “A” inside the blue ring reads as “signed & sealed by the creator”.</div>
+    </div>
+
+    <div class="card"><div class="num">05</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v5"><span class="dot"></span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Blue dot anchor.</b> One blue dot before the signature anchors the eye and carries the brand color without decoration. Minimal, modern, instantly readable.</div>
+    </div>
+
+    <div class="card"><div class="num">06</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v6"><span class="by">created by</span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Two-line hierarchy.</b> Tiny uppercase “created by” above a larger signature gives the name its own visual line — the maker gets a clear stage without stealing from the product name.</div>
+    </div>
+
+    <div class="card"><div class="num">07</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v7"><span class="by">by</span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Brand-colored connector.</b> “by” in brand blue links maker to product in one glance. The color repetition (blue tile → blue “by”) creates brand coherence psychology.</div>
+    </div>
+
+    <div class="card"><div class="num">08</div>
+      <div class="preview dark"><div class="brand"><div class="tile">TC</div><div class="name dark">Tailor CV</div></div><span class="credit sig v1 dark">— Atanu</span></div>
+      <div class="psych"><b>Dark-stage legibility.</b> On dark surfaces: near-white large script + a faint soft shadow. Contrast-first rule — the signature must survive both light and dark UI.</div>
+    </div>
+
+    <div class="card"><div class="num">09</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v9"><span class="rule"></span><span class="n sig">Atanu</span></span></div>
+      <div class="psych"><b>Separation by hairline.</b> A thin vertical rule separates product from maker — “distinct but connected”. Designed like editorial mastheads (newspaper columns, film credits).</div>
+    </div>
+
+    <div class="card"><div class="num">10</div>
+      <div class="preview"><div class="brand"><div class="tile">TC</div><div class="name">Tailor CV</div></div><span class="credit v10"><span class="n sig">Atanu</span><span class="h">LinkedIn ↗</span></span></div>
+      <div class="psych"><b>Affordance-first.</b> Signature + a tiny “LinkedIn ↗” pill makes the link unmistakable (discoverability psychology). Users know it's clickable and where it leads — no guesswork.</div>
+    </div>
+
+  </div>
+
+  <p class="hint" style="margin-top:24px">All directions keep one rule: the credit is a whisper, not a badge — it never competes with the product name. Tell me the number(s) you like and I'll implement.</p>
+</div>
+</body>
+</html>
