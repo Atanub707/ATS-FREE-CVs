@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -329,9 +330,12 @@ async function startServer() {
   });
 
   // Warn if a previously-committed (compromised) API key is still in use
-  const COMPROMISED_KEYS = new Set(['sk-BGkiio5V8alNSZEipX2yMJ9d22S4N2dSDHHhaOrOYsubdYKHS2dhiSpFTYKoQqF0']);
+  // Compromised keys stored as SHA-256 hashes (never plaintext in the repo).
+  // Hash of the previously leaked key; compare by hashing the configured key.
+  const COMPROMISED_KEY_HASHES = new Set(['a2117087d9a8d23cd2b4f14d61139102293d11bfc0faf57552d02b50f402274a']);
   const configuredKey = loadConfig().llm.apiKey;
-  if (COMPROMISED_KEYS.has(configuredKey)) {
+  const configuredKeyHash = crypto.createHash('sha256').update(configuredKey || '').digest('hex');
+  if (COMPROMISED_KEY_HASHES.has(configuredKeyHash)) {
     console.warn('\n==========================================================');
     console.warn('⚠️  SECURITY WARNING: Your API key was exposed in an old');
     console.warn('    public git commit. Anyone with repo history has it.');
