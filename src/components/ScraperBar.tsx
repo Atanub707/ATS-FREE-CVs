@@ -89,11 +89,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
     <div className="bg-white border-b border-slate-200 py-5 text-slate-900">
       {/* Datalists for Native Auto-completion */}
       <datalist id="datalist-roles-keywords">
-        {roleSuggestions.map((role) => (
-          <option key={role} value={role} />
-        ))}
-        {keywordSuggestions.map((kw) => (
-          <option key={kw} value={kw} />
+        {Array.from(new Set([...roleSuggestions, ...keywordSuggestions])).map((s) => (
+          <option key={s} value={s} />
         ))}
       </datalist>
 
