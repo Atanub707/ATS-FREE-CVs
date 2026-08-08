@@ -31,8 +31,6 @@ export default function App() {
 
   // Loading states
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
-  const [isBatchMatching, setIsBatchMatching] = useState(false);
-  const [isBatchTailoring, setIsBatchTailoring] = useState(false);
   const [loadingJobIds, setLoadingJobIds] = useState<Set<string>>(new Set());
   const [scoreMessages, setScoreMessages] = useState<Record<string, string[]>>({});
   const [tailorMessages, setTailorMessages] = useState<Record<string, string[]>>({});
@@ -225,34 +223,6 @@ export default function App() {
   };
 
   // Batch Match Handler
-  const handleBatchMatch = async () => {
-    setIsBatchMatching(true);
-    try {
-      const res = await fetch('/api/jobs/batch-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.jobs && Array.isArray(data.jobs)) {
-          setJobs((prev) => {
-            const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
-            return prev.map((j) => updated.get(j.id) || j);
-          });
-        }
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(llmErrorMessage(data.code, data.error));
-      }
-    } catch (err) {
-      console.error('Batch match error:', err);
-    } finally {
-      setIsBatchMatching(false);
-      fetchJobs();
-    }
-  };
-
   // Tailor CV Handler
   const handleTailorJob = async (jobId: string) => {
     runWithMessages(jobId, [
@@ -274,31 +244,6 @@ export default function App() {
         throw new Error(data.error || 'Tailor failed');
       }
     }, setTailorMessages);
-  };
-
-  // Batch Tailor Handler
-  const handleBatchTailor = async () => {
-    setIsBatchTailoring(true);
-    try {
-      const res = await fetch('/api/jobs/batch-tailor', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.jobs && Array.isArray(data.jobs)) {
-          setJobs((prev) => {
-            const updated = new Map(data.jobs.map((j: Job) => [j.id, j]));
-            return prev.map((j) => updated.get(j.id) || j);
-          });
-        }
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(llmErrorMessage(data.code, data.error));
-      }
-    } catch (err) {
-      console.error('Batch tailor error:', err);
-    } finally {
-      setIsBatchTailoring(false);
-      fetchJobs();
-    }
   };
 
   // Status Update Handler
@@ -485,14 +430,10 @@ export default function App() {
               onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
               onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
               onMatchJob={handleMatchJob}
-              onBatchMatch={handleBatchMatch}
               onTailorJob={handleTailorJob}
-              onBatchTailor={handleBatchTailor}
               onDeleteJob={handleDeleteJob}
               onUpdateStatus={handleUpdateStatus}
               onClearAll={handleClearAll}
-              isBatchMatching={isBatchMatching}
-              isBatchTailoring={isBatchTailoring}
               loadingJobIds={loadingJobIds}
               scoreMessages={scoreMessages}
               tailorMessages={tailorMessages}
