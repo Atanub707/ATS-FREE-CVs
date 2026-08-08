@@ -937,12 +937,20 @@ export function repairJobDates(): number {
         const pd = String(j.postedDate || '');
         const pdp = String(j.postedDateParsed || '');
         const m = pd.match(/^(\d{4}-\d{2}-\d{2})/);
-        if (!m && pdp && /^\d{4}-\d{2}-\d{2}/.test(pdp.slice(0, 10))) {
-          // postedDate malformed but parsed date present
+        const mPdp = pdp.slice(0, 10).match(/^\d{4}-\d{2}-\d{2}/);
+        let day = m ? m[1] : (mPdp ? mPdp[1] : null);
+        if (!day) {
+          // Garbage date (e.g. "+058544-12-15..." from a ms/seconds bug):
+          // fall back to the scrape date so the job shows a real age.
+          const cm = String(j.createdAt || '').match(/^(\d{4}-\d{2}-\d{2})/);
+          if (cm) day = cm[1];
         }
-        const day = m ? m[1] : (pdp.slice(0, 10).match(/^\d{4}-\d{2}-\d{2}/) || [null])[0];
         if (!day) continue;
-        const newPosted = `${day}T12:00:00.000Z`;
+        const cm2 = String(j.createdAt || '').match(/^(\d{4}-\d{2}-\d{2})/);
+        const isGarbage = !m && !mPdp;
+        const newPosted = isGarbage
+          ? (cm2 ? String(j.createdAt) : `${day}T12:00:00.000Z`)
+          : `${day}T12:00:00.000Z`;
         const newParsed = day;
         if (pd !== newPosted || pdp.slice(0, 10) !== newParsed) {
           j.postedDate = newPosted;

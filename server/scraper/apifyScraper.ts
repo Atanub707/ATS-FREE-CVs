@@ -68,7 +68,15 @@ function mapItem(item: any): Job | null {
   const now = new Date().toISOString();
   const applicants = parseApplicants(item.applicant_count !== undefined ? String(item.applicant_count) : item.applicationsCount);
   const salary = parseSalary(item.salary);
-  const rawPosted = item.posted_at_epoch ? new Date(item.posted_at_epoch * 1000) : item.posted_at ? new Date(item.posted_at) : null;
+  // posted_at_epoch is MILLISECONDS from this actor (13 digits); fall back
+  // to posted_at ("YYYY-MM-DD HH:MM:SS") parsed as UTC.
+  const epoch = Number(item.posted_at_epoch);
+  let rawPosted: Date | null = null;
+  if (!isNaN(epoch) && epoch > 0) {
+    rawPosted = new Date(epoch > 1e12 ? epoch : epoch * 1000);
+  } else if (item.posted_at) {
+    rawPosted = new Date(String(item.posted_at).replace(' ', 'T') + 'Z');
+  }
   const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : now;
 
   // Work mode: the actor's per-job work_type field is the authoritative
