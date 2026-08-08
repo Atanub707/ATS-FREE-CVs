@@ -63,6 +63,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [removedPoints, setRemovedPoints] = useState<Set<string>>(new Set());
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
+  const [stage, setStage] = useState<'analysis' | 'review'>('analysis');
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -100,6 +101,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setSelectedSkills(new Set(missing));
       setRemovedPoints(new Set());
       setDiff(a.diff || null);
+      setStage(a.diff ? 'review' : 'analysis');
       setHistoryId(a.id);
       setHistoryOpen(false);
       if (a.tailored_cv && a.diff?.scoreBoost !== undefined) setDownloadToken(`restored-${a.id}`);
@@ -114,7 +116,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true); setError(''); setResult(null); setDiff(null); setDownloadToken(null);
+    setLoading(true); setError(''); setResult(null); setDiff(null); setDownloadToken(null); setStage('analysis');
     try {
       const res = await fetch('/api/analyze-jd', {
         method: 'POST',
@@ -152,7 +154,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Tailoring failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setDownloadToken(data.downloadToken);
-      if (data.diff) setDiff(data.diff);
+      if (data.diff) { setDiff(data.diff); setStage('review'); }
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
     finally { setTailoring(false); }
@@ -218,11 +220,18 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
 
-      {/* Main grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* LEFT: inputs */}
-          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5 space-y-3.5 self-start">
+      {/* Sliding track: Add JD | Analysis | Tailoring updates */}
+      <div className="flex-1 overflow-x-hidden overflow-y-auto">
+        <div className="max-w-5xl mx-auto p-5 sm:p-8 overflow-hidden">
+          <div
+            className="flex gap-[18px]"
+            style={{
+              transform: stage === 'review' ? 'translateX(calc(-50% - 9px))' : 'translateX(0)',
+              transition: 'transform .55s cubic-bezier(.25,.8,.3,1)',
+            }}
+          >
+          {/* PANEL 1: inputs */}
+          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5 space-y-3.5 self-start" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
             <h2 className="text-[13.5px] font-bold text-[#155E75]">Job details</h2>
             <div>
               <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Role name</label>
@@ -248,8 +257,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
             <p className="text-center text-[10.5px] text-[#0E7490]">Everything stays on your machine</p>
           </div>
 
-          {/* RIGHT: result */}
-          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5">
+          {/* PANEL 2: analysis + pick skills */}
+          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
             {!result ? (
               <div className="min-h-[380px] flex items-center justify-center text-center">
                 <div>
@@ -305,10 +314,44 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   </>
                 )}
 
-                {/* Step 3: review */}
-                {diff && (
-                  <>
-                    <h3 className="text-[12.5px] font-bold text-[#155E75]">Review changes — remove what you don't like</h3>
+              </div>
+            )}
+          </div>
+
+          {/* PANEL 3: tailoring updates — slides in from the right */}
+          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
+            {!diff ? (
+              <div className="min-h-[380px] flex items-center justify-center text-center">
+                <div>
+                  <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-[#22D3EE]" />
+                  </div>
+                  <p className="text-[13.5px] font-bold text-[#0E7490]">Tailoring updates</p>
+                  <p className="text-[12px] text-[#0E7490] mt-1">Generate the tailored CV — this panel slides in.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-[13.5px] font-bold text-[#155E75] mb-4">Tailoring updates</h2>
+                <div className="grid grid-cols-2 gap-2.5 mb-4">
+                  <div className="bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl px-3.5 py-3">
+                    <div className="text-xl font-extrabold text-[#15803D]">+{diff.scoreBoost}%</div>
+                    <div className="text-[10px] text-[#0E7490] mt-0.5">ATS score boost ({diff.beforeScore}% → {diff.afterScore}%)</div>
+                  </div>
+                  <div className="bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl px-3.5 py-3">
+                    <div className="text-xl font-extrabold text-[#15803D]">+{reviewSkills.length}</div>
+                    <div className="text-[10px] text-[#0E7490] mt-0.5">skills added</div>
+                  </div>
+                  <div className="bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl px-3.5 py-3">
+                    <div className="text-xl font-extrabold text-[#15803D]">+{reviewBullets.length}</div>
+                    <div className="text-[10px] text-[#0E7490] mt-0.5">bullets rewritten</div>
+                  </div>
+                  <div className="bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl px-3.5 py-3">
+                    <div className="text-xl font-extrabold text-[#0E7490]">{diff.notIntegrable?.length || 0}</div>
+                    <div className="text-[10px] text-[#0E7490] mt-0.5">skipped — no honest way to add</div>
+                  </div>
+                </div>
+                <h3 className="text-[12.5px] font-bold text-[#155E75]">Review changes — remove what you don't like</h3>
                     {reviewSkills.map((s) => {
                       const removed = removedPoints.has(`skill:${s}`);
                       return (
@@ -358,11 +401,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                         <CheckCircle2 className="w-4 h-4" /> Saved
                       </button>
                     </div>
+                    <button onClick={() => setStage('analysis')} className="mt-2 w-full py-2 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] cursor-pointer transition-colors">
+                      ← Back to analysis
+                    </button>
                   </>
                 )}
-              </div>
-            )}
           </div>
+        </div>
         </div>
       </div>
 

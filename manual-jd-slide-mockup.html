@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tailor CV — Slide Interaction Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #ECFEFF; color: #164E63; padding: 36px 20px; overflow-x: hidden; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; }
+  .head h1 { font-size: 22px; font-weight: 800; color: #155E75; }
+  .head p { font-size: 12.5px; color: #0E7490; }
+  /* Viewport with overflow hidden — panels slide inside */
+  .stage { overflow: hidden; position: relative; }
+  .track { display: flex; gap: 18px; transition: transform .55s cubic-bezier(.25,.8,.3,1); }
+  /* STATE A: panels 1+2 (analysis) — track at 0 */
+  /* STATE B: tailor clicked — panels 1+2 slide left, panel 3 enters from right */
+  .stage.a .track { transform: translateX(0); }
+  .stage.b .track { transform: translateX(calc(-50% - 9px)); } /* shift left by one panel */
+  .panel { flex: 0 0 calc((100% - 18px) / 2); background: #fff; border: 1.5px solid #A5F3FC; border-radius: 20px; padding: 24px; min-height: 520px; }
+  .panel h2 { font-size: 14px; font-weight: 800; color: #155E75; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .panel h2 .tag { font-size: 10px; font-weight: 800; background: #22D3EE; color: #fff; border-radius: 999px; padding: 3px 9px; }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: #0E7490; margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; border: 1.5px solid #CFFAFE; border-radius: 12px; padding: 10px 13px; font-size: 13px; font-family: inherit; color: #164E63; background: #F0FDFA; outline: none; }
+  .field textarea { min-height: 170px; resize: vertical; line-height: 1.55; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .15s ease; }
+  .btn.primary { background: #0891B2; color: #fff; }
+  .btn.cta { background: #22C55E; color: #fff; }
+  .btn.ghost { background: #ECFEFF; color: #0E7490; border: 1.5px solid #A5F3FC; }
+  .btn:hover { opacity: .85; }
+  .btn.full { width: 100%; justify-content: center; }
+  /* Analysis panel */
+  .score { display: flex; align-items: center; gap: 16px; padding: 16px; background: #F0FDFA; border: 1.5px solid #A5F3FC; border-radius: 14px; margin-bottom: 16px; }
+  .score .big { font-size: 38px; font-weight: 800; color: #0891B2; line-height: 1; }
+  .score .meta { font-size: 12px; color: #0E7490; }
+  .score .meta b { color: #155E75; }
+  .matched { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 5px 11px; border: 1.5px solid; }
+  .pill.ok { background: #DCFCE7; color: #15803D; border-color: #86EFAC; }
+  .pill.miss { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+  .sec { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #64748B; margin: 14px 0 8px; }
+  /* Tailor updates panel (slides in) */
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .kpi { background: #F0FDFA; border: 1.5px solid #A5F3FC; border-radius: 14px; padding: 13px 15px; }
+  .kpi .v { font-size: 22px; font-weight: 800; color: #15803D; }
+  .kpi .l { font-size: 10.5px; color: #0E7490; margin-top: 2px; }
+  .review { border-top: 1.5px solid #CFFAFE; padding-top: 14px; }
+  .row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid #CFFAFE; }
+  .row .t { flex: 1; font-size: 12px; line-height: 1.5; color: #164E63; }
+  .row .t .old { color: #94A3B8; text-decoration: line-through; }
+  .row .t .new { color: #15803D; font-weight: 600; }
+  .act { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid #CFFAFE; background: #fff; cursor: pointer; color: #0E7490; }
+  .act.no { color: #DC2626; }
+  .legend { font-size: 11px; color: #0E7490; margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .controls { margin-top: 18px; display: flex; gap: 10px; align-items: center; justify-content: center; }
+  .controls .note { font-size: 11.5px; color: #0E7490; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Manual JD — slide interaction</h1>
+      <p>Click <b>Tailor CV</b> → panels 1 &amp; 2 slide left, panel 3 (tailoring updates) slides in from the right.</p>
+    </div>
+    <span class="btn ghost" onclick="toggle()">Demo: slide back &amp; forth</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="track">
+      <!-- PANEL 1: Add JD -->
+      <div class="panel">
+        <h2>Add job description <span class="tag">STEP 1</span></h2>
+        <div class="field"><label>Role name</label><input value="DevOps Engineer" /></div>
+        <div class="field"><label>Company</label><input value="CloudScale Inc" /></div>
+        <div class="field"><label>Job description</label>
+          <textarea>We are looking for a DevOps Engineer with experience in Kubernetes, Terraform, GitHub Actions, Prometheus/Grafana monitoring and PagerDuty incident management. Knowledge of service mesh (Istio) and zero-downtime deployments is preferred…</textarea>
+        </div>
+        <button class="btn primary full">Analyze Match</button>
+      </div>
+
+      <!-- PANEL 2: Analysis / scores -->
+      <div class="panel">
+        <h2>Analysis <span class="tag">STEP 2</span></h2>
+        <div class="score">
+          <div class="big">87%</div>
+          <div class="meta"><b>Strong fit</b> — 21 of 22 skills matched.<br /><span style="font-size:11px">Pick the missing ones to improve.</span></div>
+        </div>
+        <div class="sec">Already matched (21)</div>
+        <div class="matched">
+          <span class="pill ok">Kubernetes</span><span class="pill ok">Terraform</span><span class="pill ok">AWS</span><span class="pill ok">Docker</span><span class="pill ok">Prometheus</span><span class="pill ok">GitHub Actions</span><span class="pill ok">Grafana</span><span class="pill ok">Jenkins</span>
+        </div>
+        <div class="sec">Missing (1) — you pick what to add</div>
+        <div class="matched">
+          <span class="pill miss">Service Mesh</span><span class="pill miss">Istio</span><span class="pill miss">Zero-downtime deploys</span>
+        </div>
+        <button class="btn cta full" onclick="toggle()">✦ Tailor CV — view updates</button>
+      </div>
+
+      <!-- PANEL 3: Tailoring updates (slides in) -->
+      <div class="panel">
+        <h2>Tailoring updates <span class="tag">STEP 3</span></h2>
+        <div class="kpis">
+          <div class="kpi"><div class="v">+6%</div><div class="l">ATS score boost (81% → 87%)</div></div>
+          <div class="kpi"><div class="v">+3</div><div class="l">skills added</div></div>
+          <div class="kpi"><div class="v">+2</div><div class="l">bullets rewritten</div></div>
+          <div class="kpi"><div class="v">0</div><div class="l">fabricated content</div></div>
+        </div>
+        <div class="sec">What changed</div>
+        <div class="review">
+          <div class="row"><div class="t"><span class="old">…load balancing, and clustering.</span><br /><span class="new">…clustering, and service mesh (Istio).</span></div><button class="act no">✕</button></div>
+          <div class="row"><div class="t">Added skills: <span class="new">Service Mesh, Istio, Zero-downtime deployments</span></div><button class="act no">✕</button></div>
+          <div class="row"><div class="t">Rewrote summary to mention <span class="new">observability and service mesh</span>.</div><button class="act no">✕</button></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn cta full">Save &amp; Download PDF</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#22C55E"></span>Slides left when you click Tailor</span>
+    <span><span class="dot" style="background:#22D3EE"></span>New panel pops in from the right</span>
+  </div>
+  <div class="controls">
+    <button class="btn ghost" onclick="toggle()">◀ Back to analysis</button>
+    <span class="note">The whole track moves as ONE smooth animation — nothing jumps.</span>
+    <button class="btn primary" onclick="toggle()">Tailor CV ▶</button>
+  </div>
+</div>
+
+<script>
+function toggle() {
+  const s = document.getElementById('stage');
+  s.classList.toggle('b');
+  s.classList.toggle('a');
+}
+document.getElementById('stage').classList.add('a');
+</script>
+</body>
+</html>
