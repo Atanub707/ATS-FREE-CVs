@@ -103,6 +103,15 @@ export default function App() {
   };
   const clearSearchScope = () => applySearchScope({ keywords: '', jobType: 'all', location: '', datePostedFilter: 'all', under10Applicants: false });
 
+  // Relax the active search scope (e.g. widen the window) and refetch —
+  // used by the empty-state actions so a 0-result search never feels
+  // like data loss.
+  const relaxSearchScope = (partial: Partial<typeof searchScopeRef.current>) => {
+    applySearchScope({ ...searchScopeRef.current, ...partial });
+    setPage(1);
+    fetchJobs();
+  };
+
   const fetchJobs = useCallback(async () => {
     const scope = searchScopeRef.current;
     const params = new URLSearchParams({
@@ -495,6 +504,7 @@ export default function App() {
               onStateTabChange={setActiveStateTab}
               searchScope={searchScope}
               onClearScope={clearSearchScope}
+              onRelaxScope={relaxSearchScope}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               sourceFilter={sourceFilter}
