@@ -3,18 +3,32 @@ import { loadConfig } from '../config.js';
 import { LinkedInScraper } from './linkedInScraper.js';
 
 // Optional LinkedIn source via Apify's cloud scraper
-// (apimaestro/linkedin-jobs-scraper-api — returns a reliable per-job
-// work_type: Remote / Hybrid / On-site, which valig's actor did not).
+// (valig/linkedin-jobs-scraper — ~$0.28–0.40 per 1K jobs, free $5/month
+// credit covers ~12K jobs; most complete output + LinkedIn's NATIVE
+// work-type filter (f_WT) applied server-side).
 // Used when the user enables it in Settings with an Apify API token.
 // Falls back to the built-in free LinkedIn scraper on any failure.
 
-const ACTOR_ID = 'apimaestro~linkedin-jobs-scraper-api'; // REST API uses ~ (not /)
+const ACTOR_ID = 'valig~linkedin-jobs-scraper'; // REST API uses ~ (not /)
 const RUN_SYNC_URL = (token: string) =>
   `https://api.apify.com/v2/acts/${ACTOR_ID}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}`;
 
-function cleanDescription(item: any): string {
-  const raw = item.descriptionHtml || item.description || '';
-  return raw
+const DATE_PARAMS: Record<string, string> = {
+  '24h': 'r86400',
+  '7d': 'r604800',
+  '30d': 'r2592000',
+};
+
+// LinkedIn's native f_WT codes: 1=On-site, 2=Remote, 3=Hybrid — applied by
+// LinkedIn itself, the strongest work-type guarantee available.
+const REMOTE_PARAMS: Record<string, string[]> = {
+  remote: ['2'],
+  hybrid: ['3'],
+  onsite: ['1'],
+};
+
+function cleanDescription(raw: string | undefined): string {
+  return (raw || '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
@@ -44,7 +58,7 @@ function parseApplicants(caption: string | undefined): { count?: number; caption
   else if (overMatch) count = parseInt(overMatch[1].replace(/,/g, ''), 10);
   else if (numMatch) count = parseInt(numMatch[1].replace(/,/g, ''), 10);
   if (count !== undefined && isNaN(count)) count = undefined;
-  if (count === undefined) return {}; // no parseable applicant info
+  if (count === undefined) return {};
   return {
     count,
     caption: clean.charAt(0).toUpperCase() + clean.slice(1),
@@ -64,53 +78,40 @@ function parseSalary(text: string | undefined): { text?: string; min?: number; m
 }
 
 function mapItem(item: any): Job | null {
-  const title = item.job_title || item.title;
-  const id = item.job_id || item.id;
+  const title = item.title;
+  const id = item.id;
   if (!title || !id) return null;
   const now = new Date().toISOString();
-  const applicants = parseApplicants(item.applicant_count !== undefined ? String(item.applicant_count) : item.applicationsCount);
+  const applicants = parseApplicants(item.applicationsCount);
   const salary = parseSalary(item.salary);
-  // posted_at_epoch is MILLISECONDS from this actor (13 digits); fall back
-  // to posted_at ("YYYY-MM-DD HH:MM:SS") parsed as UTC.
-  const epoch = Number(item.posted_at_epoch);
+
+  // valig's postedDate is ISO or YYYY-MM-DD; postedTimeAgo is relative only.
   let rawPosted: Date | null = null;
-  if (!isNaN(epoch) && epoch > 0) {
-    rawPosted = new Date(epoch > 1e12 ? epoch : epoch * 1000);
-  } else if (item.posted_at) {
-    rawPosted = new Date(String(item.posted_at).replace(' ', 'T') + 'Z');
+  if (item.postedDate) {
+    const m = String(item.postedDate).match(/^(\d{4}-\d{2}-\d{2})/);
+    rawPosted = m ? new Date(`${m[1]}T23:59:59Z`) : new Date(String(item.postedDate));
   }
   const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : now;
-  // The actor's posted_at strings are timezone-ambiguous and can land in
-  // the FUTURE when parsed as UTC. Never show future dates — clamp to the
-  // scrape time (2h tolerance for genuinely live postings).
+  // Never show future dates (timezone-ambiguous sources).
   const finalPosted = new Date(postedDate).getTime() > Date.now() + 2 * 60 * 60 * 1000 ? now : postedDate;
 
-  // Work mode: the actor's per-job work_type field is the authoritative
-  // signal; job_insights often carries it too. Description evidence only
-  // as a last resort — never guessed from the search filter.
-  const insightsText = (item.job_insights || []).join(' ').toLowerCase();
-  const explicitWork = String(item.work_type || '').toLowerCase();
-  const combined = `${explicitWork} ${insightsText}`;
+  // valig has NO per-job work-type output field (its 'workType' is job
+  // function). The work-type guarantee comes from LinkedIn's native f_WT
+  // search filter; label from description evidence only — never guess.
+  const d = cleanDescription(item.descriptionHtml || item.description).toLowerCase();
   let jobType = 'Full-time';
-  let workModeVerified = false; // label came from the actor's structured data
-  if (combined.includes('hybrid')) { jobType = 'Full-time · Hybrid'; workModeVerified = true; }
-  else if (combined.includes('remote')) { jobType = 'Full-time · Remote'; workModeVerified = true; }
-  else if (combined.includes('onsite') || combined.includes('on-site')) { jobType = 'Full-time · On-site'; workModeVerified = true; }
-  else {
-    const d = cleanDescription(item.description).toLowerCase();
-    if (/\bhybrid\b|hybrid (work|role|model)/.test(d) && !/no hybrid|not hybrid|non-hybrid/.test(d)) jobType = 'Full-time · Hybrid';
-    else if (/on-?site|onsite|in office|in-?office|office-?based|from office|in-person|at our office|at the office/.test(d) && !/no on-?site|not on-?site/.test(d)) jobType = 'Full-time · On-site';
-    else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|remote-first|fully remote|work from anywhere|anywhere|telecommute/.test(d)) jobType = 'Full-time · Remote';
-  }
+  if (/\bhybrid\b|hybrid (work|role|model)/.test(d) && !/no hybrid|not hybrid|non-hybrid/.test(d)) jobType = 'Full-time · Hybrid';
+  else if (/on-?site|onsite|in office|in-?office|office-?based|from office|in-person|at our office|at the office/.test(d) && !/no on-?site|not on-?site/.test(d)) jobType = 'Full-time · On-site';
+  else if (/\bremote\b|100% (remote|tele|virtual)|wfh|work from home|remote-first|fully remote|work from anywhere|anywhere|telecommute/.test(d)) jobType = 'Full-time · Remote';
 
   return {
     id: `linkedin-${id}`,
     title,
-    company: item.company || item.companyName || 'Unknown Company',
+    company: item.companyName || 'Unknown Company',
     location: item.location || '',
     source: 'LinkedIn',
-    description: cleanDescription(item.description) || 'Description not available',
-    url: item.job_url || item.url || `https://www.linkedin.com/jobs/view/${id}`,
+    description: cleanDescription(item.descriptionHtml || item.description) || 'Description not available',
+    url: item.url || `https://www.linkedin.com/jobs/view/${id}`,
     postedDate: finalPosted,
     postedDateParsed: finalPosted.slice(0, 10),
     salaryText: salary.text || 'Salary not mentioned',
@@ -120,7 +121,6 @@ function mapItem(item: any): Job | null {
     ...(applicants.count !== undefined ? { applicantCount: applicants.count } : {}),
     ...(applicants.caption ? { applicantCaption: applicants.caption } : {}),
     ...(applicants.lowCompetition ? { lowCompetition: true } : {}),
-    ...(workModeVerified ? { workModeVerified: true } : {}),
     state: 'pending',
     createdAt: now,
     updatedAt: now,
@@ -139,18 +139,19 @@ export class ApifyLinkedInScraper {
 
     try {
       const input: Record<string, any> = {
-        keyword: params.keywords.trim(),
+        title: params.keywords.trim(),
         limit: Math.min(params.maxJobsPerSource || 25, 1000),
       };
       const location = params.location?.trim() || '';
       if (location && !/^(remote|anywhere|worldwide|open to remote)$/i.test(location)) {
         input.location = location;
       }
-      // Ask the actor itself for the requested work type (it returns
-      // per-job work_type labels; its own filter is loose, so the
-      // post-filter below is the exact guarantee).
-      if (params.jobType && params.jobType !== 'all') {
-        input.work_type = params.jobType === 'onsite' ? 'On-site' : params.jobType.charAt(0).toUpperCase() + params.jobType.slice(1);
+      if (params.datePostedFilter && params.datePostedFilter !== 'all' && DATE_PARAMS[params.datePostedFilter]) {
+        input.datePosted = DATE_PARAMS[params.datePostedFilter];
+      }
+      if (params.jobType && params.jobType !== 'all' && REMOTE_PARAMS[params.jobType]) {
+        // LinkedIn's NATIVE work-type filter — applied by LinkedIn itself.
+        input.remote = REMOTE_PARAMS[params.jobType];
       }
 
       const response = await fetch(RUN_SYNC_URL(token), {
@@ -172,42 +173,41 @@ export class ApifyLinkedInScraper {
         return [];
       }
 
-      const jobs = items
+      let result = items
         .map(mapItem)
         .filter((j): j is Job => j !== null);
 
       // Relevance: the FIRST significant keyword word must appear in the
-      // title or company ("devops" must not return "Recruiter" or
-      // "Co-Founder" just because the description mentions it).
+      // title or company ("devops" must not return "Recruiter").
       const terms = params.keywords.trim().toLowerCase().split(/\s+/).filter((t) => t.length > 2);
       const primaryTerm = terms[0];
       if (primaryTerm) {
-        const before = jobs.length;
-        const relevant = jobs.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(primaryTerm));
+        const before = result.length;
+        const relevant = result.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(primaryTerm));
         if (relevant.length > 0) {
-          console.log(`[Apify] ${before} fetched, ${jobs.length - relevant.length} irrelevant (missing "${primaryTerm}" in title/company)`);
-          return relevant;
+          console.log(`[Apify] ${before} fetched, ${before - relevant.length} irrelevant (missing "${primaryTerm}" in title/company)`);
+          result = relevant;
         }
       }
 
-      // Same work-mode guarantee as the built-in scraper: a remote request
-      // must never return jobs explicitly labeled Hybrid/On-site (the
-      // actor's work_type makes these labels reliable). Unknowns pass.
+      // Work-mode contradiction filter: a remote request must never return
+      // jobs whose description explicitly says Hybrid/On-site. Unknowns pass
+      // (LinkedIn's own f_WT filter already guaranteed the type).
       if (params.jobType && params.jobType !== 'all') {
         const wanted = params.jobType;
-        const filtered = jobs.filter((j) => {
+        const filtered = result.filter((j) => {
           const t = j.jobType || '';
           if (wanted === 'remote') return !t.includes('Hybrid') && !t.includes('On-site');
           if (wanted === 'onsite') return !t.includes('Remote') && !t.includes('Hybrid');
           if (wanted === 'hybrid') return !t.includes('Remote') && !t.includes('On-site');
           return true;
         });
-        console.log(`[Apify] ${jobs.length} fetched, kept ${filtered.length} for ${wanted} search`);
-        return filtered;
+        console.log(`[Apify] ${result.length} relevant, kept ${filtered.length} for ${wanted} search`);
+        result = filtered;
       }
 
-      console.log(`[Apify] Got ${jobs.length} LinkedIn jobs via Apify`);
-      return jobs;
+      console.log(`[Apify] Got ${result.length} LinkedIn jobs via Apify`);
+      return result;
     } catch (err: any) {
       // Fall back to the built-in free scraper so the search still works.
       console.warn(`[Apify] Failed, falling back to built-in LinkedIn scraper: ${err?.message || err}`);
