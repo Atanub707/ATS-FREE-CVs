@@ -183,9 +183,10 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // The Job Type you selected drives BOTH the scrape AND the list
-        // view: after a remote search the list shows remote jobs (the
-        // "All types" chip in the toolbar reveals everything).
+        // The search is fully visible in the list: keywords go into the
+        // list's own search box and the Job Type activates its chip — so
+        // you see exactly what you searched, and can clear either to widen.
+        setSearchTerm(params.keywords);
         if (params.jobType && params.jobType !== 'all') {
           setWorkModeFilter(params.jobType);
         }

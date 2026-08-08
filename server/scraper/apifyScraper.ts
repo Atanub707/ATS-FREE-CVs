@@ -34,7 +34,8 @@ function cleanDescription(item: any): string {
 
 function parseApplicants(caption: string | undefined): { count?: number; caption?: string; lowCompetition?: boolean } {
   if (!caption) return {};
-  const clean = caption.trim();
+  const clean = String(caption).trim();
+  if (!clean || /^null$/i.test(clean)) return {};
   const firstMatch = clean.match(/be among the first\s+([\d,.]+)\s+applicants?/i);
   const overMatch = clean.match(/over\s+([\d,.]+)\s+applicants?/i);
   const numMatch = clean.match(/([\d,.]+)\s*applicants?/i);
@@ -43,6 +44,7 @@ function parseApplicants(caption: string | undefined): { count?: number; caption
   else if (overMatch) count = parseInt(overMatch[1].replace(/,/g, ''), 10);
   else if (numMatch) count = parseInt(numMatch[1].replace(/,/g, ''), 10);
   if (count !== undefined && isNaN(count)) count = undefined;
+  if (count === undefined) return {}; // no parseable applicant info
   return {
     count,
     caption: clean.charAt(0).toUpperCase() + clean.slice(1),
