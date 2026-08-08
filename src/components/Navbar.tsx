@@ -71,20 +71,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     'w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0';
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand & Clean Title */}
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[76px] flex items-center justify-between">
+        {/* Brand lockup: Tailor CV / Created by Atanu */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-[10px] bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
             T
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-sm font-bold text-slate-900 tracking-tight font-sans">
-                Tailor CV
-              </h1>
-              <AtanuBadge />
-            </div>
+          <div className="flex flex-col leading-tight">
+            <h1 className="text-[20px] font-bold text-slate-900 tracking-tight">
+              Tailor CV
+            </h1>
+            <AtanuBadge />
           </div>
         </div>
 
@@ -92,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onOpenJobPortals?.()}
-            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-600 bg-white hover:bg-blue-50 hover:text-blue-600 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
             title="Browse 184 job portals worldwide"
           >
             <Globe className="w-3.5 h-3.5 text-blue-500" />
@@ -111,8 +109,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span
               className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${
                 user.isGuest
-                  ? 'bg-gradient-to-br from-amber-400 to-amber-600'
-                  : 'bg-gradient-to-br from-slate-700 to-slate-900'
+                  ? 'bg-amber-500'
+                  : 'bg-slate-800'
               }`}
             >
               {initials}
@@ -135,8 +133,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span
                   className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0 ${
                     user.isGuest
-                      ? 'bg-gradient-to-br from-amber-400 to-amber-600'
-                      : 'bg-gradient-to-br from-slate-700 to-slate-900'
+                      ? 'bg-amber-500'
+                      : 'bg-slate-800'
                   }`}
                 >
                   {initials}

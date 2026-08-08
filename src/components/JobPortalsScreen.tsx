@@ -7,15 +7,15 @@ interface JobPortalsScreenProps {
   onClose: () => void;
 }
 
-// Deterministic gradient per portal name — tasteful, not rainbow
+// Deterministic solid color per portal name
 const AVATAR_GRADIENTS = [
-  'from-blue-600 to-indigo-600',
-  'from-slate-700 to-slate-900',
-  'from-emerald-600 to-teal-700',
-  'from-amber-500 to-orange-600',
-  'from-violet-600 to-purple-700',
-  'from-rose-500 to-pink-600',
-  'from-cyan-600 to-sky-700',
+  'bg-blue-600',
+  'bg-slate-800',
+  'bg-emerald-600',
+  'bg-amber-500',
+  'bg-violet-600',
+  'bg-rose-500',
+  'bg-cyan-600',
 ];
 
 function avatarGradient(name: string): string {
@@ -104,7 +104,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
         rel="noopener noreferrer"
         className="group relative flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-150 cursor-pointer"
       >
-        <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(p.name)} flex items-center justify-center text-sm font-extrabold text-white shadow-sm shrink-0`}>
+        <span className={`w-10 h-10 rounded-xl ${avatarGradient(p.name)} flex items-center justify-center text-sm font-extrabold text-white shadow-sm shrink-0`}>
           {p.name[0]}
         </span>
         <span className="min-w-0 flex-1">
@@ -156,11 +156,11 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
         {/* Centered headline */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
           <div className="flex items-center justify-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm shadow-blue-600/25">
+            <span className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center">
               <Globe className="w-3 h-3 text-white" />
             </span>
             <h2 className="text-[15px] font-extrabold text-slate-900 leading-tight">
-              Find your next job on <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{total} portals</span>
+              Find your next job on <span className="text-blue-600">{total} portals</span>
             </h2>
           </div>
           <p className="text-[10.5px] text-slate-400 font-medium mt-0.5">Search by name or browse by region — click any portal to apply directly</p>
@@ -237,7 +237,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
                 <Bookmark className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wider">Favorites</span>
                 <span className="text-[10.5px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{favorited.length}</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent" />
+                <span className="flex-1 h-px bg-amber-200" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {favorited.map((p) => <PortalCard key={p.name} p={p} />)}
@@ -251,7 +251,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wider">Most Popular</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent" />
+                <span className="flex-1 h-px bg-amber-200" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {popular.map((p) => <PortalCard key={p.name} p={p} />)}

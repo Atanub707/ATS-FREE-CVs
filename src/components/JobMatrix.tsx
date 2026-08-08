@@ -179,12 +179,32 @@ const JobCard = React.memo(function JobCard({
             </span>
 
             {(job.salaryText && job.salaryText !== 'Salary not mentioned') && (
-              <span className="flex items-center space-x-1 text-emerald-700 font-medium">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="flex items-center space-x-1 text-green-700 font-medium">
+                <DollarSign className="w-3.5 h-3.5 text-green-600" />
                 <span>{job.salaryText}</span>
               </span>
             )}
           </div>
+
+          {/* Skills chips (matched skills from the last score/tailoring audit) */}
+          {(job.gapAnalysis?.matchingSkills?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {job.gapAnalysis.matchingSkills.slice(0, 4).map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10.5px] font-medium"
+                >
+                  <CheckCircle2 className="w-2.5 h-2.5 text-blue-500 mr-1" />
+                  {skill}
+                </span>
+              ))}
+              {(job.gapAnalysis.matchingSkills.length ?? 0) > 4 && (
+                <span className="text-[10.5px] text-slate-400 font-medium">
+                  +{(job.gapAnalysis.matchingSkills.length ?? 0) - 4} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -220,13 +240,13 @@ const JobCard = React.memo(function JobCard({
           ) : score !== undefined ? (
             <span
               className={`text-lg font-extrabold ${
-                score >= 75
-                  ? 'text-emerald-600'
-                  : score >= 50
+                score >= 80
+                  ? 'text-green-600'
+                  : score >= 60
                   ? 'text-blue-600'
-                  : score >= 30
+                  : score >= 40
                   ? 'text-amber-600'
-                  : 'text-red-600'
+                  : 'text-slate-400'
               }`}
             >
               {score}%
@@ -242,7 +262,7 @@ const JobCard = React.memo(function JobCard({
           <div className="relative group">
             <button
               onClick={() => onMatchJob(job.id)}
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors flex items-center space-x-1 cursor-pointer"
             >
               {isScoreLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
@@ -269,7 +289,7 @@ const JobCard = React.memo(function JobCard({
           <div className="relative group">
             <button
               onClick={() => onTailorJob(job.id)}
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center space-x-1 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors flex items-center space-x-1 cursor-pointer"
             >
               {isTailorLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -382,49 +402,49 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       {/* Metrics Row - Minimal & Clean */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+        <div className="bg-blue-50/40 border border-blue-100 rounded-xl p-4">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Total Jobs</span>
-            <Briefcase className="w-4 h-4 text-slate-400" />
+            <span className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><Briefcase className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{stats.total}</div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Scraped across sources</p>
+          <div className="text-[26px] font-bold text-slate-900 mt-2">{stats.total}</div>
+          <p className="text-[12px] text-slate-500 mt-0.5">Scraped across sources</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+        <div className="bg-violet-50/40 border border-violet-100 rounded-xl p-4">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Avg Match</span>
-            <TrendingUp className="w-4 h-4 text-blue-600" />
+            <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-xl font-bold text-blue-600 mt-1">{avgScore}%</div>
-              <p className="text-[11px] text-slate-500 mt-0.5">{scoredJobsCount} scored with AI</p>
+          <div className="text-[26px] font-bold text-slate-900 mt-2">{avgScore}%</div>
+          <p className="text-[12px] text-slate-500 mt-0.5">{scoredJobsCount} scored with AI</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
+        <div className="bg-green-50/40 border border-green-100 rounded-xl p-4">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Tailored CVs</span>
-            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <span className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-xl font-bold text-emerald-600 mt-1">{tailoredCount}</div>
-          <p className="text-[11px] text-slate-500 mt-0.5">Ready to download as PDF</p>
+          <div className="text-[26px] font-bold text-slate-900 mt-2">{tailoredCount}</div>
+          <p className="text-[12px] text-slate-500 mt-0.5">Ready to download as PDF</p>
         </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-              <span>Pending</span>
-              <Clock className="w-4 h-4 text-slate-400" />
-            </div>
-            <div className="text-xl font-bold text-slate-700 mt-1">{pendingCount}</div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
+        <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-4">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Pending</span>
+            <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><Clock className="w-3.5 h-3.5" /></span>
           </div>
+          <div className="text-[26px] font-bold text-slate-900 mt-2">{pendingCount}</div>
+          <p className="text-[12px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
+        </div>
 
-          <div className="bg-white border border-green-200 rounded-lg p-3.5 shadow-xs">
+          <div className="bg-green-50/40 border border-green-100 rounded-xl p-4">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
               <span>Applied</span>
-              <span className="text-green-600 text-sm">✅</span>
+              <span className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
             </div>
-            <div className="text-xl font-bold text-green-600 mt-1">{appliedCount}</div>
-            <p className="text-[11px] text-green-600/70 mt-0.5">Jobs you applied to</p>
+            <div className="text-[26px] font-bold text-slate-900 mt-2">{appliedCount}</div>
+            <p className="text-[12px] text-slate-500 mt-0.5">Jobs you applied to</p>
           </div>
         </div>
 
@@ -446,7 +466,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               <button
                 key={tab}
                 onClick={() => onStateTabChange(tab)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                className={`px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1.5 ${
                   activeStateTab === tab
                     ? 'bg-slate-900 text-white font-semibold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -454,8 +474,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               >
                 <span>{labels[tab]}</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] ${
-                    activeStateTab === tab ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                    activeStateTab === tab ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
                   {count}
@@ -471,10 +491,10 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             onClick={onBatchMatch}
             disabled={isBatchMatching || pendingCount === 0}
             id="btn-batch-match"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-2 rounded-lg text-xs font-semibold text-blue-700 bg-white hover:bg-blue-50 border border-blue-300 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
           >
             {isBatchMatching ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-700" />
             ) : (
               <Zap className="w-3.5 h-3.5 text-blue-600" />
             )}
@@ -485,12 +505,12 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             onClick={onBatchTailor}
             disabled={isBatchTailoring || matchedCount === 0}
             id="btn-batch-tailor"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-2 rounded-lg text-xs font-semibold text-green-700 bg-white hover:bg-green-50 border border-green-300 transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
           >
             {isBatchTailoring ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-green-700" />
             ) : (
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <Sparkles className="w-3.5 h-3.5 text-green-600" />
             )}
             <span>Tailor Matched ({matchedCount})</span>
           </button>
@@ -498,7 +518,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <button
             type="button"
             onClick={onClearAll}
-            className="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
+            className="px-3 py-2 rounded-lg text-xs font-semibold text-red-600 bg-white hover:bg-red-50 border border-red-200 transition-colors cursor-pointer"
           >
             Clear All
           </button>

@@ -255,7 +255,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Apify (optional LinkedIn source) */}
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
             <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-              <Rocket className="w-3.5 h-3.5 text-indigo-600" />
+              <Rocket className="w-3.5 h-3.5 text-blue-600" />
               <span>Apify — Reliable LinkedIn Source (Optional)</span>
             </h3>
             <p className="text-[10.5px] text-slate-500 leading-relaxed">

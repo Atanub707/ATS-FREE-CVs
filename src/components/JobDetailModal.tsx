@@ -415,7 +415,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                         ];
 
                     return (
-                      <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 text-white rounded-xl p-5 shadow-lg space-y-5">
+                      <div className="bg-slate-900 border border-slate-800 text-white rounded-xl p-5 shadow-lg space-y-5">
                         {/* Top Banner: Before vs After Scores */}
                         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                           <div>

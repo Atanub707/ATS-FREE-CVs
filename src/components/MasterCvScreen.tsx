@@ -921,7 +921,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 type="button"
                 onClick={handleAskAiSummary}
                 disabled={isImprovingSummary}
-                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer disabled:opacity-50"
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors cursor-pointer disabled:opacity-50"
                 title="Ask AI to improve your summary"
               >
                 {isImprovingSummary ? (
@@ -951,7 +951,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
             {summarySuggestions.length > 0 && (
               <div className="space-y-2 pt-1">
-                <p className="text-[11px] font-semibold text-indigo-700 flex items-center space-x-1">
+                <p className="text-[11px] font-semibold text-blue-700 flex items-center space-x-1">
                   <Sparkles className="w-3 h-3" />
                   <span>AI Suggested Summaries — click one to apply:</span>
                 </p>
@@ -960,10 +960,10 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     type="button"
                     key={idx}
                     onClick={() => applySummarySuggestion(opt.text)}
-                    className="w-full text-left p-3 rounded-lg border border-indigo-200 bg-white hover:border-indigo-400 hover:shadow-sm transition-all cursor-pointer group"
+                    className="w-full text-left p-3 rounded-lg border border-blue-200 bg-white hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer group"
                     title={`Apply "${opt.label}"`}
                   >
-                    <span className="block text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1 group-hover:underline">
+                    <span className="block text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1 group-hover:underline">
                       {opt.label}
                     </span>
                     <span className="text-xs text-slate-700 leading-relaxed">{opt.text}</span>
@@ -1000,7 +1000,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 onDrop={(e) => handleExpDrop(e, expIdx)}
                 className={`bg-white p-3.5 rounded-lg border space-y-3 cursor-grab active:cursor-grabbing transition-all ${
                   dragExpIdx === expIdx
-                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
@@ -1289,7 +1289,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 onDrop={(e) => handleProjectDrop(e, pIdx)}
                 className={`bg-white p-3 rounded-lg border space-y-2.5 cursor-grab active:cursor-grabbing transition-all ${
                   dragProjectIdx === pIdx
-                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
@@ -1419,7 +1419,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 onDrop={(e) => handleCertDrop(e, cIdx)}
                 className={`bg-white p-3 rounded-lg border space-y-2 cursor-grab active:cursor-grabbing transition-all ${
                   dragCertIdx === cIdx
-                    ? 'border-indigo-400 ring-2 ring-indigo-200 opacity-70'
+                    ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
@@ -1615,7 +1615,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               type="button"
               onClick={handleAiCompress}
               disabled={aiState === 'running'}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20 whitespace-nowrap"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20 whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
@@ -1660,7 +1660,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-6">
             <div className="flex items-center space-x-2.5">
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+              <span className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
                 <Sparkles className="w-4.5 h-4.5 text-white" />
               </span>
               <div>
@@ -1735,7 +1735,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <div className="px-6 py-5">
               {/* Outcome hero */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-5 flex-wrap">
-                <span className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+                <span className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
                   <Sparkles className="w-5 h-5 text-white" />
                 </span>
                 <div className="flex-1 min-w-[220px]">
@@ -1805,7 +1805,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" />
+                    <span className="w-2 h-2 rounded-full bg-blue-600" />
                     <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New CV</span>
                     <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦</span>
                     <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>

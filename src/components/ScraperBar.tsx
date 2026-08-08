@@ -86,7 +86,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   };
 
   const selectClass =
-    'w-full appearance-none bg-white border-[1.5px] border-slate-200 rounded-[10px] pl-3 pr-9 py-[9px] text-[13px] font-medium text-slate-900 cursor-pointer transition-all hover:border-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10';
+    'w-full appearance-none bg-white border-[1.5px] border-slate-200 rounded-lg border border-slate-200 pl-3 pr-9 py-2.5 text-[13px] font-medium text-slate-900 cursor-pointer transition-colors hover:border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10';
 
   return (
     <div className="bg-white border-b border-slate-200 py-5 text-slate-900">
@@ -105,7 +105,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
       <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* ── Row 1: Hero Search ── */}
-        <div className="flex items-center gap-3 bg-slate-50 border-[1.5px] border-slate-200 rounded-xl pl-4 pr-1.5 py-1.5 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(99,102,241,0.08)]">
+        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg pl-4 pr-1.5 py-2 transition-colors focus-within:border-blue-500 focus-within:bg-white focus-within:ring-[3px] focus-within:ring-blue-500/10">
           <Search className="w-[18px] h-[18px] text-slate-400 shrink-0" />
           <input
             type="text"
@@ -123,7 +123,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
             type="submit"
             disabled={isLoading}
             id="btn-scrape-submit"
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-[9px] px-5 py-2.5 text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-lg px-6 py-3 text-[13.5px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
           >
             {isLoading ? (
               <>
@@ -155,7 +155,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                 placeholder="Worldwide"
                 autoComplete="off"
                 name="ats-search-location"
-                className="w-full bg-white border-[1.5px] border-slate-200 rounded-[10px] pl-8 pr-3 py-[9px] text-[13px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal transition-all hover:border-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10"
+                className="w-full bg-white border-[1.5px] border-slate-200 rounded-lg border border-slate-200 pl-8 pr-3 py-2.5 text-[13px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal transition-colors hover:border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10"
               />
             </div>
           </div>
@@ -238,12 +238,12 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           {/* Under 10 applicants */}
           <div className="flex flex-col gap-[6px]">
             <label className="text-[11px] font-semibold text-slate-500">Competition</label>
-            <label className="flex items-center gap-2 bg-white border-[1.5px] border-slate-200 rounded-[10px] px-3 py-[9px] cursor-pointer transition-all hover:border-slate-300" title="Only show jobs with 10 or fewer applicants — low-competition roles (LinkedIn only; other sources are skipped when enabled)">
+            <label className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:border-slate-300" title="Only show jobs with 10 or fewer applicants — low-competition roles (LinkedIn only; other sources are skipped when enabled)">
               <input
                 type="checkbox"
                 checked={under10Applicants}
                 onChange={(e) => setUnder10Applicants(e.target.checked)}
-                className="accent-indigo-600 w-[15px] h-[15px] cursor-pointer"
+                className="accent-blue-600 w-[15px] h-[15px] cursor-pointer"
               />
               <span className="text-[12px] font-medium text-slate-600 truncate">Under 10 applicants</span>
             </label>
@@ -265,11 +265,11 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                     onClick={() => toggleSource(src)}
                     disabled={isComingSoon}
                     title={isComingSoon ? `${src} — Coming soon` : `${src} — ${getSourceCountry(src)}`}
-                    className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[5px] rounded-full text-[12px] font-medium border-[1.5px] transition-all whitespace-nowrap ${
+                    className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[7px] rounded-lg text-[12px] font-medium border transition-colors whitespace-nowrap ${
                       isComingSoon
                         ? 'opacity-45 cursor-not-allowed bg-white border-slate-200 text-slate-500'
                         : isSelected
-                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold cursor-pointer'
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold cursor-pointer'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                     }`}
                   >
