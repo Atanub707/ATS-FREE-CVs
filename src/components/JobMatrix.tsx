@@ -111,20 +111,6 @@ const JobCard = React.memo(function JobCard({
             <ExternalLink className="w-2.5 h-2.5 text-blue-500 ml-0.5" />
           </a>
 
-          {/* Status Badge */}
-          <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
-            job.state === 'pending' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-            job.state === 'matched' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-            job.state === 'tailored' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-            'bg-purple-50 text-purple-700 border-purple-200'
-          }`}>
-            {job.state === 'pending' && <Clock className="w-3 h-3 text-slate-500" />}
-            {job.state === 'matched' && <Zap className="w-3 h-3 text-blue-600" />}
-            {job.state === 'tailored' && <Sparkles className="w-3 h-3 text-emerald-600" />}
-            {job.state === 'ready' && <CheckCircle2 className="w-3 h-3 text-purple-600" />}
-            <span>{job.state === 'pending' ? 'Pending' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : job.state === 'applied' ? 'Applied' : 'Ready'}</span>
-          </span>
-
           {/* Posted Relative Time — hidden when the real posting time is unknown */}
           {timeAgoStr && (
             <span className="inline-flex items-center space-x-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
