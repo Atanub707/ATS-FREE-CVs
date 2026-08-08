@@ -140,9 +140,10 @@ function mapItem(item: any): Job | null {
   } else if (rawDate) {
     rawPosted = new Date(rawDate);
   }
-  const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : now;
-  // Never show future dates (timezone-ambiguous sources).
-  const finalPosted = new Date(postedDate).getTime() > Date.now() + 2 * 60 * 60 * 1000 ? now : postedDate;
+  const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : '';
+  // Never show future dates (timezone-ambiguous sources) and NEVER fake a
+  // posting time with the scrape time — empty means unknown, hidden in UI.
+  const finalPosted = postedDate && new Date(postedDate).getTime() > Date.now() + 2 * 60 * 60 * 1000 ? '' : postedDate;
 
   // valig has NO per-job work-type output field (its 'workType' is job
   // function). The work-type guarantee comes from LinkedIn's native f_WT
@@ -160,7 +161,7 @@ function mapItem(item: any): Job | null {
     description: cleanedDescription || 'Description not available',
     url: item.url || `https://www.linkedin.com/jobs/view/${id}`,
     postedDate: finalPosted,
-    postedDateParsed: finalPosted.slice(0, 10),
+    ...(finalPosted ? { postedDateParsed: finalPosted.slice(0, 10) } : {}),
     ...(salary.text ? { salaryText: salary.text } : {}),
     ...(salary.min !== undefined ? { salaryMin: salary.min } : {}),
     ...(salary.max !== undefined ? { salaryMax: salary.max } : {}),

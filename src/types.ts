@@ -9,7 +9,7 @@ export interface Job {
   source: JobSource;
   description: string;
   url: string;
-  postedDate: string; // ISO string or relative like "2 days ago"
+  postedDate?: string; // real posting time from the source (absent = unknown, never scrape time)
   postedDateParsed?: string; // YYYY-MM-DD
   salaryMin?: number;
   salaryMax?: number;

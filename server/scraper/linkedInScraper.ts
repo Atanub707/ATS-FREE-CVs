@@ -131,7 +131,7 @@ export class LinkedInScraper extends BaseScraper {
           // date-only attr parses to midnight UTC, which would make every
           // job look the same age. Parse the relative text first — it is
           // the accurate posting time.
-          let postedDateObj = new Date();
+          let postedDateObj: Date | null = new Date();
           const relMatch = timeText.match(/(\d+)\s*(minute|hour|day|week|month)s?\s*ago/);
           if (relMatch) {
             const n = parseInt(relMatch[1], 10);
@@ -161,14 +161,18 @@ export class LinkedInScraper extends BaseScraper {
             const parsed = new Date(dateAttr + 'T23:59:59');
             if (!isNaN(parsed.getTime()) && parsed <= now) postedDateObj = parsed;
           } else {
-            // No time info at all — stagger fallback so jobs don't all
-            // share one fabricated timestamp.
-            postedDateObj = new Date(now.getTime() - (scrapedJobs.length + 1) * 3 * 60 * 60 * 1000);
+            // No time info at all — the real posting time is unknown.
+            // Never fabricate one with the scrape time; the UI hides the chip.
+            postedDateObj = null;
           }
 
           // Deterministic date filter: LinkedIn's f_TPR param is unreliable
           // on the guest API, so enforce the window on the parsed date.
-          if (maxAgeMs < Number.MAX_SAFE_INTEGER && (now.getTime() - postedDateObj.getTime()) > maxAgeMs) {
+          // Unknown posting time fails the window check (honest — can't prove).
+          if (postedDateObj && maxAgeMs < Number.MAX_SAFE_INTEGER && (now.getTime() - postedDateObj.getTime()) > maxAgeMs) {
+            continue;
+          }
+          if (!postedDateObj && maxAgeMs < Number.MAX_SAFE_INTEGER) {
             continue;
           }
 
@@ -181,8 +185,9 @@ export class LinkedInScraper extends BaseScraper {
               source: 'LinkedIn',
               description: '',
               url: cleanLink,
-              postedDate: postedDateObj.toISOString(),
-              postedDateParsed: postedDateObj.toISOString().split('T')[0],
+              ...(postedDateObj
+                ? { postedDate: postedDateObj.toISOString(), postedDateParsed: postedDateObj.toISOString().split('T')[0] }
+                : {}),
               jobType: 'Full-time',
               state: 'pending',
               createdAt: new Date().toISOString(),

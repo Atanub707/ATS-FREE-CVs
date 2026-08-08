@@ -77,7 +77,7 @@ const JobCard = React.memo(function JobCard({
   onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
 }) {
   const score = job.matchScore;
-  const timeAgoStr = formatTimeAgo(job.postedDate || job.createdAt);
+  const timeAgoStr = formatTimeAgo(job.postedDate);
   const isScoreLoading = scoreMsg !== null;
   const isTailorLoading = tailorMsg !== null;
 
@@ -125,11 +125,13 @@ const JobCard = React.memo(function JobCard({
             <span>{job.state === 'pending' ? 'Pending Score' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : job.state === 'applied' ? 'Applied' : 'Ready'}</span>
           </span>
 
-          {/* Posted Relative Time */}
-          <span className="inline-flex items-center space-x-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-            <Calendar className="w-3 h-3 text-slate-400" />
-            <span>{timeAgoStr}</span>
-          </span>
+          {/* Posted Relative Time — hidden when the real posting time is unknown */}
+          {timeAgoStr && (
+            <span className="inline-flex items-center space-x-1 text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              <Calendar className="w-3 h-3 text-slate-400" />
+              <span>{timeAgoStr}</span>
+            </span>
+          )}
 
           {/* Job Type */}
           {job.jobType && (
