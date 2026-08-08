@@ -464,7 +464,29 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
         </div>
 
         {/* Batch Operations */}
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center space-x-1.5">
+            <span className="text-slate-500 font-medium">Source:</span>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as any)}
+              className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+            >
+              <option value="all">All Sources</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Arbeitnow">Arbeitnow</option>
+              <option value="SimplyHired">SimplyHired</option>
+              <option value="Dice">Dice</option>
+              <option value="MyCareersFuture">MyCareersFuture</option>
+              <option value="Cutshort">Cutshort</option>
+              <option value="Gupy">Gupy</option>
+              <option value="JobsCh">JobsCh</option>
+              <option value="Daijob">Daijob</option>
+              <option value="MyJobMag">MyJobMag</option>
+              <option value="Glassdoor">Glassdoor</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
           <button
             type="button"
             onClick={onClearAll}
@@ -500,32 +522,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             />
           </div>
 
-          <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
-            {/* Source Filter Select */}
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-500 font-medium">Source:</span>
-              <select
-                value={sourceFilter}
-                onChange={(e) => setSourceFilter(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-              >
-                <option value="all">All Sources</option>
-                <option value="LinkedIn">LinkedIn</option>
-                <option value="Arbeitnow">Arbeitnow</option>
-                <option value="SimplyHired">SimplyHired</option>
-                <option value="Dice">Dice</option>
-                <option value="MyCareersFuture">MyCareersFuture</option>
-                <option value="Cutshort">Cutshort</option>
-                <option value="Gupy">Gupy</option>
-                <option value="JobsCh">JobsCh</option>
-                <option value="Daijob">Daijob</option>
-                <option value="MyJobMag">MyJobMag</option>
-                <option value="Glassdoor">Glassdoor</option>
-                <option value="Custom">Custom</option>
-              </select>
-            </div>
-
-          </div>
         </div>
 
         {/* Quick Matrix Filter Chips */}
