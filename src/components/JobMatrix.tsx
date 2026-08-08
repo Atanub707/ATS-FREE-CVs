@@ -186,7 +186,7 @@ const JobCard = React.memo(function JobCard({
               <span>{job.location}</span>
             </span>
 
-            {job.salaryText && (
+            {(job.salaryText && job.salaryText !== 'Salary not mentioned') && (
               <span className="flex items-center space-x-1 text-emerald-700 font-medium">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{job.salaryText}</span>
@@ -440,12 +440,11 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-lg shadow-xs">
         {/* State Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1">
-          {(['all', 'pending', 'matched', 'tailored', 'ready', 'applied'] as const).map((tab) => {
+          {(['all', 'pending', 'tailored', 'ready', 'applied'] as const).map((tab) => {
             const count = tab === 'all' ? stats.total : (stats.byState[tab] || 0);
             const labels = {
               all: 'All Jobs',
               pending: 'Pending',
-              matched: 'Matched',
               tailored: 'Tailored',
               ready: 'Ready',
               applied: 'Applied',
@@ -564,20 +563,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               </select>
             </div>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-500 font-medium">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-              >
-                <option value="createdAt">Recently Scraped</option>
-                <option value="postedDate">Date Posted</option>
-                <option value="matchScore">Match Score</option>
-                <option value="salaryMax">Salary Range</option>
-              </select>
-            </div>
           </div>
         </div>
 

@@ -161,7 +161,7 @@ function mapItem(item: any): Job | null {
     url: item.url || `https://www.linkedin.com/jobs/view/${id}`,
     postedDate: finalPosted,
     postedDateParsed: finalPosted.slice(0, 10),
-    salaryText: salary.text || 'Salary not mentioned',
+    ...(salary.text ? { salaryText: salary.text } : {}),
     ...(salary.min !== undefined ? { salaryMin: salary.min } : {}),
     ...(salary.max !== undefined ? { salaryMax: salary.max } : {}),
     jobType,

@@ -220,8 +220,6 @@ export class LinkedInScraper extends BaseScraper {
           job.salaryText = detail.salaryText;
           job.salaryMin = detail.salaryMin;
           job.salaryMax = detail.salaryMax;
-        } else {
-          job.salaryText = 'Salary not mentioned';
         }
         if (detail.applicantCount !== undefined) {
           job.applicantCount = detail.applicantCount;
@@ -236,7 +234,6 @@ export class LinkedInScraper extends BaseScraper {
         console.log(`  [${detailFetched}/${scrapedJobs.length}] Fetched details for: ${job.title} @ ${job.company}`);
       } catch (err: any) {
         job.description = 'Description not available';
-        job.salaryText = 'Salary not mentioned';
         console.warn(`  [${detailFetched + 1}/${scrapedJobs.length}] Failed to fetch details for job ${jobId}: ${err?.message || 'Unknown error'}`);
       }
     }

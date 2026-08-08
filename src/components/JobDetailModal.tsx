@@ -137,7 +137,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 <span>{job.location}</span>
               </span>
-              {job.salaryText && (
+              {(job.salaryText && job.salaryText !== 'Salary not mentioned') && (
                 <span className="flex items-center space-x-1 text-emerald-700 font-medium">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{job.salaryText}</span>
