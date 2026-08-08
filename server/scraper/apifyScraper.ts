@@ -121,11 +121,24 @@ function mapItem(item: any): Job | null {
     console.warn(`[Apify] No description field matched for job "${title}" (id=${id}). Actual item keys: ${Object.keys(item || {}).join(', ')}`);
   }
 
-  // valig's postedDate is ISO or YYYY-MM-DD; postedTimeAgo is relative only.
+  // valig's postedDate is ISO or YYYY-MM-DD; postedTimeAgo is relative and
+  // often has hour precision ("23 hours ago") — prefer it when the date is
+  // date-only, else use noon (least-biased point) for date-only values.
   let rawPosted: Date | null = null;
-  if (item.postedDate) {
-    const m = String(item.postedDate).match(/^(\d{4}-\d{2}-\d{2})/);
-    rawPosted = m ? new Date(`${m[1]}T23:59:59Z`) : new Date(String(item.postedDate));
+  const rawDate = item.postedDate ? String(item.postedDate) : '';
+  const dateOnly = rawDate.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateOnly) {
+    const rel = String(item.postedTimeAgo || '').match(/(\d+)\s*(min|hour|day)s?\s*ago/i);
+    if (rel) {
+      const n = parseInt(rel[1], 10);
+      const unit = rel[2].toLowerCase();
+      const ms = unit === 'min' ? n * 60000 : unit === 'hour' ? n * 3600000 : n * 86400000;
+      rawPosted = new Date(Date.now() - ms);
+    } else {
+      rawPosted = new Date(`${dateOnly[1]}T12:00:00Z`);
+    }
+  } else if (rawDate) {
+    rawPosted = new Date(rawDate);
   }
   const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : now;
   // Never show future dates (timezone-ambiguous sources).

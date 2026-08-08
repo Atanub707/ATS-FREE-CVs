@@ -937,7 +937,8 @@ export function repairJobDates(): number {
         // Jobs repaired to the noon marker from a previous run have no real
         // post time — show the scrape time instead of a future date.
         const noonMarker = `${day}T12:00:00.000Z`;
-        const isNoonRepair = pd === noonMarker;
+        const endOfDayMarker = `${day}T23:59:59.000Z`;
+        const isNoonRepair = pd === noonMarker || pd === endOfDayMarker;
         const newPosted = (isGarbage || isNoonRepair) && cm2
           ? String(j.createdAt)
           : noonMarker;
