@@ -64,7 +64,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [removedPoints, setRemovedPoints] = useState<Set<string>>(new Set());
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
-  const [stage, setStage] = useState<'analysis' | 'review'>('analysis');
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -102,7 +101,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setSelectedSkills(new Set(missing));
       setRemovedPoints(new Set());
       setDiff(a.diff || null);
-      setStage(a.diff ? 'review' : 'analysis');
       setHistoryId(a.id);
       setHistoryOpen(false);
       if (a.tailored_cv && a.diff?.scoreBoost !== undefined) setDownloadToken(`restored-${a.id}`);
@@ -117,7 +115,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true); setError(''); setResult(null); setDiff(null); setDownloadToken(null); setStage('analysis');
+    setLoading(true); setError(''); setResult(null); setDiff(null); setDownloadToken(null);
     try {
       const res = await fetch('/api/analyze-jd', {
         method: 'POST',
@@ -155,7 +153,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Tailoring failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setDownloadToken(data.downloadToken);
-      if (data.diff) { setDiff(data.diff); setStage('review'); }
+      if (data.diff) setDiff(data.diff);
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
     finally { setTailoring(false); }
@@ -175,11 +173,36 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
-  const score = result?.matchScore ?? 0;
-  const displayScore = diff ? diff.afterScore : score;
-  const currentStep = !result ? 1 : !diff ? 2 : 3;
+  const displayScore = diff ? diff.afterScore : result?.matchScore ?? 0;
+  const step = !result ? 1 : !diff ? 2 : 3;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
+
+  const panelStyle = (n: 1 | 2 | 3): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      position: 'absolute', top: 6, height: 540, background: '#fff', border: '1.5px solid #A5F3FC',
+      borderRadius: 20, padding: 22, transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .35s ease',
+      overflowY: 'auto', opacity: 0, pointerEvents: 'none',
+    };
+    if (step === 1) {
+      if (n === 1) return { ...base, left: '27%', width: '46%', opacity: 1, pointerEvents: 'auto' };
+      return base;
+    }
+    if (step === 2) {
+      if (n === 1) return { ...base, left: '2%', width: '46%', opacity: 1, pointerEvents: 'auto' };
+      if (n === 2) return { ...base, left: '52%', width: '46%', opacity: 1, pointerEvents: 'auto' };
+      return base;
+    }
+    const left = n === 1 ? '2%' : n === 2 ? '34.5%' : '67%';
+    return { ...base, left, width: '31%', opacity: 1, pointerEvents: 'auto' };
+  };
+
+  const spinner = (text: string) => (
+    <div className="absolute inset-0 bg-white/85 rounded-[20px] flex flex-col items-center justify-center gap-3 z-10">
+      <div className="w-8 h-8 border-[3px] border-[#A5F3FC] border-t-[#0891B2] rounded-full animate-spin" />
+      <p className="text-[12px] font-bold text-[#0E7490]">{text}</p>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-40 bg-[#F0FDFA] text-[#164E63] flex flex-col font-sans">
@@ -191,7 +214,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
           </button>
           <div>
             <h1 className="text-lg font-extrabold text-[#155E75] tracking-tight">Manual JD</h1>
-            <p className="text-[11.5px] text-[#0E7490]">Paste a job description — get a tailored CV in 4 simple steps.</p>
+            <p className="text-[11.5px] text-[#0E7490]">Paste a job description — get a tailored CV in 3 simple steps.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -207,15 +230,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       {/* Steps */}
       <div className="px-5 sm:px-8 pt-4 flex items-center gap-2 flex-wrap shrink-0">
         {[
-          { n: 1, label: 'Paste JD', on: !!result },
-          { n: 2, label: 'Pick skills', on: currentStep >= 2 },
-          { n: 3, label: 'Review', on: currentStep >= 3 },
-          { n: 4, label: 'Download', on: !!downloadToken },
+          { n: 1, label: 'Add JD', on: step >= 1 },
+          { n: 2, label: 'Analysis', on: step >= 2 },
+          { n: 3, label: 'Tailor', on: step >= 3 },
         ].map((s, i) => (
           <React.Fragment key={s.n}>
             {i > 0 && <ArrowRight className="w-3 h-3 text-[#99F6E4]" />}
             <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold border transition-colors ${
-              s.on ? 'bg-[#0891B2] border-[#0891B2] text-white' : currentStep === s.n ? 'bg-white border-[#0891B2] text-[#155E75]' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60'
+              s.on ? 'bg-[#0891B2] border-[#0891B2] text-white' : step === s.n ? 'bg-white border-[#0891B2] text-[#155E75]' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60'
             }`}>
               <span className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-extrabold ${s.on ? 'bg-white/25' : 'bg-[#CFFAFE] text-[#0E7490]'}`}>{s.on ? '✓' : s.n}</span>
               {s.label}
@@ -226,32 +248,27 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
 
-      {/* Sliding track: Add JD | Analysis | Tailoring updates */}
+      {/* Centered stage — panels pop in, never leave the screen */}
       <div className="flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="max-w-5xl mx-auto p-5 sm:p-8 overflow-hidden">
-          <div
-            className="flex gap-[18px]"
-            style={{
-              transform: stage === 'review' ? 'translateX(calc(-50% - 9px))' : 'translateX(0)',
-              transition: 'transform .55s cubic-bezier(.25,.8,.3,1)',
-            }}
-          >
-          {/* PANEL 1: inputs */}
-          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5 space-y-3.5 self-start" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
-            <h2 className="text-[13.5px] font-bold text-[#155E75]">Job details</h2>
-            <div>
+        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: 575, paddingTop: 10 }}>
+          {/* PANEL 1: Add JD */}
+          <div style={panelStyle(1)}>
+            <h2 className="text-[13.5px] font-bold text-[#155E75] mb-3.5 flex items-center justify-between">
+              Add job description <span className="text-[10px] font-extrabold bg-[#22D3EE] text-white rounded-full px-2.5 py-0.5">1</span>
+            </h2>
+            <div className="mb-3">
               <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Role name</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer"
                 className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[13px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none transition-colors" />
             </div>
-            <div>
+            <div className="mb-3">
               <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Company</label>
               <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name"
                 className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[13px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none transition-colors" />
             </div>
-            <div>
+            <div className="mb-3">
               <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Job description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={10}
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={11}
                 placeholder="Paste the full job description…"
                 className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[12.5px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none resize-y leading-relaxed" />
               <p className="text-right text-[10.5px] text-[#0E7490] mt-1">{description.length.toLocaleString()} chars</p>
@@ -260,86 +277,80 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
               className="w-full py-2.5 rounded-xl bg-[#0891B2] hover:opacity-85 disabled:opacity-40 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
             </button>
-            <p className="text-center text-[10.5px] text-[#0E7490]">Everything stays on your machine</p>
+            <p className="text-center text-[10.5px] text-[#0E7490] mt-2">Everything stays on your machine</p>
           </div>
 
-          {/* PANEL 2: analysis + pick skills */}
-          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
+          {/* PANEL 2: Analysis */}
+          <div style={panelStyle(2)}>
+            {loading && spinner('Analyzing your CV against the JD…')}
+            <h2 className="text-[13.5px] font-bold text-[#155E75] mb-3.5 flex items-center justify-between">
+              Analysis <span className="text-[10px] font-extrabold bg-[#22D3EE] text-white rounded-full px-2.5 py-0.5">2</span>
+            </h2>
             {!result ? (
-              <div className="min-h-[380px] flex items-center justify-center text-center">
+              <div className="min-h-[400px] flex items-center justify-center text-center">
                 <div>
                   <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
                     <FileText className="w-6 h-6 text-[#22D3EE]" />
                   </div>
-                  <p className="text-[13.5px] font-bold text-[#0E7490]">Insights will appear here</p>
-                  <p className="text-[12px] text-[#0E7490] mt-1">Score, skill picker, and the review — all on this side.</p>
+                  <p className="text-[13px] font-bold text-[#0E7490]">Click Analyze Match to begin</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Score */}
+              <div className="space-y-3.5">
                 <div className="flex items-center gap-4 p-4 bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl">
                   <div className="text-4xl font-extrabold text-[#0891B2] leading-none">{displayScore}%</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12.5px] font-bold text-[#155E75]">
-                      {diff ? `Improved from ${diff.beforeScore}% to ${diff.afterScore}%` : `${(result.gapAnalysis.matchingSkills || []).length} of ${missing.length + (result.gapAnalysis.matchingSkills || []).length} skills matched`}
+                      {(result.gapAnalysis.matchingSkills || []).length} of {missing.length + (result.gapAnalysis.matchingSkills || []).length} skills matched
                     </div>
-                    <div className="text-[11.5px] text-[#0E7490] mt-0.5">
-                      {diff ? `${reviewSkills.length} skills added · ${reviewBullets.length} bullets rewritten` : 'Good fit — pick the missing skills to improve'}
-                    </div>
+                    <div className="text-[11.5px] text-[#0E7490] mt-0.5">Good fit — pick the missing skills to improve</div>
                   </div>
-                  {diff && <span className="text-[11px] font-bold text-[#15803D] bg-[#DCFCE7] rounded-full px-2.5 py-1 shrink-0">+{diff.scoreBoost}% boost</span>}
                 </div>
-
-                {/* Step 2: skill picker */}
-                {!diff && (
-                  <>
-                    <h3 className="text-[12.5px] font-bold text-[#155E75]">Pick skills to add</h3>
-                    {missing.length === 0 && missingKw.length === 0 ? (
-                      <p className="text-[12px] text-[#0E7490]">No missing skills detected — your CV already covers this JD well.</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {[...new Set([...missing, ...missingKw])].map((s) => {
-                          const on = selectedSkills.has(s);
-                          const n = countInJd(s, description);
-                          return (
-                            <button key={s} onClick={() => setSelectedSkills((p) => { const n2 = new Set(p); if (n2.has(s)) n2.delete(s); else n2.add(s); return n2; })}
-                              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-colors ${on ? 'bg-[#0891B2] border-[#0891B2] text-white' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60 hover:opacity-100'}`}>
-                              <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${on ? 'bg-white text-[#0891B2] border-white' : 'border-[#99F6E4]'}`}>{on ? '✓' : ''}</span>
-                              {s}{n > 0 && <span className="text-[9.5px] opacity-70">×{n}</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <p className="text-[11px] text-[#0E7490]">Unselected skills are never added.</p>
-                    <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0}
-                      className="w-full py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 disabled:opacity-40 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
-                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> Generate Tailored CV</>}
-                    </button>
-                  </>
+                <h3 className="text-[12px] font-bold text-[#155E75]">Pick skills to add</h3>
+                {missing.length === 0 && missingKw.length === 0 ? (
+                  <p className="text-[12px] text-[#0E7490]">No missing skills detected — your CV already covers this JD well.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {[...new Set([...missing, ...missingKw])].map((s) => {
+                      const on = selectedSkills.has(s);
+                      const n = countInJd(s, description);
+                      return (
+                        <button key={s} onClick={() => setSelectedSkills((p) => { const n2 = new Set(p); if (n2.has(s)) n2.delete(s); else n2.add(s); return n2; })}
+                          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-colors ${on ? 'bg-[#0891B2] border-[#0891B2] text-white' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60 hover:opacity-100'}`}>
+                          <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${on ? 'bg-white text-[#0891B2] border-white' : 'border-[#99F6E4]'}`}>{on ? '✓' : ''}</span>
+                          {s}{n > 0 && <span className="text-[9.5px] opacity-70">×{n}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-
+                <p className="text-[11px] text-[#0E7490]">Unselected skills are never added.</p>
+                <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0}
+                  className="w-full py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 disabled:opacity-40 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                  {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> Tailor CV</>}
+                </button>
               </div>
             )}
           </div>
 
-          {/* PANEL 3: tailoring updates — slides in from the right */}
-          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5" style={{ flex: '0 0 calc((100% - 18px) / 2)' }}>
+          {/* PANEL 3: Tailoring updates */}
+          <div style={panelStyle(3)}>
+            {tailoring && spinner('Tailoring your CV…')}
+            <h2 className="text-[13.5px] font-bold text-[#155E75] mb-3.5 flex items-center justify-between">
+              Tailoring updates <span className="text-[10px] font-extrabold bg-[#22D3EE] text-white rounded-full px-2.5 py-0.5">3</span>
+            </h2>
             {!diff ? (
-              <div className="min-h-[380px] flex items-center justify-center text-center">
+              <div className="min-h-[400px] flex items-center justify-center text-center">
                 <div>
                   <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
                     <Sparkles className="w-6 h-6 text-[#22D3EE]" />
                   </div>
-                  <p className="text-[13.5px] font-bold text-[#0E7490]">Tailoring updates</p>
-                  <p className="text-[12px] text-[#0E7490] mt-1">Generate the tailored CV — this panel slides in.</p>
+                  <p className="text-[13px] font-bold text-[#0E7490]">Tailor your CV to see updates</p>
                 </div>
               </div>
             ) : (
-              <>
-                <h2 className="text-[13.5px] font-bold text-[#155E75] mb-4">Tailoring updates</h2>
-                <div className="grid grid-cols-2 gap-2.5 mb-4">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div className="bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl px-3.5 py-3">
                     <div className="text-xl font-extrabold text-[#15803D]">+{diff.scoreBoost}%</div>
                     <div className="text-[10px] text-[#0E7490] mt-0.5">ATS score boost ({diff.beforeScore}% → {diff.afterScore}%)</div>
@@ -357,63 +368,62 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                     <div className="text-[10px] text-[#0E7490] mt-0.5">skipped — no honest way to add</div>
                   </div>
                 </div>
-                <h3 className="text-[12.5px] font-bold text-[#155E75]">Review changes — remove what you don't like</h3>
-                    {reviewSkills.map((s) => {
-                      const removed = removedPoints.has(`skill:${s}`);
-                      return (
-                        <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-[#CFFAFE] last:border-b-0 ${removed ? 'opacity-40' : ''}`}>
-                          <div className="flex-1 text-[12.5px] text-[#164E63] leading-relaxed">
-                            {removed ? <span className="line-through text-[#64748B]">Added skill {s}</span> : <>Added skill <b className="text-[#15803D]">{s}</b></>}
-                          </div>
-                          <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(`skill:${s}`); return n; })() : new Set(p).add(`skill:${s}`))}
-                            className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
-                            {removed ? '↺' : '✕'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {reviewBullets.map((br, bi) => {
-                      const key = `bullet:${bi}`;
-                      const removed = removedPoints.has(key);
-                      return (
-                        <div key={key} className={`py-2.5 border-b border-[#CFFAFE] last:border-b-0 ${removed ? 'opacity-40' : ''}`}>
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Before</div>
-                          <p className="text-[11.5px] text-[#64748B] line-through leading-relaxed">{br.original}</p>
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#15803D] mt-2 mb-1">After</div>
-                          <div className="flex items-start gap-2.5">
-                            <p className="flex-1 text-[12px] text-[#164E63] leading-relaxed bg-[#F0FDFA] border border-[#A5F3FC] rounded-lg px-2.5 py-2">{br.rewritten}</p>
-                            <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(key); return n; })() : new Set(p).add(key))}
-                              className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
-                              {removed ? '↺' : '✕'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {reviewSkills.length === 0 && reviewBullets.length === 0 && (
-                      <p className="text-[12px] text-[#0E7490]">No changes to review.</p>
-                    )}
-                    {removedPoints.size > 0 && (
-                      <button onClick={handleRegenerate} disabled={tailoring}
-                        className="w-full py-2.5 rounded-xl bg-[#0891B2] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
-                        {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><Sparkles className="w-4 h-4" /> Regenerate without the removed changes</>}
-                      </button>
-                    )}
-                    <div className="flex gap-2.5 pt-2">
-                      <button onClick={download} className="flex-1 py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
-                        <Download className="w-4 h-4" /> Download Tailored CV
-                      </button>
-                      <button onClick={openHistory} className="py-2.5 px-4 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] flex items-center gap-1.5 cursor-pointer transition-colors">
-                        <CheckCircle2 className="w-4 h-4" /> Saved
+                <h3 className="text-[12px] font-bold text-[#155E75]">Review changes — remove what you don't like</h3>
+                {reviewSkills.map((s) => {
+                  const removed = removedPoints.has(`skill:${s}`);
+                  return (
+                    <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-[#CFFAFE] ${removed ? 'opacity-40' : ''}`}>
+                      <div className="flex-1 text-[12px] text-[#164E63] leading-relaxed">
+                        {removed ? <span className="line-through text-[#64748B]">Added skill {s}</span> : <>Added skill <b className="text-[#15803D]">{s}</b></>}
+                      </div>
+                      <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(`skill:${s}`); return n; })() : new Set(p).add(`skill:${s}`))}
+                        className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
+                        {removed ? '↺' : '✕'}
                       </button>
                     </div>
-                    <button onClick={() => setStage('analysis')} className="mt-2 w-full py-2 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] cursor-pointer transition-colors">
-                      ← Back to analysis
-                    </button>
-                  </>
+                  );
+                })}
+                {reviewBullets.map((br, bi) => {
+                  const key = `bullet:${bi}`;
+                  const removed = removedPoints.has(key);
+                  return (
+                    <div key={key} className={`py-2 border-b border-[#CFFAFE] ${removed ? 'opacity-40' : ''}`}>
+                      <div className="text-[9.5px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Before</div>
+                      <p className="text-[11px] text-[#64748B] line-through leading-relaxed">{br.original}</p>
+                      <div className="text-[9.5px] font-bold uppercase tracking-wider text-[#15803D] mt-2 mb-1">After</div>
+                      <div className="flex items-start gap-2.5">
+                        <p className="flex-1 text-[11.5px] text-[#164E63] leading-relaxed bg-[#F0FDFA] border border-[#A5F3FC] rounded-lg px-2.5 py-2">{br.rewritten}</p>
+                        <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(key); return n; })() : new Set(p).add(key))}
+                          className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
+                          {removed ? '↺' : '✕'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {reviewSkills.length === 0 && reviewBullets.length === 0 && (
+                  <p className="text-[12px] text-[#0E7490]">No changes to review.</p>
                 )}
+                {removedPoints.size > 0 && (
+                  <button onClick={handleRegenerate} disabled={tailoring}
+                    className="w-full py-2.5 rounded-xl bg-[#0891B2] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                    {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><Sparkles className="w-4 h-4" /> Regenerate without the removed changes</>}
+                  </button>
+                )}
+                <div className="flex gap-2.5 pt-1">
+                  <button onClick={download} className="flex-1 py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                    <Download className="w-4 h-4" /> Download Tailored CV
+                  </button>
+                  <button onClick={openHistory} className="py-2.5 px-4 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] flex items-center gap-1.5 cursor-pointer transition-colors">
+                    <CheckCircle2 className="w-4 h-4" /> Saved
+                  </button>
+                </div>
+                <button onClick={() => setDiff(null)} className="w-full py-2 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] cursor-pointer transition-colors">
+                  ← Back to analysis
+                </button>
+              </div>
+            )}
           </div>
-        </div>
         </div>
       </div>
 

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manual JD — Centered Pop-in Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #ECFEFF; color: #164E63; padding: 24px 12px; }
+  .wrap { max-width: 1160px; margin: 0 auto; }
+  .head { text-align: center; margin-bottom: 16px; }
+  .head h1 { font-size: 20px; font-weight: 800; color: #155E75; }
+  .head p { font-size: 12px; color: #0E7490; margin-top: 4px; }
+  .steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .step { font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 1.5px solid #A5F3FC; background: #fff; color: #0E7490; opacity: .5; transition: all .3s ease; }
+  .step.on { opacity: 1; background: #0891B2; color: #fff; border-color: #0891B2; }
+
+  /* Centered stage — panels NEVER leave it */
+  .stage { position: relative; width: min(1040px, 94vw); height: 580px; margin: 0 auto; overflow: visible; }
+  .panel { position: absolute; top: 6px; height: 560px; background: #fff; border: 1.5px solid #A5F3FC; border-radius: 20px; padding: 24px; opacity: 0; pointer-events: none; transition: left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .35s ease, transform .55s ease; }
+
+  /* STEP 1 — single centered panel (46% width, centered) */
+  .step1 .p1 { left: 27%; width: 46%; opacity: 1; pointer-events: auto; }
+  /* STEP 2 — p1 moves LEFT (still fully visible), p2 pops on the right */
+  .step2 .p1 { left: 2%; width: 46%; opacity: 1; pointer-events: auto; }
+  .step2 .p2 { left: 52%; width: 46%; opacity: 1; pointer-events: auto; }
+  /* STEP 3 — all three shrink; p1 & p2 shift left, p3 pops right-center */
+  .step3 .p1 { left: 2%; width: 31%; opacity: 1; pointer-events: auto; }
+  .step3 .p2 { left: 34.5%; width: 31%; opacity: 1; pointer-events: auto; }
+  .step3 .p3 { left: 67%; width: 31%; opacity: 1; pointer-events: auto; }
+
+  .panel h2 { font-size: 13px; font-weight: 800; color: #155E75; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .panel h2 .tag { font-size: 10px; font-weight: 800; background: #22D3EE; color: #fff; border-radius: 999px; padding: 3px 9px; }
+  .field { margin-bottom: 11px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: #0E7490; margin-bottom: 5px; }
+  .field input, .field textarea { width: 100%; border: 1.5px solid #CFFAFE; border-radius: 12px; padding: 9px 12px; font-size: 12.5px; font-family: inherit; color: #164E63; background: #F0FDFA; outline: none; }
+  .field textarea { min-height: 210px; resize: vertical; line-height: 1.5; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 12px; padding: 10px 16px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .15s ease; }
+  .btn.primary { background: #0891B2; color: #fff; }
+  .btn.cta { background: #22C55E; color: #fff; }
+  .btn.full { width: 100%; }
+  .btn:hover { opacity: .85; }
+  .load { position: absolute; inset: 0; background: rgba(255,255,255,.9); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 5; }
+  .spin { width: 32px; height: 32px; border: 3px solid #A5F3FC; border-top-color: #0891B2; border-radius: 50%; animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .load p { font-size: 12px; font-weight: 700; color: #0E7490; }
+  .score { display: flex; align-items: center; gap: 14px; padding: 13px; background: #F0FDFA; border: 1.5px solid #A5F3FC; border-radius: 14px; margin-bottom: 13px; }
+  .score .big { font-size: 34px; font-weight: 800; color: #0891B2; line-height: 1; }
+  .score .meta { font-size: 11px; color: #0E7490; }
+  .matched { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { font-size: 10px; font-weight: 600; border-radius: 999px; padding: 4px 9px; border: 1.5px solid; }
+  .pill.ok { background: #DCFCE7; color: #15803D; border-color: #86EFAC; }
+  .pill.miss { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+  .sec { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #64748B; margin: 11px 0 6px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 11px; }
+  .kpi { background: #F0FDFA; border: 1.5px solid #A5F3FC; border-radius: 12px; padding: 10px 12px; }
+  .kpi .v { font-size: 18px; font-weight: 800; color: #15803D; }
+  .kpi .l { font-size: 9.5px; color: #0E7490; margin-top: 2px; }
+  .row { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid #CFFAFE; font-size: 11px; line-height: 1.5; }
+  .row .old { color: #94A3B8; text-decoration: line-through; }
+  .row .new { color: #15803D; font-weight: 600; }
+  .controls { margin-top: 14px; display: flex; gap: 10px; justify-content: center; font-size: 11px; color: #0E7490; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Manual JD — centered, pop-in with loading</h1>
+    <p>Everything stays fully visible &amp; centered — panels move left slightly and shrink as new ones pop in.</p>
+  </div>
+
+  <div class="steps">
+    <span class="step" id="s1">1 · Add JD</span>
+    <span class="step" id="s2">2 · Analysis</span>
+    <span class="step" id="s3">3 · Tailor</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="panel p1">
+      <h2>Add job description <span class="tag">1</span></h2>
+      <div class="field"><label>Role name</label><input value="DevOps Engineer" /></div>
+      <div class="field"><label>Company</label><input value="CloudScale Inc" /></div>
+      <div class="field"><label>Job description</label>
+        <textarea>We are looking for a DevOps Engineer with Kubernetes, Terraform, GitHub Actions, Prometheus/Grafana and PagerDuty. Service mesh (Istio) and zero-downtime deployments preferred…</textarea>
+      </div>
+      <button class="btn primary full" onclick="analyze()">Analyze Match</button>
+    </div>
+
+    <div class="panel p2">
+      <h2>Analysis <span class="tag">2</span></h2>
+      <div id="load2" class="load" style="display:none"><div class="spin"></div><p>Analyzing your CV…</p></div>
+      <div id="body2">
+        <div class="score">
+          <div class="big">87%</div>
+          <div class="meta"><b>Strong fit</b> — 21 of 22 matched.<br /><span style="font-size:10px">Pick the missing skills to improve.</span></div>
+        </div>
+        <div class="sec">Already matched (21)</div>
+        <div class="matched"><span class="pill ok">Kubernetes</span><span class="pill ok">Terraform</span><span class="pill ok">AWS</span><span class="pill ok">Docker</span><span class="pill ok">Prometheus</span></div>
+        <div class="sec">Missing (1) — pick what to add</div>
+        <div class="matched"><span class="pill miss">Service Mesh</span><span class="pill miss">Istio</span></div>
+        <div style="margin-top:12px"><button class="btn cta full" onclick="tailor()">✦ Tailor CV</button></div>
+      </div>
+    </div>
+
+    <div class="panel p3">
+      <h2>Tailoring updates <span class="tag">3</span></h2>
+      <div id="load3" class="load" style="display:none"><div class="spin"></div><p>Tailoring your CV…</p></div>
+      <div id="body3">
+        <div class="kpis">
+          <div class="kpi"><div class="v">+6%</div><div class="l">ATS boost (81→87%)</div></div>
+          <div class="kpi"><div class="v">+3</div><div class="l">skills added</div></div>
+          <div class="kpi"><div class="v">+2</div><div class="l">bullets rewritten</div></div>
+          <div class="kpi"><div class="v">0</div><div class="l">fabricated</div></div>
+        </div>
+        <div class="sec">What changed</div>
+        <div class="row"><div><span class="old">…load balancing, and clustering.</span><br /><span class="new">…clustering, and service mesh (Istio).</span></div></div>
+        <div class="row"><div>Added: <span class="new">Service Mesh, Istio</span></div></div>
+        <div style="margin-top:12px"><button class="btn cta full">Save &amp; Download PDF</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" onclick="reset()">Reset demo</button>
+    <span>Step 1: one centered panel · Step 2: it moves left, analysis pops right · Step 3: both move left &amp; shrink, updates pop</span>
+  </div>
+</div>
+
+<script>
+let step = 1;
+const stage = document.getElementById('stage');
+function render() {
+  stage.className = 'stage step' + step;
+  document.getElementById('s1').classList.toggle('on', step >= 1);
+  document.getElementById('s2').classList.toggle('on', step >= 2);
+  document.getElementById('s3').classList.toggle('on', step >= 3);
+}
+function analyze() {
+  step = 2;
+  document.getElementById('load2').style.display = 'flex';
+  document.getElementById('body2').style.opacity = '0.15';
+  render();
+  setTimeout(() => { document.getElementById('load2').style.display = 'none'; document.getElementById('body2').style.opacity = '1'; }, 2200);
+}
+function tailor() {
+  step = 3;
+  document.getElementById('load3').style.display = 'flex';
+  document.getElementById('body3').style.opacity = '0.15';
+  render();
+  setTimeout(() => { document.getElementById('load3').style.display = 'none'; document.getElementById('body3').style.opacity = '1'; }, 2600);
+}
+function reset() {
+  step = 1; render();
+  document.getElementById('load2').style.display='none'; document.getElementById('load3').style.display='none';
+  document.getElementById('body2').style.opacity='1'; document.getElementById('body3').style.opacity='1';
+}
+render();
+</script>
+</body>
+</html>
