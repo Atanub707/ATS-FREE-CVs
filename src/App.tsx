@@ -43,9 +43,6 @@ export default function App() {
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [jobTypeFilter, setJobTypeFilter] = useState<'all' | 'remote' | 'hybrid' | 'onsite'>('all');
-  const [postedFilter, setPostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
-  const [locationFilter, setLocationFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
   const [page, setPage] = useState(1);
@@ -100,9 +97,6 @@ export default function App() {
       state: activeStateTab,
       source: sourceFilter,
       search: searchTerm,
-      jobType: jobTypeFilter,
-      location: locationFilter,
-      datePostedFilter: postedFilter,
       sortBy,
       sortOrder: 'desc',
       page: String(page),
@@ -120,7 +114,7 @@ export default function App() {
     if (statsRes.ok) {
       setStats(await statsRes.json());
     }
-  }, [activeStateTab, sourceFilter, searchTerm, jobTypeFilter, postedFilter, locationFilter, sortBy, page, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, sortBy, page, pageSize]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
@@ -165,7 +159,7 @@ export default function App() {
   // Reset to page 1 when a filter changes
   useEffect(() => {
     setPage(1);
-  }, [activeStateTab, sourceFilter, searchTerm, jobTypeFilter, postedFilter, locationFilter, sortBy, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -187,12 +181,10 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // The search is fully visible in the list: keywords go into the
-        // list's own search box and the posted window is enforced.
-        setSearchTerm(params.keywords);
-        setPostedFilter(params.datePostedFilter || 'all');
-        setJobTypeFilter(params.jobType || 'all');
-        setLocationFilter(params.location || '');
+        // Searching ADDS jobs to the store. The list always shows your full
+        // library (newest scraped first) — the search never narrows or hides
+        // existing jobs. Use the toolbar search box / source / sort controls
+        // to filter the view manually.
         setActiveStateTab('all');
         setPage(1);
         await fetchJobs();
