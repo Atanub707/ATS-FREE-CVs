@@ -110,6 +110,25 @@ export class ScraperFactory {
       }
     }
 
+    // Work-mode guarantee across ALL sources: a remote request must never
+    // ADD jobs explicitly labeled Hybrid/On-site (and vice versa). Applied
+    // after every scraper so multi-source searches stay exact too.
+    if (params.jobType && params.jobType !== 'all') {
+      const wanted = params.jobType;
+      const before = allJobs.length;
+      const filtered = allJobs.filter((j) => {
+        const t = j.jobType || '';
+        if (wanted === 'remote') return !t.includes('Hybrid') && !t.includes('On-site');
+        if (wanted === 'onsite') return !t.includes('Remote') && !t.includes('Hybrid');
+        if (wanted === 'hybrid') return !t.includes('Remote') && !t.includes('On-site');
+        return true;
+      });
+      if (filtered.length !== before) {
+        console.log(`[ScraperFactory] Work-mode guard: ${before - filtered.length} jobs dropped (contradict ${wanted} search)`);
+      }
+      return filtered;
+    }
+
     return allJobs;
   }
 }

@@ -101,6 +101,14 @@ export class ArbeitnowScraper extends BaseScraper {
       }
     }
 
+    // Arbeitnow's API exposes a real `remote` flag: a REMOTE request must
+    // only return genuinely remote jobs (never unknown/office ones).
+    if (params.jobType === 'remote') {
+      const remoteOnly = jobs.filter((j) => (j.jobType || '').includes('Remote'));
+      console.log(`[Arbeitnow] ${jobs.length} fetched, kept ${remoteOnly.length} for remote search`);
+      return remoteOnly;
+    }
+
     return jobs;
   }
 }
