@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2 } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2 } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 
@@ -52,6 +52,7 @@ function countInJd(term: string, jd: string): number {
 }
 
 export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
@@ -184,9 +185,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
     <div className="fixed inset-0 z-40 bg-[#F0FDFA] text-[#164E63] flex flex-col font-sans">
       {/* Header */}
       <div className="px-5 sm:px-8 py-4 border-b border-[#A5F3FC] bg-white/70 backdrop-blur flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-lg font-extrabold text-[#155E75] tracking-tight">Manual JD</h1>
-          <p className="text-[11.5px] text-[#0E7490]">Paste a job description — get a tailored CV in 4 simple steps.</p>
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold text-[#0E7490] bg-[#ECFEFF] border border-[#A5F3FC] hover:bg-[#CFFAFE] transition-colors cursor-pointer">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back
+          </button>
+          <div>
+            <h1 className="text-lg font-extrabold text-[#155E75] tracking-tight">Manual JD</h1>
+            <p className="text-[11.5px] text-[#0E7490]">Paste a job description — get a tailored CV in 4 simple steps.</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold text-[#0E7490] bg-[#ECFEFF] border border-[#A5F3FC] hover:bg-[#CFFAFE] transition-colors cursor-pointer">
