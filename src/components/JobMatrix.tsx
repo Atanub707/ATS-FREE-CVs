@@ -3,6 +3,7 @@ import { Job, JobState, JobSource } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
 import { DownloadCvDropdown } from './DownloadCvDropdown';
+import { applicantCountLabel } from '../lib/applicantInfo';
 import {
   Briefcase,
   Zap,
@@ -133,12 +134,12 @@ const JobCard = React.memo(function JobCard({
           {(job.applicantCount !== undefined || job.applicantCaption) && (
             <span
               className="inline-flex items-center space-x-1 text-[11px] px-2 py-0.5 rounded border text-slate-600 bg-slate-50 border-slate-200"
-              title="Applicants shown as on LinkedIn’s public page — logged-in view may show more"
+              title={job.lowCompetition
+                ? "LinkedIn hides exact counts for low-competition jobs — the true count is lower than shown"
+                : "Applicants shown as on LinkedIn’s public page — logged-in view may show more"}
             >
               <Users className="w-3 h-3 text-slate-400" />
-              <span>
-                {job.applicantCaption || `${(job.applicantCount || 0).toLocaleString()} applicants`}
-              </span>
+              <span>{applicantCountLabel(job)}</span>
             </span>
           )}
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Job, JobState } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
+import { applicantCountLabel } from '../lib/applicantInfo';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
 import { DownloadCvDropdown } from './DownloadCvDropdown';
 import {
@@ -146,8 +147,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               {(job.applicantCount !== undefined || job.applicantCaption) && (
                 <span className="flex items-center space-x-1 text-slate-600">
                   <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span title="Applicants shown as on LinkedIn's public page — logged-in view may show more">
-                    {job.applicantCaption || `${(job.applicantCount || 0).toLocaleString()} applicants`}
+                  <span title={job.lowCompetition
+                    ? "LinkedIn hides exact counts for low-competition jobs — the true count is lower than shown"
+                    : "Applicants shown as on LinkedIn's public page — logged-in view may show more"}>
+                    {applicantCountLabel(job)}
                   </span>
                 </span>
               )}
