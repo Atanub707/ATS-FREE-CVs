@@ -218,6 +218,10 @@ export interface JobFilterQueryParams {
   state?: 'all' | JobState;
   source?: 'all' | JobSource;
   search?: string;
+  jobType?: 'all' | 'remote' | 'onsite' | 'hybrid';
+  location?: string;
+  datePostedFilter?: 'all' | '24h' | '7d' | '30d';
+  under10Applicants?: boolean;
   minScore?: number;
   maxScore?: number;
   sortBy?: 'postedDate' | 'matchScore' | 'createdAt' | 'company' | 'title' | 'salaryMax';

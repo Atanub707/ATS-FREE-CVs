@@ -29,6 +29,8 @@ interface JobMatrixProps {
   stats: { total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> };
   activeStateTab: 'all' | JobState;
   onStateTabChange: (tab: 'all' | JobState) => void;
+  searchScope: { keywords: string; jobType: 'all' | 'remote' | 'onsite' | 'hybrid'; location: string; datePostedFilter: 'all' | '24h' | '7d' | '30d'; under10Applicants: boolean };
+  onClearScope: () => void;
   searchTerm: string;
   setSearchTerm: (v: string) => void;
   sourceFilter: 'all' | JobSource;
@@ -350,6 +352,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   stats,
   activeStateTab,
   onStateTabChange,
+  searchScope,
+  onClearScope,
   searchTerm,
   setSearchTerm,
   sourceFilter,
@@ -513,6 +517,26 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Search-scope note: visible only when the last search filters the list */}
+      {(() => {
+        const s = searchScope;
+        const filtered = (s.jobType && s.jobType !== 'all') || (s.location && s.location.trim()) || (s.datePostedFilter && s.datePostedFilter !== 'all') || s.under10Applicants || !!s.keywords;
+        if (!filtered || totalJobs >= stats.total) return null;
+        return (
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 -mt-1 px-1">
+            <span>
+              Showing {totalJobs} of {stats.total} jobs — filtered by your last search ({s.jobType !== 'all' ? `${s.jobType}, ` : ''}{s.datePostedFilter !== 'all' ? `posted ${s.datePostedFilter}, ` : ''}{s.under10Applicants ? 'under 10 applicants, ' : ''}{s.keywords ? `“${s.keywords}”` : ''}).
+            </span>
+            <button
+              onClick={onClearScope}
+              className="px-2 py-0.5 rounded text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              Show all jobs
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Search & Sort Filter */}
       <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs shadow-xs space-y-2">

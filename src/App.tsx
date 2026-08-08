@@ -92,11 +92,27 @@ export default function App() {
   // Fetch job list (server-side filtered + paginated) and stats.
   // Never blocked — runs on every page/filter change regardless of
   // background match/tailor operations.
+  // Search-scope filters from the last scrape — applied to the LISTING so
+  // the list shows exactly what the user searched for. In-memory only: a
+  // fresh page load shows all jobs. The ref mirrors state synchronously.
+  const searchScopeRef = useRef({ keywords: '', jobType: 'all' as 'all' | 'remote' | 'onsite' | 'hybrid', location: '', datePostedFilter: 'all' as 'all' | '24h' | '7d' | '30d', under10Applicants: false });
+  const [searchScope, setSearchScope] = useState({ keywords: '', jobType: 'all' as 'all' | 'remote' | 'onsite' | 'hybrid', location: '', datePostedFilter: 'all' as 'all' | '24h' | '7d' | '30d', under10Applicants: false });
+  const applySearchScope = (next: typeof searchScopeRef.current) => {
+    searchScopeRef.current = next;
+    setSearchScope(next);
+  };
+  const clearSearchScope = () => applySearchScope({ keywords: '', jobType: 'all', location: '', datePostedFilter: 'all', under10Applicants: false });
+
   const fetchJobs = useCallback(async () => {
+    const scope = searchScopeRef.current;
     const params = new URLSearchParams({
       state: activeStateTab,
       source: sourceFilter,
-      search: searchTerm,
+      search: searchTerm || scope.keywords,
+      jobType: scope.jobType,
+      location: scope.location,
+      datePostedFilter: scope.datePostedFilter,
+      under10Applicants: String(scope.under10Applicants),
       sortBy,
       sortOrder: 'desc',
       page: String(page),
@@ -181,8 +197,18 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
+        // The user's search defines what this list shows — apply the exact
+        // same scope to the listing so ONLY matching jobs appear.
+        applySearchScope({
+          keywords: params.keywords,
+          jobType: params.jobType || 'all',
+          location: params.location || '',
+          datePostedFilter: params.datePostedFilter || 'all',
+          under10Applicants: !!params.under10Applicants,
+        });
         setActiveStateTab('all');
-        await fetchAllData();
+        setPage(1);
+        await fetchJobs();
         return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0, filteredOutCount: data.filteredOutCount || 0, skippedSources: data.skippedSources || [] };
       } else {
         const err = await res.json();
@@ -467,6 +493,8 @@ export default function App() {
               stats={stats}
               activeStateTab={activeStateTab}
               onStateTabChange={setActiveStateTab}
+              searchScope={searchScope}
+              onClearScope={clearSearchScope}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               sourceFilter={sourceFilter}

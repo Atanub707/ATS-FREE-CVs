@@ -604,6 +604,18 @@ export function deleteAllJobs(): number {
   }
 }
 
+export type WorkMode = 'remote' | 'hybrid' | 'onsite' | 'unknown';
+
+// Strict work-mode classification shared by the listing filter.
+// "Hybrid" always wins so a hybrid job never leaks into remote results.
+export function classifyWorkMode(job: Pick<Job, 'jobType' | 'location'>): WorkMode {
+  const text = `${job.jobType || ''} ${job.location || ''}`.toLowerCase();
+  if (/\bhybrid\b/.test(text)) return 'hybrid';
+  if (/\bremote\b|anywhere|wfh|work from home|home\s*office|100%\s*(remote|tele|virtual)|fully\s*remote|telecommute|virtual\b/.test(text)) return 'remote';
+  if (/\bon-?site\b|\bon site\b|in-?office\b|in office|office-?based|at the office/.test(text)) return 'onsite';
+  return 'unknown';
+}
+
 export function queryJobs(params: JobFilterQueryParams) {
   let jobs = getAllJobs();
 
@@ -626,6 +638,42 @@ export function queryJobs(params: JobFilterQueryParams) {
         j.company.toLowerCase().includes(q) ||
         j.location.toLowerCase().includes(q) ||
         j.description.toLowerCase().includes(q)
+    );
+  }
+
+  // Work-mode filter: EXACT match only — a remote search shows only
+  // remote-classified jobs; unknowns are excluded (never assumed).
+  if (params.jobType && params.jobType !== 'all') {
+    const wanted = params.jobType;
+    jobs = jobs.filter((j) => classifyWorkMode(j) === wanted);
+  }
+
+  // Location filter (exact substring against the job's location field).
+  // "remote"/"anywhere"/"worldwide" as location = no constraint.
+  if (params.location && params.location.trim()) {
+    const q = params.location.trim().toLowerCase();
+    if (!/^(remote|anywhere|worldwide|open to remote)$/.test(q)) {
+      jobs = jobs.filter((j) => j.location.toLowerCase().includes(q));
+    }
+  }
+
+  // Date posted window (24h / 7d / 30d). Date-only values are treated as
+  // end-of-day so a job posted "yesterday" still counts within 24h.
+  if (params.datePostedFilter && params.datePostedFilter !== 'all') {
+    const hours = { '24h': 24, '7d': 24 * 7, '30d': 24 * 30 }[params.datePostedFilter];
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    jobs = jobs.filter((j) => {
+      let t = j.postedDateParsed ? new Date(`${j.postedDateParsed}T23:59:59Z`).getTime() : NaN;
+      if (!Number.isFinite(t)) t = new Date(j.postedDate).getTime();
+      return Number.isFinite(t) && t >= cutoff;
+    });
+  }
+
+  // Under-10 applicants: the low-competition flag is the authoritative
+  // signal; a known count without the flag must be <= 10.
+  if (params.under10Applicants) {
+    jobs = jobs.filter((j) =>
+      j.lowCompetition === true || (j.applicantCount !== undefined && j.applicantCount <= 10)
     );
   }
 
