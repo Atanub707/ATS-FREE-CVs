@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Sparkles, Download, FileText, Zap, AlertTriangle, CheckCircle2, TrendingUp, ArrowRight, History, Trash2, Clock, ArrowLeft, ChevronRight } from 'lucide-react';
+import { X, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2 } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 
@@ -14,25 +14,20 @@ interface HistoryEntry {
   role: string;
   company: string;
   score: number;
-  createdAt: string;
   hasTailoredCv: boolean;
+  createdAt: string;
 }
 
 interface DiffPayload {
   beforeScore: number;
   afterScore: number;
   scoreBoost: number;
-  scoreBreakdown: { alreadyMatched: number; newlyIntegrated: number; remainingGap: number };
   missingBefore: { skills: string[]; keywords: string[] };
   addedAfter: {
-    keywordsIncorporated: string[];
-    keywordsInExperience: string[];
-    keywordsInSkills: string[];
-    rephrasedHighlightsCount: number;
     skillsAdded: string[];
+    rephrasedHighlightsCount: number;
   };
   notIntegrable: string[];
-  auditNotes: string[];
   bulletRewrites?: { original: string; rewritten: string }[];
 }
 
@@ -48,52 +43,35 @@ interface AnalysisResult {
 }
 
 function countInJd(term: string, jd: string): number {
-  const t = term.toLowerCase();
+  const t = term.toLowerCase().trim();
+  if (!t) return 0;
   const hay = jd.toLowerCase();
-  let count = 0;
-  let idx = 0;
-  while ((idx = hay.indexOf(t, idx)) !== -1) {
-    count++;
-    idx += t.length;
-  }
+  let count = 0, idx = 0;
+  while ((idx = hay.indexOf(t, idx)) !== -1) { count++; idx += t.length; }
   return count;
 }
 
-function contextInJd(term: string, jd: string): string {
-  const t = term.toLowerCase();
-  const hay = jd.toLowerCase();
-  const idx = hay.indexOf(t);
-  if (idx === -1) return '';
-  const start = Math.max(0, hay.lastIndexOf('.', idx - 1) + 1);
-  const end = hay.indexOf('.', idx);
-  const sentence = jd.slice(start, end === -1 ? idx + t.length + 40 : end + 1).trim();
-  return sentence.length > 120 ? sentence.slice(0, 117) + '…' : sentence;
-}
-
-export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
+export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [tailoring, setTailoring] = useState(false);
+  const [error, setError] = useState('');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [diff, setDiff] = useState<DiffPayload | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [removedPoints, setRemovedPoints] = useState<Set<string>>(new Set());
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [historyId, setHistoryId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyMsg, setHistoryMsg] = useState<string | null>(null);
-  const [historyId, setHistoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && historyOpen) loadHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, historyOpen]);
-
-  if (!isOpen) return null;
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -107,44 +85,31 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     finally { setHistoryLoading(false); }
   };
 
-  const openHistory = () => {
-    setHistoryOpen(true);
-    loadHistory();
-  };
+  const openHistory = () => { setHistoryOpen(true); loadHistory(); };
 
   const restoreAnalysis = async (id: string) => {
     try {
       const res = await fetch(`/api/manual-jd/history/${id}`);
       if (!res.ok) { setHistoryMsg('Could not load this analysis.'); setTimeout(() => setHistoryMsg(null), 3000); return; }
-      const data = await res.json();
-      const a = data.analysis;
+      const a = await res.json();
       setTitle(a.role || '');
       setCompany(a.company || '');
       setDescription(a.description || '');
-      setResult(a.gapAnalysis ? { matchScore: a.score, gapAnalysis: a.gapAnalysis } : null);
+      setResult({ matchScore: a.score, gapAnalysis: a.gap_analysis || { matchingSkills: [], missingSkills: [], keyRecommendations: [], missingKeywords: [], matchedKeywords: [] } });
+      const missing = a.gap_analysis?.missingSkills || [];
+      setSelectedSkills(new Set(missing));
+      setRemovedPoints(new Set());
       setDiff(a.diff || null);
-      setDownloadToken(data.downloadToken || null);
       setHistoryId(a.id);
       setHistoryOpen(false);
-      setError('');
-      setHistoryMsg('Analysis restored from history.');
-      setTimeout(() => setHistoryMsg(null), 3000);
-    } catch (e: any) {
-      setHistoryMsg(e.message || 'Failed to restore.');
-      setTimeout(() => setHistoryMsg(null), 3000);
-    }
+      if (a.tailored_cv && a.diff?.scoreBoost !== undefined) setDownloadToken(`restored-${a.id}`);
+    } catch (e: any) { setError(e.message); }
   };
 
   const deleteHistoryEntry = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Delete this analysis from history?')) return;
-    try {
-      const res = await fetch(`/api/manual-jd/history/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setHistory((prev) => prev.filter((h) => h.id !== id));
-        if (historyId === id) { setHistoryId(null); setDownloadToken(null); setDiff(null); }
-      }
-    } catch { /* ignore */ }
+    const res = await fetch(`/api/manual-jd/history/${id}`, { method: 'DELETE' });
+    if (res.ok) setHistory((h) => h.filter((x) => x.id !== id));
   };
 
   const handleAnalyze = async () => {
@@ -159,7 +124,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Analysis failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setResult(data);
-      // Default: every missing skill selected — the user can unselect any.
       const missing = (data.gapAnalysis?.missingSkills || []);
       setSelectedSkills(new Set(missing));
       setRemovedPoints(new Set());
@@ -168,8 +132,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     finally { setLoading(false); }
   };
 
-  const handleTailor = async () => {
+  const handleTailor = async (skillsOverride?: string[]) => {
     setTailoring(true); setError('');
+    const include = skillsOverride !== undefined ? skillsOverride : [...selectedSkills];
     try {
       const res = await fetch('/api/analyze-jd/tailor', {
         method: 'POST',
@@ -178,12 +143,10 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
           title: title.trim(),
           company: company.trim(),
           description: description.trim(),
-          // Pass the analysis through so the engine integrates the real gaps
           gapAnalysis: result?.gapAnalysis,
           matchScore: result?.matchScore,
           historyId,
-          // User-controlled: ONLY these selected skills are incorporated
-          includeSkills: [...selectedSkills],
+          includeSkills: include,
         }),
       });
       const data = await res.json();
@@ -195,33 +158,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     finally { setTailoring(false); }
   };
 
-  // Regenerate after the user removed points: re-tailor WITHOUT them.
   const handleRegenerate = async () => {
-    if (removedPoints.size === 0) { await handleTailor(); return; }
     const keep = [...selectedSkills].filter((s) => !removedPoints.has(s));
     setSelectedSkills(new Set(keep));
     setRemovedPoints(new Set());
-    setTailoring(true); setError('');
-    try {
-      const res = await fetch('/api/analyze-jd/tailor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          company: company.trim(),
-          description: description.trim(),
-          gapAnalysis: result?.gapAnalysis,
-          matchScore: result?.matchScore,
-          historyId,
-          includeSkills: keep,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Regeneration failed'); alert(llmErrorMessage(data.code, data.error)); return; }
-      setDownloadToken(data.downloadToken);
-      if (data.diff) setDiff(data.diff);
-    } catch (e: any) { setError(e.message); }
-    finally { setTailoring(false); }
+    await handleTailor(keep);
   };
 
   const download = () => {
@@ -229,619 +170,239 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     window.open(`/api/analyze-jd/download?token=${downloadToken}&format=pdf`, '_blank');
   };
 
-  const score = result?.matchScore ?? 0;
-  const color = score >= 75 ? 'text-emerald-600' : score >= 50 ? 'text-blue-600' : score >= 30 ? 'text-amber-600' : 'text-red-600';
-  const verdict = score >= 75 ? 'Strong fit — worth tailoring' : score >= 50 ? 'Decent fit — tailoring will help' : 'Weak fit — consider other roles';
-
-  // After tailoring, the card shows the NEW score (with old → new visible)
-  const displayScore = diff ? diff.afterScore : score;
-  const displayColor = displayScore >= 75 ? 'text-emerald-600' : displayScore >= 50 ? 'text-blue-600' : displayScore >= 30 ? 'text-amber-600' : 'text-red-600';
-  const displayVerdict = diff
-    ? displayScore >= 75 ? 'Strong fit — tailoring complete' : displayScore >= 50 ? 'Good fit — tailoring complete' : 'Weak fit — consider other roles'
-    : verdict;
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
-  const matched = result?.gapAnalysis?.matchingSkills || [];
-  const totalRequired = matched.length + missing.length;
-
-  const ringC = 2 * Math.PI * 32;
+  const score = result?.matchScore ?? 0;
+  const displayScore = diff ? diff.afterScore : score;
+  const currentStep = !result ? 1 : !diff ? 2 : 3;
+  const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
+  const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
 
   return (
-    <div className="fixed inset-0 z-40 bg-white text-slate-900 flex">
-      {/* ═══ LEFT: INPUTS ONLY (never changes) ═══ */}
-      <div className="w-[42%] min-w-[420px] border-r border-slate-200 flex flex-col bg-white">
-        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onClose}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
-              title="Back to dashboard"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
-            </button>
-            <FileText className="w-5 h-5 text-blue-600 ml-1" />
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 leading-tight">Job Description Input</h2>
-              <p className="text-[10.5px] text-slate-400 font-medium">Paste the JD — insights appear on the right side</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <button
-              onClick={openHistory}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
-              title="Past analyses"
-            >
-              <History className="w-3.5 h-3.5" />
-              <span>History</span>
-            </button>
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer" title="Close">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className="fixed inset-0 z-40 bg-[#F0FDFA] text-[#164E63] flex flex-col font-sans">
+      {/* Header */}
+      <div className="px-5 sm:px-8 py-4 border-b border-[#A5F3FC] bg-white/70 backdrop-blur flex items-center justify-between shrink-0">
+        <div>
+          <h1 className="text-lg font-extrabold text-[#155E75] tracking-tight">Manual JD</h1>
+          <p className="text-[11.5px] text-[#0E7490]">Paste a job description — get a tailored CV in 4 simple steps.</p>
         </div>
-
-        {/* History slide-over */}
-        {historyOpen && (
-          <div className="fixed inset-0 z-50 bg-black/20 flex justify-start">
-            <div className="w-96 max-w-[90vw] bg-white h-full shadow-2xl border-r border-slate-200 flex flex-col animate-[slideIn_.25s_ease]">
-              <div className="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
-                <div className="flex items-center space-x-2">
-                  <History className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-sm font-bold text-slate-900">Analysis History</h3>
-                </div>
-                <button onClick={() => setHistoryOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md cursor-pointer">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {historyLoading && history.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-8">Loading…</p>
-                )}
-                {!historyLoading && history.length === 0 && (
-                  <div className="text-center py-10 px-4">
-                    <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-xs font-semibold text-slate-500">No analyses yet</p>
-                    <p className="text-[10.5px] text-slate-400 mt-1">Every Analyze Match run is saved here automatically.</p>
-                  </div>
-                )}
-                {history.map((h) => (
-                  <div
-                    key={h.id}
-                    onClick={() => restoreAnalysis(h.id)}
-                    className={`group border rounded-xl p-3 cursor-pointer transition-all ${
-                      historyId === h.id ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{h.role || 'Untitled role'}</p>
-                        <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
-                          {h.company || '—'} · {new Date(h.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-1 shrink-0">
-                        <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
-                          h.score >= 75 ? 'bg-emerald-50 text-emerald-700' : h.score >= 50 ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {h.score}%
-                        </span>
-                        <button
-                          onClick={(e) => deleteHistoryEntry(h.id, e)}
-                          className="p-1 rounded-md text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    {h.hasTailoredCv && (
-                      <span className="inline-flex items-center space-x-1 text-[9.5px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 mt-1.5">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        <span>Tailored CV ready</span>
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {historyMsg && (
-                <div className="px-4 py-2.5 border-t border-slate-100">
-                  <p className="text-[11px] font-semibold text-blue-700">{historyMsg}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto px-5 pt-4 pb-4 flex flex-col">
-          <div>
-            <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Role Name *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Senior DevOps Engineer"
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Company Name</label>
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Google"
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            />
-          </div>
-
-          <div className="mt-4 flex-1 flex flex-col min-h-[260px]">
-            <label className="block text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Job Description *</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Paste the full job description here..."
-              rows={16}
-              className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none font-mono leading-relaxed"
-            />
-            <div className="text-right text-[10px] font-semibold text-slate-400 mt-1.5">
-              {description.length.toLocaleString()} chars
-            </div>
-          </div>
-
-          {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100 mt-3">{error}</p>}
-
-          <button
-            onClick={handleAnalyze}
-            disabled={loading || !title.trim() || !description.trim()}
-            className="mt-4 w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-semibold text-xs flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-blue-600/20 transition-colors shrink-0"
-          >
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Analyzing against your CV…</span></>
-              : <><Sparkles className="w-4 h-4" /><span>Analyze Match</span></>}
+        <div className="flex items-center gap-2">
+          <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold text-[#0E7490] bg-[#ECFEFF] border border-[#A5F3FC] hover:bg-[#CFFAFE] transition-colors cursor-pointer">
+            <History className="w-3.5 h-3.5" /> History
           </button>
-        </div>
-
-        <div className="px-5 py-2.5 border-t border-slate-200 bg-slate-50 shrink-0">
-          <p className="text-[10px] text-slate-400 font-medium flex items-center space-x-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>Left side stays as-is — all results land on the right</span>
-          </p>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[#0E7490] hover:bg-[#ECFEFF] transition-colors cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* ═══ RIGHT: ALL INSIGHTS ═══ */}
-      <div className="flex-1 bg-slate-100 overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-6">
-          {/* Header row */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-extrabold text-slate-900">Insights</span>
-              <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5">Analysis → Tailoring</span>
+      {/* Steps */}
+      <div className="px-5 sm:px-8 pt-4 flex items-center gap-2 flex-wrap shrink-0">
+        {[
+          { n: 1, label: 'Paste JD', on: !!result },
+          { n: 2, label: 'Pick skills', on: currentStep >= 2 },
+          { n: 3, label: 'Review', on: currentStep >= 3 },
+          { n: 4, label: 'Download', on: !!downloadToken },
+        ].map((s, i) => (
+          <React.Fragment key={s.n}>
+            {i > 0 && <ArrowRight className="w-3 h-3 text-[#99F6E4]" />}
+            <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold border transition-colors ${
+              s.on ? 'bg-[#0891B2] border-[#0891B2] text-white' : currentStep === s.n ? 'bg-white border-[#0891B2] text-[#155E75]' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60'
+            }`}>
+              <span className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-extrabold ${s.on ? 'bg-white/25' : 'bg-[#CFFAFE] text-[#0E7490]'}`}>{s.on ? '✓' : s.n}</span>
+              {s.label}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
+
+      {/* Main grid */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* LEFT: inputs */}
+          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5 space-y-3.5 self-start">
+            <h2 className="text-[13.5px] font-bold text-[#155E75]">Job details</h2>
+            <div>
+              <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Role name</label>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer"
+                className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[13px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none transition-colors" />
             </div>
-            <div className="flex items-center space-x-1.5 text-[10px] font-bold text-slate-400">
-              {[
-                { n: 1, label: 'Analyze', on: !!result },
-                { n: 2, label: 'Tailor', on: !!diff },
-                { n: 3, label: 'Download', on: !!downloadToken },
-              ].map((s, i) => (
-                <React.Fragment key={s.n}>
-                  {i > 0 && <span className="text-slate-300">→</span>}
-                  <span className={`flex items-center space-x-1 ${s.on ? 'text-blue-600' : ''}`}>
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-extrabold ${s.on ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>{s.n}</span>
-                    <span>{s.label}</span>
-                  </span>
-                </React.Fragment>
+            <div>
+              <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Company</label>
+              <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name"
+                className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[13px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Job description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={10}
+                placeholder="Paste the full job description…"
+                className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[12.5px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none resize-y leading-relaxed" />
+              <p className="text-right text-[10.5px] text-[#0E7490] mt-1">{description.length.toLocaleString()} chars</p>
+            </div>
+            <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()}
+              className="w-full py-2.5 rounded-xl bg-[#0891B2] hover:opacity-85 disabled:opacity-40 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
+            </button>
+            <p className="text-center text-[10.5px] text-[#0E7490]">Everything stays on your machine</p>
+          </div>
+
+          {/* RIGHT: result */}
+          <div className="bg-white border border-[#A5F3FC] rounded-2xl p-5">
+            {!result ? (
+              <div className="min-h-[380px] flex items-center justify-center text-center">
+                <div>
+                  <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-[#22D3EE]" />
+                  </div>
+                  <p className="text-[13.5px] font-bold text-[#0E7490]">Insights will appear here</p>
+                  <p className="text-[12px] text-[#0E7490] mt-1">Score, skill picker, and the review — all on this side.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Score */}
+                <div className="flex items-center gap-4 p-4 bg-[#F0FDFA] border border-[#A5F3FC] rounded-xl">
+                  <div className="text-4xl font-extrabold text-[#0891B2] leading-none">{displayScore}%</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12.5px] font-bold text-[#155E75]">
+                      {diff ? `Improved from ${diff.beforeScore}% to ${diff.afterScore}%` : `${(result.gapAnalysis.matchingSkills || []).length} of ${missing.length + (result.gapAnalysis.matchingSkills || []).length} skills matched`}
+                    </div>
+                    <div className="text-[11.5px] text-[#0E7490] mt-0.5">
+                      {diff ? `${reviewSkills.length} skills added · ${reviewBullets.length} bullets rewritten` : 'Good fit — pick the missing skills to improve'}
+                    </div>
+                  </div>
+                  {diff && <span className="text-[11px] font-bold text-[#15803D] bg-[#DCFCE7] rounded-full px-2.5 py-1 shrink-0">+{diff.scoreBoost}% boost</span>}
+                </div>
+
+                {/* Step 2: skill picker */}
+                {!diff && (
+                  <>
+                    <h3 className="text-[12.5px] font-bold text-[#155E75]">Pick skills to add</h3>
+                    {missing.length === 0 && missingKw.length === 0 ? (
+                      <p className="text-[12px] text-[#0E7490]">No missing skills detected — your CV already covers this JD well.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {[...new Set([...missing, ...missingKw])].map((s) => {
+                          const on = selectedSkills.has(s);
+                          const n = countInJd(s, description);
+                          return (
+                            <button key={s} onClick={() => setSelectedSkills((p) => { const n2 = new Set(p); if (n2.has(s)) n2.delete(s); else n2.add(s); return n2; })}
+                              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-colors ${on ? 'bg-[#0891B2] border-[#0891B2] text-white' : 'bg-white border-[#A5F3FC] text-[#0E7490] opacity-60 hover:opacity-100'}`}>
+                              <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${on ? 'bg-white text-[#0891B2] border-white' : 'border-[#99F6E4]'}`}>{on ? '✓' : ''}</span>
+                              {s}{n > 0 && <span className="text-[9.5px] opacity-70">×{n}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[11px] text-[#0E7490]">Unselected skills are never added.</p>
+                    <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0}
+                      className="w-full py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 disabled:opacity-40 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <><Sparkles className="w-4 h-4" /> Generate Tailored CV</>}
+                    </button>
+                  </>
+                )}
+
+                {/* Step 3: review */}
+                {diff && (
+                  <>
+                    <h3 className="text-[12.5px] font-bold text-[#155E75]">Review changes — remove what you don't like</h3>
+                    {reviewSkills.map((s) => {
+                      const removed = removedPoints.has(`skill:${s}`);
+                      return (
+                        <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-[#CFFAFE] last:border-b-0 ${removed ? 'opacity-40' : ''}`}>
+                          <div className="flex-1 text-[12.5px] text-[#164E63] leading-relaxed">
+                            {removed ? <span className="line-through text-[#64748B]">Added skill {s}</span> : <>Added skill <b className="text-[#15803D]">{s}</b></>}
+                          </div>
+                          <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(`skill:${s}`); return n; })() : new Set(p).add(`skill:${s}`))}
+                            className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
+                            {removed ? '↺' : '✕'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {reviewBullets.map((br, bi) => {
+                      const key = `bullet:${bi}`;
+                      const removed = removedPoints.has(key);
+                      return (
+                        <div key={key} className={`py-2.5 border-b border-[#CFFAFE] last:border-b-0 ${removed ? 'opacity-40' : ''}`}>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-1">Before</div>
+                          <p className="text-[11.5px] text-[#64748B] line-through leading-relaxed">{br.original}</p>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#15803D] mt-2 mb-1">After</div>
+                          <div className="flex items-start gap-2.5">
+                            <p className="flex-1 text-[12px] text-[#164E63] leading-relaxed bg-[#F0FDFA] border border-[#A5F3FC] rounded-lg px-2.5 py-2">{br.rewritten}</p>
+                            <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(key); return n; })() : new Set(p).add(key))}
+                              className={`w-6 h-6 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${removed ? 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]' : 'bg-[#FEE2E2] border-[#FCA5A5] text-[#DC2626] hover:bg-[#FECACA]'}`}>
+                              {removed ? '↺' : '✕'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {reviewSkills.length === 0 && reviewBullets.length === 0 && (
+                      <p className="text-[12px] text-[#0E7490]">No changes to review.</p>
+                    )}
+                    {removedPoints.size > 0 && (
+                      <button onClick={handleRegenerate} disabled={tailoring}
+                        className="w-full py-2.5 rounded-xl bg-[#0891B2] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                        {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><Sparkles className="w-4 h-4" /> Regenerate without the removed changes</>}
+                      </button>
+                    )}
+                    <div className="flex gap-2.5 pt-2">
+                      <button onClick={download} className="flex-1 py-2.5 rounded-xl bg-[#22C55E] hover:opacity-85 text-white font-bold text-[13px] flex items-center justify-center gap-2 cursor-pointer transition-opacity">
+                        <Download className="w-4 h-4" /> Download Tailored CV
+                      </button>
+                      <button onClick={openHistory} className="py-2.5 px-4 rounded-xl bg-[#ECFEFF] hover:bg-[#CFFAFE] text-[#0E7490] font-bold text-[12px] flex items-center gap-1.5 cursor-pointer transition-colors">
+                        <CheckCircle2 className="w-4 h-4" /> Saved
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* History overlay */}
+      {historyOpen && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex justify-end">
+          <div className="w-full max-w-md bg-white h-full flex flex-col">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-slate-900">Manual JD history</h2>
+              <button onClick={() => setHistoryOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {historyMsg && <p className="text-[11.5px] font-semibold text-blue-700">{historyMsg}</p>}
+              {historyLoading && <p className="text-[12px] text-slate-400">Loading…</p>}
+              {!historyLoading && history.length === 0 && <p className="text-[12px] text-slate-400 text-center py-10">No analyses yet.</p>}
+              {history.map((h) => (
+                <div key={h.id} onClick={() => restoreAnalysis(h.id)} className={`border rounded-xl p-3 cursor-pointer transition-colors ${historyId === h.id ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 truncate">{h.role || 'Untitled role'}</p>
+                      <p className="text-[10.5px] text-slate-500 truncate mt-0.5">
+                        {h.company || '—'} · {new Date(h.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${h.score >= 75 ? 'bg-emerald-50 text-emerald-700' : h.score >= 50 ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {h.score}%
+                      </span>
+                      {h.hasTailoredCv && <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5">Tailored</span>}
+                      <button onClick={(e) => deleteHistoryEntry(h.id, e)} className="p-1 rounded-md text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer" title="Delete">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-
-          {/* Placeholder */}
-          {!result && (
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl min-h-[420px] flex items-center justify-center text-center px-8">
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 text-slate-300 flex items-center justify-center mx-auto mb-3.5 shadow-sm">
-                  <FileText className="w-7 h-7" />
-                </div>
-                <h3 className="text-sm font-extrabold text-slate-600">Insights will appear here</h3>
-                <p className="text-[11.5px] text-slate-400 mt-1.5 leading-relaxed">
-                  Score, skill gaps, recommendations, and the tailoring diff —<br />
-                  all shown on this side after you click <b className="text-slate-500">Analyze Match</b>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Results */}
-          {result && (
-            <div className="space-y-5 animate-[fadeIn_.35s_ease]">
-              {/* Score card — shows NEW score after tailoring, with old → new */}
-              <div className={`bg-white border rounded-2xl p-5 shadow-sm flex items-center gap-5 ${diff ? 'border-emerald-200' : 'border-slate-200'}`}>
-                <div className="relative w-[76px] h-[76px] shrink-0">
-                  <svg width="76" height="76" viewBox="0 0 76 76" className="transform -rotate-90">
-                    <circle cx="38" cy="38" r="32" fill="none" stroke="#EFF1F5" strokeWidth="7" />
-                    <circle
-                      cx="38" cy="38" r="32" fill="none"
-                      stroke={displayScore >= 75 ? '#0FA968' : displayScore >= 50 ? '#2F54EB' : displayScore >= 30 ? '#D97706' : '#DC2626'}
-                      strokeWidth="7" strokeLinecap="round"
-                      strokeDasharray={ringC}
-                      strokeDashoffset={ringC * (1 - displayScore / 100)}
-                      style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(.22,.61,.36,1)' }}
-                    />
-                  </svg>
-                  <span className={`absolute inset-0 flex items-center justify-center text-lg font-extrabold ${displayColor}`}>{displayScore}%</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    {diff && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-400 line-through">{diff.beforeScore}%</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
-                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-                          +{diff.scoreBoost}% after tailoring
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-[15px] font-extrabold text-slate-900">{displayVerdict}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {diff
-                      ? `Score improved from ${diff.beforeScore}% to ${diff.afterScore}% — ${diff.addedAfter.skillsAdded.length} skills added, ${diff.bulletRewrites?.length ?? diff.addedAfter.rephrasedHighlightsCount} bullets rewritten`
-                      : `${matched.length} of ${totalRequired} required skills already present in your CV`}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
-                      Role: {title}
-                    </span>
-                    <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-                      {matched.length} matched
-                    </span>
-                    <span className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
-                      {missing.length} missing
-                    </span>
-                    {diff && (
-                      <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-                        {diff.scoreBoost >= 0 ? '+' : ''}{diff.scoreBoost}% boost
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Skill coverage */}
-              <div>
-                <p className="text-[10.5px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 flex items-center space-x-2">
-                  <span>Skill Coverage</span><span className="flex-1 h-px bg-slate-200" />
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Matched */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <p className="text-[11.5px] font-extrabold text-slate-900 flex items-center space-x-2 mb-2.5">
-                      <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </span>
-                      Already Matched ({matched.length})
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {matched.slice(0, 20).map((s: string) => (
-                        <span key={s} className="px-2 py-0.5 rounded-full text-[10.5px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Missing with why-tooltips */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <p className="text-[11.5px] font-extrabold text-slate-900 flex items-center space-x-2 mb-2.5">
-                      <span className="w-6 h-6 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                      </span>
-                      Missing — we will add ({missing.length})
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {missing.map((s: string) => {
-                        const n = countInJd(s, description);
-                        return (
-                          <span key={s} className="relative group px-2 py-0.5 rounded-full text-[10.5px] font-medium bg-red-50 text-red-700 border border-red-200 cursor-help">
-                            {s}
-                            {n > 0 && <sup className="ml-0.5 text-[8.5px] font-bold text-red-400">×{n}</sup>}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-44 bg-slate-900 text-slate-100 text-[10px] font-medium rounded-lg px-2.5 py-1.5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 shadow-xl">
-                              <b className="text-emerald-400">Why add:</b> {n > 0 ? `mentioned ${n}× in JD — ` : ''}placed in the Skills section at full weight.
-                            </span>
-                          </span>
-                        );
-                      })}
-                      {missingKw.length > 0 && (
-                        <p className="w-full text-[10px] text-slate-400 pt-1">
-                          + {missingKw.slice(0, 8).join(', ')} keywords woven into experience bullets
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              {result.gapAnalysis?.keyRecommendations?.length > 0 && (
-                <div>
-                  <p className="text-[10.5px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 flex items-center space-x-2">
-                    <span>Recommendations</span><span className="flex-1 h-px bg-slate-200" />
-                  </p>
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <ul className="space-y-1">
-                      {result.gapAnalysis.keyRecommendations.map((r: string, i: number) => (
-                        <li key={i} className="text-[11.5px] text-slate-600 flex gap-2.5 py-1.5 border-b border-slate-50 last:border-b-0">
-                          <span className="w-[18px] h-[18px] rounded-md bg-blue-50 text-blue-700 text-[9.5px] font-extrabold flex items-center justify-center shrink-0 mt-px">{i + 1}</span>
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {/* Skill selection — user controls what gets added */}
-              {!diff && missing.length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                    <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
-                      <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
-                      Select skills to add ({selectedSkills.size} of {missing.length} selected)
-                    </p>
-                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
-                      Projected {Math.min(99, score + selectedSkills.size * 2)}%
-                    </span>
-                  </div>
-                  <div className="px-4 py-2 divide-y divide-slate-50 max-h-52 overflow-y-auto">
-                    {missing.map((s: string) => {
-                      const on = selectedSkills.has(s);
-                      const n = countInJd(s, description);
-                      return (
-                        <label key={s} className={`flex items-center gap-2.5 py-2 cursor-pointer ${on ? '' : 'opacity-45'}`}>
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            onChange={() => {
-                              setSelectedSkills((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(s)) next.delete(s); else next.add(s);
-                                return next;
-                              });
-                            }}
-                            className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                          />
-                          <span className="flex-1 text-[11.5px] font-semibold text-slate-800">{s}{n > 0 && <sup className="ml-0.5 text-[9px] font-bold text-indigo-400">×{n}</sup>}</span>
-                          <span className="text-[9.5px] font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">
-                            {s.toLowerCase().match(/prometheus|grafana|monitor|incident|pagerduty|alert/) ? 'Experience bullet' : 'Skills section'}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <div className="px-4 py-2.5 border-t border-slate-100 text-[10.5px] text-slate-400">
-                    Unselected skills will NOT be added. Projected score updates live.
-                  </div>
-                </div>
-              )}
-
-              {/* Tailor CTA */}
-              {!diff && (
-                <div className="bg-slate-900 rounded-2xl p-5 flex items-center gap-4 shadow-lg">
-                  <span className="w-10 h-10 rounded-xl bg-blue-500/25 text-blue-300 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-extrabold text-white">Your CV is {score}% match — we can improve it</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Tailoring adds {missing.length} missing skills &amp; weaves {missingKw.length} keywords into bullets.</p>
-                  </div>
-                  <button
-                    onClick={handleTailor}
-                    disabled={tailoring}
-                    className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 text-white font-bold text-xs flex items-center space-x-1.5 cursor-pointer transition-colors shadow-md shadow-blue-600/30"
-                  >
-                    {tailoring ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Tailoring…</span></>
-                      : <><Sparkles className="w-3.5 h-3.5" /><span>Tailor CV</span></>}
-                  </button>
-                </div>
-              )}
-
-              {/* Diff after tailoring */}
-              {diff && (
-                <div className="space-y-4 animate-[fadeIn_.35s_ease]">
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                    <p className="text-[10.5px] font-extrabold uppercase tracking-widest text-blue-600 mb-3">✦ What we added — and why</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                        <div className="text-lg font-extrabold text-emerald-600">+{diff.addedAfter.skillsAdded.length}</div>
-                        <div className="text-[9.5px] text-slate-500 font-medium">skills added to <b className="text-slate-700">Skills</b></div>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                        <div className="text-lg font-extrabold text-emerald-600">+{(diff.bulletRewrites?.length ?? diff.addedAfter.rephrasedHighlightsCount) || 0}</div>
-                        <div className="text-[9.5px] text-slate-500 font-medium">bullets rewritten with <b className="text-slate-700">keywords</b></div>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                        <div className="text-lg font-extrabold text-emerald-600">+{diff.scoreBoost}%</div>
-                        <div className="text-[9.5px] text-slate-500 font-medium">ATS score gain <b className="text-slate-700">({diff.beforeScore}% → {diff.afterScore}%)</b></div>
-                      </div>
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5">
-                        <div className="text-lg font-extrabold text-slate-800">{diff.notIntegrable.length}</div>
-                        <div className="text-[9.5px] text-slate-500 font-medium">skipped — <b className="text-slate-700">could not be added</b></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Skills added */}
-                  {diff.addedAfter.skillsAdded.length > 0 && (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                        <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
-                          <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
-                          Skills section — {diff.addedAfter.skillsAdded.length} additions
-                        </p>
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">+{diff.addedAfter.skillsAdded.length} NEW</span>
-                      </div>
-                      <div className="px-4 py-2 divide-y divide-slate-50">
-                        {diff.addedAfter.skillsAdded.map((s) => {
-                          const n = countInJd(s, description);
-                          const ctx = contextInJd(s, description);
-                          return (
-                            <div key={s} className="flex items-start gap-3 py-2.5">
-                              <span className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-600 text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-px">+</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-900">{s}</p>
-                                {ctx && <p className="text-[10.5px] text-slate-400 mt-0.5 line-clamp-2">“{ctx}”</p>}
-                              </div>
-                              {n > 0 && (
-                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 shrink-0">required ×{n}</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Experience rewrites — before → after */}
-                  {(diff.bulletRewrites?.length || 0) > 0 && (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                        <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
-                          <span className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><Zap className="w-3.5 h-3.5" /></span>
-                          Experience bullets — {diff.bulletRewrites!.length} rewrites
-                        </p>
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{diff.bulletRewrites!.length} MODIFIED</span>
-                      </div>
-                      <div className="px-4 py-2 divide-y divide-slate-50">
-                        {diff.bulletRewrites!.map((br, bi) => {
-                          // Extract added words: token diff between rewritten and original
-                          const origWords = br.original.split(/\s+/);
-                          const rewWords = br.rewritten.split(/\s+/);
-                          const added = rewWords.filter((w) => !origWords.includes(w)).slice(0, 8);
-                          return (
-                            <div key={bi} className="py-3">
-                              <div className="flex items-start gap-3">
-                                <span className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">~</span>
-                                <div className="flex-1 min-w-0">
-                                  {/* Before */}
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Before</p>
-                                  <p className="text-[11px] text-slate-400 line-through leading-relaxed">{br.original}</p>
-                                  {/* After */}
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mt-2.5 mb-1">After</p>
-                                  <p className="text-[11.5px] text-slate-800 leading-relaxed bg-emerald-50/60 border border-emerald-100 rounded-lg px-2.5 py-2">
-                                    {br.rewritten}
-                                  </p>
-                                  {added.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                      {added.map((w) => (
-                                        <span key={w} className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
-                                          +{w.replace(/[^a-zA-Z0-9\-/.]/g, '')}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Not integrable */}
-                  {diff.notIntegrable.length > 0 && (
-                    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3">
-                      <p className="text-[10.5px] font-bold text-slate-500 mb-1">⚠️ Skipped ({diff.notIntegrable.length}) — no honest way to add</p>
-                      <p className="text-[10.5px] text-slate-400">{diff.notIntegrable.slice(0, 8).join(', ')}</p>
-                    </div>
-                  )}
-
-                  {/* Honesty note */}
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-                    <p className="text-[10.5px] font-bold text-emerald-700 flex items-center space-x-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Honesty guarantee</span>
-                    </p>
-                    <p className="text-[11px] text-emerald-800/80 mt-1 leading-relaxed">
-                      Every addition comes from <b>your existing CV content</b> — we surface skills you already have but haven't highlighted. We never invent experience. The projected score is the keyword fill-ratio after integration, not a promise of interview success.
-                    </p>
-                  </div>
-
-                  {/* Per-point review — accept / remove each change */}
-                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                      <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
-                        <span className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
-                        Review changes — remove what you don't like
-                      </p>
-                      {removedPoints.size > 0 && (
-                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
-                          {removedPoints.size} removed
-                        </span>
-                      )}
-                    </div>
-                    <div className="px-4 py-3 space-y-2">
-                      {diff.addedAfter.skillsAdded.map((s) => {
-                        const removed = removedPoints.has(`skill:${s}`);
-                        return (
-                          <div key={s} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-45' : ''}`}>
-                            <div className="flex-1 text-[11.5px] text-slate-700">
-                              {removed ? <span className="line-through">{s}</span> : <>Added skill <b>{s}</b> to the Skills section.</>}
-                            </div>
-                            <div className="flex gap-1.5">
-                              {removed ? (
-                                <button onClick={() => setRemovedPoints((p) => { const n = new Set(p); n.delete(`skill:${s}`); return n; })} className="px-2 py-1 rounded-md text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 cursor-pointer">Undo</button>
-                              ) : (
-                                <button onClick={() => setRemovedPoints((p) => new Set(p).add(`skill:${s}`))} className="w-6 h-6 rounded-md bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 text-[11px] font-bold cursor-pointer" title="Remove this addition">✕</button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {(diff.bulletRewrites || []).map((br, bi) => {
-                        const key = `bullet:${bi}`;
-                        const removed = removedPoints.has(key);
-                        return (
-                          <div key={key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-45' : ''}`}>
-                            <div className="flex-1 text-[11.5px] text-slate-700 leading-relaxed">
-                              {removed ? <span className="line-through">{br.rewritten.slice(0, 90)}…</span> : (
-                                <>Rewrote bullet: <span className="text-slate-400 line-through">{br.original.slice(0, 60)}…</span> → <b className="text-emerald-700">{br.rewritten.slice(0, 90)}…</b></>
-                              )}
-                            </div>
-                            <div className="flex gap-1.5 shrink-0">
-                              {removed ? (
-                                <button onClick={() => setRemovedPoints((p) => { const n = new Set(p); n.delete(key); return n; })} className="px-2 py-1 rounded-md text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 cursor-pointer">Undo</button>
-                              ) : (
-                                <button onClick={() => setRemovedPoints((p) => new Set(p).add(key))} className="w-6 h-6 rounded-md bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 text-[11px] font-bold cursor-pointer" title="Remove this change">✕</button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {diff.addedAfter.skillsAdded.length === 0 && (diff.bulletRewrites?.length || 0) === 0 && (
-                        <p className="text-[11px] text-slate-400">No changes to review.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Regenerate after removals */}
-                  {removedPoints.size > 0 && (
-                    <button onClick={handleRegenerate}
-                      className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer shadow-md transition-colors">
-                      <Sparkles className="w-4 h-4" /><span>Regenerate without the removed changes</span>
-                    </button>
-                  )}
-
-                  {/* Download */}
-                  <button onClick={download}
-                    className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-blue-600/20 transition-colors">
-                    <Download className="w-4 h-4" /><span>Download Tailored CV (PDF)</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

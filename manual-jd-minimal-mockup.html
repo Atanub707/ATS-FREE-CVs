@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tailor CV — Manual JD (Minimal Redesign)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #ECFEFF; color: #164E63; padding: 40px 24px; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .head { margin-bottom: 28px; }
+  .head h1 { font-size: 26px; font-weight: 800; color: #155E75; letter-spacing: -.02em; }
+  .head p { font-size: 13.5px; color: #0E7490; margin-top: 6px; }
+  .steps { display: flex; gap: 8px; margin-bottom: 26px; flex-wrap: wrap; }
+  .step { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #A5F3FC; border-radius: 999px; padding: 7px 16px; font-size: 12.5px; font-weight: 600; color: #0E7490; }
+  .step .n { width: 22px; height: 22px; border-radius: 50%; background: #22D3EE; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .step.done .n { background: #22C55E; }
+  .step.active { border-color: #0891B2; color: #155E75; }
+  .step .arrow { color: #99F6E4; margin-left: 4px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .card { background: #fff; border: 1.5px solid #A5F3FC; border-radius: 18px; padding: 22px; }
+  .card h2 { font-size: 14px; font-weight: 700; color: #155E75; margin-bottom: 14px; }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: #0E7490; margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; border: 1.5px solid #CFFAFE; border-radius: 12px; padding: 10px 13px; font-size: 13.5px; font-family: inherit; color: #164E63; background: #F0FDFA; outline: none; }
+  .field input:focus, .field textarea:focus { border-color: #0891B2; background: #fff; }
+  .field textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 12px; padding: 11px 20px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .15s ease; }
+  .btn.primary { background: #0891B2; color: #fff; }
+  .btn.cta { background: #22C55E; color: #fff; }
+  .btn.ghost { background: #ECFEFF; color: #0E7490; border: 1.5px solid #A5F3FC; }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.full { width: 100%; justify-content: center; }
+  .btn.sm { padding: 8px 14px; font-size: 12px; border-radius: 10px; }
+  /* score */
+  .score { display: flex; align-items: center; gap: 18px; padding: 16px 18px; background: #F0FDFA; border: 1.5px solid #A5F3FC; border-radius: 14px; margin-bottom: 16px; }
+  .score .big { font-size: 40px; font-weight: 800; color: #0891B2; line-height: 1; }
+  .score .meta { font-size: 12px; color: #0E7490; }
+  .score .meta b { color: #155E75; }
+  .score .badge { font-size: 11px; font-weight: 700; background: #DCFCE7; color: #15803D; border-radius: 999px; padding: 4px 10px; }
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 1.5px solid #A5F3FC; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #0E7490; background: #fff; cursor: pointer; user-select: none; transition: all .15s ease; }
+  .chip.on { background: #0891B2; border-color: #0891B2; color: #fff; }
+  .chip .tick { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid #99F6E4; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; }
+  .chip.on .tick { background: #fff; color: #0891B2; border-color: #fff; }
+  .chip.off { opacity: .45; }
+  .hint { font-size: 11px; color: #0E7490; margin-top: 10px; }
+  /* review rows */
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid #CFFAFE; }
+  .row:last-child { border-bottom: none; }
+  .row .txt { flex: 1; font-size: 12.5px; color: #164E63; line-height: 1.5; }
+  .row .txt .old { color: #64748B; text-decoration: line-through; }
+  .row .txt .new { color: #15803D; font-weight: 600; }
+  .act { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid #CFFAFE; background: #fff; cursor: pointer; font-size: 12px; color: #0E7490; display: flex; align-items: center; justify-content: center; transition: all .15s ease; }
+  .act:hover { background: #ECFEFF; }
+  .act.no:hover { background: #FEE2E2; border-color: #FCA5A5; color: #DC2626; }
+  .muted { color: #64748B; font-size: 11.5px; }
+  .empty { text-align: center; padding: 60px 20px; color: #0E7490; }
+  .empty .big { font-size: 34px; font-weight: 800; color: #22D3EE; }
+  .empty p { margin-top: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Manual JD</h1>
+    <p>Paste a job description — get a tailored CV in 4 simple steps.</p>
+  </div>
+
+  <div class="steps">
+    <span class="step done"><span class="n">✓</span> Paste JD</span>
+    <span class="step done"><span class="n">✓</span> Pick skills</span>
+    <span class="step active"><span class="n">3</span> Review <span class="arrow">→</span></span>
+    <span class="step"><span class="n">4</span> Download</span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: INPUT -->
+    <div class="card">
+      <h2>Job details</h2>
+      <div class="field"><label>Role name</label><input value="DevOps Engineer" /></div>
+      <div class="field"><label>Company</label><input value="CloudScale Inc" /></div>
+      <div class="field"><label>Job description</label>
+        <textarea>We are looking for a DevOps Engineer with experience in Kubernetes, Terraform, GitHub Actions, Prometheus/Grafana monitoring and PagerDuty incident management. Knowledge of service mesh (Istio) and zero-downtime deployments is preferred…</textarea>
+      </div>
+      <button class="btn primary full">Analyze Match</button>
+      <p class="hint" style="text-align:center">2,082 chars · everything stays on your machine</p>
+    </div>
+
+    <!-- RIGHT: RESULT -->
+    <div class="card">
+      <!-- Step 2 view: score + pick skills -->
+      <div class="score">
+        <div class="big">87%</div>
+        <div class="meta">
+          <div><b>Strong fit</b> — 21 of 22 skills already matched</div>
+          <div class="muted" style="margin-top:3px">Projected 92% once you pick the rest</div>
+        </div>
+        <span class="badge">+6% boost</span>
+      </div>
+
+      <h2>Pick skills to add</h2>
+      <div class="chips">
+        <span class="chip on"><span class="tick">✓</span> Service Mesh</span>
+        <span class="chip on"><span class="tick">✓</span> Istio</span>
+        <span class="chip on"><span class="tick">✓</span> Zero-downtime deploys</span>
+        <span class="chip off"><span class="tick">✓</span> AWS Cert. (you don't hold it)</span>
+        <span class="chip off"><span class="tick">✓</span> Azure DevOps Expert</span>
+      </div>
+      <p class="hint">Unselected skills are never added.</p>
+      <div style="margin-top:14px"><button class="btn cta full">Generate Tailored CV</button></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: REVIEW (full width) -->
+  <div class="grid" style="margin-top:22px">
+    <div class="card">
+      <h2>Before · your CV</h2>
+      <p class="row txt" style="padding:6px 0"><span class="muted">Set up/maintained test, dev, staging, and production environments; improved reliability via microservices containerization, load balancing, and clustering.</span></p>
+      <p class="row txt" style="padding:6px 0"><span class="muted">Skills: Jenkins, GitLab CI, Terraform, Ansible, AWS, Docker, Kubernetes…</span></p>
+      <p class="row txt" style="padding:6px 0"><span class="muted">Summary: DevOps engineer with 4+ years building cloud-native infrastructure.</span></p>
+    </div>
+    <div class="card">
+      <h2>After · tailored CV</h2>
+      <div class="row">
+        <div class="txt"><span class="old">…microservices containerization, load balancing, and clustering.</span><br /><span class="new">…clustering, and service mesh (Istio).</span></div>
+        <button class="act" title="Accept">✓</button>
+        <button class="act no" title="Remove">✕</button>
+      </div>
+      <div class="row">
+        <div class="txt">Added skills: <span class="new">Service Mesh, Istio, Zero-downtime deployments</span></div>
+        <button class="act" title="Accept">✓</button>
+        <button class="act no" title="Remove">✕</button>
+      </div>
+      <div class="row">
+        <div class="txt">Rewrote summary to mention <span class="new">service mesh and observability</span>.</div>
+        <button class="act" title="Accept">✓</button>
+        <button class="act no" title="Remove">✕</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn cta" style="flex:1">Save &amp; Download PDF</button>
+        <button class="btn ghost">Save to history</button>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:#0E7490;font-size:11.5px;margin-top:22px">
+    History, restore and previous analyses stay one click away in the header.
+  </p>
+</div>
+</body>
+</html>
