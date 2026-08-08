@@ -132,9 +132,12 @@ export class ApifyLinkedInScraper {
       if (location && !/^(remote|anywhere|worldwide|open to remote)$/i.test(location)) {
         input.location = location;
       }
-      // The actor returns reliable per-job work_type labels, so the exact
-      // work-mode guarantee is enforced by the post-filter below (the
-      // actor's own search filter is as loose as LinkedIn's).
+      // Ask the actor itself for the requested work type (it returns
+      // per-job work_type labels; its own filter is loose, so the
+      // post-filter below is the exact guarantee).
+      if (params.jobType && params.jobType !== 'all') {
+        input.work_type = params.jobType === 'onsite' ? 'On-site' : params.jobType.charAt(0).toUpperCase() + params.jobType.slice(1);
+      }
 
       const response = await fetch(RUN_SYNC_URL(token), {
         method: 'POST',

@@ -183,9 +183,12 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // Searching ADDS jobs to the store — the full list stays visible
-        // with the newest scraped jobs at top. Never narrow or hide the
-        // user's existing jobs.
+        // The Job Type you selected drives BOTH the scrape AND the list
+        // view: after a remote search the list shows remote jobs (the
+        // "All types" chip in the toolbar reveals everything).
+        if (params.jobType && params.jobType !== 'all') {
+          setWorkModeFilter(params.jobType);
+        }
         setActiveStateTab('all');
         setPage(1);
         await fetchJobs();
