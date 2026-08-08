@@ -146,22 +146,12 @@ const JobCard = React.memo(function JobCard({
           {/* Applicant Count */}
           {(job.applicantCount !== undefined || job.applicantCaption) && (
             <span
-              className={`inline-flex items-center space-x-1 text-[11px] px-2 py-0.5 rounded border ${
-                job.lowCompetition
-                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold'
-                  : 'text-slate-600 bg-slate-50 border-slate-200'
-              }`}
-              title={
-                job.lowCompetition
-                  ? 'Very few applicants — high chance of response'
-                  : 'Applicants shown as on LinkedIn’s public page — logged-in view may show more'
-              }
+              className="inline-flex items-center space-x-1 text-[11px] px-2 py-0.5 rounded border text-slate-600 bg-slate-50 border-slate-200"
+              title="Applicants shown as on LinkedIn’s public page — logged-in view may show more"
             >
               <Users className="w-3 h-3 text-slate-400" />
               <span>
-                {job.lowCompetition
-                  ? 'Low competition'
-                  : `${(job.applicantCaption || `${(job.applicantCount || 0).toLocaleString()} applicants`)}`}
+                {job.applicantCaption || `${(job.applicantCount || 0).toLocaleString()} applicants`}
               </span>
             </span>
           )}
