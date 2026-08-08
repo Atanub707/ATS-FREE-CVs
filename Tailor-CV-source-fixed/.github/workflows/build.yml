@@ -1,0 +1,240 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
+jobs:
+  # ──────────────────── SECURITY STAGE ────────────────────
+  secrets:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Secret scan summary
+        if: always()
+        run: |
+          echo "## 🔑 Secret Scanning (gitleaks)" >> $GITHUB_STEP_SUMMARY
+          if [ -f gitleaks-output.txt ]; then
+            echo "❌ Secrets found:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat gitleaks-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No secrets detected." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  audit:
+    name: npm Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: npm audit
+        continue-on-error: true
+        id: audit
+        run: |
+          npm audit --audit-level=high --json 2>&1 > npm-audit.json || true
+          VULN_COUNT=$(npm audit --audit-level=high --json 2>/dev/null | node -e "process.stdin.resume(); let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.metadata?.vulnerabilities?.high||0)}catch{console.log(0)}})" 2>/dev/null || echo 0)
+          echo "count=$VULN_COUNT" >> $GITHUB_OUTPUT
+      - name: Audit summary
+        if: always()
+        run: |
+          echo "## 📦 npm Audit" >> $GITHUB_STEP_SUMMARY
+          COUNT=${{ steps.audit.outputs.count || 0 }}
+          if [ "$COUNT" -gt 0 ]; then
+            echo "❌ **$COUNT high/critical vulnerabilities found**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            npm audit --audit-level=high 2>&1 || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No high/critical vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Check allowed exceptions
+        run: |
+          if [ -f .npm-audit-allowlist ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Known exceptions" >> $GITHUB_STEP_SUMMARY
+            cat .npm-audit-allowlist >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Fail on high/critical
+        run: npm audit --audit-level=high
+
+  trivy:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t ats-cv-tailor .
+      - name: Run Trivy scan
+        id: trivy
+        continue-on-error: true
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --severity HIGH,CRITICAL \
+            --ignore-unfixed --format table --exit-code 1 \
+            ats-cv-tailor 2>&1 | tee trivy-output.txt
+      - name: Trivy summary
+        if: always()
+        run: |
+          echo "## 🐳 Trivy Container Scan" >> $GITHUB_STEP_SUMMARY
+          if grep -q "Total: [1-9]" trivy-output.txt 2>/dev/null; then
+            echo "❌ **HIGH/CRITICAL vulnerabilities found**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No HIGH/CRITICAL vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Check Trivy exceptions
+        if: always()
+        run: |
+          if [ -f .trivyignore ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Ignored CVEs (documented exceptions)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat .trivyignore >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Fail on vulnerabilities
+        if: steps.trivy.outcome == 'failure'
+        run: |
+          echo "❌ Trivy found HIGH/CRITICAL vulnerabilities. See summary above."
+          exit 1
+
+  # ──────────────────── BUILD STAGE ────────────────────
+  # Runs after security passes on every push to main
+  build-linux:
+    needs: [secrets, audit, trivy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --external:better-sqlite3 --outfile=dist/bundle.cjs 2>&1 || true
+      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas node_modules/better-sqlite3 dist/ 2>/dev/null || true
+      - run: node --experimental-sea-config sea-config.json
+      - run: |
+          cp $(which node) dist/ats-cv-tailor-linux
+          chmod +x dist/ats-cv-tailor-linux
+          npx postject dist/ats-cv-tailor-linux NODE_SEA_BLOB dist/sea.blob \
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+      - name: Extract release notes
+        id: notes
+        run: |
+          awk '/^## v1.2.0/{flag=1; next} /^## v/{if(flag) exit} flag' CHANGELOG.md | sed '/^$/d' > /tmp/release-notes.md
+          {
+            echo "body<<EOF"
+            cat /tmp/release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ats-cv-tailor-linux
+          tag_name: v1.2.0
+          name: v1.2.0
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - if: success()
+        run: echo "✅ Linux build complete" >> $GITHUB_STEP_SUMMARY
+
+  build-macos:
+    needs: [secrets, audit, trivy]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --external:better-sqlite3 --outfile=dist/bundle.cjs 2>&1 || true
+      - run: cp -r node_modules/fsevents node_modules/lightningcss node_modules/@tailwindcss/oxide node_modules/@napi-rs/canvas node_modules/better-sqlite3 dist/ 2>/dev/null || true
+      - run: node --experimental-sea-config sea-config.json
+      - run: |
+          cp $(which node) dist/ats-cv-tailor-macos
+          chmod +x dist/ats-cv-tailor-macos
+          npx postject dist/ats-cv-tailor-macos NODE_SEA_BLOB dist/sea.blob \
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 \
+            --macho-segment-name NODE_SEA
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ats-cv-tailor-macos
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - if: success()
+        run: echo "✅ macOS build complete" >> $GITHUB_STEP_SUMMARY
+
+  build-windows:
+    needs: [secrets, audit, trivy]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --loglevel=warn --no-audit --no-fund
+      - run: npx vite build
+        shell: pwsh
+      - run: npx esbuild server.ts --bundle --platform=node --format=cjs --external:fsevents --external:lightningcss --external:@tailwindcss/oxide --external:@napi-rs/canvas --external:better-sqlite3 --outfile=dist/bundle.cjs 2>&1; Exit(0)
+        shell: pwsh
+      - run: node --experimental-sea-config sea-config.json
+        shell: pwsh
+      - name: Build executable
+        shell: pwsh
+        run: |
+          Copy-Item (Get-Command node).Source dist\ats-cv-tailor-windows.exe
+          npx postject dist\ats-cv-tailor-windows.exe NODE_SEA_BLOB dist\sea.blob `
+            --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist\ats-cv-tailor-windows.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - if: success()
+        run: echo "✅ Windows build complete" >> $GITHUB_STEP_SUMMARY
+
+  docker:
+    needs: [secrets, audit, trivy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lowercase repo
+        id: repo
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/$OWNER/$REPO" >> $GITHUB_OUTPUT
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.repo.outputs.image }}:latest,${{ steps.repo.outputs.image }}:v1.2.0
+      - if: success()
+        run: echo "✅ Docker image pushed to GHCR" >> $GITHUB_STEP_SUMMARY
