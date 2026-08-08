@@ -189,7 +189,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
     { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', checkBg: 'bg-red-600' },
     { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', checkBg: 'bg-cyan-600' },
     { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', checkBg: 'bg-pink-600' },
-    { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', checkBg: 'bg-amber-600' },
   ];
   const skillColor = (name: string) => {
     let h = 0;
@@ -197,55 +196,28 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
     return SKILL_PALETTE[h % SKILL_PALETTE.length];
   };
 
+  const analysisStatus: 'idle' | 'loading' | 'success' | 'error' = loading ? 'loading' : result ? 'success' : error ? 'error' : 'idle';
   const generateStatus: 'idle' | 'loading' | 'success' | 'error' = tailoring ? 'loading' : tailorError ? 'error' : diff ? 'success' : 'idle';
 
-  const inputCls = 'w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 bg-white focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 outline-none transition-colors';
+  const inputCls = 'w-full min-h-[46px] border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 bg-white focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 outline-none transition-colors';
+  const btnBase = 'w-full min-h-[48px] rounded-[10px] font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40';
+  const cardCls = 'card bg-white border border-slate-200 rounded-[14px] shadow-[0_1px_3px_rgba(15,23,42,0.05)] p-6 flex flex-col min-w-0 overflow-hidden';
+  const cardActions = 'mt-auto pt-5 space-y-4';
 
-  // Pop-in stage — panels never leave the screen; each step animates position/size
-  const panelStyle = (n: 1 | 2 | 3): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      position: 'absolute', top: 6, bottom: 6, background: '#fff', border: '1px solid #E2E8F0',
-      borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
-      opacity: 0, pointerEvents: 'none',
-      transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .3s ease, transform .45s cubic-bezier(.25,.8,.3,1)',
-      transform: 'translateX(24px) scale(.97)',
-    };
-    if (step === 1) {
-      if (n === 1) return { ...base, left: '27%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      return base;
-    }
-    if (step === 2) {
-      if (n === 1) return { ...base, left: '2%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      if (n === 2) return { ...base, left: '52%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      return base;
-    }
-    const left = n === 1 ? '2%' : n === 2 ? '34.5%' : '67%';
-    return { ...base, left, width: '31%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-  };
-
-  const panelBadge = (n: number) => (
-    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-[11px] font-extrabold shrink-0 ${step >= n ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>{n}</span>
+  const stepBadge = (n: number) => (
+    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[13px] font-bold shrink-0 ${step >= n ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>{n}</span>
   );
-
-  const loadingOverlay = (text: string) => (
-    <div className="absolute inset-0 z-10 bg-white/90 rounded-[14px] flex flex-col items-center justify-center gap-3">
-      <div className="w-[30px] h-[30px] border-[3px] border-slate-200 border-t-slate-900 rounded-full animate-spin" />
-      <p className="text-[12px] font-semibold text-slate-500">{text}</p>
-    </div>
-  );
-
-  const dim = (on: boolean) => (on ? 'opacity-10' : 'opacity-100');
 
   return (
     <div className="fixed inset-0 z-40 bg-slate-50 text-slate-700 flex flex-col font-sans">
-      {/* Header */}
+      {/* Page header */}
       <header className="px-5 sm:px-8 py-4 border-b border-slate-200 bg-white flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer shrink-0">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Manual JD</h1>
+            <h1 className="text-[28px] font-bold text-slate-900 tracking-tight leading-tight">Manual JD</h1>
             <p className="text-sm text-slate-500 mt-0.5">Paste a job description — get a tailored CV in 3 simple steps.</p>
           </div>
         </div>
@@ -278,48 +250,50 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
         ))}
       </div>
 
-      {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
+      {/* Scrollable content — 3-column grid uses the full viewport width */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="w-full max-w-[1440px] mx-auto px-5 sm:px-8 py-6">
+          <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1100px]:grid-cols-3 gap-5 items-start">
+            {/* PANEL 1 · Add job description */}
+            <section className={cardCls}>
+              <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
+                Add job description {stepBadge(1)}
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
+                  <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
+                  <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
+                  <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
+                    placeholder="Paste the full job description…" className={`${inputCls} min-h-[220px] resize-y leading-relaxed`} />
+                  <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
+                </div>
+              </div>
+              <div className={cardActions}>
+                <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
+                  className={`${btnBase} ${analysisStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</>
+                    : analysisStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> Analysis Complete</>
+                    : analysisStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
+                    : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
+                </button>
+                <p className="text-center text-xs text-slate-400">Everything stays on your machine</p>
+              </div>
+            </section>
 
-      {/* Centered stage — panels pop in, never leave the screen */}
-      <div className="flex-1 overflow-hidden">
-        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: '100%', paddingTop: 10 }}>
-          {/* PANEL 1 · Add job description (centered) */}
-          <div style={panelStyle(1)} className="overflow-y-auto">
-            <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
-              Add job description {panelBadge(1)}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
-                <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
-              </div>
-              <div>
-                <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
-                <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
-              </div>
-              <div>
-                <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
-                <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
-                  placeholder="Paste the full job description…" className={`${inputCls} min-h-[190px] resize-y leading-relaxed`} />
-                <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
-              </div>
-              <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
-                className="w-full h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
-              </button>
-              <p className="text-center text-xs text-slate-400">Everything stays on your machine</p>
-            </div>
-          </div>
-
-          {/* PANEL 2 · Analysis (pops in on the right, loading first) */}
-          <div style={panelStyle(2)} className="overflow-y-auto">
-            {loading && loadingOverlay('Analyzing your CV against the JD…')}
-            <div className={`transition-opacity duration-200 ${dim(loading)}`}>
-              <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
-                Analysis {panelBadge(2)}
+            {/* PANEL 2 · Analysis */}
+            <section className={cardCls}>
+              <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
+                Analysis {stepBadge(2)}
               </h2>
               {!result ? (
-                <div className="h-[calc(100%-40px)] flex items-center justify-center text-center">
+                <div className="flex-1 flex items-center justify-center text-center py-10">
                   <div>
                     <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
                       <FileText className="w-6 h-6 text-slate-400" />
@@ -328,8 +302,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="space-y-4 min-w-0">
+                  <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl min-w-0">
                     <div className="text-[40px] font-bold text-blue-600 leading-none shrink-0">{displayScore}%</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-slate-900">
@@ -342,7 +316,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   {missing.length === 0 && missingKw.length === 0 ? (
                     <p className="text-xs text-slate-500">No missing skills detected — your CV already covers this JD well.</p>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 min-w-0">
                       {[...new Set([...missing, ...missingKw])].map((s) => {
                         const on = selectedSkills.has(s);
                         const n = countInJd(s, description);
@@ -350,42 +324,39 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                         return (
                           <button key={s} onClick={() => setSelectedSkills((p) => { const n2 = new Set(p); if (n2.has(s)) n2.delete(s); else n2.add(s); return n2; })}
                             aria-pressed={on}
-                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold border cursor-pointer transition-colors max-w-full ${on ? `${c.bg} ${c.border} ${c.text}` : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                            className={`inline-flex items-center gap-[7px] px-[11px] py-2 rounded-[9px] text-[14px] font-semibold border cursor-pointer transition-colors max-w-full wrap-anywhere ${on ? `${c.bg} ${c.border} ${c.text}` : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
                             <span className={`w-4 h-4 rounded flex items-center justify-center text-[10px] shrink-0 ${on ? `${c.checkBg} text-white border-transparent` : 'border border-slate-300 text-transparent'}`}>{on ? '✓' : ''}</span>
                             <span className="break-words min-w-0">{s}</span>
-                            {n > 0 && <span className={`text-[10px] shrink-0 ${on ? 'opacity-60' : 'text-slate-400'}`}>×{n}</span>}
+                            {n > 0 && <span className={`text-[11px] shrink-0 ${on ? 'opacity-60' : 'text-slate-400'}`}>×{n}</span>}
                           </button>
                         );
                       })}
                     </div>
                   )}
                   <p className="text-xs text-slate-400">Unselected skills are never added.</p>
-                  <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0} aria-live="polite"
-                    title={generateStatus === 'success' ? 'Regenerate CV with the selected skills' : undefined}
-                    className={`w-full h-[46px] rounded-[10px] font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40 ${
-                      generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}>
-                    {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Tailoring CV…</>
-                      : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
-                      : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Tailored</>
-                      : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
-                  </button>
-                  {tailorError && error && <p className="text-xs text-red-600">{error}</p>}
-                  <p className="text-xs text-slate-400 text-center">AI will tailor your CV with selected skills</p>
+                  <div className={cardActions}>
+                    <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0} aria-live="polite"
+                      title={generateStatus === 'success' ? 'Regenerate CV with the selected skills' : undefined}
+                      className={`${btnBase} ${generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating CV…</>
+                        : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
+                        : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Generated</>
+                        : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
+                    </button>
+                    {tailorError && error && <p className="text-xs text-red-600">{error}</p>}
+                    <p className="text-xs text-slate-400 text-center">AI will tailor your CV with selected skills</p>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+            </section>
 
-          {/* PANEL 3 · Tailoring updates (pops in on the right, loading first) */}
-          <div style={panelStyle(3)} className="overflow-y-auto">
-            {tailoring && loadingOverlay('Tailoring your CV…')}
-            <div className={`transition-opacity duration-200 ${dim(tailoring)}`}>
-              <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
-                Tailoring updates {panelBadge(3)}
+            {/* PANEL 3 · Tailoring updates */}
+            <section className={cardCls}>
+              <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
+                Tailoring updates {stepBadge(3)}
               </h2>
               {!diff ? (
-                <div className="h-[calc(100%-40px)] flex items-center justify-center text-center">
+                <div className="flex-1 flex items-center justify-center text-center py-10">
                   <div>
                     <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
                       <Sparkles className="w-6 h-6 text-slate-400" />
@@ -394,7 +365,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3">
                       <div className="text-xl font-bold text-green-600">+{diff.scoreBoost}%</div>
@@ -417,8 +388,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   {reviewSkills.map((s) => {
                     const removed = removedPoints.has(`skill:${s}`);
                     return (
-                      <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-slate-100 ${removed ? 'opacity-40' : ''}`}>
-                        <div className="flex-1 text-[13px] text-slate-700 leading-relaxed min-w-0">
+                      <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-slate-100 min-w-0 ${removed ? 'opacity-40' : ''}`}>
+                        <div className="flex-1 text-[13px] text-slate-700 leading-relaxed min-w-0 break-words">
                           {removed ? <span className="line-through text-slate-400">Added skill {s}</span> : <>Added skill <b className="text-green-600">{s}</b></>}
                         </div>
                         <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(`skill:${s}`); return n; })() : new Set(p).add(`skill:${s}`))}
@@ -433,12 +404,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                     const key = `bullet:${bi}`;
                     const removed = removedPoints.has(key);
                     return (
-                      <div key={key} className={`py-2 border-b border-slate-100 ${removed ? 'opacity-40' : ''}`}>
+                      <div key={key} className={`py-2 border-b border-slate-100 min-w-0 ${removed ? 'opacity-40' : ''}`}>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Before</div>
-                        <p className="text-[12px] text-slate-400 line-through leading-relaxed">{br.original}</p>
+                        <p className="text-[12px] text-slate-400 line-through leading-relaxed break-words">{br.original}</p>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mt-2 mb-1">After</div>
                         <div className="flex items-start gap-2.5">
-                          <p className="flex-1 text-[13px] text-slate-700 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 min-w-0">{br.rewritten}</p>
+                          <p className="flex-1 text-[13px] text-slate-700 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 min-w-0 break-words">{br.rewritten}</p>
                           <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(key); return n; })() : new Set(p).add(key))}
                             aria-label={removed ? 'Restore change' : 'Remove change'}
                             className={`w-8 h-8 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
@@ -451,29 +422,31 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   {reviewSkills.length === 0 && reviewBullets.length === 0 && (
                     <p className="text-xs text-slate-500">No changes to review.</p>
                   )}
-                  <button onClick={handleRegenerate} disabled={tailoring} aria-live="polite"
-                    className="w-full h-[46px] rounded-[10px] bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
-                    {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><RotateCcw className="w-4 h-4" /> Reset all changes</>}
-                  </button>
-                  <div className="flex gap-2.5 pt-1">
-                    <button onClick={download} className="flex-1 h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                      <Download className="w-4 h-4" /> Download Tailored CV
+                  <div className={cardActions}>
+                    <button onClick={handleRegenerate} disabled={tailoring} aria-live="polite"
+                      className={`${btnBase} bg-white border border-slate-200 text-slate-600 hover:bg-slate-50`}>
+                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><RotateCcw className="w-4 h-4" /> Reset all changes</>}
                     </button>
-                    <button onClick={openHistory} className="h-[46px] px-4 rounded-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-sm flex items-center gap-1.5 cursor-pointer transition-colors">
-                      <CheckCircle2 className="w-4 h-4" /> Saved
-                    </button>
+                    <div className="flex gap-2.5">
+                      <button onClick={download} className="flex-1 min-h-[48px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                        <Download className="w-4 h-4" /> Download Tailored CV
+                      </button>
+                      <button onClick={openHistory} className="min-h-[48px] px-4 rounded-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-sm flex items-center gap-1.5 cursor-pointer transition-colors">
+                        <CheckCircle2 className="w-4 h-4" /> Saved
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
+            </section>
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="text-center text-xs text-slate-400 pb-3 pt-2 shrink-0">
-        © 2025 Tailor CV by Atanu. All rights reserved.
-      </footer>
+        {/* Footer — normal document flow, after the cards */}
+        <footer className="text-center text-xs text-slate-400 py-8">
+          © 2025 Tailor CV by Atanu. All rights reserved.
+        </footer>
+      </div>
 
       {/* History overlay */}
       {historyOpen && (
