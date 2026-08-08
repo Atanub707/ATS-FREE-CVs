@@ -44,6 +44,7 @@ export default function App() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [postedFilter, setPostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
+  const [locationFilter, setLocationFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
   const [page, setPage] = useState(1);
@@ -98,6 +99,7 @@ export default function App() {
       state: activeStateTab,
       source: sourceFilter,
       search: searchTerm,
+      location: locationFilter,
       datePostedFilter: postedFilter,
       sortBy,
       sortOrder: 'desc',
@@ -116,7 +118,7 @@ export default function App() {
     if (statsRes.ok) {
       setStats(await statsRes.json());
     }
-  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, sortBy, page, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, locationFilter, sortBy, page, pageSize]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
@@ -161,7 +163,7 @@ export default function App() {
   // Reset to page 1 when a filter changes
   useEffect(() => {
     setPage(1);
-  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, sortBy, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, locationFilter, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -187,6 +189,7 @@ export default function App() {
         // list's own search box and the posted window is enforced.
         setSearchTerm(params.keywords);
         setPostedFilter(params.datePostedFilter || 'all');
+        setLocationFilter(params.location || '');
         setActiveStateTab('all');
         setPage(1);
         await fetchJobs();
