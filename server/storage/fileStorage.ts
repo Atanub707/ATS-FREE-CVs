@@ -659,11 +659,17 @@ export function queryJobs(params: JobFilterQueryParams) {
 
   // Date posted window (24h / 7d / 30d). Date-only values are treated as
   // end-of-day so a job posted "yesterday" still counts within 24h.
+  // Malformed dates (doubled timestamps) are repaired via the YYYY-MM-DD
+  // prefix; unparseable jobs are excluded from the window.
   if (params.datePostedFilter && params.datePostedFilter !== 'all') {
     const hours = { '24h': 24, '7d': 24 * 7, '30d': 24 * 30 }[params.datePostedFilter];
     const cutoff = Date.now() - hours * 60 * 60 * 1000;
     jobs = jobs.filter((j) => {
-      let t = j.postedDateParsed ? new Date(`${j.postedDateParsed}T23:59:59Z`).getTime() : NaN;
+      let t = j.postedDateParsed ? new Date(`${String(j.postedDateParsed).slice(0, 10)}T23:59:59Z`).getTime() : NaN;
+      if (!Number.isFinite(t)) {
+        const m = String(j.postedDate || '').match(/^(\d{4}-\d{2}-\d{2})/);
+        t = m ? new Date(`${m[1]}T23:59:59Z`).getTime() : NaN;
+      }
       if (!Number.isFinite(t)) t = new Date(j.postedDate).getTime();
       return Number.isFinite(t) && t >= cutoff;
     });
@@ -910,6 +916,44 @@ export function fixMislabeledWorkTypes(): number {
     }
   } catch (err) {
     console.error('fixMislabeledWorkTypes error:', err);
+  }
+  return fixed;
+}
+
+// ─────────────────── Date Repair (idempotent) ───────────────────
+// Some scraped jobs stored malformed dates (doubled timestamps like
+// "2026-08-07T00:00:00.000ZT00:00:00.000Z"), breaking time-ago display
+// ("Recently") and date-window filters. Normalize YYYY-MM-DD extraction.
+export function repairJobDates(): number {
+  let fixed = 0;
+  try {
+    const d = getDb();
+    const users = d.prepare('SELECT DISTINCT user_id FROM jobs').all() as { user_id: string }[];
+    for (const u of users) {
+      const rows = d.prepare('SELECT data FROM jobs WHERE user_id = ?').all(u.user_id) as { data: string }[];
+      for (const r of rows) {
+        let j: Job;
+        try { j = JSON.parse(r.data); } catch { continue; }
+        const pd = String(j.postedDate || '');
+        const pdp = String(j.postedDateParsed || '');
+        const m = pd.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (!m && pdp && /^\d{4}-\d{2}-\d{2}/.test(pdp.slice(0, 10))) {
+          // postedDate malformed but parsed date present
+        }
+        const day = m ? m[1] : (pdp.slice(0, 10).match(/^\d{4}-\d{2}-\d{2}/) || [null])[0];
+        if (!day) continue;
+        const newPosted = `${day}T12:00:00.000Z`;
+        const newParsed = day;
+        if (pd !== newPosted || pdp.slice(0, 10) !== newParsed) {
+          j.postedDate = newPosted;
+          j.postedDateParsed = newParsed;
+          d.prepare('UPDATE jobs SET data = ? WHERE user_id = ? AND id = ?').run(JSON.stringify(j), u.user_id, j.id);
+          fixed++;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('repairJobDates error:', err);
   }
   return fixed;
 }

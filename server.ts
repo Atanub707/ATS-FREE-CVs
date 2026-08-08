@@ -74,6 +74,7 @@ import {
   saveNewJobs,
   runStorageMigration,
   fixMislabeledWorkTypes,
+  repairJobDates,
   saveManualAnalysis,
   listManualAnalyses,
   getManualAnalysis,
@@ -314,6 +315,9 @@ async function startServer() {
   // incorrectly defaulted to "Full-time · Remote" (idempotent).
   const fixedTypes = fixMislabeledWorkTypes();
   if (fixedTypes > 0) console.log(`[data-fix] Reclassified ${fixedTypes} mislabeled jobs`);
+  // Repair malformed stored dates (doubled timestamps).
+  const fixedDates = repairJobDates();
+  if (fixedDates > 0) console.log(`[data-fix] Repaired ${fixedDates} malformed job dates`);
 
   // Session middleware: resolve the auth cookie to a user and make it
   // available to every handler (and storage call) for this request.

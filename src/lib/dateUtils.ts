@@ -1,7 +1,14 @@
 export function formatTimeAgo(dateStr?: string): string {
   if (!dateStr) return 'Recently';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'Recently';
+  // Tolerate malformed stored dates (e.g. doubled "T00:00:00.000Z"): extract
+  // the leading YYYY-MM-DD and treat it as end-of-day, like the server does.
+  let date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    const m = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (!m) return 'Recently';
+    date = new Date(`${m[1]}T23:59:59Z`);
+    if (isNaN(date.getTime())) return 'Recently';
+  }
 
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();

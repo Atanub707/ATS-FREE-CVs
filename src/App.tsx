@@ -43,6 +43,7 @@ export default function App() {
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [workModeFilter, setWorkModeFilter] = useState<'all' | 'remote' | 'hybrid' | 'onsite'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
   const [page, setPage] = useState(1);
@@ -97,6 +98,7 @@ export default function App() {
       state: activeStateTab,
       source: sourceFilter,
       search: searchTerm,
+      jobType: workModeFilter,
       sortBy,
       sortOrder: 'desc',
       page: String(page),
@@ -114,7 +116,7 @@ export default function App() {
     if (statsRes.ok) {
       setStats(await statsRes.json());
     }
-  }, [activeStateTab, sourceFilter, searchTerm, sortBy, page, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, workModeFilter, sortBy, page, pageSize]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
@@ -159,7 +161,7 @@ export default function App() {
   // Reset to page 1 when a filter changes
   useEffect(() => {
     setPage(1);
-  }, [activeStateTab, sourceFilter, searchTerm, sortBy, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, workModeFilter, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -473,6 +475,8 @@ export default function App() {
               onStateTabChange={setActiveStateTab}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
+              workModeFilter={workModeFilter}
+              setWorkModeFilter={setWorkModeFilter}
               sourceFilter={sourceFilter}
               setSourceFilter={setSourceFilter}
               sortBy={sortBy}
