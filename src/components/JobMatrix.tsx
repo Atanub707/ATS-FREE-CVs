@@ -31,8 +31,6 @@ interface JobMatrixProps {
   onStateTabChange: (tab: 'all' | JobState) => void;
   searchTerm: string;
   setSearchTerm: (v: string) => void;
-  workModeFilter: 'all' | 'remote' | 'hybrid' | 'onsite';
-  setWorkModeFilter: (v: 'all' | 'remote' | 'hybrid' | 'onsite') => void;
   sourceFilter: 'all' | JobSource;
   setSourceFilter: (v: 'all' | JobSource) => void;
   sortBy: 'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax';
@@ -354,8 +352,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   onStateTabChange,
   searchTerm,
   setSearchTerm,
-  workModeFilter,
-  setWorkModeFilter,
   sourceFilter,
   setSourceFilter,
   sortBy,
@@ -600,21 +596,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               }`}
             >
               {chip}
-            </button>
-          ))}
-          <span className="text-slate-400 font-medium ml-2">Work mode:</span>
-          {(['all', 'remote', 'hybrid', 'onsite'] as const).map((mode) => (
-            <button
-              type="button"
-              key={mode}
-              onClick={() => setWorkModeFilter(mode)}
-              className={`px-2 py-0.5 rounded border transition-all cursor-pointer ${
-                workModeFilter === mode
-                  ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-              }`}
-            >
-              {mode === 'all' ? 'All types' : mode}
             </button>
           ))}
           {searchTerm && (

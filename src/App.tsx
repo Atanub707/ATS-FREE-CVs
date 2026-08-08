@@ -43,7 +43,6 @@ export default function App() {
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [workModeFilter, setWorkModeFilter] = useState<'all' | 'remote' | 'hybrid' | 'onsite'>('all');
   const [postedFilter, setPostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
   const [sortBy, setSortBy] = useState<'createdAt' | 'postedDate' | 'matchScore' | 'salaryMax'>('createdAt');
@@ -99,7 +98,6 @@ export default function App() {
       state: activeStateTab,
       source: sourceFilter,
       search: searchTerm,
-      jobType: workModeFilter,
       datePostedFilter: postedFilter,
       sortBy,
       sortOrder: 'desc',
@@ -118,7 +116,7 @@ export default function App() {
     if (statsRes.ok) {
       setStats(await statsRes.json());
     }
-  }, [activeStateTab, sourceFilter, searchTerm, workModeFilter, postedFilter, sortBy, page, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, sortBy, page, pageSize]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
@@ -163,7 +161,7 @@ export default function App() {
   // Reset to page 1 when a filter changes
   useEffect(() => {
     setPage(1);
-  }, [activeStateTab, sourceFilter, searchTerm, workModeFilter, postedFilter, sortBy, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -186,12 +184,8 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         // The search is fully visible in the list: keywords go into the
-        // list's own search box and the Job Type activates its chip — so
-        // you see exactly what you searched, and can clear either to widen.
+        // list's own search box and the posted window is enforced.
         setSearchTerm(params.keywords);
-        if (params.jobType && params.jobType !== 'all') {
-          setWorkModeFilter(params.jobType);
-        }
         setPostedFilter(params.datePostedFilter || 'all');
         setActiveStateTab('all');
         setPage(1);
@@ -482,8 +476,6 @@ export default function App() {
               onStateTabChange={setActiveStateTab}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
-              workModeFilter={workModeFilter}
-              setWorkModeFilter={setWorkModeFilter}
               sourceFilter={sourceFilter}
               setSourceFilter={setSourceFilter}
               sortBy={sortBy}
