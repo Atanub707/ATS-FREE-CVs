@@ -92,36 +92,11 @@ export default function App() {
   // Fetch job list (server-side filtered + paginated) and stats.
   // Never blocked — runs on every page/filter change regardless of
   // background match/tailor operations.
-  // Search-scope filters from the last scrape — applied to the LISTING so
-  // the list shows exactly what the user searched for. In-memory only: a
-  // fresh page load shows all jobs. The ref mirrors state synchronously.
-  const searchScopeRef = useRef({ keywords: '', jobType: 'all' as 'all' | 'remote' | 'onsite' | 'hybrid', location: '', datePostedFilter: 'all' as 'all' | '24h' | '7d' | '30d', under10Applicants: false });
-  const [searchScope, setSearchScope] = useState({ keywords: '', jobType: 'all' as 'all' | 'remote' | 'onsite' | 'hybrid', location: '', datePostedFilter: 'all' as 'all' | '24h' | '7d' | '30d', under10Applicants: false });
-  const applySearchScope = (next: typeof searchScopeRef.current) => {
-    searchScopeRef.current = next;
-    setSearchScope(next);
-  };
-  const clearSearchScope = () => applySearchScope({ keywords: '', jobType: 'all', location: '', datePostedFilter: 'all', under10Applicants: false });
-
-  // Relax the active search scope (e.g. widen the window) and refetch —
-  // used by the empty-state actions so a 0-result search never feels
-  // like data loss.
-  const relaxSearchScope = (partial: Partial<typeof searchScopeRef.current>) => {
-    applySearchScope({ ...searchScopeRef.current, ...partial });
-    setPage(1);
-    fetchJobs();
-  };
-
   const fetchJobs = useCallback(async () => {
-    const scope = searchScopeRef.current;
     const params = new URLSearchParams({
       state: activeStateTab,
       source: sourceFilter,
-      search: searchTerm || scope.keywords,
-      jobType: scope.jobType,
-      location: scope.location,
-      datePostedFilter: scope.datePostedFilter,
-      under10Applicants: String(scope.under10Applicants),
+      search: searchTerm,
       sortBy,
       sortOrder: 'desc',
       page: String(page),
@@ -206,15 +181,9 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // The user's search defines what this list shows — apply the exact
-        // same scope to the listing so ONLY matching jobs appear.
-        applySearchScope({
-          keywords: params.keywords,
-          jobType: params.jobType || 'all',
-          location: params.location || '',
-          datePostedFilter: params.datePostedFilter || 'all',
-          under10Applicants: !!params.under10Applicants,
-        });
+        // Searching ADDS jobs to the store — the full list stays visible
+        // with the newest scraped jobs at top. Never narrow or hide the
+        // user's existing jobs.
         setActiveStateTab('all');
         setPage(1);
         await fetchJobs();
@@ -502,9 +471,6 @@ export default function App() {
               stats={stats}
               activeStateTab={activeStateTab}
               onStateTabChange={setActiveStateTab}
-              searchScope={searchScope}
-              onClearScope={clearSearchScope}
-              onRelaxScope={relaxSearchScope}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               sourceFilter={sourceFilter}

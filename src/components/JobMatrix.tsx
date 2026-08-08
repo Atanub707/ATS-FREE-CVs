@@ -29,9 +29,6 @@ interface JobMatrixProps {
   stats: { total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> };
   activeStateTab: 'all' | JobState;
   onStateTabChange: (tab: 'all' | JobState) => void;
-  searchScope: { keywords: string; jobType: 'all' | 'remote' | 'onsite' | 'hybrid'; location: string; datePostedFilter: 'all' | '24h' | '7d' | '30d'; under10Applicants: boolean };
-  onClearScope: () => void;
-  onRelaxScope: (partial: Partial<{ keywords: string; jobType: 'all' | 'remote' | 'onsite' | 'hybrid'; location: string; datePostedFilter: 'all' | '24h' | '7d' | '30d'; under10Applicants: boolean }>) => void;
   searchTerm: string;
   setSearchTerm: (v: string) => void;
   sourceFilter: 'all' | JobSource;
@@ -353,9 +350,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   stats,
   activeStateTab,
   onStateTabChange,
-  searchScope,
-  onClearScope,
-  onRelaxScope,
   searchTerm,
   setSearchTerm,
   sourceFilter,
@@ -520,26 +514,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
         </div>
       </div>
 
-      {/* Search-scope note: visible only when the last search filters the list */}
-      {(() => {
-        const s = searchScope;
-        const filtered = (s.jobType && s.jobType !== 'all') || (s.location && s.location.trim()) || (s.datePostedFilter && s.datePostedFilter !== 'all') || s.under10Applicants || !!s.keywords;
-        if (!filtered || totalJobs >= stats.total) return null;
-        return (
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 -mt-1 px-1">
-            <span>
-              Showing {totalJobs} of {stats.total} jobs — filtered by your last search ({s.jobType !== 'all' ? `${s.jobType}, ` : ''}{s.datePostedFilter !== 'all' ? `posted ${s.datePostedFilter}, ` : ''}{s.under10Applicants ? 'under 10 applicants, ' : ''}{s.keywords ? `“${s.keywords}”` : ''}).
-            </span>
-            <button
-              onClick={onClearScope}
-              className="px-2 py-0.5 rounded text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              Show all jobs
-            </button>
-          </div>
-        );
-      })()}
-
       {/* Search & Sort Filter */}
       <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs shadow-xs space-y-2">
         <datalist id="matrix-search-suggestions">
@@ -642,60 +616,10 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
       {paginatedJobs.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-200">
           <Briefcase className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-          {(() => {
-            const s = searchScope;
-            const scopeActive = (s.jobType && s.jobType !== 'all') || (s.location && s.location.trim()) || (s.datePostedFilter && s.datePostedFilter !== 'all') || s.under10Applicants || !!s.keywords;
-            if (!scopeActive) {
-              return (
-                <>
-                  <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
-                  <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-                    Use the scraper above to search for live job listings.
-                  </p>
-                </>
-              );
-            }
-            const parts: string[] = [];
-            if (s.jobType !== 'all') parts.push(s.jobType);
-            if (s.keywords) parts.push(`“${s.keywords}”`);
-            if (s.datePostedFilter !== 'all') parts.push(`last ${s.datePostedFilter === '24h' ? '24 hours' : s.datePostedFilter}`);
-            if (s.under10Applicants) parts.push('under 10 applicants');
-            const showRelax = s.jobType !== 'all' || s.keywords;
-            return (
-              <>
-                <p className="text-xs font-semibold text-slate-700">
-                  No {s.jobType !== 'all' ? `${s.jobType} ` : ''}jobs found{parts.length > 0 ? ` for ${parts.join(' · ')}` : ''}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-                  Your data is safe — none of your {stats.total} stored jobs matches every filter. Try one of these:
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  {showRelax && (
-                    <button
-                      onClick={() => onRelaxScope({ datePostedFilter: '7d', under10Applicants: false })}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
-                    >
-                      Widen to last 7 days
-                    </button>
-                  )}
-                  {showRelax && (
-                    <button
-                      onClick={() => onRelaxScope({ keywords: '', datePostedFilter: 'all', under10Applicants: false })}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer"
-                    >
-                      All {s.jobType !== 'all' ? s.jobType : ''} jobs (drop keyword & window)
-                    </button>
-                  )}
-                  <button
-                    onClick={onClearScope}
-                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer"
-                  >
-                    Show all {stats.total} jobs
-                  </button>
-                </div>
-              </>
-            );
-          })()}
+          <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
+          <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+            Use the scraper above to search for live job listings.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
