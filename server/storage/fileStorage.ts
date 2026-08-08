@@ -955,8 +955,15 @@ export function repairJobDates(): number {
         const newPosted = (isGarbage || isNoonRepair) && cm2
           ? String(j.createdAt)
           : noonMarker;
+        // Never leave a FUTURE date on a stored job (timezone-ambiguous
+        // scrapes) — clamp to the scrape time.
+        let finalPosted = newPosted;
+        const asTime = new Date(finalPosted).getTime();
+        if (!isNaN(asTime) && asTime > Date.now() + 2 * 60 * 60 * 1000 && cm2) {
+          finalPosted = String(j.createdAt);
+        }
         const newParsed = day;
-        if (pd !== newPosted || pdp.slice(0, 10) !== newParsed) {
+        if (pd !== finalPosted || pdp.slice(0, 10) !== newParsed) {
           j.postedDate = newPosted;
           j.postedDateParsed = newParsed;
           d.prepare('UPDATE jobs SET data = ? WHERE user_id = ? AND id = ?').run(JSON.stringify(j), u.user_id, j.id);

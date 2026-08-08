@@ -80,6 +80,10 @@ function mapItem(item: any): Job | null {
     rawPosted = new Date(String(item.posted_at).replace(' ', 'T') + 'Z');
   }
   const postedDate = rawPosted && !isNaN(rawPosted.getTime()) ? rawPosted.toISOString() : now;
+  // The actor's posted_at strings are timezone-ambiguous and can land in
+  // the FUTURE when parsed as UTC. Never show future dates — clamp to the
+  // scrape time (2h tolerance for genuinely live postings).
+  const finalPosted = new Date(postedDate).getTime() > Date.now() + 2 * 60 * 60 * 1000 ? now : postedDate;
 
   // Work mode: the actor's per-job work_type field is the authoritative
   // signal; job_insights often carries it too. Description evidence only
@@ -107,8 +111,8 @@ function mapItem(item: any): Job | null {
     source: 'LinkedIn',
     description: cleanDescription(item.description) || 'Description not available',
     url: item.job_url || item.url || `https://www.linkedin.com/jobs/view/${id}`,
-    postedDate,
-    postedDateParsed: postedDate.slice(0, 10),
+    postedDate: finalPosted,
+    postedDateParsed: finalPosted.slice(0, 10),
     salaryText: salary.text || 'Salary not mentioned',
     ...(salary.min !== undefined ? { salaryMin: salary.min } : {}),
     ...(salary.max !== undefined ? { salaryMax: salary.max } : {}),
