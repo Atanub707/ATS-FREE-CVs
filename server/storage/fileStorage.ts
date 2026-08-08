@@ -892,6 +892,9 @@ export function fixMislabeledWorkTypes(): number {
         let j: Job;
         try { j = JSON.parse(r.data); } catch { continue; }
         if (j.source !== 'LinkedIn') continue;
+        // Labels verified from the Apify actor's structured work_type field
+        // are authoritative — never re-derived from description text.
+        if ((j as any).workModeVerified) continue;
         const de = (j.description || '').toLowerCase();
         let next: string | null = null;
         if (/\bhybrid\b|hybrid (work|role|model)/.test(de) && !/no hybrid|not hybrid|non-hybrid/.test(de)) next = 'Full-time · Hybrid';

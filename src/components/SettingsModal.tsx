@@ -260,8 +260,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </h3>
             <p className="text-[10.5px] text-slate-500 leading-relaxed">
               Routes LinkedIn searches through Apify's cloud scraper: no more “No results found” blocks,
-              and it returns the true work mode (Remote / Hybrid / On-site). Costs ~$0.40 per 1,000 jobs
-              from Apify's free $5 monthly credit. Falls back to the built-in free scraper automatically.
+              and it returns the true work mode (Remote / Hybrid / On-site) for every job.
+              Paid per event from Apify's free $5 monthly credit. Falls back to the built-in free scraper automatically.
             </p>
             <label className="flex items-center justify-between gap-3 cursor-pointer">
               <span className="font-semibold text-slate-800 text-xs">Use Apify for LinkedIn</span>
