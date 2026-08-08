@@ -88,6 +88,33 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const selectClass =
     'w-full appearance-none bg-white border-[1.5px] border-slate-200 rounded-lg border border-slate-200 pl-3 pr-9 py-2.5 text-[13px] font-medium text-slate-900 cursor-pointer transition-colors hover:border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10';
 
+  const renderSourceChip = (src: JobSource) => {
+    const isComingSoon = COMING_SOON.includes(src);
+    const isSelected = selectedSources.includes(src);
+    return (
+      <button
+        key={src}
+        type="button"
+        onClick={() => toggleSource(src)}
+        disabled={isComingSoon}
+        title={isComingSoon ? `${src} — Coming soon` : `${src} — ${getSourceCountry(src)}`}
+        className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[7px] rounded-lg text-[12px] font-medium border transition-colors whitespace-nowrap ${
+          isComingSoon
+            ? 'opacity-45 cursor-not-allowed bg-white border-slate-200 text-slate-500'
+            : isSelected
+            ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold cursor-pointer'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+        }`}
+      >
+        <span className="text-[13px] leading-none">{getSourceFlag(src)}</span>
+        <span>{src}</span>
+        {isComingSoon && (
+          <span className="text-[9px] font-bold uppercase text-slate-400">Soon</span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="bg-white border-b border-slate-200 py-5 text-slate-900">
       {/* Datalists for Native Auto-completion */}
@@ -254,33 +281,29 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
         <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <span className="text-[11px] font-semibold text-slate-500 pt-[7px] whitespace-nowrap">Sources</span>
-            <div className="flex flex-wrap gap-2">
-              {ALL_SOURCES.map((src) => {
-                const isComingSoon = COMING_SOON.includes(src);
-                const isSelected = selectedSources.includes(src);
-                return (
-                  <button
-                    key={src}
-                    type="button"
-                    onClick={() => toggleSource(src)}
-                    disabled={isComingSoon}
-                    title={isComingSoon ? `${src} — Coming soon` : `${src} — ${getSourceCountry(src)}`}
-                    className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[7px] rounded-lg text-[12px] font-medium border transition-colors whitespace-nowrap ${
-                      isComingSoon
-                        ? 'opacity-45 cursor-not-allowed bg-white border-slate-200 text-slate-500'
-                        : isSelected
-                        ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold cursor-pointer'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
-                    }`}
-                  >
-                    <span className="text-[13px] leading-none">{getSourceFlag(src)}</span>
-                    <span>{src}</span>
-                    {isComingSoon && (
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Soon</span>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2 flex-nowrap min-w-0">
+              {ALL_SOURCES.slice(0, 3).map((src) => renderSourceChip(src))}
+
+              {/* More — hover/focus opens the full source list */}
+              <div className="relative group shrink-0">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 pl-2 pr-2.5 py-[7px] rounded-lg text-[12px] font-semibold text-slate-600 border border-slate-200 bg-white hover:border-slate-300 transition-colors cursor-pointer whitespace-nowrap"
+                  title="All sources this search can capture"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span>More</span>
+                  <span className="text-[10px] font-bold text-slate-400">({ALL_SOURCES.length - 3})</span>
+                </button>
+                <div className="absolute right-0 top-full mt-1.5 z-30 w-[330px] bg-white border border-slate-200 rounded-xl shadow-lg p-3 opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto transition-all">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
+                    All sources this search can capture
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_SOURCES.slice(3).map((src) => renderSourceChip(src))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
