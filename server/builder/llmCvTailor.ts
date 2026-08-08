@@ -3,21 +3,38 @@ import { Job, MasterCv, TailoredCv } from '../../src/types.js';
 import { ask } from '../llm/llmAdapter.js';
 
 export class LlmCvTailor extends BaseCvBuilder {
-  async tailorCv(job: Job, masterCv: MasterCv): Promise<TailoredCv> {
+  async tailorCv(
+    job: Job,
+    masterCv: MasterCv,
+    opts?: { includeSkills?: string[] }
+  ): Promise<TailoredCv> {
     const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
 
     const missingSkills = job.gapAnalysis?.missingSkills || [];
     const missingKeywords = job.gapAnalysis?.missingKeywords || [];
 
-    const missingKeywordsStr = missingKeywords.length > 0
-      ? missingKeywords.map(k => `  - ${k}`).join('\n')
-      : '  (none identified)';
+    // User-controlled tailoring: only the selected missing skills are
+    // incorporated; anything not in the allow-list is explicitly skipped.
+    const allowList = (opts?.includeSkills || []).map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const allowedSet = new Set(allowList);
+    // Single, deduplicated universe of every missing keyword.
+    const allMissing = [...new Set([...missingSkills, ...missingKeywords])];
+    const selectedList = allMissing.filter((s) => allowedSet.has(s.toLowerCase()));
+    const excludedList = allMissing.filter((s) => !allowedSet.has(s.toLowerCase()));
+
+    const missingKeywordsStr = selectedList.length > 0
+      ? selectedList.map(k => `  - ${k}`).join('\n')
+      : '  (none selected)';
 
     const prompt = `You are an elite Executive Resume Writer and ATS Optimization Specialist.
 
 STRICT RULES:
 - NEVER fabricate companies, dates, degrees, or work experience.
 - The candidate's actual job title ("${candidateTitle}") MUST remain exactly as stated.
+- ${selectedList.length > 0
+      ? `INCORPORATE ONLY these selected missing keywords: ${selectedList.join(', ')} — DO NOT add or mention any other missing keyword.`
+      : 'Integrate all missing keywords identified in the JD.'}
+${excludedList.length > 0 ? `- EXCLUDED (do NOT add, do NOT mention): ${excludedList.join(', ')}` : ''}
 
 MISSING JD KEYWORDS TO INTEGRATE:
 These keywords from the job description are NOT currently in the candidate's CV.
@@ -158,7 +175,11 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
             keywordsInExperience: verifiedInExperience,
             keywordsInSkills: verifiedInSkills,
             rephrasedHighlightsCount: rephrasedCount,
-            skillsAdded: missingSkills,
+            // Honest: only the SELECTED skills that actually appear in the
+            // resulting CV (never a wholesale echo of every missing skill).
+            skillsAdded: (selectedList.length > 0 ? selectedList : allMissing).filter((s) =>
+              JSON.stringify({ p: parsed.professionalSummary, e: parsed.workExperience, t: parsed.technicalSkills }).toLowerCase().includes(s.toLowerCase())
+            ),
           },
           notIntegrable,
           auditNotes,

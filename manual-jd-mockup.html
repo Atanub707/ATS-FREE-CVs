@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tailor CV — Manual JD Enhancements (Mockup)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #0f172a; padding: 32px 20px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; }
+  .sub { color: #64748b; font-size: 13px; margin: 6px 0 8px; }
+  .meta { color: #94a3b8; font-size: 12px; margin-bottom: 26px; }
+  .research { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; }
+  .research h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #2563eb; margin-bottom: 10px; }
+  .research ul { list-style: none; }
+  .research li { font-size: 12.5px; color: #334155; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; }
+  .research li:last-child { border-bottom: none; }
+  .research b { color: #0f172a; }
+  .screen-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #64748b; margin: 30px 0 12px; text-transform: uppercase; }
+  .screen-label span { color: #2563eb; }
+  .screen { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(15,23,42,.06); margin-bottom: 26px; }
+  .screen-head { padding: 14px 18px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+  .screen-head .t { font-size: 13px; font-weight: 700; }
+  .screen-head .badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .badge.blue { background: #dbeafe; color: #1d4ed8; }
+  .badge.green { background: #dcfce7; color: #15803d; }
+  .badge.amber { background: #fef3c7; color: #b45309; }
+  .screen-body { padding: 18px; }
+  /* inputs */
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 5px; }
+  .field input, .field textarea { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-family: inherit; }
+  .field textarea { min-height: 90px; resize: vertical; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn.primary { background: #2563eb; color: #fff; }
+  .btn.ghost { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .btn.small { padding: 5px 10px; font-size: 11px; border-radius: 8px; }
+  /* match card */
+  .match { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .score-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: center; }
+  .score-card .n { font-size: 30px; font-weight: 800; }
+  .score-card .l { font-size: 11px; color: #64748b; }
+  .score-card.good { background: #f0fdf4; border-color: #bbf7d0; } .score-card.good .n { color: #15803d; }
+  .score-card.mid { background: #fffbeb; border-color: #fde68a; } .score-card.mid .n { color: #b45309; }
+  /* skill selector */
+  .skills { border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 14px; overflow: hidden; }
+  .skills-head { padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .skills-head .count { font-size: 10.5px; color: #64748b; font-weight: 600; }
+  .skill-row { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
+  .skill-row:last-child { border-bottom: none; }
+  .skill-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2563eb; }
+  .skill-row .name { flex: 1; font-size: 12.5px; font-weight: 600; color: #0f172a; }
+  .skill-row .dest { font-size: 10.5px; color: #64748b; background: #f1f5f9; border-radius: 999px; padding: 2px 8px; }
+  .skill-row.off .name, .skill-row.off .dest { opacity: .45; text-decoration: line-through; }
+  .skill-row .lock { font-size: 10px; color: #94a3b8; }
+  /* comparison */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .col { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+  .col-head { padding: 9px 13px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+  .col.master .col-head { background: #f1f5f9; color: #475569; }
+  .col.tailored .col-head { background: #eff6ff; color: #1d4ed8; }
+  .col-body { padding: 12px 13px; font-size: 11.5px; line-height: 1.55; }
+  .line { padding: 3px 0; }
+  .line.add { color: #15803d; background: #f0fdf4; border-radius: 4px; padding-left: 6px; }
+  .line.add::before { content: "+ "; font-weight: 800; }
+  .line.rem { color: #b91c1c; text-decoration: line-through; opacity: .6; }
+  .line.rem::before { content: "− "; font-weight: 800; }
+  .line.keep { color: #64748b; }
+  .section-title { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin: 10px 0 4px; }
+  /* review points */
+  .point { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-top: 8px; background: #fff; }
+  .point .txt { flex: 1; font-size: 12px; color: #334155; line-height: 1.5; }
+  .point .actions { display: flex; gap: 5px; }
+  .icon-btn { width: 24px; height: 24px; border-radius: 7px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-size: 12px; color: #64748b; }
+  .icon-btn:hover { background: #f1f5f9; }
+  .icon-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+  /* history */
+  .history-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid #f1f5f9; }
+  .history-row:last-child { border-bottom: none; }
+  .history-row .role { flex: 1; font-size: 12.5px; font-weight: 600; }
+  .history-row .meta2 { font-size: 11px; color: #64748b; }
+  .history-row .score { font-size: 12px; font-weight: 800; color: #15803d; background: #f0fdf4; border-radius: 999px; padding: 3px 9px; }
+  .history-row .actions { display: flex; gap: 6px; }
+  .footer-note { color: #94a3b8; font-size: 12px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tailor CV — Manual JD Enhancement Mockup</h1>
+  <p class="sub">Professional design based on worldwide best practices (Jobscan, Rezi, Teal, Zety, Grammarly-style diffs)</p>
+  <p class="meta">3 screens · Skill selection · Side-by-side comparison · History · Per-point accept/remove · Regenerate</p>
+
+  <div class="research">
+    <h3>Research summary — what the best tools worldwide do</h3>
+    <ul>
+      <li><b>Match-first (Jobscan, Rezi):</b> paste the JD → instant match score + missing skills/keywords, before any generation</li>
+      <li><b>User-controlled tailoring (Rezi, Jobscan Power Edit):</b> missing skills are shown as a TOGGLE LIST — the user selects which to include and where they land (Summary / Skills / Experience) — no blind full-auto</li>
+      <li><b>Review before accept (Teal, Kickresume):</b> each generated change is shown for approval — users can REMOVE a point they don't like, then REGENERATE without it</li>
+      <li><b>Side-by-side diff (Grammarly/editor pattern):</b> Master CV vs Tailored CV, with added / removed / unchanged lines highlighted</li>
+      <li><b>History (Jobscan, LoopCV):</b> every analysis saved — score, date, one-click restore, reuse for another JD</li>
+    </ul>
+  </div>
+
+  <!-- SCREEN 1: INPUT + MATCH + SKILL SELECTION -->
+  <div class="screen-label"><span>Screen 1</span> — JD Input + Match Card + Skill Selection</div>
+  <div class="screen">
+    <div class="screen-head"><span class="t">Manual JD — new analysis</span><span class="badge blue">Step 1 · Analyze → Step 2 · Select skills</span></div>
+    <div class="screen-body">
+      <div class="row2">
+        <div class="field"><label>Job title</label><input value="DevOps Engineer" /></div>
+        <div class="field"><label>Company</label><input value="CloudScale Inc" /></div>
+      </div>
+      <div class="field"><label>Job description</label><textarea>We are looking for a DevOps Engineer with strong AWS, Kubernetes, Terraform and CI/CD experience. Candidates must have experience with GitHub Actions, Docker, monitoring with Prometheus/Grafana, and incident management with PagerDuty. Knowledge of Python scripting is a plus…</textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary">Analyze &amp; Find Gaps</button>
+        <button class="btn ghost">History (12 saved)</button>
+      </div>
+
+      <div class="match">
+        <div class="score-card good"><div class="n">78%</div><div class="l">Current match (before tailoring)</div></div>
+        <div class="score-card mid"><div class="n">92%</div><div class="l">Projected after selected skills</div></div>
+      </div>
+
+      <div class="skills">
+        <div class="skills-head">Missing skills found in the JD <span class="count">6 of 8 selected</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">Kubernetes</span><span class="dest">Skills section</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">Terraform (IaC)</span><span class="dest">Skills + Experience bullet</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">GitHub Actions</span><span class="dest">Experience bullet</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">Prometheus / Grafana</span><span class="dest">Skills section</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">PagerDuty (incident mgmt)</span><span class="dest">Experience bullet</span></div>
+        <div class="skill-row"><input type="checkbox" checked /><span class="name">Python scripting</span><span class="dest">Skills section</span></div>
+        <div class="skill-row off"><input type="checkbox" /><span class="name">AWS Certified Solutions Architect</span><span class="dest">Certifications</span><span class="lock">you don't hold this cert</span></div>
+        <div class="skill-row off"><input type="checkbox" /><span class="name">ServiceNow</span><span class="dest">Experience bullet</span><span class="lock">not in your profile</span></div>
+      </div>
+      <p class="footer-note" style="margin-top:10px">Select or unselect skills — the projected score updates live. Unselected skills are NOT added.</p>
+      <div style="margin-top:12px"><button class="btn primary">Generate Tailored CV with Selected Skills</button></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: SIDE-BY-SIDE + PER-POINT REVIEW -->
+  <div class="screen-label"><span>Screen 2</span> — Side-by-side comparison + Accept / Remove each change</div>
+  <div class="screen">
+    <div class="screen-head"><span class="t">Tailored CV review — CloudScale Inc</span><span class="badge green">3 added · 4 rewritten · 2 removed</span></div>
+    <div class="screen-body">
+      <div class="compare">
+        <div class="col master">
+          <div class="col-head">Master CV (original)</div>
+          <div class="col-body">
+            <div class="section-title">Professional summary</div>
+            <div class="line keep">DevOps engineer with 4+ years building cloud-native infrastructure.</div>
+            <div class="section-title">Experience</div>
+            <div class="line rem">Led CI/CD pipeline setup with Jenkins and GitLab.</div>
+            <div class="line keep">Automated AWS infrastructure via IaC and GitOps.</div>
+            <div class="line keep">Improved deployment time by 70%.</div>
+            <div class="section-title">Skills</div>
+            <div class="line keep">AWS, Docker, Jenkins, GitLab, Ansible</div>
+          </div>
+        </div>
+        <div class="col tailored">
+          <div class="col-head">Tailored CV (new)</div>
+          <div class="col-body">
+            <div class="section-title">Professional summary</div>
+            <div class="line add">DevOps engineer with 4+ years building cloud-native infrastructure, Kubernetes and Terraform.</div>
+            <div class="section-title">Experience</div>
+            <div class="line add">Led CI/CD pipeline setup with GitHub Actions and Docker (aligned with JD).</div>
+            <div class="line keep">Automated AWS infrastructure via IaC and GitOps.</div>
+            <div class="line keep">Improved deployment time by 70%.</div>
+            <div class="line add">Implemented Prometheus/Grafana monitoring and PagerDuty incident management.</div>
+            <div class="section-title">Skills</div>
+            <div class="line add">Kubernetes, Terraform, Prometheus, Grafana, Python, PagerDuty</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8">Review each change — remove what you don't like</div>
+      <div class="point">
+        <div class="txt">Added “Kubernetes and Terraform” to your summary.</div>
+        <div class="actions"><button class="icon-btn" title="Accept">✓</button><button class="icon-btn danger" title="Remove this change">✕</button></div>
+      </div>
+      <div class="point">
+        <div class="txt">Rewrote CI/CD bullet: “Jenkins and GitLab” → “GitHub Actions and Docker (aligned with JD)”.</div>
+        <div class="actions"><button class="icon-btn" title="Accept">✓</button><button class="icon-btn danger" title="Remove this change">✕</button></div>
+      </div>
+      <div class="point">
+        <div class="txt">Added monitoring bullet: Prometheus/Grafana + PagerDuty.</div>
+        <div class="actions"><button class="icon-btn" title="Accept">✓</button><button class="icon-btn danger" title="Remove this change">✕</button></div>
+      </div>
+      <div class="point">
+        <div class="txt">Added 6 skills to the Skills section.</div>
+        <div class="actions"><button class="icon-btn" title="Accept">✓</button><button class="icon-btn danger" title="Remove this change">✕</button></div>
+      </div>
+      <p class="footer-note" style="margin-top:10px">Removed changes are excluded on REGENERATE — the score recalculates.</p>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn primary">Regenerate after removals</button>
+        <button class="btn ghost">Save to history</button>
+        <button class="btn ghost">Download PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: HISTORY -->
+  <div class="screen-label"><span>Screen 3</span> — History (every analysis saved, per user)</div>
+  <div class="screen">
+    <div class="screen-head"><span class="t">Manual JD history</span><span class="badge amber">12 saved analyses</span></div>
+    <div class="screen-body" style="padding:0">
+      <div class="history-row">
+        <span class="role">DevOps Engineer — CloudScale Inc</span>
+        <span class="score">92%</span>
+        <span class="meta2">Today 10:12 · Tailored</span>
+        <div class="actions"><button class="btn small">View diff</button><button class="btn small">Restore</button><button class="icon-btn danger">🗑</button></div>
+      </div>
+      <div class="history-row">
+        <span class="role">Senior DevOps Engineer — FinTech Bank</span>
+        <span class="score">88%</span>
+        <span class="meta2">Yesterday 16:40 · Tailored</span>
+        <div class="actions"><button class="btn small">View diff</button><button class="btn small">Restore</button><button class="icon-btn danger">🗑</button></div>
+      </div>
+      <div class="history-row">
+        <span class="role">SRE — HealthCorp</span>
+        <span class="score">64%</span>
+        <span class="meta2">Aug 5 09:03 · Analyzed only</span>
+        <div class="actions"><button class="btn small">View analysis</button><button class="btn small">Tailor now</button><button class="icon-btn danger">🗑</button></div>
+      </div>
+      <div class="history-row">
+        <span class="role">DevSecOps Engineer — RetailX</span>
+        <span class="score">91%</span>
+        <span class="meta2">Aug 2 14:21 · Tailored</span>
+        <div class="actions"><button class="btn small">View diff</button><button class="btn small">Restore</button><button class="icon-btn danger">🗑</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">Workflow: Paste JD → Analyze (match score + missing skills) → Select/unselect skills → Generate → Review diff side-by-side → Accept/Remove points → Regenerate → Save to history → Download. History = every step recoverable.</p>
+</div>
+</body>
+</html>

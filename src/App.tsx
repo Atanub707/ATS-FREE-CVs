@@ -534,6 +534,7 @@ export default function App() {
           <ManualJdScreen
             isOpen={isManualJdOpen}
             onClose={() => setIsManualJdOpen(false)}
+            masterCv={masterCv}
           />
 
           {/* Job Portals Directory — full screen */}

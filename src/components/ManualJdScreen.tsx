@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Sparkles, Download, FileText, Zap, AlertTriangle, CheckCircle2, TrendingUp, ArrowRight, History, Trash2, Clock, ArrowLeft } from 'lucide-react';
+import { X, Loader2, Sparkles, Download, FileText, Zap, AlertTriangle, CheckCircle2, TrendingUp, ArrowRight, History, Trash2, Clock, ArrowLeft, ChevronRight } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
+import { MasterCv } from '../types';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
   onClose: () => void;
+  masterCv?: MasterCv | null;
 }
 
 interface HistoryEntry {
@@ -68,7 +70,7 @@ function contextInJd(term: string, jd: string): string {
   return sentence.length > 120 ? sentence.slice(0, 117) + '…' : sentence;
 }
 
-export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose }) => {
+export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
@@ -76,6 +78,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const [tailoring, setTailoring] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [diff, setDiff] = useState<DiffPayload | null>(null);
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [removedPoints, setRemovedPoints] = useState<Set<string>>(new Set());
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -155,6 +159,10 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Analysis failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setResult(data);
+      // Default: every missing skill selected — the user can unselect any.
+      const missing = (data.gapAnalysis?.missingSkills || []);
+      setSelectedSkills(new Set(missing));
+      setRemovedPoints(new Set());
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -174,6 +182,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
           gapAnalysis: result?.gapAnalysis,
           matchScore: result?.matchScore,
           historyId,
+          // User-controlled: ONLY these selected skills are incorporated
+          includeSkills: [...selectedSkills],
         }),
       });
       const data = await res.json();
@@ -181,6 +191,35 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setDownloadToken(data.downloadToken);
       if (data.diff) setDiff(data.diff);
       if (data.historyId) setHistoryId(data.historyId);
+    } catch (e: any) { setError(e.message); }
+    finally { setTailoring(false); }
+  };
+
+  // Regenerate after the user removed points: re-tailor WITHOUT them.
+  const handleRegenerate = async () => {
+    if (removedPoints.size === 0) { await handleTailor(); return; }
+    const keep = [...selectedSkills].filter((s) => !removedPoints.has(s));
+    setSelectedSkills(new Set(keep));
+    setRemovedPoints(new Set());
+    setTailoring(true); setError('');
+    try {
+      const res = await fetch('/api/analyze-jd/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          company: company.trim(),
+          description: description.trim(),
+          gapAnalysis: result?.gapAnalysis,
+          matchScore: result?.matchScore,
+          historyId,
+          includeSkills: keep,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Regeneration failed'); alert(llmErrorMessage(data.code, data.error)); return; }
+      setDownloadToken(data.downloadToken);
+      if (data.diff) setDiff(data.diff);
     } catch (e: any) { setError(e.message); }
     finally { setTailoring(false); }
   };
@@ -540,6 +579,50 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                 </div>
               )}
 
+              {/* Skill selection — user controls what gets added */}
+              {!diff && missing.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                      <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
+                      Select skills to add ({selectedSkills.size} of {missing.length} selected)
+                    </p>
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                      Projected {Math.min(99, score + selectedSkills.size * 2)}%
+                    </span>
+                  </div>
+                  <div className="px-4 py-2 divide-y divide-slate-50 max-h-52 overflow-y-auto">
+                    {missing.map((s: string) => {
+                      const on = selectedSkills.has(s);
+                      const n = countInJd(s, description);
+                      return (
+                        <label key={s} className={`flex items-center gap-2.5 py-2 cursor-pointer ${on ? '' : 'opacity-45'}`}>
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() => {
+                              setSelectedSkills((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(s)) next.delete(s); else next.add(s);
+                                return next;
+                              });
+                            }}
+                            className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                          />
+                          <span className="flex-1 text-[11.5px] font-semibold text-slate-800">{s}{n > 0 && <sup className="ml-0.5 text-[9px] font-bold text-indigo-400">×{n}</sup>}</span>
+                          <span className="text-[9.5px] font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">
+                            {s.toLowerCase().match(/prometheus|grafana|monitor|incident|pagerduty|alert/) ? 'Experience bullet' : 'Skills section'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="px-4 py-2.5 border-t border-slate-100 text-[10.5px] text-slate-400">
+                    Unselected skills will NOT be added. Projected score updates live.
+                  </div>
+                </div>
+              )}
+
               {/* Tailor CTA */}
               {!diff && (
                 <div className="bg-slate-900 rounded-2xl p-5 flex items-center gap-4 shadow-lg">
@@ -682,6 +765,71 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                       Every addition comes from <b>your existing CV content</b> — we surface skills you already have but haven't highlighted. We never invent experience. The projected score is the keyword fill-ratio after integration, not a promise of interview success.
                     </p>
                   </div>
+
+                  {/* Per-point review — accept / remove each change */}
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <p className="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                        <span className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
+                        Review changes — remove what you don't like
+                      </p>
+                      {removedPoints.size > 0 && (
+                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                          {removedPoints.size} removed
+                        </span>
+                      )}
+                    </div>
+                    <div className="px-4 py-3 space-y-2">
+                      {diff.addedAfter.skillsAdded.map((s) => {
+                        const removed = removedPoints.has(`skill:${s}`);
+                        return (
+                          <div key={s} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-45' : ''}`}>
+                            <div className="flex-1 text-[11.5px] text-slate-700">
+                              {removed ? <span className="line-through">{s}</span> : <>Added skill <b>{s}</b> to the Skills section.</>}
+                            </div>
+                            <div className="flex gap-1.5">
+                              {removed ? (
+                                <button onClick={() => setRemovedPoints((p) => { const n = new Set(p); n.delete(`skill:${s}`); return n; })} className="px-2 py-1 rounded-md text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 cursor-pointer">Undo</button>
+                              ) : (
+                                <button onClick={() => setRemovedPoints((p) => new Set(p).add(`skill:${s}`))} className="w-6 h-6 rounded-md bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 text-[11px] font-bold cursor-pointer" title="Remove this addition">✕</button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {(diff.bulletRewrites || []).map((br, bi) => {
+                        const key = `bullet:${bi}`;
+                        const removed = removedPoints.has(key);
+                        return (
+                          <div key={key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-45' : ''}`}>
+                            <div className="flex-1 text-[11.5px] text-slate-700 leading-relaxed">
+                              {removed ? <span className="line-through">{br.rewritten.slice(0, 90)}…</span> : (
+                                <>Rewrote bullet: <span className="text-slate-400 line-through">{br.original.slice(0, 60)}…</span> → <b className="text-emerald-700">{br.rewritten.slice(0, 90)}…</b></>
+                              )}
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              {removed ? (
+                                <button onClick={() => setRemovedPoints((p) => { const n = new Set(p); n.delete(key); return n; })} className="px-2 py-1 rounded-md text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 cursor-pointer">Undo</button>
+                              ) : (
+                                <button onClick={() => setRemovedPoints((p) => new Set(p).add(key))} className="w-6 h-6 rounded-md bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 text-[11px] font-bold cursor-pointer" title="Remove this change">✕</button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {diff.addedAfter.skillsAdded.length === 0 && (diff.bulletRewrites?.length || 0) === 0 && (
+                        <p className="text-[11px] text-slate-400">No changes to review.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Regenerate after removals */}
+                  {removedPoints.size > 0 && (
+                    <button onClick={handleRegenerate}
+                      className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center space-x-2 cursor-pointer shadow-md transition-colors">
+                      <Sparkles className="w-4 h-4" /><span>Regenerate without the removed changes</span>
+                    </button>
+                  )}
 
                   {/* Download */}
                   <button onClick={download}

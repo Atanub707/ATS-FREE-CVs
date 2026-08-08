@@ -1338,7 +1338,7 @@ Return valid JSON only — NO markdown, NO code fences:
       return;
     }
     try {
-      const { title, company, description, gapAnalysis, matchScore, historyId } = req.body;
+      const { title, company, description, gapAnalysis, matchScore, historyId, includeSkills } = req.body;
       if (!title || !description) {
         res.status(400).json({ error: 'Title and description are required.' });
         return;
@@ -1369,7 +1369,11 @@ Return valid JSON only — NO markdown, NO code fences:
       };
 
       const tailorEngine = new LlmCvTailor();
-      const tailoredCv = await tailorEngine.tailorCv(virtualJob, masterCv);
+      const tailoredCv = await tailorEngine.tailorCv(
+        virtualJob,
+        masterCv,
+        Array.isArray(includeSkills) && includeSkills.length > 0 ? { includeSkills } : undefined
+      );
 
       const token = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       manualResults.set(token, {
@@ -1441,6 +1445,7 @@ Return valid JSON only — NO markdown, NO code fences:
         downloadToken: token,
         historyId,
         diff: diffPayload,
+        tailoredCv,
       });
     } catch (err: any) {
       console.error('Tailor JD error:', err);
