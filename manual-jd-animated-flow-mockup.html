@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manual JD — Animated Flow Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #F8FAFC; color: #334155; }
+
+  /* ── Mock header ── */
+  .mheader { display: flex; align-items: center; gap: 12px; padding: 16px 28px; border-bottom: 1px solid #E2E8F0; background: #fff; }
+  .mheader .logo { width: 40px; height: 40px; border-radius: 10px; background: #2563EB; color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+  .mheader .brand b { font-size: 20px; font-weight: 700; color: #0F172A; display: block; line-height: 1.1; }
+  .mheader .brand small { font-size: 12px; color: #64748B; }
+  .mheader .brand small em { font-style: normal; font-weight: 600; color: #2563EB; }
+  .mheader .spacer { flex: 1; }
+  .btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* ── Page title ── */
+  .ptitle { max-width: 1040px; margin: 22px auto 0; padding: 0 20px; display: flex; align-items: center; gap: 14px; }
+  .ptitle h1 { font-size: 24px; font-weight: 700; color: #0F172A; }
+  .ptitle p { font-size: 13px; color: #64748B; margin-top: 2px; }
+
+  /* ── Stepper ── */
+  .steps { max-width: 1040px; margin: 16px auto 0; padding: 0 20px; display: flex; gap: 8px; align-items: center; }
+  .step { font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; color: #64748B; display: inline-flex; align-items: center; gap: 7px; transition: all .3s ease; }
+  .step .n { width: 18px; height: 18px; border-radius: 6px; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; background: #F1F5F9; color: #64748B; }
+  .step.on { background: #0F172A; border-color: #0F172A; color: #fff; }
+  .step.on .n { background: rgba(255,255,255,.25); color: #fff; }
+  .step.cur { background: #2563EB; border-color: #2563EB; color: #fff; }
+  .step.cur .n { background: rgba(255,255,255,.25); color: #fff; }
+  .sarrow { color: #CBD5E1; font-size: 12px; }
+
+  /* ── Stage (panels NEVER leave it) ── */
+  .stage { position: relative; width: min(1040px, 94vw); height: 620px; margin: 14px auto 0; }
+  .panel { position: absolute; top: 6px; bottom: 6px; background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; box-shadow: 0 1px 3px rgba(15,23,42,.05); padding: 24px; opacity: 0; pointer-events: none; transition: left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .3s ease, transform .45s cubic-bezier(.25,.8,.3,1); transform: translateX(24px) scale(.97); }
+
+  /* STEP 1 — single centered panel */
+  .step1 .p1 { left: 27%; width: 46%; opacity: 1; pointer-events: auto; transform: none; }
+  /* STEP 2 — p1 moves left, p2 pops in on the right */
+  .step2 .p1 { left: 2%; width: 46%; opacity: 1; pointer-events: auto; transform: none; }
+  .step2 .p2 { left: 52%; width: 46%; opacity: 1; pointer-events: auto; transform: none; }
+  /* STEP 3 — p1 & p2 shift left & shrink, p3 pops on the right */
+  .step3 .p1 { left: 2%; width: 31%; opacity: 1; pointer-events: auto; transform: none; }
+  .step3 .p2 { left: 34.5%; width: 31%; opacity: 1; pointer-events: auto; transform: none; }
+  .step3 .p3 { left: 67%; width: 31%; opacity: 1; pointer-events: auto; transform: none; }
+
+  .panel h2 { font-size: 16px; font-weight: 600; color: #0F172A; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .panel h2 .tag { font-size: 11px; font-weight: 800; width: 24px; height: 24px; border-radius: 8px; background: #0F172A; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; color: #0F172A; background: #fff; outline: none; }
+  .field textarea { min-height: 190px; resize: vertical; line-height: 1.5; }
+  .field .count { text-align: right; font-size: 11px; color: #94A3B8; margin-top: 4px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background .15s ease; }
+  .btn.navy { background: #0F172A; color: #fff; }
+  .btn.blue { background: #2563EB; color: #fff; }
+  .btn.outline { background: #fff; border: 1px solid #E2E8F0; color: #475569; }
+  .btn.full { width: 100%; height: 46px; }
+  .btn:hover { filter: brightness(1.05); }
+  .hint { text-align: center; font-size: 11px; color: #94A3B8; margin-top: 8px; }
+
+  /* Loading overlay INSIDE the popping panel */
+  .load { position: absolute; inset: 0; background: rgba(255,255,255,.92); border-radius: 14px; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 5; }
+  .load.show { display: flex; }
+  .spin { width: 30px; height: 30px; border: 3px solid #E2E8F0; border-top-color: #0F172A; border-radius: 50%; animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .load p { font-size: 12px; font-weight: 600; color: #64748B; }
+
+  .body { transition: opacity .2s ease; }
+  .body.dim { opacity: .12; }
+
+  /* Score */
+  .score { display: flex; align-items: center; gap: 16px; padding: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; margin-bottom: 14px; }
+  .score .big { font-size: 40px; font-weight: 700; color: #2563EB; line-height: 1; }
+  .score .meta { font-size: 13px; font-weight: 600; color: #0F172A; }
+  .score .meta small { display: block; font-size: 11.5px; font-weight: 400; color: #64748B; margin-top: 3px; }
+
+  .sec { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #64748B; margin: 12px 0 7px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 12.5px; font-weight: 600; border-radius: 8px; padding: 8px 12px; border: 1px solid; display: inline-flex; align-items: center; gap: 6px; }
+  .chip .c { width: 14px; height: 14px; border-radius: 4px; font-size: 9px; display: flex; align-items: center; justify-content: center; border: 1px solid; }
+  .chip.ok { background: #F0FDF4; color: #16A34A; border-color: #BBF7D0; }
+  .chip.ok .c { background: #16A34A; border-color: #16A34A; color: #fff; }
+  .chip.blue  { background: #EFF6FF; color: #2563EB; border-color: #BFDBFE; }
+  .chip.blue .c  { background: #2563EB; border-color: #2563EB; color: #fff; }
+  .chip.purple{ background: #F5F3FF; color: #7C3AED; border-color: #DDD6FE; }
+  .chip.purple .c{ background: #7C3AED; border-color: #7C3AED; color: #fff; }
+  .chip.orange{ background: #FFF7ED; color: #EA580C; border-color: #FED7AA; }
+  .chip.orange .c{ background: #EA580C; border-color: #EA580C; color: #fff; }
+  .chip.cyan  { background: #ECFEFF; color: #0891B2; border-color: #A5F3FC; }
+  .chip.cyan .c  { background: #0891B2; border-color: #0891B2; color: #fff; }
+  .chip.off  { background: #fff; color: #64748B; border-color: #E2E8F0; }
+  .chip.off .c { border-color: #CBD5E1; color: transparent; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
+  .kpi { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 14px; }
+  .kpi .v { font-size: 19px; font-weight: 700; color: #16A34A; }
+  .kpi .v.muted { color: #64748B; }
+  .kpi .l { font-size: 10px; color: #64748B; margin-top: 2px; }
+
+  .row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid #F1F5F9; font-size: 12.5px; line-height: 1.5; }
+  .row .grow { flex: 1; min-width: 0; color: #334155; }
+  .row .new { color: #16A34A; font-weight: 600; }
+  .row .old { color: #94A3B8; text-decoration: line-through; }
+  .rm { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #FECACA; background: #FEF2F2; color: #DC2626; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+
+  .controls { text-align: center; margin: 16px auto 40px; font-size: 11.5px; color: #64748B; display: flex; gap: 12px; justify-content: center; align-items: center; }
+  .footer { text-align: center; font-size: 12px; color: #94A3B8; padding: 12px 0 34px; }
+</style>
+</head>
+<body>
+
+<!-- Mock global header -->
+<div class="mheader">
+  <div class="logo">T</div>
+  <div class="brand"><b>Tailor CV</b><small>Created by <em>Atanu</em></small></div>
+  <div class="spacer"></div>
+  <button class="btn-outline">🌐 Job Portals</button>
+  <button class="btn-outline">A Guest · Admin ▾</button>
+</div>
+
+<!-- Page title -->
+<div class="ptitle">
+  <button class="btn-outline">← Back</button>
+  <div>
+    <h1>Manual JD</h1>
+    <p>Paste a job description — get a tailored CV in 3 simple steps.</p>
+  </div>
+  <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+    <button class="btn-outline">↻ History</button>
+    <button class="btn-outline" style="padding:8px 12px;">✕</button>
+  </div>
+</div>
+
+<!-- Stepper -->
+<div class="steps">
+  <span class="step on" id="s1"><span class="n">✓</span> Add JD</span>
+  <span class="sarrow">→</span>
+  <span class="step" id="s2"><span class="n">2</span> Analysis</span>
+  <span class="sarrow">→</span>
+  <span class="step" id="s3"><span class="n">3</span> Tailor</span>
+</div>
+
+<!-- Stage -->
+<div class="stage" id="stage">
+
+  <!-- PANEL 1 · Add JD (centered) -->
+  <div class="panel p1">
+    <h2>Add job description <span class="tag">1</span></h2>
+    <div class="field"><label>Role name</label><input value="DevOps Engineer" /></div>
+    <div class="field"><label>Company</label><input value="CloudScale Inc" /></div>
+    <div class="field"><label>Job description</label>
+      <textarea>We are looking for a Senior DevOps Engineer with Kubernetes, Terraform, GitHub Actions, Prometheus/Grafana and PagerDuty. Service mesh (Istio) and zero-downtime deployments preferred…</textarea>
+      <div class="count">264 chars</div>
+    </div>
+    <button class="btn navy full" onclick="analyze()">✨ Analyze Match</button>
+    <p class="hint">Everything stays on your machine</p>
+  </div>
+
+  <!-- PANEL 2 · Analysis (pops on the right, loading first) -->
+  <div class="panel p2">
+    <h2>Analysis <span class="tag">2</span></h2>
+    <div id="load2" class="load"><div class="spin"></div><p>Analyzing your CV against the JD…</p></div>
+    <div id="body2" class="body">
+      <div class="score">
+        <div class="big">87%</div>
+        <div class="meta">21 of 22 skills matched<small>Excellent fit — you're missing a few skills to reach 100%</small></div>
+      </div>
+      <div class="sec">Already matched</div>
+      <div class="chips">
+        <span class="chip ok"><span class="c">✓</span>Kubernetes</span>
+        <span class="chip ok"><span class="c">✓</span>Terraform</span>
+        <span class="chip ok"><span class="c">✓</span>GitHub Actions</span>
+        <span class="chip ok"><span class="c">✓</span>Prometheus</span>
+        <span class="chip ok"><span class="c">✓</span>Grafana</span>
+      </div>
+      <div class="sec">Missing — pick what to add</div>
+      <div class="chips">
+        <span class="chip blue"><span class="c">✓</span>Istio ×2</span>
+        <span class="chip purple"><span class="c">✓</span>Service Mesh ×1</span>
+        <span class="chip cyan"><span class="c">✓</span>Envoy ×1</span>
+        <span class="chip orange"><span class="c">✓</span>ArgoCD ×2</span>
+        <span class="chip off"><span class="c"></span>PagerDuty ×1</span>
+        <span class="chip off"><span class="c"></span>SLOs ×1</span>
+      </div>
+      <p class="hint" style="text-align:left; margin:8px 0 0;">Unselected skills are never added.</p>
+      <div style="margin-top:14px">
+        <button class="btn blue full" onclick="tailor()">📄 Tailor CV →</button>
+        <p class="hint">AI will tailor your CV with selected skills</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 3 · Tailoring updates (pops right, loading first) -->
+  <div class="panel p3">
+    <h2>Tailoring updates <span class="tag">3</span></h2>
+    <div id="load3" class="load"><div class="spin"></div><p>Tailoring your CV…</p></div>
+    <div id="body3" class="body">
+      <div class="kpis">
+        <div class="kpi"><div class="v">+13%</div><div class="l">ATS score boost (87% → 100%)</div></div>
+        <div class="kpi"><div class="v">+3</div><div class="l">skills added</div></div>
+        <div class="kpi"><div class="v">+2</div><div class="l">bullets rewritten</div></div>
+        <div class="kpi"><div class="v muted">1</div><div class="l">skipped — no honest way to add</div></div>
+      </div>
+      <div class="sec">Review changes — remove what you don't like</div>
+      <div class="row"><div class="grow">Added skill <span class="new">Istio</span></div><button class="rm">✕</button></div>
+      <div class="row"><div class="grow">Added skill <span class="new">Service Mesh</span></div><button class="rm">✕</button></div>
+      <div class="row"><div class="grow"><span class="old">…managed load balancing and clustering.</span><br /><span class="new">…managed load balancing, clustering and service mesh (Istio) traffic routing.</span></div><button class="rm">✕</button></div>
+      <div style="margin-top:14px">
+        <button class="btn outline full">↻ Reset all changes</button>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="btn navy" style="flex:1; height:46px;">⬇ Download Tailored CV</button>
+          <button class="btn outline" style="height:46px;">✓ Saved</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn outline" onclick="reset()">↻ Reset demo</button>
+  <span>Step 1: input centered · Step 2: popup opens on the right with loading → score → Tailor CV · Step 3: another popup slides in on the right with loading</span>
+</div>
+<div class="footer">© 2025 Tailor CV by Atanu. All rights reserved.</div>
+
+<script>
+let step = 1;
+const stage = document.getElementById('stage');
+function render() {
+  stage.className = 'stage step' + step;
+  document.getElementById('s1').classList.toggle('on', step >= 1);
+  document.getElementById('s2').classList.toggle('on', step >= 2);
+  document.getElementById('s3').classList.toggle('on', step >= 3);
+  document.getElementById('s1').classList.toggle('cur', false);
+  document.getElementById('s2').classList.toggle('cur', step === 2);
+  document.getElementById('s3').classList.toggle('cur', step === 3);
+}
+function analyze() {
+  step = 2;
+  document.getElementById('load2').classList.add('show');
+  document.getElementById('body2').classList.add('dim');
+  render();
+  setTimeout(() => {
+    document.getElementById('load2').classList.remove('show');
+    document.getElementById('body2').classList.remove('dim');
+  }, 2200);
+}
+function tailor() {
+  step = 3;
+  document.getElementById('load3').classList.add('show');
+  document.getElementById('body3').classList.add('dim');
+  render();
+  setTimeout(() => {
+    document.getElementById('load3').classList.remove('show');
+    document.getElementById('body3').classList.remove('dim');
+  }, 2400);
+}
+function reset() {
+  step = 1; render();
+  document.getElementById('load2').classList.remove('show');
+  document.getElementById('load3').classList.remove('show');
+  document.getElementById('body2').classList.remove('dim');
+  document.getElementById('body3').classList.remove('dim');
+}
+render();
+</script>
+</body>
+</html>

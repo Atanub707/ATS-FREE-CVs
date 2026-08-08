@@ -200,10 +200,41 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const generateStatus: 'idle' | 'loading' | 'success' | 'error' = tailoring ? 'loading' : tailorError ? 'error' : diff ? 'success' : 'idle';
 
   const inputCls = 'w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 bg-white focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 outline-none transition-colors';
-  const panelCls = 'bg-white border border-slate-200 rounded-[14px] shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 flex flex-col';
+
+  // Pop-in stage — panels never leave the screen; each step animates position/size
+  const panelStyle = (n: 1 | 2 | 3): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      position: 'absolute', top: 6, bottom: 6, background: '#fff', border: '1px solid #E2E8F0',
+      borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+      opacity: 0, pointerEvents: 'none',
+      transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .3s ease, transform .45s cubic-bezier(.25,.8,.3,1)',
+      transform: 'translateX(24px) scale(.97)',
+    };
+    if (step === 1) {
+      if (n === 1) return { ...base, left: '27%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
+      return base;
+    }
+    if (step === 2) {
+      if (n === 1) return { ...base, left: '2%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
+      if (n === 2) return { ...base, left: '52%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
+      return base;
+    }
+    const left = n === 1 ? '2%' : n === 2 ? '34.5%' : '67%';
+    return { ...base, left, width: '31%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
+  };
+
   const panelBadge = (n: number) => (
     <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-[11px] font-extrabold shrink-0 ${step >= n ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>{n}</span>
   );
+
+  const loadingOverlay = (text: string) => (
+    <div className="absolute inset-0 z-10 bg-white/90 rounded-[14px] flex flex-col items-center justify-center gap-3">
+      <div className="w-[30px] h-[30px] border-[3px] border-slate-200 border-t-slate-900 rounded-full animate-spin" />
+      <p className="text-[12px] font-semibold text-slate-500">{text}</p>
+    </div>
+  );
+
+  const dim = (on: boolean) => (on ? 'opacity-10' : 'opacity-100');
 
   return (
     <div className="fixed inset-0 z-40 bg-slate-50 text-slate-700 flex flex-col font-sans">
@@ -249,45 +280,46 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
 
-      {/* Content grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1480px] mx-auto px-5 sm:px-8 pt-4 pb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
-            {/* PANEL 1 — Add job description */}
-            <section className={panelCls}>
-              <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
-                Add job description {panelBadge(1)}
-              </h2>
-              <div className="space-y-4 flex-1">
-                <div>
-                  <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
-                  <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
-                </div>
-                <div>
-                  <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
-                  <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
-                </div>
-                <div>
-                  <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
-                  <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
-                    placeholder="Paste the full job description…" className={`${inputCls} min-h-[190px] resize-y leading-relaxed`} />
-                  <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
-                </div>
-                <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
-                  className="w-full h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
-                </button>
-                <p className="text-center text-xs text-slate-400">Everything stays on your machine</p>
+      {/* Centered stage — panels pop in, never leave the screen */}
+      <div className="flex-1 overflow-hidden">
+        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: '100%', paddingTop: 10 }}>
+          {/* PANEL 1 · Add job description (centered) */}
+          <div style={panelStyle(1)} className="overflow-y-auto">
+            <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
+              Add job description {panelBadge(1)}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
+                <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
               </div>
-            </section>
+              <div>
+                <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
+                <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
+              </div>
+              <div>
+                <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
+                <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
+                  placeholder="Paste the full job description…" className={`${inputCls} min-h-[190px] resize-y leading-relaxed`} />
+                <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
+              </div>
+              <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
+                className="w-full h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
+              </button>
+              <p className="text-center text-xs text-slate-400">Everything stays on your machine</p>
+            </div>
+          </div>
 
-            {/* PANEL 2 — Analysis */}
-            <section className={panelCls}>
+          {/* PANEL 2 · Analysis (pops in on the right, loading first) */}
+          <div style={panelStyle(2)} className="overflow-y-auto">
+            {loading && loadingOverlay('Analyzing your CV against the JD…')}
+            <div className={`transition-opacity duration-200 ${dim(loading)}`}>
               <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
                 Analysis {panelBadge(2)}
               </h2>
               {!result ? (
-                <div className="flex-1 flex items-center justify-center text-center">
+                <div className="h-[calc(100%-40px)] flex items-center justify-center text-center">
                   <div>
                     <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
                       <FileText className="w-6 h-6 text-slate-400" />
@@ -333,24 +365,27 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                     className={`w-full h-[46px] rounded-[10px] font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40 ${
                       generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}>
-                    {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating CV…</>
+                    {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Tailoring CV…</>
                       : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
-                      : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Generated</>
-                      : <><FileText className="w-4 h-4" /> Generate CV <ArrowRight className="w-4 h-4" /></>}
+                      : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Tailored</>
+                      : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
                   </button>
                   {tailorError && error && <p className="text-xs text-red-600">{error}</p>}
                   <p className="text-xs text-slate-400 text-center">AI will tailor your CV with selected skills</p>
                 </div>
               )}
-            </section>
+            </div>
+          </div>
 
-            {/* PANEL 3 — Tailoring updates */}
-            <section className={`${panelCls} md:col-span-2 xl:col-span-1`}>
+          {/* PANEL 3 · Tailoring updates (pops in on the right, loading first) */}
+          <div style={panelStyle(3)} className="overflow-y-auto">
+            {tailoring && loadingOverlay('Tailoring your CV…')}
+            <div className={`transition-opacity duration-200 ${dim(tailoring)}`}>
               <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center justify-between gap-2">
                 Tailoring updates {panelBadge(3)}
               </h2>
               {!diff ? (
-                <div className="flex-1 flex items-center justify-center text-center">
+                <div className="h-[calc(100%-40px)] flex items-center justify-center text-center">
                   <div>
                     <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
                       <Sparkles className="w-6 h-6 text-slate-400" />
@@ -430,15 +465,15 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   </div>
                 </div>
               )}
-            </section>
+            </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="text-center text-xs text-slate-400 pb-10 pt-6">
-          © 2025 Tailor CV by Atanu. All rights reserved.
-        </footer>
       </div>
+
+      {/* Footer */}
+      <footer className="text-center text-xs text-slate-400 pb-3 pt-2 shrink-0">
+        © 2025 Tailor CV by Atanu. All rights reserved.
+      </footer>
 
       {/* History overlay */}
       {historyOpen && (
