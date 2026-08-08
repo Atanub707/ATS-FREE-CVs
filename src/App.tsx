@@ -43,6 +43,7 @@ export default function App() {
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobTypeFilter, setJobTypeFilter] = useState<'all' | 'remote' | 'hybrid' | 'onsite'>('all');
   const [postedFilter, setPostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
   const [locationFilter, setLocationFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | JobSource>('all');
@@ -99,6 +100,7 @@ export default function App() {
       state: activeStateTab,
       source: sourceFilter,
       search: searchTerm,
+      jobType: jobTypeFilter,
       location: locationFilter,
       datePostedFilter: postedFilter,
       sortBy,
@@ -118,7 +120,7 @@ export default function App() {
     if (statsRes.ok) {
       setStats(await statsRes.json());
     }
-  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, locationFilter, sortBy, page, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, jobTypeFilter, postedFilter, locationFilter, sortBy, page, pageSize]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
@@ -163,7 +165,7 @@ export default function App() {
   // Reset to page 1 when a filter changes
   useEffect(() => {
     setPage(1);
-  }, [activeStateTab, sourceFilter, searchTerm, postedFilter, locationFilter, sortBy, pageSize]);
+  }, [activeStateTab, sourceFilter, searchTerm, jobTypeFilter, postedFilter, locationFilter, sortBy, pageSize]);
 
   // Scrape Handler
   const handleScrape = async (params: {
@@ -189,6 +191,7 @@ export default function App() {
         // list's own search box and the posted window is enforced.
         setSearchTerm(params.keywords);
         setPostedFilter(params.datePostedFilter || 'all');
+        setJobTypeFilter(params.jobType || 'all');
         setLocationFilter(params.location || '');
         setActiveStateTab('all');
         setPage(1);
