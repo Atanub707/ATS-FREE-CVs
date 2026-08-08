@@ -122,7 +122,7 @@ const JobCard = React.memo(function JobCard({
             {job.state === 'matched' && <Zap className="w-3 h-3 text-blue-600" />}
             {job.state === 'tailored' && <Sparkles className="w-3 h-3 text-emerald-600" />}
             {job.state === 'ready' && <CheckCircle2 className="w-3 h-3 text-purple-600" />}
-            <span>{job.state === 'pending' ? 'Pending Score' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : job.state === 'applied' ? 'Applied' : 'Ready'}</span>
+            <span>{job.state === 'pending' ? 'Pending' : job.state === 'matched' ? 'Matched' : job.state === 'tailored' ? 'CV Tailored' : job.state === 'applied' ? 'Applied' : 'Ready'}</span>
           </span>
 
           {/* Posted Relative Time — hidden when the real posting time is unknown */}
@@ -411,7 +411,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
 
           <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-xs">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-              <span>Pending Score</span>
+              <span>Pending</span>
               <Clock className="w-4 h-4 text-slate-400" />
             </div>
             <div className="text-xl font-bold text-slate-700 mt-1">{pendingCount}</div>
