@@ -176,6 +176,23 @@ export class ApifyLinkedInScraper {
         .map(mapItem)
         .filter((j): j is Job => j !== null);
 
+      // Same work-mode guarantee as the built-in scraper: a remote request
+      // must never return jobs explicitly labeled Hybrid/On-site (Apify's
+      // workplaceType makes these labels reliable). Unknowns pass — the
+      // source search filter is the guarantee.
+      if (params.jobType && params.jobType !== 'all') {
+        const wanted = params.jobType;
+        const filtered = jobs.filter((j) => {
+          const t = j.jobType || '';
+          if (wanted === 'remote') return !t.includes('Hybrid') && !t.includes('On-site');
+          if (wanted === 'onsite') return !t.includes('Remote') && !t.includes('Hybrid');
+          if (wanted === 'hybrid') return !t.includes('Remote') && !t.includes('On-site');
+          return true;
+        });
+        console.log(`[Apify] ${jobs.length} fetched, kept ${filtered.length} for ${wanted} search`);
+        return filtered;
+      }
+
       console.log(`[Apify] Got ${jobs.length} LinkedIn jobs via Apify`);
       return jobs;
     } catch (err: any) {
