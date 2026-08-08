@@ -180,9 +180,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
   const panelStyle = (n: 1 | 2 | 3): React.CSSProperties => {
     const base: React.CSSProperties = {
-      position: 'absolute', top: 6, height: 540, background: '#fff', border: '1.5px solid #A5F3FC',
-      borderRadius: 20, padding: 22, transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .35s ease',
-      overflowY: 'auto', opacity: 0, pointerEvents: 'none',
+      position: 'absolute', top: 6, bottom: 6, background: '#fff', border: '1.5px solid #A5F3FC',
+      borderRadius: 0, padding: '18px 20px', transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .35s ease',
+      opacity: 0, pointerEvents: 'none',
     };
     if (step === 1) {
       if (n === 1) return { ...base, left: '27%', width: '46%', opacity: 1, pointerEvents: 'auto' };
@@ -249,8 +249,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
 
       {/* Centered stage — panels pop in, never leave the screen */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: 575, paddingTop: 10 }}>
+      <div className="flex-1 overflow-hidden">
+        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: '100%', paddingTop: 10 }}>
           {/* PANEL 1: Add JD */}
           <div style={panelStyle(1)}>
             <h2 className="text-[13.5px] font-bold text-[#155E75] mb-3.5 flex items-center justify-between">
@@ -268,7 +268,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
             </div>
             <div className="mb-3">
               <label className="block text-[11.5px] font-bold text-[#0E7490] mb-1.5">Job description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={11}
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
                 placeholder="Paste the full job description…"
                 className="w-full border border-[#CFFAFE] rounded-xl px-3.5 py-2.5 text-[12.5px] bg-[#F0FDFA] focus:bg-white focus:border-[#0891B2] outline-none resize-y leading-relaxed" />
               <p className="text-right text-[10.5px] text-[#0E7490] mt-1">{description.length.toLocaleString()} chars</p>
@@ -287,7 +287,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
               Analysis <span className="text-[10px] font-extrabold bg-[#22D3EE] text-white rounded-full px-2.5 py-0.5">2</span>
             </h2>
             {!result ? (
-              <div className="min-h-[400px] flex items-center justify-center text-center">
+              <div className="h-full flex items-center justify-center text-center">
                 <div>
                   <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
                     <FileText className="w-6 h-6 text-[#22D3EE]" />
@@ -340,7 +340,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
               Tailoring updates <span className="text-[10px] font-extrabold bg-[#22D3EE] text-white rounded-full px-2.5 py-0.5">3</span>
             </h2>
             {!diff ? (
-              <div className="min-h-[400px] flex items-center justify-center text-center">
+              <div className="h-full flex items-center justify-center text-center">
                 <div>
                   <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC] flex items-center justify-center">
                     <Sparkles className="w-6 h-6 text-[#22D3EE]" />
