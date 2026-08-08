@@ -35,7 +35,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [jobType, setJobType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('remote');
   const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
-  const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(15);
+  const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(10);
   const [under10Applicants, setUnder10Applicants] = useState(false);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
@@ -225,6 +225,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                 onChange={(e) => setMaxJobsPerSource(Number(e.target.value))}
                 className={selectClass}
               >
+                <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={15}>15</option>
                 <option value={25}>25</option>

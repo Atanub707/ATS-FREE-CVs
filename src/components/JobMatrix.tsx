@@ -633,7 +633,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
                 className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
               >
-                {[10, 25, 50].map((size) => (
+                {[5, 10, 25, 50].map((size) => (
                   <option key={size} value={size}>{size}</option>
                 ))}
               </select>
