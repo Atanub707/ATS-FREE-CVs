@@ -948,9 +948,13 @@ export function repairJobDates(): number {
         if (!day) continue;
         const cm2 = String(j.createdAt || '').match(/^(\d{4}-\d{2}-\d{2})/);
         const isGarbage = !m && !mPdp;
-        const newPosted = isGarbage
-          ? (cm2 ? String(j.createdAt) : `${day}T12:00:00.000Z`)
-          : `${day}T12:00:00.000Z`;
+        // Jobs repaired to the noon marker from a previous run have no real
+        // post time — show the scrape time instead of a future date.
+        const noonMarker = `${day}T12:00:00.000Z`;
+        const isNoonRepair = pd === noonMarker;
+        const newPosted = (isGarbage || isNoonRepair) && cm2
+          ? String(j.createdAt)
+          : noonMarker;
         const newParsed = day;
         if (pd !== newPosted || pdp.slice(0, 10) !== newParsed) {
           j.postedDate = newPosted;
