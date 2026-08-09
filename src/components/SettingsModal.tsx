@@ -176,12 +176,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       {/* ── Header ── */}
       <header className="set-hdr">
         <button className="set-back" onClick={onClose}>← Back</button>
-        <div className="set-logo">T</div>
-        <div className="set-brand">
-          <b>Tailor CV</b>
-          <span>ATS optimizer</span>
-        </div>
-        <div className="set-vsep" />
         <div className="set-ttl">
           <b>Settings</b>
           <span>Workspace configuration</span>
@@ -434,10 +428,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-hdr { display: flex; align-items: center; gap: 14px; padding: 0 32px; height: 60px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(10px); flex-shrink: 0; }
         .set-back { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease; font-family: inherit; }
         .set-back:hover { color: var(--text); border-color: var(--accent-border); background: var(--accent-soft); }
-        .set-logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--accent) 50%, transparent); flex-shrink: 0; }
-        .set-brand b { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; display: block; }
-        .set-brand span { font-size: 10.5px; color: var(--faint); font-weight: 500; }
-        .set-vsep { width: 1px; height: 24px; background: var(--border); }
         .set-ttl b { font-size: 15px; font-weight: 700; letter-spacing: -.01em; display: block; line-height: 1.2; }
         .set-ttl span { font-size: 11px; color: var(--faint); font-weight: 500; }
         .set-spacer { flex: 1; }

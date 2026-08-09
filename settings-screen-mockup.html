@@ -21,12 +21,8 @@
 
   /* ── Header ── */
   .mheader { display: flex; align-items: center; gap: 14px; padding: 0 32px; height: 60px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 20; }
-  .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--accent) 50%, transparent); }
-  .brand b { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; display: block; }
-  .brand span { font-size: 10.5px; color: var(--faint); font-weight: 500; }
   .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease; font-family: inherit; }
   .back-btn:hover { color: var(--text); border-color: var(--accent-border); background: var(--accent-soft); }
-  .vsep { width: 1px; height: 24px; background: var(--border); }
   .ttl b { font-size: 15px; font-weight: 700; letter-spacing: -.01em; display: block; line-height: 1.2; }
   .ttl span { font-size: 11px; color: var(--faint); font-weight: 500; }
   .spacer { flex: 1; }
@@ -124,9 +120,6 @@
 
 <header class="mheader">
   <button class="back-btn">← Back</button>
-  <div class="logo">T</div>
-  <div class="brand"><b>Tailor CV</b><span>ATS optimizer</span></div>
-  <div class="vsep"></div>
   <div class="ttl"><b>Settings</b><span>Workspace configuration</span></div>
   <div class="spacer"></div>
   <div class="avatar">AB</div>
