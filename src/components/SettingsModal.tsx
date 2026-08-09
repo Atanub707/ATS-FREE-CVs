@@ -427,10 +427,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* ── Footer ── */}
         <div className="set-foot">
-          <span className="set-note">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Saved locally · config.ini
-          </span>
           <div className="set-spacer" />
           <button type="button" className="set-btn" onClick={onClose}>Cancel</button>
           <button type="button" className="set-btn set-btn-primary" onClick={handleSave} disabled={isSaving}>
