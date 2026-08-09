@@ -8,7 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { LoginScreen } from './components/LoginScreen';
-import { Job, JobState, MasterCv, AppConfig, JobSource } from './types';
+import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
 import { llmErrorMessage } from './lib/llmError';
 
 export default function App() {
@@ -449,6 +449,7 @@ export default function App() {
             onUpdateStatus={handleUpdateStatus}
             isLoading={selectedJob ? loadingJobIds.has(selectedJob.id) : false}
             initialTab={selectedJobTab}
+            cvTemplate={(masterCv?.templateId || 'harvard') as TemplateId}
           />
 
           {/* Master Candidate CV — full screen */}

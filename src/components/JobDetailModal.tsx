@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Job, JobState } from '../types';
+import { Job, JobState, TemplateId } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { applicantCountLabel } from '../lib/applicantInfo';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
 import { DownloadCvDropdown } from './DownloadCvDropdown';
+import { CvPdfPreview, compressedCvToPdfShape } from './CvPdfPreview';
 import {
   X,
   ExternalLink,
@@ -36,6 +37,7 @@ interface JobDetailModalProps {
   onUpdateStatus: (jobId: string, state: JobState) => Promise<void>;
   isLoading: boolean;
   initialTab?: 'details' | 'gap' | 'tailored';
+  cvTemplate?: TemplateId;
 }
 
 function formatSocialLink(type: 'linkedin' | 'github' | 'website' | 'email' | 'phone', value: string): string {
@@ -70,6 +72,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   job,
   onClose,
   onMatchJob,
+  cvTemplate = 'harvard',
   onTailorJob,
   onUpdateStatus,
   isLoading,
@@ -651,280 +654,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* CV Live Preview Box */}
-                  <div id="printable-cv" className="bg-white border border-slate-300 rounded-lg p-6 shadow-sm text-slate-900 space-y-5 font-sans">
-                    {/* Header */}
-                    <div className="text-center border-b pb-4 border-slate-200">
-                      <h2 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">{tailored.candidateName}</h2>
-                      {tailored.targetRole && (
-                        <p className="text-xs font-semibold text-slate-700 mt-1">{tailored.targetRole}</p>
-                      )}
-
-                      {/* Clickable Contact Links Bar */}
-                      <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs text-slate-600 mt-2 w-full text-center mx-auto">
-                        {tailored.contactInfo?.email && (
-                          <a
-                            href={formatSocialLink('email', String(tailored.contactInfo.email))}
-                            className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                            title="Click to Send Email"
-                          >
-                            <Mail className="w-3.5 h-3.5 text-slate-500" />
-                            <span>{String(tailored.contactInfo.email)}</span>
-                          </a>
-                        )}
-
-                        {tailored.contactInfo?.phone && (
-                          <>
-                            {tailored.contactInfo?.email && <span className="text-slate-300 font-bold">•</span>}
-                            <a
-                              href={formatSocialLink('phone', String(tailored.contactInfo.phone))}
-                              className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                              title="Click to Call Phone"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-slate-500" />
-                              <span>{String(tailored.contactInfo.phone)}</span>
-                            </a>
-                          </>
-                        )}
-
-                        {tailored.contactInfo?.location && (
-                          <>
-                            {(tailored.contactInfo?.email || tailored.contactInfo?.phone) && (
-                              <span className="text-slate-300 font-bold">•</span>
-                            )}
-                            <span className="inline-flex items-center space-x-1 text-slate-600">
-                              <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                              <span>{String(tailored.contactInfo.location)}</span>
-                            </span>
-                          </>
-                        )}
-
-                        {tailored.contactInfo?.linkedin && (
-                          <>
-                            <span className="text-slate-300 font-bold">•</span>
-                            <a
-                              href={formatSocialLink('linkedin', String(tailored.contactInfo.linkedin))}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                              title="Open LinkedIn Profile"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
-                              <span>LinkedIn</span>
-                              <ExternalLink className="w-2.5 h-2.5 text-blue-400" />
-                            </a>
-                          </>
-                        )}
-
-                        {tailored.contactInfo?.github && (
-                          <>
-                            <span className="text-slate-300 font-bold">•</span>
-                            <a
-                              href={formatSocialLink('github', String(tailored.contactInfo.github))}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                              title="Open GitHub Profile"
-                            >
-                              <Github className="w-3.5 h-3.5 text-slate-800" />
-                              <span>GitHub</span>
-                              <ExternalLink className="w-2.5 h-2.5 text-blue-400" />
-                            </a>
-                          </>
-                        )}
-
-                        {tailored.contactInfo?.website && (
-                          <>
-                            <span className="text-slate-300 font-bold">•</span>
-                            <a
-                              href={formatSocialLink('website', String(tailored.contactInfo.website))}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center space-x-1 font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                              title="Open Portfolio Website"
-                            >
-                              <Globe className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Portfolio Website</span>
-                              <ExternalLink className="w-2.5 h-2.5 text-blue-400" />
-                            </a>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Professional Summary */}
-                    {tailored.professionalSummary && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Professional Summary
-                        </h4>
-                        <p className="text-slate-800 leading-relaxed text-xs">{tailored.professionalSummary}</p>
-                      </div>
-                    )}
-
-                    {/* Technical Skills & Competencies */}
-                    {((tailored.technicalSkills && tailored.technicalSkills.length > 0) ||
-                      (tailored.coreCompetencies && tailored.coreCompetencies.length > 0)) && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Technical Skills & Competencies
-                        </h4>
-                        {tailored.technicalSkills && tailored.technicalSkills.length > 0 ? (
-                          <div className="space-y-1.5 text-xs">
-                            {tailored.technicalSkills.map((sk, i) => (
-                              <div key={i}>
-                                <span className="font-bold text-slate-900">{sk.category}: </span>
-                                <span className="text-slate-700">{sk.skills.join(', ')}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-slate-800 text-xs">{tailored.coreCompetencies.join(' • ')}</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Work Experience */}
-                    {tailored.workExperience && tailored.workExperience.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Professional Experience
-                        </h4>
-                        <div className="space-y-3">
-                          {tailored.workExperience.map((exp, i) => (
-                            <div key={i} className="cv-entry-block space-y-1">
-                              <div className="flex flex-wrap items-baseline justify-between font-bold text-slate-900 text-xs gap-2">
-                                <span>
-                                  {exp.title} <span className="text-slate-500 font-semibold">| {exp.company}</span>
-                                </span>
-                                <span className="text-slate-500 font-normal italic text-[11px] shrink-0">
-                                  {exp.dates}{exp.location ? ` | ${exp.location}` : ''}
-                                </span>
-                              </div>
-                              <ul className="space-y-1 text-slate-700 text-xs pl-2">
-                                {exp.highlights.map((hl, j) => (
-                                  <li key={j} className="flex items-start space-x-2">
-                                    <span className="text-slate-400 select-none">•</span>
-                                    <span>{hl.replace(/^[*•\-]\s*/, '')}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Featured Projects */}
-                    {tailored.projects && tailored.projects.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Featured Projects
-                        </h4>
-                        <div className="space-y-3">
-                          {tailored.projects.map((proj, i) => (
-                            <div key={i} className="cv-entry-block space-y-1 text-xs">
-                              <div className="flex flex-wrap items-center justify-between font-bold text-slate-900 gap-2">
-                                <div className="flex items-center space-x-2">
-                                  <span>{proj.name}</span>
-                                  {proj.link && (
-                                    <a
-                                      href={proj.link.startsWith('http') ? proj.link : `https://${proj.link}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline text-[11px] font-normal inline-flex items-center space-x-0.5"
-                                    >
-                                      <span>View Project</span>
-                                      <ExternalLink className="w-2.5 h-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                                {proj.dates && <span className="text-slate-500 font-normal italic text-[11px] shrink-0">{proj.dates}</span>}
-                              </div>
-                              {proj.technologies && proj.technologies.length > 0 && (
-                                <p className="text-[11px] text-slate-600 font-medium">
-                                  <span className="font-semibold text-slate-800">Technologies:</span> {proj.technologies.join(', ')}
-                                </p>
-                              )}
-                              {proj.description && (
-                                <p className="text-slate-700 text-xs pl-2 border-l-2 border-slate-200">{proj.description}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Education */}
-                    {tailored.education && tailored.education.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Education
-                        </h4>
-                        <div className="space-y-2.5">
-                          {tailored.education.map((edu, i) => (
-                            <div key={i} className="cv-entry-block space-y-0.5 text-xs">
-                              <div className="flex items-baseline justify-between gap-2">
-                                <span className="font-bold text-slate-900">{edu.degree}</span>
-                                {edu.dates && (
-                                  <span className="text-slate-500 font-normal italic text-[11px] shrink-0 ml-3">
-                                    {edu.dates}
-                                  </span>
-                                )}
-                              </div>
-                              {edu.institution && (
-                                <div className="text-slate-600 font-medium text-[11.5px]">
-                                  {edu.institution}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Certifications & Credentials */}
-                    {tailored.certifications && tailored.certifications.length > 0 && (
-                      <div>
-                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-300 pb-1 mb-2">
-                          Certifications & Credentials
-                        </h4>
-                        <ul className="space-y-1 text-xs text-slate-800">
-                          {tailored.certifications.map((cert, i) => {
-                            if (typeof cert === 'string') {
-                              return (
-                                <li key={i} className="flex items-center space-x-2">
-                                  <Award className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                                  <span>{cert}</span>
-                                </li>
-                              );
-                            }
-                            const link = cert.link ? (cert.link.startsWith('http') ? cert.link : `https://${cert.link}`) : undefined;
-                            return (
-                              <li key={i} className="flex items-center space-x-2">
-                                <Award className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                                <span>
-                                  {cert.name}
-                                  {cert.issuer && <span className="text-slate-500"> — {cert.issuer}</span>}
-                                  {cert.date && <span className="text-slate-400"> ({cert.date})</span>}
-                                </span>
-                                {link && (
-                                  <a
-                                    href={link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline text-[11px] inline-flex items-center space-x-0.5 ml-1"
-                                  >
-                                    <span>Verify Link</span>
-                                    <ExternalLink className="w-2.5 h-2.5" />
-                                  </a>
-                                )}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
+                  {/* CV Live Preview — renders with the template selected in the Master CV */}
+                  <div id="printable-cv" className="bg-white border border-slate-300 rounded-lg p-4 shadow-sm overflow-hidden">
+                    <CvPdfPreview cv={compressedCvToPdfShape(tailored)} template={cvTemplate} fitToWidth />
                   </div>
                 </div>
               )}
