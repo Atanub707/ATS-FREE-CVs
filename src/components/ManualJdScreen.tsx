@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, RotateCcw, TrendingUp, Plus, PenLine, Ban } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 
@@ -206,13 +206,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
     finally { setTailoring(false); }
-  };
-
-  const handleRegenerate = async () => {
-    const keep = [...selectedSkills].filter((s) => !removedPoints.has(s));
-    setSelectedSkills(new Set(keep));
-    setRemovedPoints(new Set());
-    await handleTailor(keep);
   };
 
   const download = () => {
@@ -652,19 +645,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                       )}
                     </div>
                   </div>
-                  <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80 space-y-2.5">
-                    <button onClick={handleRegenerate} disabled={tailoring} aria-live="polite"
-                      className={`${btnBase} bg-white border border-slate-200 text-slate-600 hover:bg-slate-50`}>
-                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Regenerating…</> : <><RotateCcw className="w-4 h-4" /> Reset all changes</>}
+                  <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80">
+                    <button onClick={download} disabled={!downloadToken} className="w-full min-h-[48px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
+                      <Download className="w-4 h-4" /> Download Tailored CV
                     </button>
-                    <div className="flex gap-2.5">
-                      <button onClick={download} className="flex-1 min-h-[48px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                        <Download className="w-4 h-4" /> Download Tailored CV
-                      </button>
-                      <button onClick={openHistory} className="min-h-[48px] px-4 rounded-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-sm flex items-center gap-1.5 cursor-pointer transition-colors">
-                        <CheckCircle2 className="w-4 h-4" /> Saved
-                      </button>
-                    </div>
+                    <p className="text-[11px] text-slate-400 text-center mt-2">Downloading also saves the tailored CV to your history.</p>
                   </div>
                 </>
               )}
