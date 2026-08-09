@@ -523,6 +523,41 @@ export function generatePdfBuffer(cv: TailoredCv, template: string = 'harvard'):
  * role/company + right-aligned period, [year] projects.
  * US Letter, margins 0.45in top/bottom, 0.5in left/right.
  */
+
+/**
+ * Draw one entry-header line: left text + right-aligned text on the same
+ * line, WITHOUT overlap — the right text is positioned on the same
+ * baseline using measured heights, even when the left text wraps.
+ */
+function entryHeaderLine(
+  doc: any,
+  opts: {
+    left: string;
+    right?: string;
+    x: number;
+    rightEdge: number;
+    size?: number;
+    leftBold?: boolean;
+    rightBold?: boolean;
+    color?: string;
+    rightColor?: string;
+  }
+): number {
+  const size = opts.size || 10.5;
+  const color = opts.color || '#111111';
+  const rightColor = opts.rightColor || color;
+  const leftW = opts.right ? Math.max(140, (opts.rightEdge - opts.x) * 0.6) : opts.rightEdge - opts.x;
+  doc.font(opts.leftBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(color);
+  const leftH = doc.heightOfString(opts.left, { width: leftW });
+  doc.text(opts.left, opts.x, doc.y, { width: leftW });
+  if (opts.right) {
+    doc.font(opts.rightBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(rightColor);
+    const rightW = Math.min(doc.widthOfString(opts.right), (opts.rightEdge - opts.x) * 0.4);
+    doc.text(opts.right, opts.rightEdge - rightW, doc.y - Math.max(0, leftH - 12), { width: rightW });
+  }
+  return Math.max(leftH, 12);
+}
+
 function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
   const ACCENT = '#0F766E';
   const NAVY = '#0F172A';
@@ -775,19 +810,19 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         const entryY = doc.y;
 
         // Line 1: role (navy bold) — company (teal bold), period right-aligned
-        doc.font('Helvetica-Bold').fontSize(10.5).fillColor(NAVY).text(title, leftMargin, entryY, { continued: true });
-        doc.fillColor(ACCENT).text(company ? '  \u2014  ' + company : '', { continued: true });
+        const leftText = title + (company ? '  \u2014  ' + company : '');
+        const leftW = contentWidth - 150;
+        doc.font('Helvetica-Bold').fontSize(10.5).fillColor(NAVY);
+        const leftH = doc.heightOfString(leftText, { width: leftW });
+        doc.text(title, leftMargin, entryY, { continued: true });
+        doc.fillColor(ACCENT).text(company ? '  \u2014  ' + company : '', { width: leftW });
         doc.x = leftMargin;
-        const yAfterLeft = doc.y;
 
         if (period) {
-          doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(period, leftMargin, entryY, {
-            align: 'right',
-            width: contentWidth,
-          });
+          doc.font('Helvetica').fontSize(9).fillColor(MUTED);
+          doc.text(period, leftMargin + contentWidth - doc.widthOfString(period), entryY + Math.max(0, leftH - 12), { width: doc.widthOfString(period) });
         }
-        const yAfterRight = doc.y;
-        doc.y = Math.max(yAfterLeft, yAfterRight);
+        doc.y = entryY + Math.max(leftH, 12);
 
         if (loc) {
           ensurePageSpace(12);
@@ -823,12 +858,18 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         const normLink = proj.link ? normalizeUrl(proj.link) : undefined;
         const projY = doc.y;
 
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY).text(pName, leftMargin, projY, { continued: true });
+        const pLeftW = contentWidth - 130;
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
+        const pH = doc.heightOfString(pName, { width: pLeftW });
+        doc.text(pName, leftMargin, projY, { width: pLeftW });
         if (pDates) {
-          doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('  [' + pDates + ']');
+          const tag = '  [' + pDates + ']';
+          doc.font('Helvetica').fontSize(9).fillColor(MUTED);
+          doc.text(tag, leftMargin + contentWidth - doc.widthOfString(tag), projY + Math.max(0, pH - 12), { width: doc.widthOfString(tag) });
         }
+        doc.y = projY + Math.max(pH, 12);
         doc.x = leftMargin;
-        doc.moveDown(0.1);
+        doc.moveDown(0.05);
 
         if (proj.description) {
           const desc = sanitizeText(proj.description);
@@ -864,9 +905,12 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         const eDates = sanitizeText(edu.dates);
         const eduY = doc.y;
 
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY).text(inst, leftMargin, eduY, { continued: true });
-        doc.font('Helvetica').fillColor(BODY)
-          .text((degree ? '  \u2014  ' + degree : '') + (eDates ? '  \u00A0\u00A0' + eDates : ''));
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
+        const eduText = inst + (degree ? '  \u2014  ' + degree : '') + (eDates ? '  \u00A0\u00A0' + eDates : '');
+        const eduH = doc.heightOfString(eduText, { width: contentWidth });
+        doc.text(inst, leftMargin, eduY, { continued: true });
+        doc.font('Helvetica').fillColor(BODY).text((degree ? '  \u2014  ' + degree : '') + (eDates ? '  \u00A0\u00A0' + eDates : ''), { width: contentWidth });
+        doc.y = eduY + Math.max(eduH, 12);
         doc.x = leftMargin;
         doc.moveDown(0.25);
       }
@@ -892,9 +936,13 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         if (!name) continue;
 
         const certY = doc.y;
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY).text(issuer, leftMargin, certY, { continued: true });
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
+        const certText = (issuer ? issuer + '  \u2014  ' : '') + name + (date ? ' (' + date + ')' : '');
+        const certH = doc.heightOfString(certText, { width: contentWidth });
+        doc.text(issuer, leftMargin, certY, { continued: true });
         doc.font('Helvetica').fillColor(BODY)
-          .text((issuer ? '  \u2014  ' : '') + name + (date ? ' (' + date + ')' : ''));
+          .text((issuer ? '  \u2014  ' : '') + name + (date ? ' (' + date + ')' : ''), { width: contentWidth });
+        doc.y = certY + Math.max(certH, 12);
         doc.x = leftMargin;
         doc.moveDown(0.25);
       }
@@ -1015,15 +1063,11 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
         const degree = sanitizeText(edu.degree);
         const dates = sanitizeText(edu.dates);
         const y0 = doc.y;
-        if (inst) doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(inst, leftMargin, y0, { continued: true });
-        if (city) {
-          doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(city, leftMargin, y0, { align: 'right', width: contentWidth });
-        }
-        doc.y = Math.max(doc.y, y0 + 13);
+        const h0 = entryHeaderLine(doc, { left: inst, right: city, x: leftMargin, rightEdge: rightMargin });
+        doc.y = y0 + h0 + 1;
         const y1 = doc.y;
-        if (degree) doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(degree, leftMargin, y1, { continued: true });
-        if (dates) doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(dates, leftMargin, y1, { align: 'right', width: contentWidth });
-        doc.y = Math.max(doc.y, y1 + 13);
+        const h1 = entryHeaderLine(doc, { left: degree, right: dates, x: leftMargin, rightEdge: rightMargin });
+        doc.y = y1 + h1;
         doc.x = leftMargin;
         doc.moveDown(0.2);
       }
@@ -1040,13 +1084,11 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
         const title = sanitizeText(exp.title);
         const period = sanitizeText(exp.dates);
         const y0 = doc.y;
-        if (org) doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(org, leftMargin, y0, { continued: true });
-        if (city) doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(city, leftMargin, y0, { align: 'right', width: contentWidth });
-        doc.y = Math.max(doc.y, y0 + 13);
+        const h0 = entryHeaderLine(doc, { left: org, right: city, x: leftMargin, rightEdge: rightMargin });
+        doc.y = y0 + h0 + 1;
         const y1 = doc.y;
-        if (title) doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(title, leftMargin, y1, { continued: true });
-        if (period) doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(period, leftMargin, y1, { align: 'right', width: contentWidth });
-        doc.y = Math.max(doc.y, y1 + 13);
+        const h1 = entryHeaderLine(doc, { left: title, right: period, x: leftMargin, rightEdge: rightMargin });
+        doc.y = y1 + h1;
         doc.x = leftMargin;
         if (Array.isArray(exp.highlights)) for (const hl of exp.highlights) bullet(hl);
         doc.moveDown(0.2);
@@ -1062,9 +1104,8 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
         const pName = sanitizeText(proj.name);
         const pDates = sanitizeText(proj.dates);
         const y0 = doc.y;
-        if (pName) doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(pName, leftMargin, y0, { continued: true });
-        if (pDates) doc.font('Helvetica').fontSize(10.5).fillColor(INK).text('[' + pDates + ']', leftMargin, y0, { align: 'right', width: contentWidth });
-        doc.y = Math.max(doc.y, y0 + 13);
+        const h0 = entryHeaderLine(doc, { left: pName, right: pDates ? '[' + pDates + ']' : '', x: leftMargin, rightEdge: rightMargin });
+        doc.y = y0 + h0;
         doc.x = leftMargin;
         if (proj.description) bullet(sanitizeText(proj.description));
         if (proj.link) {
@@ -1261,11 +1302,18 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
         const period = sanitizeText(exp.dates);
         const loc = sanitizeText(exp.location);
         const y0 = doc.y;
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111').text(title, leftMargin, y0, { continued: true });
-        doc.font('Helvetica').fillColor(MUTED).text(company ? '  \u2014  ' + company : '', { continued: true });
+        const leftText = title + (company ? '  \u2014  ' + company : '');
+        const leftW = contentWidth - 140;
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111');
+        const leftH = doc.heightOfString(leftText, { width: leftW });
+        doc.text(title, leftMargin, y0, { continued: true });
+        doc.font('Helvetica').fillColor(MUTED).text(company ? '  \u2014  ' + company : '', { width: leftW });
         doc.x = leftMargin;
-        if (period) doc.font('Helvetica').fontSize(8.5).fillColor(FAINT).text(period, leftMargin, y0, { align: 'right', width: contentWidth });
-        doc.y = Math.max(doc.y, y0 + 12);
+        if (period) {
+          doc.font('Helvetica').fontSize(8.5).fillColor(FAINT);
+          doc.text(period, leftMargin + contentWidth - doc.widthOfString(period), y0 + Math.max(0, leftH - 12), { width: doc.widthOfString(period) });
+        }
+        doc.y = y0 + Math.max(leftH, 12);
         if (loc) {
           ensurePageSpace(11);
           doc.font('Helvetica').fontSize(9).fillColor(FAINT).text(loc, leftMargin, doc.y, { width: contentWidth });
@@ -1285,10 +1333,18 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
         const pName = sanitizeText(proj.name);
         const pDates = sanitizeText(proj.dates);
         const y0 = doc.y;
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111').text(pName, leftMargin, y0, { continued: true });
-        if (pDates) doc.font('Helvetica').fontSize(8.5).fillColor(FAINT).text('  [' + pDates + ']');
+        const pLeftW = contentWidth - 130;
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111');
+        const pH = doc.heightOfString(pName, { width: pLeftW });
+        doc.text(pName, leftMargin, y0, { width: pLeftW });
+        if (pDates) {
+          const tag = '  [' + pDates + ']';
+          doc.font('Helvetica').fontSize(8.5).fillColor(FAINT);
+          doc.text(tag, leftMargin + contentWidth - doc.widthOfString(tag), y0 + Math.max(0, pH - 12), { width: doc.widthOfString(tag) });
+        }
+        doc.y = y0 + Math.max(pH, 12);
         doc.x = leftMargin;
-        doc.moveDown(0.1);
+        doc.moveDown(0.05);
         if (proj.description) {
           const d = sanitizeText(proj.description);
           if (d) {
