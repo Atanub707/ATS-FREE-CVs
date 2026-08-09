@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.3.0 (2026-08-09)
+
+### 🐞 In-App Bug Reports → GitHub Issues
+- **Settings → Report a Bug → GitHub Issue**: file bugs straight to your repository's GitHub Issues with a title, description and optional steps to reproduce — the created issue link is shown immediately.
+- Server route `POST /api/settings/bug-report` calls the GitHub Issues API with a PAT from the new `[github]` section of `config.ini` (owner/repo/token — stored locally, never committed).
+- Friendly error handling: missing token, 401, 403 (permissions/rate limit), 404 (repo), and network failures each get a plain-language message.
+- Every issue body is stamped with app version, Node version, platform and timestamp.
+- Docs: `docs/PLAN_BUG_REPORT.md`, `docs/BUG_REPORTING.md`, `docs/TOKENS.md`, `docs/LOCAL_SETUP.md`.
+
+### 🎨 Manual JD polish (carried in this release)
+- Tailoring Updates panel is now a compact dashboard: Impact cards (with before→after score bar), added-skills chip cloud, rewritten bullets showing **BEFORE (struck) → AFTER** text, "What's preserved" row, collapsible review list, and a single auto-saving Download button.
+- Analysis panel always shows the honest current-CV score; the boosted score lives on the Tailor screen as `49% → 97%`.
+- History restore fixed: the API returns `{ analysis, downloadToken }` with camelCase fields — the UI now unwraps it (previously restored records showed empty results).
+- Stepper (Add JD → Analysis → Tailor) is centered; skill chips are deduplicated (`patching ×3`) and capped with "+N more".
+
 ## v1.2.0 (2026-08-04)
 
 ### ✨ AI CV Compression Assistant (Master CV)

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2, Globe, Rocket } from 'lucide-react';
+import { X, Save, Sliders, Key, Cpu, ShieldQuestion, User, CheckCircle2, Globe, Rocket, Bug, ExternalLink, AlertTriangle, Send } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface SettingsModalProps {
@@ -68,6 +68,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [recA2, setRecA2] = useState('');
   const [recMsg, setRecMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [recSaving, setRecSaving] = useState(false);
+
+  // Bug report (Settings → Report a Bug → GitHub issue)
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugDescription, setBugDescription] = useState('');
+  const [bugSteps, setBugSteps] = useState('');
+  const [bugSending, setBugSending] = useState(false);
+  const [bugMsg, setBugMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
+
+  const handleBugReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBugMsg(null);
+    if (!bugTitle.trim() || !bugDescription.trim()) {
+      setBugMsg({ ok: false, text: 'Please describe the bug — a title and what happened are required.' });
+      return;
+    }
+    setBugSending(true);
+    try {
+      const res = await fetch('/api/settings/bug-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: bugTitle.trim(), description: bugDescription.trim(), steps: bugSteps.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBugMsg({ ok: false, text: data.error || 'Could not submit the bug report.' });
+      } else {
+        setBugMsg({ ok: true, text: `Issue #${data.issueNumber} created. Thank you for reporting!`, url: data.issueUrl });
+        setBugTitle(''); setBugDescription(''); setBugSteps('');
+      }
+    } catch (err: any) {
+      setBugMsg({ ok: false, text: err.message || 'Could not submit the bug report.' });
+    } finally {
+      setBugSending(false);
+    }
+  };
 
   const handleSaveRecovery = async () => {
     setRecMsg(null);
@@ -281,6 +316,117 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 placeholder="Apify API token (console.apify.com → Settings → Integrations)"
                 className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white font-mono"
               />
+            </div>
+          </div>
+
+          {/* Bug Reports → GitHub Issues */}
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <Bug className="w-3.5 h-3.5 text-red-600" />
+              <span>Report a Bug → GitHub Issue</span>
+            </h3>
+            <p className="text-[10.5px] text-slate-500 leading-relaxed">
+              Found a bug? Submit it here and it is filed directly on the GitHub repository as an issue —
+              you will get the issue link immediately. Full guide: <code className="text-[10px] bg-white border border-slate-200 rounded px-1">docs/BUG_REPORTING.md</code>
+            </p>
+
+            {/* GitHub connection */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Owner</label>
+                <input
+                  type="text"
+                  value={formData.github?.owner || 'Atanub707'}
+                  onChange={(e) => setFormData({ ...formData, github: { ...formData.github!, owner: e.target.value } })}
+                  placeholder="GitHub username / org"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Repository</label>
+                <input
+                  type="text"
+                  value={formData.github?.repo || 'ATS-FREE-CVs'}
+                  onChange={(e) => setFormData({ ...formData, github: { ...formData.github!, repo: e.target.value } })}
+                  placeholder="repo-name"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 font-mono text-[11px]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-slate-600 font-medium mb-1">GitHub token (PAT)</label>
+              <div className="relative">
+                <Key className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  value={formData.github?.token || ''}
+                  onChange={(e) => setFormData({ ...formData, github: { ...formData.github!, token: e.target.value } })}
+                  placeholder="GitHub PAT with Issues: write (github.com → Settings → Developer settings → Tokens)"
+                  className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white font-mono"
+                />
+              </div>
+            </div>
+            <span className="text-[10px] text-slate-500 block">
+              Stored locally in config.ini (never committed). Needs <b>Issues: Read and write</b> permission on the repository above.
+              How to create one: <code className="text-[10px] bg-white border border-slate-200 rounded px-1">docs/TOKENS.md → Section 3</code>
+            </span>
+
+            <div className="border-t border-slate-200 pt-3 space-y-3">
+              <h4 className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                <Send className="w-3 h-3 text-red-500" />
+                <span>New bug report</span>
+              </h4>
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Title</label>
+                <input
+                  type="text"
+                  value={bugTitle}
+                  onChange={(e) => setBugTitle(e.target.value)}
+                  placeholder="Short summary, e.g. Download button opens blank PDF"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 text-[11px]"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">What happened?</label>
+                <textarea
+                  value={bugDescription}
+                  onChange={(e) => setBugDescription(e.target.value)}
+                  rows={3}
+                  placeholder="What did you expect, and what happened instead?"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 text-[11px] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Steps to reproduce (optional)</label>
+                <textarea
+                  value={bugSteps}
+                  onChange={(e) => setBugSteps(e.target.value)}
+                  rows={2}
+                  placeholder="1. Go to …  2. Click …  3. See error"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 text-[11px] resize-none"
+                />
+              </div>
+              {bugMsg && (
+                <div className={`text-[11px] font-medium px-3 py-2 rounded-lg border flex items-start gap-2 ${bugMsg.ok ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'}`}>
+                  {bugMsg.ok ? <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />}
+                  <span className="min-w-0">
+                    {bugMsg.text}
+                    {bugMsg.url && (
+                      <a href={bugMsg.url} target="_blank" rel="noreferrer" className="ml-1.5 font-bold text-emerald-700 underline inline-flex items-center gap-0.5">
+                        Open issue <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleBugReport}
+                disabled={bugSending}
+                className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold text-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {bugSending ? <><CheckCircle2 className="w-3.5 h-3.5 animate-pulse" /><span>Submitting…</span></> : <><Bug className="w-3.5 h-3.5" /><span>Submit Bug Report</span></>}
+              </button>
             </div>
           </div>
 

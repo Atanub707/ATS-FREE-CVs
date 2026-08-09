@@ -31,6 +31,11 @@ const DEFAULT_CONFIG: AppConfig = {
     token: '',
     enabled: false,
   },
+  github: {
+    owner: 'Atanub707',
+    repo: 'ATS-FREE-CVs',
+    token: '',
+  },
 };
 
 export function loadConfig(): AppConfig {
@@ -69,6 +74,11 @@ export function loadConfig(): AppConfig {
         token: parsed.apify?.token || '',
         enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
       },
+      github: {
+        owner: parsed.github?.owner || DEFAULT_CONFIG.github.owner,
+        repo: parsed.github?.repo || DEFAULT_CONFIG.github.repo,
+        token: parsed.github?.token || '',
+      },
     };
   } catch (err) {
     console.error('Failed to load config.ini, using defaults:', err);
@@ -84,6 +94,7 @@ export function saveConfig(config: AppConfig): void {
       storage: config.storage,
       scraper: config.scraper,
       apify: config.apify,
+      github: config.github,
     });
     fs.writeFileSync(CONFIG_FILE_PATH, iniData, 'utf-8');
   } catch (err) {
