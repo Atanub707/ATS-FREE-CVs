@@ -138,6 +138,10 @@ export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
     accent: '#0F172A', nameSize: 21, roleColor: '#2DD4BF', ruleWidth: 1,
     bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.42, nameWeight: 700,
   },
+  'modern-classic': {
+    accent: '#0F766E', nameSize: 24, roleColor: '#0F766E', ruleWidth: 1.2,
+    bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.42, nameWeight: 700,
+  },
 };
 
 // A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
@@ -167,7 +171,7 @@ interface CvPdfPreviewProps {
  */
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
   const style = CV_TEMPLATE_STYLES[template] || CV_TEMPLATE_STYLES.harvard;
-  const isHarvard = template === 'harvard';
+  const isHarvard = template === 'harvard' || template === 'modern-classic';
   const isSplit = template === 'modern-split';
   const marginX = isHarvard ? HARVARD_MARGIN_X : isSplit ? 0 : MARGIN_X;
   const marginY = isHarvard ? HARVARD_MARGIN_Y : isSplit ? 0 : MARGIN_Y;
@@ -301,6 +305,9 @@ function paginate(blocks: CvBlock[], heights: Record<string, number>, contentH: 
 function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 'harvard'): CvBlock[] {
   if (template === 'harvard') {
     return buildHarvardBlocks(cv);
+  }
+  if (template === 'modern-classic') {
+    return buildModernClassicBlocks(cv);
   }
   if (template === 'modern-split') {
     return buildModernSplitBlocks(cv);
@@ -507,6 +514,223 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
   return blocks;
 }
 
+
+function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
+  const blocks: CvBlock[] = [];
+  const contacts = getContactItems(cv);
+
+  const section = (title: string): CvBlock => ({
+    key: `sec-${title}`,
+    keepAfter: 40,
+    render: (zoom) => (
+      <div style={{ margin: `${pt(10, zoom)}px 0 ${pt(6, zoom)}px` }}>
+        <div
+          style={{
+            fontSize: `${pt(11, zoom)}px`,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1.5px',
+            color: '#0F766E',
+            paddingBottom: pt(2, zoom),
+            borderBottom: `${Math.max(1, Math.round(pt(1.2, zoom)))}px solid #0F766E`,
+          }}
+        >
+          {title}
+        </div>
+      </div>
+    ),
+  });
+
+  // 1. Centered header: name (24px, 3px letter-spacing) + contact line
+  blocks.push({
+    key: 'header',
+    render: (zoom) => (
+      <div style={{ marginBottom: pt(10, zoom) }}>
+        <div
+          style={{
+            textAlign: 'center',
+            fontFamily: 'Helvetica-Bold, Helvetica, Arial, sans-serif',
+            fontSize: `${pt(24, zoom)}px`,
+            fontWeight: 700,
+            color: '#0F172A',
+            textTransform: 'uppercase',
+            letterSpacing: '3px',
+            marginBottom: pt(3, zoom),
+          }}
+        >
+          {cv.candidateName || 'CANDIDATE NAME'}
+        </div>
+        {contacts.length > 0 && (
+          <div style={{ textAlign: 'center', fontSize: `${pt(9, zoom)}px`, color: '#374151' }}>
+            {contacts.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span style={{ color: '#9CA3AF', padding: `0 ${pt(4, zoom)}px` }}>|</span>}
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0F766E', textDecoration: 'none' }}>
+                    {c.label}
+                  </a>
+                ) : (
+                  <span>{c.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+  });
+
+  // 2. Summary
+  if (cv.professionalSummary) {
+    blocks.push(section('Summary'));
+    blocks.push({
+      key: 'summary',
+      render: (zoom) => (
+        <div style={{ color: '#1F2937', fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, textAlign: 'justify', paddingBottom: pt(4, zoom) }}>
+          {cv.professionalSummary}
+        </div>
+      ),
+    });
+  }
+
+  // 3. Skills — 2-column grid
+  const hasSkills = cv.technicalSkills.length > 0 || (cv.coreCompetencies?.length || 0) > 0;
+  if (hasSkills) {
+    blocks.push(section('Skills'));
+    if (cv.technicalSkills.length === 0 && cv.coreCompetencies) {
+      blocks.push({
+        key: 'skill-competencies',
+        render: (zoom) => (
+          <div style={{ color: '#1F2937', fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, paddingBottom: pt(4, zoom) }}>
+            {cv.coreCompetencies.join(', ')}
+          </div>
+        ),
+      });
+    } else {
+      blocks.push({
+        key: 'skills-grid',
+        render: (zoom) => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: pt(18, zoom), paddingBottom: pt(4, zoom) }}>
+            {cv.technicalSkills.map((cat, i) => (
+              <div key={i} style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2.5, zoom), color: '#1F2937' }}>
+                <span style={{ fontWeight: 700, color: '#0F172A' }}>{cat.category}: </span>
+                <span style={{ color: '#374151' }}>{cat.skills.join(', ')}</span>
+              </div>
+            ))}
+          </div>
+        ),
+      });
+    }
+  }
+
+  // 4. Work Experience — role (navy) — company (teal), period right, loc below
+  if (cv.workExperience.length > 0) {
+    blocks.push(section('Work Experience'));
+    cv.workExperience.forEach((exp, i) => {
+      blocks.push({
+        key: `exp-${i}-head`,
+        keepAfter: 30,
+        render: (zoom) => (
+          <div style={{ paddingBottom: pt(2, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px` }}>
+                <span style={{ color: '#0F172A' }}>{exp.title}</span>
+                {exp.company && <span style={{ color: '#0F766E' }}>{'  —  '}{exp.company}</span>}
+              </span>
+              {exp.dates && (
+                <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', whiteSpace: 'nowrap' }}>{exp.dates}</span>
+              )}
+            </div>
+            {exp.location && (
+              <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', marginBottom: pt(3, zoom) }}>{exp.location}</div>
+            )}
+          </div>
+        ),
+      });
+      exp.highlights.forEach((hl, j) => {
+        blocks.push({ key: `exp-${i}-b${j}`, render: (zoom) => <HarvardBullet zoom={zoom} text={hl} /> });
+      });
+    });
+  }
+
+  // 5. Projects — bold title + [year] + description + teal link
+  if (cv.projects && cv.projects.length > 0) {
+    blocks.push(section('Projects'));
+    cv.projects.forEach((p, i) => {
+      blocks.push({
+        key: `proj-${i}`,
+        keepAfter: 20,
+        render: (zoom) => (
+          <div style={{ marginBottom: pt(4, zoom) }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(9.5, zoom)}px`, color: '#0F172A' }}>{p.name}</span>
+            {p.dates && (
+              <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280' }}>{'  ['}{p.dates}{']'}</span>
+            )}
+            {p.description && (
+              <div style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#1F2937', lineHeight: 1.42 }}>{p.description}</div>
+            )}
+            {p.link && (
+              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#0F766E', textDecoration: 'none' }}>
+                {p.link}
+              </a>
+            )}
+          </div>
+        ),
+      });
+    });
+  }
+
+  // 6. Education — single line: institution (bold) — degree + period
+  if (cv.education.length > 0) {
+    blocks.push(section('Education'));
+    cv.education.forEach((e, i) => {
+      blocks.push({
+        key: `edu-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2, zoom) }}>
+            <span style={{ fontWeight: 700, color: '#0F172A' }}>{e.institution}</span>
+            <span style={{ color: '#1F2937' }}>
+              {(e.degree ? '  —  ' + e.degree : '')}
+              {e.dates ? '   ' + e.dates : ''}
+            </span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  // 7. Certifications — issuer (bold) — name (year)
+  if (cv.certifications && cv.certifications.length > 0) {
+    blocks.push(section('Certifications'));
+    cv.certifications.forEach((cert, i) => {
+      let issuer = '';
+      let name = '';
+      let date = '';
+      if (typeof cert === 'string') {
+        name = cert;
+      } else {
+        issuer = cert.issuer || '';
+        name = cert.name || '';
+        date = cert.date || '';
+      }
+      blocks.push({
+        key: `cert-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2, zoom) }}>
+            {issuer && <span style={{ fontWeight: 700, color: '#0F172A' }}>{issuer}</span>}
+            <span style={{ color: '#1F2937' }}>
+              {(issuer ? '  —  ' : '') + name}
+              {date ? ' (' + date + ')' : ''}
+            </span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  return blocks;
+}
+
 const SectionTitle: React.FC<{ zoom: number; style: CvTemplateStyle; children: React.ReactNode }> = ({ zoom, style, children }) => (
   <div style={{ paddingTop: pt(style.sectionGap, zoom), paddingBottom: pt(6, zoom) }}>
     <div
@@ -706,7 +930,7 @@ const MainHeading: React.FC<{ zoom: number; title: string }> = ({ zoom, title })
 // ── Harvard Classic — exact replica of the timeless ATS-safe template ──
 // name 24px/3px letter-spacing, teal #0F766E headings + solid rules,
 // 9.5px justified body, 2-column skills grid, [year] projects.
-function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
+function buildModernClassicBlocks(cv: PdfCvShape): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
 
