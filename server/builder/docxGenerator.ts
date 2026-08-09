@@ -547,15 +547,25 @@ function entryHeaderLine(
   const color = opts.color || '#111111';
   const rightColor = opts.rightColor || color;
   const leftW = opts.right ? Math.max(140, (opts.rightEdge - opts.x) * 0.6) : opts.rightEdge - opts.x;
+  const startY = doc.y;
   doc.font(opts.leftBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(color);
   const leftH = doc.heightOfString(opts.left, { width: leftW });
   doc.text(opts.left, opts.x, doc.y, { width: leftW });
+  pdfDebug('entryHeader-left', opts.x, startY, leftW, leftH, doc.y);
   if (opts.right) {
     doc.font(opts.rightBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size).fillColor(rightColor);
     const rightW = Math.min(doc.widthOfString(opts.right), (opts.rightEdge - opts.x) * 0.4);
-    doc.text(opts.right, opts.rightEdge - rightW, doc.y - Math.max(0, leftH - 12), { width: rightW });
+    const rightY = doc.y - Math.max(0, leftH - 12);
+    doc.text(opts.right, opts.rightEdge - rightW, rightY, { width: rightW });
+    pdfDebug('entryHeader-right', opts.rightEdge - rightW, rightY, rightW, 12, doc.y);
   }
   return Math.max(leftH, 12);
+}
+
+const PDF_DEBUG = process.env.PDF_DEBUG === '1';
+/** Temporary diagnostic: logs every key PDF element's placement. */
+function pdfDebug(el: string, x: number, y: number, w: number, h: number, nextY: number) {
+  if (PDF_DEBUG) console.log(`[pdf-debug] ${el} x=${x.toFixed(1)} y=${y.toFixed(1)} w=${w.toFixed(1)} h=${h.toFixed(1)} nextY=${nextY.toFixed(1)}`);
 }
 
 function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
@@ -602,12 +612,15 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
     for (const ch of Array.from(name)) nameWidth += doc.widthOfString(ch) + NAME_SPACING;
     nameWidth -= NAME_SPACING;
     const nameX = leftMargin + Math.max(0, (contentWidth - nameWidth) / 2);
+    const nameY = doc.y; // capture once — pdfkit advances doc.y on EVERY text() call
+    pdfDebug('name', nameX, nameY, nameWidth, NAME_SIZE * 1.2, nameY + NAME_SIZE * 1.2);
     let cx = nameX;
     for (const ch of Array.from(name)) {
-      doc.fillColor(NAVY).text(ch, cx, doc.y, { lineBreak: false });
+      doc.fillColor(NAVY).text(ch, cx, nameY, { lineBreak: false });
       cx += doc.widthOfString(ch) + NAME_SPACING;
     }
-    doc.moveDown(0.2); // 3px below the name
+    // lineBreak:false leaves doc.y untouched — advance the full name line + 3px
+    doc.y = nameY + NAME_SIZE * 1.2 + 3;
 
     // Role subtitle — 12px bold uppercase accent, 1.5px letter-spacing
     if (cv.targetRole) {
@@ -626,7 +639,8 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
           doc.fillColor(ACCENT).text(ch, rx, roleY, { lineBreak: false });
           rx += doc.widthOfString(ch) + ROLE_SPACING;
         }
-        doc.moveDown(0.2); // 3px below the role
+        // lineBreak:false leaves doc.y untouched — advance the role line + 3px
+        doc.y = roleY + ROLE_SIZE * 1.2 + 3;
       }
     }
 
@@ -685,7 +699,9 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         doc.fillColor(ACCENT).text(ch, cx, headY, { lineBreak: false });
         cx += doc.widthOfString(ch) + 1.5;
       }
+      doc.y = headY + 11 * 1.2; // char loop didn't advance doc.y — move past the heading line
       const ruleY = doc.y + 2; // 2px padding below heading text
+      pdfDebug('section-heading', leftMargin, headY, contentWidth, doc.y - headY, ruleY + 6);
       doc.moveTo(leftMargin, ruleY).lineTo(rightMargin, ruleY).lineWidth(1.2).strokeColor(ACCENT).stroke();
       doc.y = ruleY + 6; // 6px below the rule
       doc.x = leftMargin;
