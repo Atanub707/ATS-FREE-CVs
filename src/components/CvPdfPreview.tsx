@@ -123,19 +123,18 @@ export interface CvTemplateStyle {
 
 export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
   'harvard': {
-    accent: '#2F54EB', nameSize: 18, roleColor: '#374151', ruleWidth: 0.75,
-    bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10, lineHeight: 1.45, nameWeight: 700,
+    accent: '#111111', nameSize: 15, roleColor: '#111111', ruleWidth: 0,
+    bodySize: 10.5, bulletSize: 10.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.3, nameWeight: 700,
   },
-  'compact-executive': {
-    accent: '#1E3A5F', nameSize: 15, roleColor: '#475569', ruleWidth: 0.5,
-    bodySize: 8.5, bulletSize: 8.5, sectionGap: 7, expTitleSize: 9, lineHeight: 1.35, nameWeight: 700,
+  'jake': {
+    accent: '#111111', nameSize: 24, roleColor: '#555555', ruleWidth: 1,
+    bodySize: 9, bulletSize: 9, sectionGap: 8, expTitleSize: 9.5, lineHeight: 1.35, nameWeight: 700,
   },
-  'modern-classic': {
+  'atanu': {
     accent: '#0F766E', nameSize: 24, roleColor: '#0F766E', ruleWidth: 1.2,
     bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.42, nameWeight: 700,
   },
 };
-
 // A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
 // the block requires at least that many pt to remain below it, otherwise it
 // moves to the next page (prevents orphaned section titles / headers).
@@ -162,14 +161,14 @@ interface CvPdfPreviewProps {
  * experience headers keep with their content; bullets are atomic).
  */
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
-  const style = CV_TEMPLATE_STYLES[template] || CV_TEMPLATE_STYLES.harvard;
-  const isHarvard = template === 'harvard' || template === 'modern-classic';
-  const marginX = isHarvard ? HARVARD_MARGIN_X : MARGIN_X;
-  const marginY = isHarvard ? HARVARD_MARGIN_Y : MARGIN_Y;
+  const safeTemplate: TemplateId = template === 'jake' || template === 'atanu' || template === 'harvard' ? template : 'harvard';
+  const style = CV_TEMPLATE_STYLES[safeTemplate] || CV_TEMPLATE_STYLES.harvard;
+  const marginX = safeTemplate === 'harvard' ? 50.4 : MARGIN_X;
+  const marginY = safeTemplate === 'harvard' ? 43.2 : HARVARD_MARGIN_Y;
   const contentW = PAGE_W - marginX * 2;
   const contentH = PAGE_H - marginY * 2;
-  const lineHeight = isHarvard ? HARVARD_LINE_HEIGHT : style.lineHeight;
-  const blocks = useMemo(() => buildBlocks(cv, style, (template || 'harvard') as TemplateId), [cv, style, template]);
+  const lineHeight = safeTemplate === 'harvard' ? 1.3 : safeTemplate === 'jake' ? 1.35 : HARVARD_LINE_HEIGHT;
+  const blocks = useMemo(() => buildBlocks(cv, style, safeTemplate), [cv, style, safeTemplate]);
   const measurerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<CvBlock[][]>([]);
@@ -287,8 +286,11 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
   if (template === 'harvard') {
     return buildHarvardBlocks(cv);
   }
-  if (template === 'modern-classic') {
-    return buildModernClassicBlocks(cv);
+  if (template === 'jake') {
+    return buildJakeBlocks(cv);
+  }
+  if (template === 'atanu') {
+    return buildAtanuBlocks(cv);
   }
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
@@ -493,60 +495,40 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
 }
 
 
+// ── Harvard — official Harvard College bullet-point resume ──
+// centered bold name + centered contact (•), centered bold uppercase
+// headings (no rules), org bold left / city right, title left / dates
+// right, • bullets.
 function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
 
   const section = (title: string): CvBlock => ({
     key: `sec-${title}`,
-    keepAfter: 40,
+    keepAfter: 30,
     render: (zoom) => (
-      <div style={{ margin: `${pt(10, zoom)}px 0 ${pt(6, zoom)}px` }}>
-        <div
-          style={{
-            fontSize: `${pt(11, zoom)}px`,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '1.5px',
-            color: '#0F766E',
-            paddingBottom: pt(2, zoom),
-            borderBottom: `${Math.max(1, Math.round(pt(1.2, zoom)))}px solid #0F766E`,
-          }}
-        >
+      <div style={{ margin: `${pt(10, zoom)}px 0 ${pt(5, zoom)}px` }}>
+        <div style={{ textAlign: 'center', fontSize: `${pt(11, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#111111' }}>
           {title}
         </div>
       </div>
     ),
   });
 
-  // 1. Centered header: name (24px, 3px letter-spacing) + contact line
   blocks.push({
     key: 'header',
     render: (zoom) => (
-      <div style={{ marginBottom: pt(10, zoom) }}>
-        <div
-          style={{
-            textAlign: 'center',
-            fontFamily: 'Helvetica-Bold, Helvetica, Arial, sans-serif',
-            fontSize: `${pt(24, zoom)}px`,
-            fontWeight: 700,
-            color: '#0F172A',
-            textTransform: 'uppercase',
-            letterSpacing: '3px',
-            marginBottom: pt(3, zoom),
-          }}
-        >
+      <div style={{ marginBottom: pt(8, zoom) }}>
+        <div style={{ textAlign: 'center', fontSize: `${pt(15, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', color: '#111111' }}>
           {cv.candidateName || 'CANDIDATE NAME'}
         </div>
         {contacts.length > 0 && (
-          <div style={{ textAlign: 'center', fontSize: `${pt(9, zoom)}px`, color: '#374151' }}>
+          <div style={{ textAlign: 'center', fontSize: `${pt(10, zoom)}px`, color: '#111111', marginTop: pt(3, zoom) }}>
             {contacts.map((c, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <span style={{ color: '#9CA3AF', padding: `0 ${pt(4, zoom)}px` }}>|</span>}
+                {i > 0 && <span style={{ padding: `0 ${pt(4, zoom)}px` }}>•</span>}
                 {c.url ? (
-                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0F766E', textDecoration: 'none' }}>
-                    {c.label}
-                  </a>
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#111111', textDecoration: 'none' }}>{c.label}</a>
                 ) : (
                   <span>{c.label}</span>
                 )}
@@ -558,80 +540,63 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
     ),
   });
 
-  // 2. Summary
   if (cv.professionalSummary) {
     blocks.push(section('Summary'));
     blocks.push({
       key: 'summary',
       render: (zoom) => (
-        <div style={{ color: '#1F2937', fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, textAlign: 'justify', paddingBottom: pt(4, zoom) }}>
+        <div style={{ fontSize: `${pt(10.5, zoom)}px`, color: '#111111', lineHeight: 1.3, textAlign: 'justify', paddingBottom: pt(4, zoom) }}>
           {cv.professionalSummary}
         </div>
       ),
     });
   }
 
-  // 3. Skills — 2-column grid
-  const hasSkills = cv.technicalSkills.length > 0 || (cv.coreCompetencies?.length || 0) > 0;
-  if (hasSkills) {
-    blocks.push(section('Skills'));
-    if (cv.technicalSkills.length === 0 && cv.coreCompetencies) {
+  if (cv.education.length > 0) {
+    blocks.push(section('Education'));
+    cv.education.forEach((e, i) => {
       blocks.push({
-        key: 'skill-competencies',
+        key: `edu-${i}`,
+        keepAfter: 20,
         render: (zoom) => (
-          <div style={{ color: '#1F2937', fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, paddingBottom: pt(4, zoom) }}>
-            {cv.coreCompetencies.join(', ')}
+          <div style={{ marginBottom: pt(6, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px`, color: '#111111' }}>{e.institution}</span>
+              {e.dates && <span style={{ fontSize: `${pt(10.5, zoom)}px`, whiteSpace: 'nowrap' }}>{e.dates}</span>}
+            </div>
+            {e.degree && <div style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px`, marginTop: pt(1, zoom) }}>{e.degree}</div>}
           </div>
         ),
       });
-    } else {
-      blocks.push({
-        key: 'skills-grid',
-        render: (zoom) => (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: pt(18, zoom), paddingBottom: pt(4, zoom) }}>
-            {cv.technicalSkills.map((cat, i) => (
-              <div key={i} style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2.5, zoom), color: '#1F2937' }}>
-                <span style={{ fontWeight: 700, color: '#0F172A' }}>{cat.category}: </span>
-                <span style={{ color: '#374151' }}>{cat.skills.join(', ')}</span>
-              </div>
-            ))}
-          </div>
-        ),
-      });
-    }
+    });
   }
 
-  // 4. Work Experience — role (navy) — company (teal), period right, loc below
   if (cv.workExperience.length > 0) {
-    blocks.push(section('Work Experience'));
+    blocks.push(section('Experience'));
     cv.workExperience.forEach((exp, i) => {
       blocks.push({
         key: `exp-${i}-head`,
         keepAfter: 30,
         render: (zoom) => (
-          <div style={{ paddingBottom: pt(2, zoom) }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px` }}>
-                <span style={{ color: '#0F172A' }}>{exp.title}</span>
-                {exp.company && <span style={{ color: '#0F766E' }}>{'  —  '}{exp.company}</span>}
-              </span>
-              {exp.dates && (
-                <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', whiteSpace: 'nowrap' }}>{exp.dates}</span>
-              )}
+          <div style={{ marginBottom: pt(2, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px`, color: '#111111' }}>{exp.company}</span>
+              {exp.location && <span style={{ fontSize: `${pt(10.5, zoom)}px`, whiteSpace: 'nowrap' }}>{exp.location}</span>}
             </div>
-            {exp.location && (
-              <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', marginBottom: pt(3, zoom) }}>{exp.location}</div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px` }}>{exp.title}</span>
+              {exp.dates && <span style={{ fontSize: `${pt(10.5, zoom)}px`, whiteSpace: 'nowrap' }}>{exp.dates}</span>}
+            </div>
           </div>
         ),
       });
       exp.highlights.forEach((hl, j) => {
         blocks.push({ key: `exp-${i}-b${j}`, render: (zoom) => <HarvardBullet zoom={zoom} text={hl} /> });
       });
+      blocks.push({ key: `exp-${i}-gap`, render: () => <div style={{ height: 6 }} /> });
     });
   }
 
-  // 5. Projects — bold title + [year] + description + teal link
   if (cv.projects && cv.projects.length > 0) {
     blocks.push(section('Projects'));
     cv.projects.forEach((p, i) => {
@@ -639,16 +604,19 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
         key: `proj-${i}`,
         keepAfter: 20,
         render: (zoom) => (
-          <div style={{ marginBottom: pt(4, zoom) }}>
-            <span style={{ fontWeight: 700, fontSize: `${pt(9.5, zoom)}px`, color: '#0F172A' }}>{p.name}</span>
-            {p.dates && (
-              <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280' }}>{'  ['}{p.dates}{']'}</span>
-            )}
+          <div style={{ marginBottom: pt(5, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px`, color: '#111111' }}>{p.name}</span>
+              {p.dates && <span style={{ fontSize: `${pt(10.5, zoom)}px`, whiteSpace: 'nowrap' }}>[{p.dates}]</span>}
+            </div>
             {p.description && (
-              <div style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#1F2937', lineHeight: 1.42 }}>{p.description}</div>
+              <div style={{ fontSize: `${pt(10.5, zoom)}px`, paddingLeft: pt(13, zoom), position: 'relative', textAlign: 'justify' }}>
+                <span style={{ position: 'absolute', left: 0 }}>•</span>
+                {p.description}
+              </div>
             )}
             {p.link && (
-              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#0F766E', textDecoration: 'none' }}>
+              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(10.5, zoom)}px`, color: '#111111', textDecoration: 'none' }}>
                 {p.link}
               </a>
             )}
@@ -658,48 +626,34 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
     });
   }
 
-  // 6. Education — single line: institution (bold) — degree + period
-  if (cv.education.length > 0) {
-    blocks.push(section('Education'));
-    cv.education.forEach((e, i) => {
+  if (cv.technicalSkills.length > 0) {
+    blocks.push(section('Skills & Interests'));
+    cv.technicalSkills.forEach((cat, i) => {
       blocks.push({
-        key: `edu-${i}`,
+        key: `skill-${i}`,
         render: (zoom) => (
-          <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2, zoom) }}>
-            <span style={{ fontWeight: 700, color: '#0F172A' }}>{e.institution}</span>
-            <span style={{ color: '#1F2937' }}>
-              {(e.degree ? '  —  ' + e.degree : '')}
-              {e.dates ? '   ' + e.dates : ''}
-            </span>
+          <div style={{ fontSize: `${pt(10.5, zoom)}px`, lineHeight: 1.3, marginBottom: pt(2.5, zoom) }}>
+            <span style={{ fontWeight: 700, color: '#111111' }}>{cat.category}: </span>
+            <span style={{ color: '#111111' }}>{cat.skills.join(', ')}</span>
           </div>
         ),
       });
     });
   }
 
-  // 7. Certifications — issuer (bold) — name (year)
   if (cv.certifications && cv.certifications.length > 0) {
     blocks.push(section('Certifications'));
     cv.certifications.forEach((cert, i) => {
+      let nameT = '';
       let issuer = '';
-      let name = '';
-      let date = '';
-      if (typeof cert === 'string') {
-        name = cert;
-      } else {
-        issuer = cert.issuer || '';
-        name = cert.name || '';
-        date = cert.date || '';
-      }
+      if (typeof cert === 'string') nameT = cert;
+      else { nameT = cert.name || ''; issuer = cert.issuer || ''; }
       blocks.push({
         key: `cert-${i}`,
         render: (zoom) => (
-          <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2, zoom) }}>
-            {issuer && <span style={{ fontWeight: 700, color: '#0F172A' }}>{issuer}</span>}
-            <span style={{ color: '#1F2937' }}>
-              {(issuer ? '  —  ' : '') + name}
-              {date ? ' (' + date + ')' : ''}
-            </span>
+          <div style={{ fontSize: `${pt(10.5, zoom)}px`, marginBottom: pt(2, zoom) }}>
+            {issuer && <span style={{ fontWeight: 700, color: '#111111' }}>{issuer}</span>}
+            <span style={{ color: '#111111' }}>{(issuer ? '  —  ' : '') + nameT}</span>
           </div>
         ),
       });
@@ -737,7 +691,7 @@ const Bullet: React.FC<{ zoom: number; text: string; style: CvTemplateStyle }> =
   );
 };
 
-function buildModernClassicBlocks(cv: PdfCvShape): CvBlock[] {
+function buildAtanuBlocks(cv: PdfCvShape): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
 
@@ -986,3 +940,178 @@ const HarvardBullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text })
   );
 };
 
+// ── Jake — Jake Ryan one-page developer resume ──
+// black ink, uppercase name left, '—' bullets, black rules under
+// headings, 2-column skills grid, tight 9px type.
+function buildJakeBlocks(cv: PdfCvShape): CvBlock[] {
+  const blocks: CvBlock[] = [];
+  const contacts = getContactItems(cv);
+
+  const section = (title: string): CvBlock => ({
+    key: `sec-${title}`,
+    keepAfter: 30,
+    render: (zoom) => (
+      <div style={{ margin: `${pt(8, zoom)}px 0 ${pt(5, zoom)}px` }}>
+        <div style={{ fontSize: `${pt(11, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#111111', paddingBottom: pt(3, zoom), borderBottom: '1px solid #111111' }}>
+          {title}
+        </div>
+      </div>
+    ),
+  });
+
+  blocks.push({
+    key: 'header',
+    render: (zoom) => (
+      <div style={{ marginBottom: pt(8, zoom) }}>
+        <div style={{ fontSize: `${pt(24, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#111111' }}>
+          {cv.candidateName || 'CANDIDATE NAME'}
+        </div>
+        {cv.targetRole && (
+          <div style={{ fontSize: `${pt(11.5, zoom)}px`, fontWeight: 600, color: '#555555', margin: `${pt(2, zoom)}px 0 ${pt(6, zoom)}px` }}>
+            {cv.targetRole}
+          </div>
+        )}
+        {contacts.length > 0 && (
+          <div style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#444444' }}>
+            {contacts.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span style={{ color: '#AAAAAA', padding: `0 ${pt(5, zoom)}px` }}>|</span>}
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#111111', textDecoration: 'none', borderBottom: '1px solid #BBBBBB' }}>{c.label}</a>
+                ) : (
+                  <span>{c.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+  });
+
+  if (cv.professionalSummary) {
+    blocks.push(section('Summary'));
+    blocks.push({
+      key: 'summary',
+      render: (zoom) => (
+        <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#1A1A1A', lineHeight: 1.35, textAlign: 'justify', paddingBottom: pt(4, zoom) }}>
+          {cv.professionalSummary}
+        </div>
+      ),
+    });
+  }
+
+  if (cv.technicalSkills.length > 0) {
+    blocks.push(section('Skills'));
+    blocks.push({
+      key: 'skills-grid',
+      render: (zoom) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: pt(20, zoom), paddingBottom: pt(4, zoom) }}>
+          {cv.technicalSkills.map((cat, i) => (
+            <div key={i} style={{ fontSize: `${pt(9, zoom)}px`, lineHeight: 1.35, marginBottom: pt(2.5, zoom) }}>
+              <span style={{ fontWeight: 700, color: '#111111' }}>{cat.category}: </span>
+              <span style={{ color: '#1A1A1A' }}>{cat.skills.join(', ')}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
+
+  if (cv.workExperience.length > 0) {
+    blocks.push(section('Experience'));
+    cv.workExperience.forEach((exp, i) => {
+      blocks.push({
+        key: `exp-${i}-head`,
+        keepAfter: 25,
+        render: (zoom) => (
+          <div style={{ marginBottom: pt(2, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(9.5, zoom)}px`, color: '#111111' }}>
+                {exp.title}
+                {exp.company && <span style={{ color: '#555555' }}>{'  —  '}{exp.company}</span>}
+              </span>
+              {exp.dates && <span style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#777777', whiteSpace: 'nowrap' }}>{exp.dates}</span>}
+            </div>
+            {exp.location && <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#777777' }}>{exp.location}</div>}
+          </div>
+        ),
+      });
+      exp.highlights.forEach((hl, j) => {
+        blocks.push({ key: `exp-${i}-b${j}`, render: (zoom) => <JakeBullet zoom={zoom} text={hl} /> });
+      });
+      blocks.push({ key: `exp-${i}-gap`, render: () => <div style={{ height: 4 }} /> });
+    });
+  }
+
+  if (cv.projects && cv.projects.length > 0) {
+    blocks.push(section('Projects'));
+    cv.projects.forEach((p, i) => {
+      blocks.push({
+        key: `proj-${i}`,
+        keepAfter: 18,
+        render: (zoom) => (
+          <div style={{ marginBottom: pt(3, zoom) }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(9.5, zoom)}px`, color: '#111111' }}>{p.name}</span>
+            {p.dates && <span style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#777777' }}>{'  ['}{p.dates}{']'}</span>}
+            {p.description && (
+              <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#1A1A1A', lineHeight: 1.35 }}>{p.description}</div>
+            )}
+            {p.link && (
+              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9, zoom)}px`, color: '#111111', textDecoration: 'none', borderBottom: '1px solid #BBBBBB' }}>
+                {p.link}
+              </a>
+            )}
+          </div>
+        ),
+      });
+    });
+  }
+
+  if (cv.education.length > 0) {
+    blocks.push(section('Education'));
+    cv.education.forEach((e, i) => {
+      blocks.push({
+        key: `edu-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.35, marginBottom: pt(2.5, zoom) }}>
+            <span style={{ fontWeight: 700, color: '#111111' }}>{e.institution}</span>
+            <span style={{ color: '#1A1A1A' }}>{(e.degree ? '  —  ' + e.degree : '')}{e.dates ? '   ' + e.dates : ''}</span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  if (cv.certifications && cv.certifications.length > 0) {
+    blocks.push(section('Certifications'));
+    cv.certifications.forEach((cert, i) => {
+      let nameT = '';
+      let issuer = '';
+      if (typeof cert === 'string') nameT = cert;
+      else { nameT = cert.name || ''; issuer = cert.issuer || ''; }
+      blocks.push({
+        key: `cert-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(9.5, zoom)}px`, marginBottom: pt(2.5, zoom) }}>
+            {issuer && <span style={{ fontWeight: 700, color: '#111111' }}>{issuer}</span>}
+            <span style={{ color: '#1A1A1A' }}>{(issuer ? '  —  ' : '') + nameT}</span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  return blocks;
+}
+
+const JakeBullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text }) => {
+  const clean = String(text || '').replace(/^[*•\-]\s*/, '').trim();
+  if (!clean) return null;
+  return (
+    <div style={{ display: 'flex', fontSize: `${pt(9, zoom)}px`, lineHeight: 1.35, paddingBottom: pt(1.5, zoom), paddingLeft: pt(12, zoom) }}>
+      <span style={{ color: '#111111', flexShrink: 0, marginLeft: pt(-12, zoom), width: pt(12, zoom) }}>—</span>
+      <span style={{ color: '#1A1A1A', textAlign: 'justify' }}>{clean}</span>
+    </div>
+  );
+};

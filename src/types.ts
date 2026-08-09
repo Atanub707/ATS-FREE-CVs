@@ -161,12 +161,12 @@ export interface MasterCv {
   templateId?: TemplateId;
 }
 
-export type TemplateId = 'harvard' | 'compact-executive' | 'modern-classic';
+export type TemplateId = 'harvard' | 'jake' | 'atanu';
 
 export const CV_TEMPLATES: { id: TemplateId; label: string; description: string }[] = [
-  { id: 'harvard', label: 'Harvard Classic', description: 'Timeless single-column — safest for every ATS' },
-  { id: 'compact-executive', label: 'Compact Executive', description: 'Denser typography — fits senior 2-page CVs' },
-  { id: 'modern-classic', label: 'Modern Classic', description: 'Refined single-column — role subtitle, exact spec spacing' },
+  { id: 'harvard', label: 'Harvard', description: 'Official Harvard College bullet-point resume — centered, Calibri' },
+  { id: 'jake', label: 'Jake', description: 'Jake Ryan one-pager — black minimal, developer classic' },
+  { id: 'atanu', label: 'Atanu', description: 'Custom design — teal single-column with role subtitle' },
 ];
 
 export type ExperienceLevel = 'all' | 'entry' | 'mid' | 'senior' | 'lead';

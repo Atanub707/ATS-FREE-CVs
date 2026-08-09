@@ -641,7 +641,7 @@ async function startServer() {
 
       const safeName = m.fullName.replace(/ /g, '_');
       const filename = `${safeName}_Master_CV`;
-      const template = (req.query.template as string) || m.templateId || 'harvard';
+      const template = (req.query.template as string) || (['harvard', 'jake', 'atanu'].includes(m.templateId || '') ? m.templateId : 'harvard');
 
       if (format === 'pdf') {
         const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
@@ -1470,7 +1470,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const safeCompany = data.company.replace(/[^a-zA-Z0-9]/g, '_');
 
       if (format === 'pdf') {
-        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, getMasterCv()?.templateId || 'harvard');
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);
@@ -1480,7 +1480,7 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.txt"`);
         res.send(textCv);
       } else {
-        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, getMasterCv()?.templateId || 'harvard');
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);
@@ -1606,7 +1606,7 @@ Return valid JSON only — NO markdown, NO code fences:
         return;
       }
 
-      const pdfBuffer = await generatePdfBuffer(job.tailoredCv, getMasterCv()?.templateId || 'harvard');
+      const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
 
       const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
       const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1636,7 +1636,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const baseName = `${safeName}_${safeCompany}`;
 
       if (format === 'pdf') {
-        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, getMasterCv()?.templateId || 'harvard');
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);
@@ -1646,7 +1646,7 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.txt"`);
         res.send(textCv);
       } else {
-        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, getMasterCv()?.templateId || 'harvard');
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);
