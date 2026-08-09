@@ -93,7 +93,6 @@ import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
 import { sanitizeJobs } from './server/scraper/sanitizer.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
-import { renderCvPdf } from './server/builder/cvPdfRenderer.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
 import { compressCv } from './server/ai/cvCompressor.js';
 import { getMarketData } from './server/ai/marketData.js';
@@ -645,8 +644,7 @@ async function startServer() {
       const template = (req.query.template as string) || (['harvard', 'jake', 'atanu'].includes(m.templateId || '') ? m.templateId : 'harvard');
 
       if (format === 'pdf') {
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(masterAsTailored, template); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(masterAsTailored, template); }
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
         res.send(pdfBuffer);
@@ -656,8 +654,7 @@ async function startServer() {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.txt"`);
         res.send(textCv);
       } else {
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(masterAsTailored, template); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(masterAsTailored, template); }
+        const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
         res.send(pdfBuffer);
@@ -1473,9 +1470,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const safeCompany = data.company.replace(/[^a-zA-Z0-9]/g, '_');
 
       if (format === 'pdf') {
-        const tplId2 = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(data.tailoredCv, tplId2); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(data.tailoredCv, tplId2); }
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);
@@ -1485,9 +1480,7 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.txt"`);
         res.send(textCv);
       } else {
-        const tplId2 = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(data.tailoredCv, tplId2); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(data.tailoredCv, tplId2); }
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);
@@ -1613,9 +1606,7 @@ Return valid JSON only — NO markdown, NO code fences:
         return;
       }
 
-      const tplId = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(job.tailoredCv, tplId); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(job.tailoredCv, tplId); }
+      const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
 
       const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
       const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1645,9 +1636,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const baseName = `${safeName}_${safeCompany}`;
 
       if (format === 'pdf') {
-        const tplId = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(job.tailoredCv, tplId); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(job.tailoredCv, tplId); }
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);
@@ -1657,9 +1646,7 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.txt"`);
         res.send(textCv);
       } else {
-        const tplId = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-        let pdfBuffer;
-        try { pdfBuffer = await renderCvPdf(job.tailoredCv, tplId); } catch (e) { console.warn('Chrome PDF failed, falling back to pdfkit:', e.message); pdfBuffer = await generatePdfBuffer(job.tailoredCv, tplId); }
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);

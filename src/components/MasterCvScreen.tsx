@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
 import { llmErrorMessage } from '../lib/llmError';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
-import { CvHtmlPreview } from './CvHtmlPreview';
-import { masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
+import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
 import {
   X,
   Save,
@@ -1624,7 +1623,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
         </div>
         <div className="flex-1 overflow-auto p-6 relative">
-          <CvHtmlPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} template={template} />
+          <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} template={template} />
 
           {/* Floating zoom control — bottom-right corner, stays visible while scrolling */}
           <div className="sticky bottom-4 ml-auto w-fit flex items-center bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
@@ -1801,7 +1800,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
                   </div>
                   <div className="opacity-60">
-                    <CvHtmlPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth template={template} onPageCount={setPagesBefore} />
+                    <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth template={template} onPageCount={setPagesBefore} />
                   </div>
                 </div>
                 <div>
@@ -1811,7 +1810,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦</span>
                     <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
                   </div>
-                  <CvHtmlPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth template={template} onPageCount={setPagesAfter} />
+                  <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth template={template} onPageCount={setPagesAfter} />
                   <div className="flex gap-2.5 mt-4 justify-end">
                     <button
                       type="button"

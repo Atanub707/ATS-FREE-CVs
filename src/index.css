@@ -30,7 +30,7 @@
   }
 
   @page {
-    size: letter;
-    margin: 0;
+    size: letter portrait;
+    margin: 12mm;
   }
 }
