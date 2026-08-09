@@ -220,7 +220,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const CHIP_CAP = 8;
   const visibleMatched = showAllMatched ? matchedSkills : matchedSkills.slice(0, CHIP_CAP);
   const visibleAdditions = showAllAdditions ? additions : additions.slice(0, CHIP_CAP);
-  const displayScore = diff ? diff.afterScore : result?.matchScore ?? 0;
+  const displayScore = result?.matchScore ?? 0;
   const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
@@ -514,9 +514,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                         <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
                           <TrendingUp className="w-4 h-4 text-green-600" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-[17px] font-bold text-green-600 leading-none">+{diff.scoreBoost}%</div>
-                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">ATS boost ({diff.beforeScore}% → {diff.afterScore}%)</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[15px] font-bold text-green-600 leading-none">{diff.beforeScore}% → {diff.afterScore}%</div>
+                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">ATS score boost +{diff.scoreBoost}%</div>
+                          <div className="h-1.5 rounded-full bg-slate-200 relative overflow-hidden mt-1.5">
+                            <div className="absolute inset-y-0 bg-green-500" style={{ left: `${diff.beforeScore}%`, width: `${Math.max(0, diff.afterScore - diff.beforeScore)}%` }} />
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
