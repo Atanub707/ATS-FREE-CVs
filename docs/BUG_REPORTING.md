@@ -1,7 +1,14 @@
 # Bug Reporting — How It Works (End to End)
 
-The app can file bug reports directly on your GitHub repository — no
-copy-pasting into the GitHub website.
+Anyone using the app can report a bug. There are **two modes** — the app
+picks the right one automatically:
+
+| Who | Mode | What happens |
+|---|---|---|
+| **Owner** (GitHub token saved in Settings) | `api` | Issue is **created instantly** via the GitHub API — the link appears immediately |
+| **Any other user** (no token) | `prefill` | GitHub opens with the report **pre-filled** — sign in with a free GitHub account, click *Submit new issue* |
+
+No GitHub token is ever required to report a bug.
 
 ## The flow
 
@@ -14,19 +21,24 @@ copy-pasting into the GitHub website.
         ▼
 3. POST /api/settings/bug-report          ← local Express server
         │
-        ▼
-4. Server reads [github] from config.ini  ← token, owner, repo
+        ├── token saved?  ──▶ 4a. POST api.github.com/.../issues (Bearer PAT)
+        │                          │
+        │                          ▼
+        │                    Issue created → link shown to the user
         │
-        ▼
-5. POST https://api.github.com/repos/{owner}/{repo}/issues
-        │  (Authorization: Bearer <PAT>)
-        ▼
-6. Issue created → issue URL returned
-        ▼
-7. Settings shows "Issue #42 created" + "Open issue" link
+        └── no token?  ──▶ 4b. Build pre-filled URL:
+                                github.com/{owner}/{repo}/issues/new
+                                ?title=…&body=…
+                                │
+                                ▼
+                          Browser opens it → user signs in (free) →
+                          reviews → clicks "Submit new issue"
 ```
 
-## Before the first report — one-time setup (2 minutes)
+## One-time setup (owner only, 2 minutes)
+
+Only the **repository owner** needs this. Other users don't configure
+anything.
 
 1. Create a GitHub PAT with **Issues: Read and write** on your repository
    (full steps: [docs/TOKENS.md → Section 3](TOKENS.md)).
@@ -37,8 +49,8 @@ copy-pasting into the GitHub website.
    - **GitHub token** — paste the PAT
 4. Click **Apply Config**.
 
-Nothing is submitted until you click **Submit Bug Report** — saving the
-token only stores it.
+Users without a token skip straight to filing a report — the Owner /
+Repository defaults are enough for GitHub to build the pre-filled page.
 
 ## Filing a report
 
@@ -57,27 +69,36 @@ The server appends an environment block to the issue automatically:
 **Reported:** 2026-08-09T14:00:00.000Z
 ```
 
-On success you see the issue number and an **Open issue** link.
-On failure you see a plain-language reason (see error matrix below).
+On success you see the issue number and an **Open issue** link (owner mode),
+or GitHub opens with your report pre-filled plus a **Copy report** button
+(user mode). On failure you see a plain-language reason (see error matrix
+below).
 
 ## What gets sent — and what never does
 
 **Sent to GitHub:** your title, description, steps, and the environment
-block above. That's it.
+block above. That's it. In prefill mode you review exactly this text
+before it is submitted — nothing is sent until you click *Submit new issue*.
 
 **Never sent:** your LLM key, Apify token, the GitHub token itself, CV
 content, job data, or passwords. (Don't paste secrets into the bug text.)
+
+## No GitHub account at all?
+
+Click **Copy report** after submitting — the full report (including the
+environment block) is on your clipboard. Paste it anywhere: an email, a
+Discord server, or the repository's Discussions tab.
 
 ## Error messages and what they mean
 
 | You see | Meaning | Fix |
 |---|---|---|
-| "No GitHub token configured…" | Token slot is empty | Add the PAT in Settings → Report a Bug → Apply Config |
-| "GitHub rejected the token (401)" | Token invalid or expired | Create a new PAT (TOKENS.md §3) |
-| "GitHub denied the request (403)" | Missing **Issues: write** permission, or rate limit | Recreate the token with Issues: Read and write |
+| "GitHub rejected the token (401)" | Token invalid or expired (owner mode) | Create a new PAT (TOKENS.md §3) |
+| "GitHub denied the request (403)" | Missing **Issues: write** permission, or rate limit (owner mode) | Recreate the token with Issues: Read and write |
 | "Repository X was not found (404)" | Wrong owner/repo, or token can't see it | Check Owner / Repository fields; token must target that repo |
-| "GitHub could not create the issue: …" | Other API rejection (e.g. 422) | Read the message and adjust the report |
+| "GitHub could not create the issue: …" | Other API rejection (e.g. 422) (owner mode) | Read the message and adjust the report |
 | "Failed to reach GitHub" | Network/server issue | Try again in a minute |
+| Prefill page says "Page not found" | Owner/Repo mismatch or private repo | Check the Owner / Repository fields in Settings |
 
 ## Local behavior notes
 

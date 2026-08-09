@@ -387,6 +387,10 @@ async function startServer() {
   });
 
   // Bug report → GitHub issue (Settings → Report a Bug)
+  // Two modes:
+  //  1. PAT configured → issue is created instantly via the GitHub API.
+  //  2. No PAT → the user gets a pre-filled GitHub "New issue" page
+  //     (works for anyone with a free GitHub account, no token needed).
   app.post('/api/settings/bug-report', async (req, res) => {
     try {
       const clean = (v: unknown, max: number) => String(v || '').trim().slice(0, max);
@@ -401,12 +405,6 @@ async function startServer() {
       const token = (cfg.github?.token || '').trim();
       const owner = (cfg.github?.owner || '').trim();
       const repo = (cfg.github?.repo || '').trim();
-      if (!token) {
-        res.status(400).json({
-          error: 'No GitHub token configured. Open Settings → Bug Reports, paste a GitHub Personal Access Token (Issues: write) and save.',
-        });
-        return;
-      }
       if (!owner || !repo) {
         res.status(400).json({ error: 'GitHub owner/repository is not configured. Open Settings → Bug Reports and check the Owner / Repository fields.' });
         return;
@@ -422,6 +420,15 @@ async function startServer() {
         `**Reported:** ${new Date().toISOString()}`,
         steps ? `\n**Steps to reproduce:**\n${steps}` : '',
       ].join('\n');
+
+      if (!token) {
+        // Pre-filled flow — no token required. GitHub asks the user to
+        // sign in and click "Submit new issue"; the report is fully written.
+        const prefillUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(issueBody)}`;
+        res.json({ success: true, mode: 'prefill', prefillUrl, issueBody });
+        return;
+      }
+
       const resp = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues`, {
         method: 'POST',
         headers: {
@@ -446,7 +453,7 @@ async function startServer() {
         }
         return;
       }
-      res.json({ success: true, issueUrl: data.html_url, issueNumber: data.number });
+      res.json({ success: true, mode: 'api', issueUrl: data.html_url, issueNumber: data.number });
     } catch (err: any) {
       console.error('Bug report failed:', err);
       res.status(500).json({ error: 'Failed to reach GitHub. Check your connection and try again.' });

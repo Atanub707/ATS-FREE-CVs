@@ -74,7 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [bugDescription, setBugDescription] = useState('');
   const [bugSteps, setBugSteps] = useState('');
   const [bugSending, setBugSending] = useState(false);
-  const [bugMsg, setBugMsg] = useState<{ ok: boolean; text: string; url?: string } | null>(null);
+  const [bugMsg, setBugMsg] = useState<{ ok: boolean; text: string; url?: string; copy?: string } | null>(null);
 
   const handleBugReport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +93,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const data = await res.json();
       if (!res.ok) {
         setBugMsg({ ok: false, text: data.error || 'Could not submit the bug report.' });
+      } else if (data.mode === 'prefill') {
+        window.open(data.prefillUrl, '_blank');
+        setBugMsg({
+          ok: true,
+          text: 'GitHub opened with your report pre-filled — sign in (free account) and click "Submit new issue". No token needed.',
+          url: data.prefillUrl,
+          copy: data.issueBody,
+        });
+        setBugTitle(''); setBugDescription(''); setBugSteps('');
       } else {
         setBugMsg({ ok: true, text: `Issue #${data.issueNumber} created. Thank you for reporting!`, url: data.issueUrl });
         setBugTitle(''); setBugDescription(''); setBugSteps('');
@@ -101,6 +110,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setBugMsg({ ok: false, text: err.message || 'Could not submit the bug report.' });
     } finally {
       setBugSending(false);
+    }
+  };
+
+  const copyBugReport = async () => {
+    if (!bugMsg?.copy) return;
+    try {
+      await navigator.clipboard.writeText(bugMsg.copy);
+      setBugMsg({ ...bugMsg, text: 'Report copied to clipboard — paste it anywhere (email, GitHub, Discord).' });
+    } catch {
+      setBugMsg({ ...bugMsg, text: 'Could not copy automatically — select the text manually.' });
     }
   };
 
@@ -329,6 +348,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Found a bug? Submit it here and it is filed directly on the GitHub repository as an issue —
               you will get the issue link immediately. Full guide: <code className="text-[10px] bg-white border border-slate-200 rounded px-1">docs/BUG_REPORTING.md</code>
             </p>
+            <p className="text-[10.5px] text-slate-500 leading-relaxed bg-white border border-slate-200 rounded-lg px-2.5 py-2">
+              <b className="text-slate-700">How it works for you:</b> with a GitHub token (owner) the issue is
+              created instantly. Without a token, GitHub opens with your report pre-filled — anyone with a free
+              GitHub account can review and submit it. No token required to report.
+            </p>
 
             {/* GitHub connection */}
             <div className="grid grid-cols-2 gap-2.5">
@@ -415,6 +439,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <a href={bugMsg.url} target="_blank" rel="noreferrer" className="ml-1.5 font-bold text-emerald-700 underline inline-flex items-center gap-0.5">
                         Open issue <ExternalLink className="w-3 h-3" />
                       </a>
+                    )}
+                    {bugMsg.copy && (
+                      <button type="button" onClick={copyBugReport} className="ml-2 font-bold text-emerald-700 underline cursor-pointer hover:text-emerald-800">
+                        Copy report
+                      </button>
                     )}
                   </span>
                 </div>

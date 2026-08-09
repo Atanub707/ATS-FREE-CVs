@@ -79,10 +79,14 @@ to the built-in free scraper — searches keep working.
 
 ---
 
-## 3. GitHub Personal Access Token (for Bug Reports only)
+## 3. GitHub Personal Access Token (Bug Reports — owner only)
 
 Required only if you want the **Report a Bug** button in Settings to file
-issues directly on your GitHub repository.
+issues **instantly** via the GitHub API.
+
+**Do other users need one? No.** Everyone else — no token at all — gets a
+pre-filled GitHub issue page and submits it with their free GitHub account
+(see `docs/BUG_REPORTING.md`).
 
 ### Steps (fine-grained token — recommended)
 
@@ -130,5 +134,5 @@ runs from (project root, or `/app/config.ini` inside Docker).
 | "No LLM API key configured" | Settings → LLM Provider → paste key → Apply Config |
 | Scores stuck / "LLM error" | Verify key + Base URL; try another model |
 | LinkedIn returns "No results found" | Add the Apify token (Section 2) |
-| Bug report says "No GitHub token configured" | Add the PAT (Section 3) and click Apply Config first |
-| Bug report → 403 | Token lacks **Issues: write** or is rate-limited |
+| Bug report opens GitHub pre-filled (no token) | That's the normal user flow — sign in and submit (BUG_REPORTING.md) |
+| Bug report → 403 (owner mode) | Token lacks **Issues: write** or is rate-limited |
