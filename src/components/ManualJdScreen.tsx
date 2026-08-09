@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, RotateCcw } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, RotateCcw, TrendingUp, Plus, PenLine, Ban } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 
@@ -111,6 +111,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const [tailorError, setTailorError] = useState(false);
   const [showAllMatched, setShowAllMatched] = useState(false);
   const [showAllAdditions, setShowAllAdditions] = useState(false);
+  const [showAllAddedSkills, setShowAllAddedSkills] = useState(false);
+  const [showAllRewrites, setShowAllRewrites] = useState(false);
+  const [showAllReview, setShowAllReview] = useState(false);
 
   useEffect(() => {
     if (isOpen && historyOpen) loadHistory();
@@ -160,7 +163,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
     setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null);
-    setShowAllMatched(false); setShowAllAdditions(false);
+    setShowAllMatched(false); setShowAllAdditions(false); setShowAllAddedSkills(false); setShowAllRewrites(false); setShowAllReview(false);
     try {
       const res = await fetch('/api/analyze-jd', {
         method: 'POST',
@@ -228,6 +231,16 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
+  const ADDED_CAP = 8;
+  const REWRITE_CAP = 4;
+  const REVIEW_CAP = 3;
+  const visibleAddedSkills = showAllAddedSkills ? reviewSkills : reviewSkills.slice(0, ADDED_CAP);
+  const visibleRewrites = showAllRewrites ? reviewBullets : reviewBullets.slice(0, REWRITE_CAP);
+  const reviewItems: { kind: 'skill' | 'bullet'; key: string; label: string }[] = [
+    ...reviewSkills.map((s) => ({ kind: 'skill' as const, key: `skill:${s}`, label: s })),
+    ...reviewBullets.map((br, bi) => ({ kind: 'bullet' as const, key: `bullet:${bi}`, label: br.rewritten })),
+  ];
+  const visibleReview = showAllReview ? reviewItems : reviewItems.slice(0, REVIEW_CAP);
 
 
   const SKILL_PALETTE = [
@@ -503,62 +516,141 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
               ) : (
                 <>
                   <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
-                    <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3">
-                      <div className="text-xl font-bold text-green-600">+{diff.scoreBoost}%</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">ATS score boost ({diff.beforeScore}% → {diff.afterScore}%)</div>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3">
-                      <div className="text-xl font-bold text-green-600">+{reviewSkills.length}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">skills added</div>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3">
-                      <div className="text-xl font-bold text-green-600">+{reviewBullets.length}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">bullets rewritten</div>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3">
-                      <div className="text-xl font-bold text-slate-500">{diff.notIntegrable?.length || 0}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">skipped — no honest way to add</div>
-                    </div>
-                  </div>
-                  <h3 className="text-[12.5px] font-bold text-slate-900">Review changes — remove what you don't like</h3>
-                  {reviewSkills.map((s) => {
-                    const removed = removedPoints.has(`skill:${s}`);
-                    return (
-                      <div key={`skill:${s}`} className={`flex items-start gap-2.5 py-2 border-b border-slate-100 ${removed ? 'opacity-40' : ''}`}>
-                        <div className="flex-1 text-[13px] text-slate-700 leading-relaxed min-w-0 break-words">
-                          {removed ? <span className="line-through text-slate-400">Added skill {s}</span> : <>Added skill <b className="text-green-600">{s}</b></>}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
+                          <TrendingUp className="w-4 h-4 text-green-600" />
                         </div>
-                        <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(`skill:${s}`); return n; })() : new Set(p).add(`skill:${s}`))}
-                          aria-label={removed ? `Restore ${s}` : `Remove ${s}`}
-                          className={`w-8 h-8 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
-                          {removed ? '↺' : '✕'}
+                        <div className="min-w-0">
+                          <div className="text-[17px] font-bold text-green-600 leading-none">+{diff.scoreBoost}%</div>
+                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">ATS boost ({diff.beforeScore}% → {diff.afterScore}%)</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
+                          <Plus className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[17px] font-bold text-green-600 leading-none">+{reviewSkills.length}</div>
+                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Skills added</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
+                          <PenLine className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[17px] font-bold text-green-600 leading-none">+{reviewBullets.length}</div>
+                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Bullets rewritten</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                          <Ban className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[17px] font-bold text-slate-500 leading-none">{diff.notIntegrable?.length || 0}</div>
+                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Skipped — no honest way to add</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {reviewSkills.length > 0 && (
+                      <div>
+                        <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                          What's been added
+                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
+                          {reviewSkills.length > ADDED_CAP && (
+                            <button onClick={() => setShowAllAddedSkills((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                              {showAllAddedSkills ? 'Show less' : `+${reviewSkills.length - ADDED_CAP} more`}
+                            </button>
+                          )}
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5 min-w-0">
+                          {visibleAddedSkills.map((s) => (
+                            <span key={s} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold bg-green-50 border border-green-200 text-green-700 max-w-full">
+                              <Plus className="w-3 h-3 shrink-0" />
+                              <span className="break-words min-w-0">{s}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {reviewBullets.length > 0 && (
+                      <div>
+                        <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                          What's been rewritten
+                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
+                          {reviewBullets.length > REWRITE_CAP && (
+                            <button onClick={() => setShowAllRewrites((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                              {showAllRewrites ? 'Show less' : `+${reviewBullets.length - REWRITE_CAP} more`}
+                            </button>
+                          )}
+                        </h3>
+                        <div className="space-y-1.5">
+                          {visibleRewrites.map((br, bi) => (
+                            <div key={`rw:${bi}`} className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+                              <PenLine className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
+                              <p className="flex-1 text-[12px] text-slate-700 leading-relaxed min-w-0 break-words" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{br.rewritten}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border border-slate-200 rounded-xl px-3.5 py-2.5 bg-slate-50/70">
+                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-1.5">What's preserved</h3>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {['Job titles', 'Employers', 'Employment dates'].map((x) => (
+                          <span key={x} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" /> {x}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        Review changes — remove what you don't like
+                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
+                      </h3>
+                      <div className="divide-y divide-slate-100">
+                        {visibleReview.map((item) => {
+                          const removed = removedPoints.has(item.key);
+                          return item.kind === 'skill' ? (
+                            <div key={item.key} className={`flex items-center gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
+                              <div className="flex-1 text-[12.5px] text-slate-700 min-w-0 break-words">
+                                {removed ? <span className="line-through text-slate-400">Added skill {item.label}</span> : <>Added skill <b className="text-green-600">{item.label}</b></>}
+                              </div>
+                              <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
+                                aria-label={removed ? `Restore ${item.label}` : `Remove ${item.label}`}
+                                className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                {removed ? '↺' : '✕'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div key={item.key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
+                              <p className={`flex-1 text-[12.5px] min-w-0 break-words ${removed ? 'line-through text-slate-400' : 'text-slate-700'}`} title={item.label}
+                                style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.label}</p>
+                              <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
+                                aria-label={removed ? 'Restore change' : 'Remove change'}
+                                className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                {removed ? '↺' : '✕'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {reviewItems.length > REVIEW_CAP && (
+                        <button onClick={() => setShowAllReview((v) => !v)} className="w-full mt-2 py-1.5 rounded-lg border border-slate-200 text-[11.5px] font-bold text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors">
+                          {showAllReview ? 'Show less' : `+${reviewItems.length - REVIEW_CAP} more additions`}
                         </button>
-                      </div>
-                    );
-                  })}
-                  {reviewBullets.map((br, bi) => {
-                    const key = `bullet:${bi}`;
-                    const removed = removedPoints.has(key);
-                    return (
-                      <div key={key} className={`py-2 border-b border-slate-100 ${removed ? 'opacity-40' : ''}`}>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Before</div>
-                        <p className="text-[12px] text-slate-400 line-through leading-relaxed break-words">{br.original}</p>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mt-2 mb-1">After</div>
-                        <div className="flex items-start gap-2.5">
-                          <p className="flex-1 text-[13px] text-slate-700 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 min-w-0 break-words">{br.rewritten}</p>
-                          <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(key); return n; })() : new Set(p).add(key))}
-                            aria-label={removed ? 'Restore change' : 'Remove change'}
-                            className={`w-8 h-8 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
-                            {removed ? '↺' : '✕'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {reviewSkills.length === 0 && reviewBullets.length === 0 && (
-                    <p className="text-xs text-slate-500">No changes to review.</p>
-                  )}
+                      )}
+                      {reviewItems.length === 0 && (
+                        <p className="text-xs text-slate-500">No changes to review.</p>
+                      )}
+                    </div>
                   </div>
                   <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80 space-y-2.5">
                     <button onClick={handleRegenerate} disabled={tailoring} aria-live="polite"
