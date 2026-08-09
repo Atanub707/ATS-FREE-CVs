@@ -137,20 +137,22 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
     try {
       const res = await fetch(`/api/manual-jd/history/${id}`);
       if (!res.ok) { setHistoryMsg('Could not load this analysis.'); setTimeout(() => setHistoryMsg(null), 3000); return; }
-      const a = await res.json();
+      const payload = await res.json();
+      const a = payload.analysis || payload;
+      const gap = a.gapAnalysis || a.gap_analysis || { matchingSkills: [], missingSkills: [], keyRecommendations: [], missingKeywords: [], matchedKeywords: [] };
       setTitle(a.role || '');
       setCompany(a.company || '');
       setDescription(a.description || '');
-      setResult({ matchScore: a.score, gapAnalysis: a.gap_analysis || { matchingSkills: [], missingSkills: [], keyRecommendations: [], missingKeywords: [], matchedKeywords: [] } });
-      const missing = a.gap_analysis?.missingSkills || [];
-      const missingKw = a.gap_analysis?.missingKeywords || [];
+      setResult({ matchScore: a.score, gapAnalysis: gap });
+      const missing = gap.missingSkills || [];
+      const missingKw = gap.missingKeywords || [];
       setSelectedSkills(new Set([...missing, ...missingKw]));
       setRemovedPoints(new Set());
       setDiff(a.diff || null);
       setHistoryId(a.id);
       setTailorError(false);
       setHistoryOpen(false);
-      if (a.tailored_cv && a.diff?.scoreBoost !== undefined) setDownloadToken(`restored-${a.id}`);
+      if ((a.tailored_cv || a.tailoredCv) && a.diff?.scoreBoost !== undefined) setDownloadToken(payload.downloadToken || `restored-${a.id}`);
     } catch (e: any) { setError(e.message); }
   };
 
@@ -224,14 +226,16 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
+  const clamp1: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
+  const clamp2: React.CSSProperties = { ...clamp1, WebkitLineClamp: 2 };
   const ADDED_CAP = 8;
   const REWRITE_CAP = 4;
   const REVIEW_CAP = 3;
   const visibleAddedSkills = showAllAddedSkills ? reviewSkills : reviewSkills.slice(0, ADDED_CAP);
   const visibleRewrites = showAllRewrites ? reviewBullets : reviewBullets.slice(0, REWRITE_CAP);
-  const reviewItems: { kind: 'skill' | 'bullet'; key: string; label: string }[] = [
+  const reviewItems: { kind: 'skill' | 'bullet'; key: string; label: string; original?: string }[] = [
     ...reviewSkills.map((s) => ({ kind: 'skill' as const, key: `skill:${s}`, label: s })),
-    ...reviewBullets.map((br, bi) => ({ kind: 'bullet' as const, key: `bullet:${bi}`, label: br.rewritten })),
+    ...reviewBullets.map((br, bi) => ({ kind: 'bullet' as const, key: `bullet:${bi}`, label: br.rewritten, original: br.original })),
   ];
   const visibleReview = showAllReview ? reviewItems : reviewItems.slice(0, REVIEW_CAP);
 
@@ -586,9 +590,16 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                         </h3>
                         <div className="space-y-1.5">
                           {visibleRewrites.map((br, bi) => (
-                            <div key={`rw:${bi}`} className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
-                              <PenLine className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
-                              <p className="flex-1 text-[12px] text-slate-700 leading-relaxed min-w-0 break-words" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{br.rewritten}</p>
+                            <div key={`rw:${bi}`} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+                              <div className="flex items-start gap-2">
+                                <PenLine className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Before</p>
+                                  <p className="text-[11.5px] text-slate-400 line-through leading-relaxed break-words mt-0.5" style={clamp1}>{br.original}</p>
+                                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-green-600 mt-1.5">After</p>
+                                  <p className="text-[12px] text-slate-700 leading-relaxed break-words mt-0.5" style={clamp2}>{br.rewritten}</p>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -627,8 +638,10 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                             </div>
                           ) : (
                             <div key={item.key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
-                              <p className={`flex-1 text-[12.5px] min-w-0 break-words ${removed ? 'line-through text-slate-400' : 'text-slate-700'}`} title={item.label}
-                                style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.label}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10.5px] text-slate-400 line-through leading-relaxed break-words" style={clamp1}>{item.original}</p>
+                                <p className={`text-[12px] leading-relaxed break-words mt-0.5 ${removed ? 'line-through text-slate-400' : 'text-slate-700'}`} style={clamp2} title={item.label}>{item.label}</p>
+                              </div>
                               <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
                                 aria-label={removed ? 'Restore change' : 'Remove change'}
                                 className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
