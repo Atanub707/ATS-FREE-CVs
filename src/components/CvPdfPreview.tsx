@@ -718,7 +718,7 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
         <div
           style={{
             fontSize: `${pt(11, zoom)}px`,
-            fontWeight: 700,
+            fontWeight: 400,
             textTransform: 'uppercase',
             letterSpacing: '1.5px',
             color: '#0F766E',
@@ -751,6 +751,21 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
         >
           {cv.candidateName || 'CANDIDATE NAME'}
         </div>
+        {cv.targetRole && (
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: `${pt(12, zoom)}px`,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              color: '#0F766E',
+              marginBottom: pt(3, zoom),
+            }}
+          >
+            {cv.targetRole}
+          </div>
+        )}
         {contacts.length > 0 && (
           <div style={{ textAlign: 'center', fontSize: `${pt(9, zoom)}px`, color: '#374151' }}>
             {contacts.map((c, i) => (
@@ -841,12 +856,19 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
       exp.highlights.forEach((hl, j) => {
         blocks.push({ key: `exp-${i}-b${j}`, render: (zoom) => <HarvardBullet zoom={zoom} text={hl} /> });
       });
+      blocks.push({ key: `exp-${i}-gap`, render: (zoom) => <div style={{ height: pt(5.5, zoom) }} /> });
     });
   }
 
   // 5. Projects — bold title + [year] + description + teal link
   if (cv.projects && cv.projects.length > 0) {
-    blocks.push(section('Projects'));
+    const projYears: number[] = [];
+    for (const pp of cv.projects) {
+      const ym = /(19|20)\d{2}/.exec(pp.dates || '');
+      if (ym) projYears.push(parseInt(ym[0], 10));
+    }
+    const range = projYears.length > 0 ? ` (${Math.min(...projYears)} \u2013 ${Math.max(...projYears)})` : '';
+    blocks.push(section('Projects' + range));
     cv.projects.forEach((p, i) => {
       blocks.push({
         key: `proj-${i}`,

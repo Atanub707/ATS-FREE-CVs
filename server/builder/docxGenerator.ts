@@ -567,7 +567,28 @@ function generateHarvardClassicPdf(cv: TailoredCv): Promise<Buffer> {
       doc.fillColor(NAVY).text(ch, cx, doc.y, { lineBreak: false });
       cx += doc.widthOfString(ch) + NAME_SPACING;
     }
-    doc.moveDown(0.1);
+    doc.moveDown(0.2); // 3px below the name
+
+    // Role subtitle — 12px bold uppercase accent, 1.5px letter-spacing
+    if (cv.targetRole) {
+      const role = sanitizeText(cv.targetRole).toUpperCase();
+      if (role) {
+        ensurePageSpace(20);
+        const ROLE_SIZE = 12;
+        const ROLE_SPACING = 1.5;
+        const roleY = doc.y;
+        doc.font('Helvetica-Bold').fontSize(ROLE_SIZE);
+        let roleW = 0;
+        for (const ch of Array.from(role)) roleW += doc.widthOfString(ch) + ROLE_SPACING;
+        roleW -= ROLE_SPACING;
+        let rx = leftMargin + Math.max(0, (contentWidth - roleW) / 2);
+        for (const ch of Array.from(role)) {
+          doc.fillColor(ACCENT).text(ch, rx, roleY, { lineBreak: false });
+          rx += doc.widthOfString(ch) + ROLE_SPACING;
+        }
+        doc.moveDown(0.2); // 3px below the role
+      }
+    }
 
     const contactLinks = getContactLinks(cv);
     if (contactLinks.length > 0) {
@@ -615,18 +636,18 @@ function generateHarvardClassicPdf(cv: TailoredCv): Promise<Buffer> {
     const renderSectionHeader = (title: string) => {
       ensurePageSpace(40);
       doc.x = leftMargin;
-      doc.moveDown(0.25);
+      doc.moveDown(0.74); // 10px above (0.74 × ~13.5pt line)
       const headY = doc.y;
-      const secTitle = sanitizeText(title).toUpperCase();
-      doc.font('Helvetica-Bold').fontSize(11);
+      const secTitle = title.toUpperCase();
+      doc.font('Helvetica').fontSize(11); // normal weight
       let cx = leftMargin;
       for (const ch of Array.from(secTitle)) {
         doc.fillColor(ACCENT).text(ch, cx, headY, { lineBreak: false });
         cx += doc.widthOfString(ch) + 1.5;
       }
-      const ruleY = doc.y + 1.5;
+      const ruleY = doc.y + 2; // 2px padding below heading text
       doc.moveTo(leftMargin, ruleY).lineTo(rightMargin, ruleY).lineWidth(1.2).strokeColor(ACCENT).stroke();
-      doc.y = ruleY + 5.5;
+      doc.y = ruleY + 6; // 6px below the rule
       doc.x = leftMargin;
     };
 
@@ -656,7 +677,7 @@ function generateHarvardClassicPdf(cv: TailoredCv): Promise<Buffer> {
       }
 
       doc.x = leftMargin;
-      doc.moveDown(0.1);
+      doc.moveDown(0.18); // 2.5px between bullets
     };
 
     // ── Summary ──
@@ -774,13 +795,19 @@ function generateHarvardClassicPdf(cv: TailoredCv): Promise<Buffer> {
           for (const hl of exp.highlights) renderBullet(hl);
         }
         doc.x = leftMargin;
-        doc.moveDown(0.2);
+        doc.moveDown(0.5); // 8px between jobs
       }
     }
 
     // ── Projects (title bold navy + [year] + description) ──
     if (cv.projects && cv.projects.length > 0) {
-      renderSectionHeader('Projects');
+      const projYears: number[] = [];
+      for (const pp of cv.projects) {
+        const ym = /(19|20)\d{2}/.exec(sanitizeText(pp.dates));
+        if (ym) projYears.push(parseInt(ym[0], 10));
+      }
+      const range = projYears.length > 0 ? ` (${Math.min(...projYears)} \u2013 ${Math.max(...projYears)})` : '';
+      renderSectionHeader('Projects' + range);
 
       for (const proj of cv.projects) {
         if (!proj) continue;
@@ -817,7 +844,7 @@ function generateHarvardClassicPdf(cv: TailoredCv): Promise<Buffer> {
           });
           doc.x = leftMargin;
         }
-        doc.moveDown(0.15);
+        doc.moveDown(0.3); // 4px between projects
       }
     }
 

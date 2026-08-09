@@ -613,7 +613,7 @@ async function startServer() {
           github: m.github,
           website: m.website,
         },
-        targetRole: '',
+        targetRole: m.experiences[0]?.title || '',
         professionalSummary: m.summary,
         coreCompetencies: m.skills.flatMap((s) => s.items),
         workExperience: m.experiences.map((e) => ({
