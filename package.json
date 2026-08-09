@@ -25,6 +25,7 @@
     "multer": "^2.2.0",
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.19.1",
+    "puppeteer-core": "^25.5.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"

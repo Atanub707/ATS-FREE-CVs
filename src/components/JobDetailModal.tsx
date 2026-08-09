@@ -4,7 +4,8 @@ import { formatTimeAgo } from '../lib/dateUtils';
 import { applicantCountLabel } from '../lib/applicantInfo';
 import { getValidJobUrl } from '../lib/jobUrlUtils';
 import { DownloadCvDropdown } from './DownloadCvDropdown';
-import { CvPdfPreview, compressedCvToPdfShape } from './CvPdfPreview';
+import { CvHtmlPreview } from './CvHtmlPreview';
+import { compressedCvToPdfShape } from './CvPdfPreview';
 import {
   X,
   ExternalLink,
@@ -656,7 +657,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                   {/* CV Live Preview — renders with the template selected in the Master CV */}
                   <div id="printable-cv" className="bg-white border border-slate-300 rounded-lg p-4 shadow-sm overflow-hidden">
-                    <CvPdfPreview cv={compressedCvToPdfShape(tailored)} template={cvTemplate} fitToWidth />
+                    <CvHtmlPreview cv={compressedCvToPdfShape(tailored)} template={cvTemplate} fitToWidth />
                   </div>
                 </div>
               )}
