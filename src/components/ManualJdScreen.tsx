@@ -246,8 +246,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="min-w-0">
-            <h1 className="text-[28px] font-bold text-slate-900 tracking-tight leading-tight">Manual JD</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Paste a job description — get a tailored CV in 3 simple steps.</p>
+            <h1 className="text-sm font-bold text-slate-900 leading-tight">Manual JD</h1>
+            <p className="text-[10.5px] text-slate-400 font-medium">Paste a job description — get a tailored CV in 3 simple steps.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
