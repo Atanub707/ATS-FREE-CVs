@@ -275,18 +275,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <div className="set-row">
                 <label>&nbsp;</label>
-                <button type="button" className={`set-btn set-btn-sm ${testState === 'ok' ? 'ok' : ''}`} onClick={testConnection} disabled={testState === 'testing'}>
-                  {testState === 'testing' ? (
-                    <><Loader2 size={12} className="set-spin" /> Testing…</>
-                  ) : testState === 'ok' ? (
-                    <><CheckCircle2 size={12} /> Connected · {testMsg}</>
-                  ) : (
-                    <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> Test connection</>
+                <div className="set-test-row">
+                  <button type="button" className={`set-btn set-btn-sm ${testState === 'ok' ? 'ok' : ''}`} onClick={testConnection} disabled={testState === 'testing'}>
+                    {testState === 'testing' ? (
+                      <><Loader2 size={12} className="set-spin" /> Testing…</>
+                    ) : testState === 'ok' ? (
+                      <><CheckCircle2 size={12} /> Connected · {testMsg}</>
+                    ) : (
+                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> Test connection</>
+                    )}
+                  </button>
+                  {testState === 'error' && (
+                    <span className="set-test-err"><AlertTriangle size={12} /> {testMsg}</span>
                   )}
-                </button>
-                {testState === 'error' && (
-                  <span className="set-test-err"><AlertTriangle size={12} /> {testMsg}</span>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -484,11 +486,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-sec-label:first-child { margin-top: 0; }
         .set-sec-label span { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
         .set-sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .set-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-        .set-inner { grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: start; }
+        .set-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+        .set-inner { grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: stretch; }
         .set-full { grid-column: 1 / -1; }
 
-        .set-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); padding: 22px 24px; transition: box-shadow .2s ease; }
+        .set-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); padding: 22px 24px; transition: box-shadow .2s ease; display: flex; flex-direction: column; }
         .set-card:hover { box-shadow: var(--shadow-md); }
         .set-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
         .set-ico { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 15%, transparent); }
@@ -544,6 +546,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-btn-green { border-color: var(--green-border); color: var(--green); background: var(--green-soft); }
         .set-kbd { font-size: 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 1px 4px; opacity: .9; font-family: inherit; }
         .set-test-err { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--red); max-width: 320px; }
+        .set-test-row { display: flex; align-items: center; gap: 10px; height: 38px; }
+        .set-test-row .set-btn { height: 38px; }
         .set-rec-msg { display: flex; align-items: flex-start; gap: 7px; font-size: 11.5px; font-weight: 600; padding: 9px 12px; border-radius: 9px; margin-top: 10px; }
         .set-rec-msg.ok { color: var(--green); background: var(--green-soft); border: 1px solid var(--green-border); }
         .set-rec-msg.err { color: var(--red); background: var(--red-soft); border: 1px solid var(--red-border); }
