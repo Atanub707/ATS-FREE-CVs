@@ -285,7 +285,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       <div className="flex-1 overflow-hidden">
         <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: '100%', paddingTop: 10 }}>
           {/* PANEL 1 · Add job description (centered, step 1) */}
-          <div style={panelStyle(1)} className="overflow-y-auto">
+          <div style={panelStyle(1)} className="overflow-hidden">
             <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
               Add job description {stepBadge(1)}
             </h2>
@@ -301,7 +301,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
               <div>
                 <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
                 <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
-                  placeholder="Paste the full job description…" className={`${inputCls} min-h-[220px] resize-y leading-relaxed`} />
+                  placeholder="Paste the full job description…" className={`${inputCls} min-h-[150px] resize-none leading-relaxed`} />
                 <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
               </div>
               <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
@@ -311,12 +311,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                   : analysisStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
                   : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
               </button>
-              <p className="text-center text-xs text-slate-400">Everything stays on your machine</p>
             </div>
           </div>
 
           {/* PANEL 2 · Analysis (pops in on the right with loading) */}
-          <div style={panelStyle(2)} className="overflow-y-auto">
+          <div style={panelStyle(2)} className="overflow-hidden">
             {loading && loadingOverlay('Analyzing your CV against the JD…')}
             <div className={`transition-opacity duration-200 ${loading ? 'opacity-10' : 'opacity-100'}`}>
               <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
@@ -380,7 +379,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
           </div>
 
           {/* PANEL 3 · Tailoring updates (pops in on the right with loading) */}
-          <div style={panelStyle(3)} className="overflow-y-auto">
+          <div style={panelStyle(3)} className="overflow-hidden">
             {tailoring && loadingOverlay('Tailoring your CV…')}
             <div className={`transition-opacity duration-200 ${tailoring ? 'opacity-10' : 'opacity-100'}`}>
               <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
