@@ -126,17 +126,9 @@ export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
     accent: '#2F54EB', nameSize: 18, roleColor: '#374151', ruleWidth: 0.75,
     bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10, lineHeight: 1.45, nameWeight: 700,
   },
-  'modern-minimal': {
-    accent: '#111827', nameSize: 20, roleColor: '#565D6C', ruleWidth: 1.25,
-    bodySize: 9.5, bulletSize: 9.5, sectionGap: 14, expTitleSize: 10, lineHeight: 1.5, nameWeight: 800,
-  },
   'compact-executive': {
     accent: '#1E3A5F', nameSize: 15, roleColor: '#475569', ruleWidth: 0.5,
     bodySize: 8.5, bulletSize: 8.5, sectionGap: 7, expTitleSize: 9, lineHeight: 1.35, nameWeight: 700,
-  },
-  'modern-split': {
-    accent: '#0F172A', nameSize: 21, roleColor: '#2DD4BF', ruleWidth: 1,
-    bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.42, nameWeight: 700,
   },
   'modern-classic': {
     accent: '#0F766E', nameSize: 24, roleColor: '#0F766E', ruleWidth: 1.2,
@@ -172,26 +164,20 @@ interface CvPdfPreviewProps {
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
   const style = CV_TEMPLATE_STYLES[template] || CV_TEMPLATE_STYLES.harvard;
   const isHarvard = template === 'harvard' || template === 'modern-classic';
-  const isSplit = template === 'modern-split';
-  const marginX = isHarvard ? HARVARD_MARGIN_X : isSplit ? 0 : MARGIN_X;
-  const marginY = isHarvard ? HARVARD_MARGIN_Y : isSplit ? 0 : MARGIN_Y;
+  const marginX = isHarvard ? HARVARD_MARGIN_X : MARGIN_X;
+  const marginY = isHarvard ? HARVARD_MARGIN_Y : MARGIN_Y;
   const contentW = PAGE_W - marginX * 2;
-  const contentH = isSplit ? 100000 : PAGE_H - marginY * 2; // split flows continuously
-  const lineHeight = isHarvard ? HARVARD_LINE_HEIGHT : isSplit ? 1.42 : style.lineHeight;
+  const contentH = PAGE_H - marginY * 2;
+  const lineHeight = isHarvard ? HARVARD_LINE_HEIGHT : style.lineHeight;
   const blocks = useMemo(() => buildBlocks(cv, style, (template || 'harvard') as TemplateId), [cv, style, template]);
   const measurerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<CvBlock[][]>([]);
   const [fitZoom, setFitZoom] = useState<number>(zoom);
-  const [splitH, setSplitH] = useState<number>(PAGE_H);
 
   useEffect(() => {
-    if (isSplit) {
-      onPageCount?.(Math.max(1, Math.ceil(splitH / PAGE_H)));
-    } else {
-      onPageCount?.(pages.length);
-    }
-  }, [pages, splitH, isSplit, onPageCount]);
+    onPageCount?.(pages.length);
+  }, [pages, onPageCount]);
 
   // Auto-fit: measure the container and scale pages to fill its width.
   useEffect(() => {
@@ -222,13 +208,8 @@ export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, temp
     Array.from(el.children).forEach((child, i) => {
       heights[blocks[i]?.key ?? ''] = (child as HTMLElement).getBoundingClientRect().height;
     });
-    if (isSplit) {
-      setSplitH(Object.values(heights).reduce((a, b) => a + b, 0));
-      setPages([blocks]);
-    } else {
-      setPages(paginate(blocks, heights, contentH));
-    }
-  }, [blocks, isSplit, contentH]);
+    setPages(paginate(blocks, heights, contentH));
+  }, [blocks, contentH]);
 
   return (
     <div ref={rootRef} className="flex flex-col items-center gap-6 w-full">
@@ -262,8 +243,8 @@ export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, temp
           className="bg-white shadow-2xl rounded-sm"
           style={{
             width: pt(PAGE_W, effectiveZoom),
-            height: isSplit ? pt(Math.max(PAGE_H, splitH), effectiveZoom) : pt(PAGE_H, effectiveZoom),
-            padding: isSplit ? '0px' : `${pt(marginY, effectiveZoom)}px ${pt(marginX, effectiveZoom)}px`,
+            height: pt(PAGE_H, effectiveZoom),
+            padding: `${pt(marginY, effectiveZoom)}px ${pt(marginX, effectiveZoom)}px`,
             overflow: 'hidden',
             fontFamily: 'Helvetica, Arial, sans-serif',
             color: '#1F2937',
@@ -308,9 +289,6 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
   }
   if (template === 'modern-classic') {
     return buildModernClassicBlocks(cv);
-  }
-  if (template === 'modern-split') {
-    return buildModernSplitBlocks(cv);
   }
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
@@ -759,177 +737,6 @@ const Bullet: React.FC<{ zoom: number; text: string; style: CvTemplateStyle }> =
   );
 };
 
-// ── Modern Split — navy sidebar + white main column ──
-// name/contact/skills/education/certifications in the sidebar; summary,
-// experience, projects in the main column. Rendered as one continuous
-// block (preview grows the sheet; server paginates).
-function buildModernSplitBlocks(cv: PdfCvShape): CvBlock[] {
-  const contacts = getContactItems(cv);
-  const SIDE_W = 169.2; // 2.35in
-  const MAIN_PAD_X = 27.4;
-
-  return [{
-    key: 'split-cv',
-    render: (zoom) => (
-      <div style={{ display: 'flex', width: pt(612, zoom), minHeight: pt(792, zoom), fontFamily: 'Helvetica, Arial, sans-serif', fontSize: `${pt(9.5, zoom)}px`, color: '#1F2937', lineHeight: 1.42 }}>
-        {/* Sidebar */}
-        <div style={{ width: pt(SIDE_W, zoom), flexShrink: 0, background: '#0F172A', color: '#CBD5E1', padding: `${pt(32.4, zoom)}px ${pt(20, zoom)}px` }}>
-          <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: `${pt(21, zoom)}px`, letterSpacing: '2px', marginBottom: pt(2, zoom) }}>
-            {(cv.candidateName || 'CANDIDATE NAME').toUpperCase()}
-          </div>
-          {cv.targetRole && (
-            <div style={{ color: '#2DD4BF', fontWeight: 600, fontSize: `${pt(9.5, zoom)}px`, letterSpacing: '0.5px', marginBottom: pt(12, zoom) }}>
-              {cv.targetRole}
-            </div>
-          )}
-          {contacts.map((c, i) => (
-            <div key={i} style={{ marginBottom: pt(7, zoom) }}>
-              <div style={{ fontSize: `${pt(7.5, zoom)}px`, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748B' }}>
-                {c.url ? 'Link' : 'Detail'}
-              </div>
-              {c.url ? (
-                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2DD4BF', textDecoration: 'none', wordBreak: 'break-all' }}>{c.label}</a>
-              ) : (
-                <div style={{ color: '#94A3B8' }}>{c.label}</div>
-              )}
-            </div>
-          ))}
-
-          {(() => {
-            const cats = cv.technicalSkills;
-            const comps = cv.coreCompetencies;
-            const has = cats.length > 0 || (comps?.length || 0) > 0;
-            if (!has) return null;
-            return (
-              <>
-                <SideHeading zoom={zoom} title="Skills" />
-                {cats.length === 0 && comps ? (
-                  <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#94A3B8', marginBottom: pt(3.5, zoom) }}>{comps.join(', ')}</div>
-                ) : (
-                  cats.map((cat, i) => (
-                    <div key={i} style={{ marginBottom: pt(3.5, zoom) }}>
-                      <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#E2E8F0', fontWeight: 700 }}>{cat.category}:</div>
-                      <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#94A3B8' }}>{cat.skills.join(', ')}</div>
-                    </div>
-                  ))
-                )}
-              </>
-            );
-          })()}
-
-          {cv.education.length > 0 && (
-            <>
-              <SideHeading zoom={zoom} title="Education" />
-              {cv.education.map((e, i) => (
-                <div key={i} style={{ marginBottom: pt(4, zoom) }}>
-                  <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#E2E8F0', fontWeight: 700 }}>{e.institution}</div>
-                  <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#94A3B8' }}>{[e.degree, e.dates].filter(Boolean).join(' | ')}</div>
-                </div>
-              ))}
-            </>
-          )}
-
-          {cv.certifications && cv.certifications.length > 0 && (
-            <>
-              <SideHeading zoom={zoom} title="Certifications" />
-              {cv.certifications.map((cert, i) => {
-                let name = '';
-                let issuer = '';
-                if (typeof cert === 'string') name = cert;
-                else { name = cert.name || ''; issuer = cert.issuer || ''; }
-                return (
-                  <div key={i} style={{ marginBottom: pt(4, zoom) }}>
-                    {issuer && <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#E2E8F0', fontWeight: 700 }}>{issuer}</div>}
-                    <div style={{ fontSize: `${pt(8.5, zoom)}px`, color: '#94A3B8' }}>{name}</div>
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
-
-        {/* Main column */}
-        <div style={{ flex: 1, minWidth: 0, padding: `${pt(32.4, zoom)}px ${pt(MAIN_PAD_X, zoom)}px` }}>
-          {cv.professionalSummary && (
-            <>
-              <MainHeading zoom={zoom} title="Summary" />
-              <div style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, color: '#1F2937', textAlign: 'justify', marginBottom: pt(8, zoom) }}>
-                {cv.professionalSummary}
-              </div>
-            </>
-          )}
-
-          {cv.workExperience.length > 0 && (
-            <>
-              <MainHeading zoom={zoom} title="Work Experience" />
-              {cv.workExperience.map((exp, i) => (
-                <div key={i} style={{ marginBottom: pt(8, zoom) }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: `${pt(10.5, zoom)}px` }}>
-                      <span style={{ color: '#0F172A' }}>{exp.title}</span>
-                      {exp.company && <span style={{ color: '#0F766E' }}>{'  —  '}{exp.company}</span>}
-                    </span>
-                    {exp.dates && <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', whiteSpace: 'nowrap' }}>{exp.dates}</span>}
-                  </div>
-                  {exp.location && (
-                    <div style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280', marginBottom: pt(3, zoom) }}>{exp.location}</div>
-                  )}
-                  {exp.highlights.map((hl, j) => (
-                    <div key={j} style={{ display: 'flex', fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, paddingBottom: pt(2.5, zoom), paddingLeft: pt(11, zoom) }}>
-                      <span style={{ color: '#0F766E', fontWeight: 700, flexShrink: 0, marginLeft: pt(-11, zoom), width: pt(11, zoom) }}>•</span>
-                      <span style={{ color: '#1F2937', textAlign: 'justify' }}>{String(hl).replace(/^[*•\-]\s*/, '').trim()}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </>
-          )}
-
-          {cv.projects && cv.projects.length > 0 && (
-            <>
-              <MainHeading zoom={zoom} title="Projects" />
-              {cv.projects.map((p, i) => (
-                <div key={i} style={{ marginBottom: pt(4, zoom) }}>
-                  <span style={{ fontWeight: 700, fontSize: `${pt(9.5, zoom)}px`, color: '#0F172A' }}>{p.name}</span>
-                  {p.dates && <span style={{ fontSize: `${pt(9, zoom)}px`, color: '#6B7280' }}>{'  ['}{p.dates}{']'}</span>}
-                  {p.description && (
-                    <div style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#1F2937', lineHeight: 1.42 }}>{p.description}</div>
-                  )}
-                  {p.link && (
-                    <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#0F766E', textDecoration: 'none' }}>
-                      {p.link}
-                    </a>
-                  )}
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
-    ),
-  }];
-}
-
-const SideHeading: React.FC<{ zoom: number; title: string }> = ({ zoom, title }) => (
-  <div style={{ margin: `${pt(13, zoom)}px 0 ${pt(6, zoom)}px` }}>
-    <div style={{ fontSize: `${pt(9.5, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#E2E8F0', paddingBottom: pt(2, zoom), borderBottom: '1px solid rgba(255,255,255,0.22)' }}>
-      {title}
-    </div>
-  </div>
-);
-
-const MainHeading: React.FC<{ zoom: number; title: string }> = ({ zoom, title }) => (
-  <div style={{ margin: `${pt(10, zoom)}px 0 ${pt(6, zoom)}px` }}>
-    <div style={{ fontSize: `${pt(10.5, zoom)}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#0F172A', paddingBottom: pt(2, zoom), borderBottom: `1px solid #E2E8F0` }}>
-      {title}
-    </div>
-  </div>
-);
-
-
-// ── Harvard Classic — exact replica of the timeless ATS-safe template ──
-// name 24px/3px letter-spacing, teal #0F766E headings + solid rules,
-// 9.5px justified body, 2-column skills grid, [year] projects.
 function buildModernClassicBlocks(cv: PdfCvShape): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
