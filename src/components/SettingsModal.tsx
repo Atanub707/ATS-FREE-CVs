@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
 import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
@@ -73,13 +73,6 @@ const PROVIDER_LOGO: Record<LlmProvider, { bg: string; text: string }> = {
   'nvidia': { bg: 'linear-gradient(135deg,#34D399,#10B981)', text: 'N' },
 };
 
-type Theme = 'light' | 'dark' | 'system';
-
-function effectiveTheme(t: Theme): 'light' | 'dark' {
-  if (t === 'dark') return 'dark';
-  if (t === 'light') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -91,7 +84,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const [formData, setFormData] = useState<AppConfig>(config);
   const [isSaving, setIsSaving] = useState(false);
-  const [theme, setTheme] = useState<Theme>(config.appearance?.theme || 'system');
   const [showKey, setShowKey] = useState(false);
   const [showApify, setShowApify] = useState(false);
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
@@ -106,10 +98,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [recA2, setRecA2] = useState('');
   const [recMsg, setRecMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [recSaving, setRecSaving] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = effectiveTheme(theme);
-  }, [theme]);
 
   const handleSaveRecovery = async () => {
     setRecMsg(null);
@@ -140,7 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSave = async () => {
     setIsSaving(true);
-    await onSaveConfig({ ...formData, appearance: { theme } });
+    await onSaveConfig(formData);
     setIsSaving(false);
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 2400);
@@ -199,14 +187,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <span>Workspace configuration</span>
         </div>
         <div className="set-spacer" />
-        <button className="set-theme-btn" title={effectiveTheme(theme) === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          onClick={() => setTheme(effectiveTheme(theme) === 'dark' ? 'light' : 'dark')}>
-          {effectiveTheme(theme) === 'dark' ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          )}
-        </button>
       </header>
 
       {/* ── Content ── */}
@@ -363,14 +343,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div><b>Appearance</b><span className="set-d">Theme &amp; matching thresholds.</span></div>
             </div>
             <div className="set-trow">
-              <div className="set-t"><b>Theme</b><span>Follows your system by default.</span></div>
-              <select className="set-inline" style={{ width: 120 }} value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </div>
-            <div className="set-trow">
               <div className="set-t"><b>Auto-tailor minimum</b><span>Min match % to tailor automatically.</span></div>
               <input type="text" className="set-mono" style={{ width: 60, textAlign: 'center' }} value={formData.thresholds.minMatchForTailor}
                 onChange={(e) => setFormData({ ...formData, thresholds: { ...formData.thresholds, minMatchForTailor: Number(e.target.value) || 0 } })} />
@@ -457,16 +429,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           --shadow-md: 0 1px 2px rgba(11,18,32,.04), 0 10px 30px -12px rgba(11,18,32,.12);
           position: fixed; inset: 0; z-index: 60; background: var(--bg); color: var(--text);
           display: flex; flex-direction: column; font-family: 'Inter', system-ui, -apple-system, sans-serif;
-          -webkit-font-smoothing: antialiased; transition: background .25s ease, color .25s ease;
-        }
-        html[data-theme="dark"] .set-screen {
-          --bg: #0B0F19; --card: #121826; --border: #232C40; --divider: #1A2233;
-          --text: #E6EAF2; --muted: #98A1B3; --faint: #616B7F;
-          --accent: #4F8CFF; --accent-2: #8B5CF6; --accent-soft: #16233F; --accent-border: #27406E;
-          --green: #34D399; --green-soft: #0B2B22; --green-border: #14532D;
-          --red: #F87171; --red-soft: #3B1111; --red-border: #7F1D1D;
-          --track: #2A344A; --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
-          --shadow-md: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.5);
+          -webkit-font-smoothing: antialiased;
         }
         .set-hdr { display: flex; align-items: center; gap: 14px; padding: 0 32px; height: 60px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(10px); flex-shrink: 0; }
         .set-back { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease; font-family: inherit; }
@@ -478,9 +441,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-ttl b { font-size: 15px; font-weight: 700; letter-spacing: -.01em; display: block; line-height: 1.2; }
         .set-ttl span { font-size: 11px; color: var(--faint); font-weight: 500; }
         .set-spacer { flex: 1; }
-        .set-theme-btn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s ease; flex-shrink: 0; }
-        .set-theme-btn:hover { color: var(--accent); border-color: var(--accent-border); }
-
         .set-wrap { max-width: 1080px; width: 100%; margin: 0 auto; padding: 30px 32px 48px; flex: 1; overflow-y: auto; }
         .set-sec-label { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; }
         .set-sec-label:first-child { margin-top: 0; }
