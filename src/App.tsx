@@ -335,7 +335,15 @@ export default function App() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, ...(recovery || {}) }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        recoveryQ1: recovery?.q1,
+        recoveryA1: recovery?.a1,
+        recoveryQ2: recovery?.q2,
+        recoveryA2: recovery?.a2,
+      }),
     });
     const data = await res.json();
     if (!res.ok) return { error: data.error || 'Registration failed.' };
