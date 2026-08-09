@@ -13,14 +13,18 @@ export class LlmCvTailor extends BaseCvBuilder {
     const missingSkills = job.gapAnalysis?.missingSkills || [];
     const missingKeywords = job.gapAnalysis?.missingKeywords || [];
 
-    // User-controlled tailoring: only the selected missing skills are
-    // incorporated; anything not in the allow-list is explicitly skipped.
+    // User-controlled tailoring: when an explicit selection is provided
+    // (Manual JD), only the selected missing items are incorporated and
+    // anything not selected is explicitly skipped. Without a selection
+    // (job-card Tailor / Re-Tailor), EVERYTHING missing is integrated —
+    // never exclude the whole set, or the prompt contradicts itself.
+    const hasSelection = Array.isArray(opts?.includeSkills) && opts.includeSkills.length > 0;
     const allowList = (opts?.includeSkills || []).map((s) => s.trim().toLowerCase()).filter(Boolean);
     const allowedSet = new Set(allowList);
     // Single, deduplicated universe of every missing keyword.
     const allMissing = [...new Set([...missingSkills, ...missingKeywords])];
-    const selectedList = allMissing.filter((s) => allowedSet.has(s.toLowerCase()));
-    const excludedList = allMissing.filter((s) => !allowedSet.has(s.toLowerCase()));
+    const selectedList = hasSelection ? allMissing.filter((s) => allowedSet.has(s.toLowerCase())) : allMissing;
+    const excludedList = hasSelection ? allMissing.filter((s) => !allowedSet.has(s.toLowerCase())) : [];
 
     const missingKeywordsStr = selectedList.length > 0
       ? selectedList.map(k => `  - ${k}`).join('\n')
@@ -105,14 +109,20 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         ...(parsed.inSkills || []),
       ])].filter((k: string) => k);
 
-      const verifiedInExperience = (parsed.inExperience || []).filter((kw: string) => cvText.includes(kw.toLowerCase()));
-      const verifiedInSkills = (parsed.inSkills || []).filter((kw: string) => cvText.includes(kw.toLowerCase()));
+      // Normalize both sides (lowercase, strip punctuation) so "NodeJS"
+      // matches "Node.js", "CI/CD" matches "CI CD", etc.
+      const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cvNorm = norm(cvText);
+      const contains = (kw: string) => cvNorm.includes(norm(kw));
+
+      const verifiedInExperience = (parsed.inExperience || []).filter((kw: string) => contains(kw));
+      const verifiedInSkills = (parsed.inSkills || []).filter((kw: string) => contains(kw));
       const verifiedAll = [...new Set([...verifiedInExperience, ...verifiedInSkills])];
 
       const notIntegrable = missingKeywords.filter((kw: string) => {
-        const lower = kw.toLowerCase();
-        return !verifiedInExperience.some((v: string) => v.toLowerCase() === lower)
-            && !verifiedInSkills.some((v: string) => v.toLowerCase() === lower);
+        const lower = norm(kw);
+        return !verifiedInExperience.some((v: string) => norm(v) === lower)
+            && !verifiedInSkills.some((v: string) => norm(v) === lower);
       });
 
       const totalMissing = missingKeywords.length || 1;

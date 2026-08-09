@@ -99,7 +99,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setDescription(a.description || '');
       setResult({ matchScore: a.score, gapAnalysis: a.gap_analysis || { matchingSkills: [], missingSkills: [], keyRecommendations: [], missingKeywords: [], matchedKeywords: [] } });
       const missing = a.gap_analysis?.missingSkills || [];
-      setSelectedSkills(new Set(missing));
+      const missingKw = a.gap_analysis?.missingKeywords || [];
+      setSelectedSkills(new Set([...missing, ...missingKw]));
       setRemovedPoints(new Set());
       setDiff(a.diff || null);
       setHistoryId(a.id);
@@ -128,7 +129,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       if (!res.ok) { setError(data.error || 'Analysis failed'); alert(llmErrorMessage(data.code, data.error)); return; }
       setResult(data);
       const missing = (data.gapAnalysis?.missingSkills || []);
-      setSelectedSkills(new Set(missing));
+      const missingKw = (data.gapAnalysis?.missingKeywords || []);
+      setSelectedSkills(new Set([...missing, ...missingKw]));
       setRemovedPoints(new Set());
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
@@ -361,7 +363,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
                       })}
                     </div>
                   )}
-                  <p className="text-xs text-slate-400">Unselected skills are never added.</p>
+                  <p className="text-xs text-slate-400">Unselected skills or keywords are never added.</p>
                   <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0} aria-live="polite"
                     title={generateStatus === 'success' ? 'Regenerate CV with the selected skills' : undefined}
                     className={`${btnBase} ${generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
