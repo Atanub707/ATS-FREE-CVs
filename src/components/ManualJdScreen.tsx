@@ -318,7 +318,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       </header>
 
       {/* Workflow stepper */}
-      <div className="px-5 sm:px-8 pt-4 flex items-center gap-2 flex-wrap shrink-0">
+      <div className="px-5 sm:px-8 pt-4 flex items-center justify-center gap-2 flex-wrap shrink-0">
         {[
           { n: 1, label: 'Add JD', on: step >= 2 },
           { n: 2, label: 'Analysis', on: step >= 3 },
