@@ -283,7 +283,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
       {/* Centered stage — ONE panel at a time, popping in step by step */}
       <div className="flex-1 overflow-hidden">
-        <div className="relative mx-auto" style={{ width: 'min(1040px, 94vw)', height: '100%', paddingTop: 10 }}>
+        <div className="relative mx-auto" style={{ width: '100%', height: '100%', padding: '10px 32px 0' }}>
           {/* PANEL 1 · Add job description (centered, step 1) */}
           <div style={panelStyle(1)} className="overflow-hidden">
             <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
