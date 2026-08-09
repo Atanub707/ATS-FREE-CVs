@@ -47,8 +47,6 @@ See **[docs/TOKENS.md](TOKENS.md)** for full instructions. Summary:
    enabled=true
    ```
 
-3. **GitHub PAT** (only for in-app bug reports) — Settings → Report a Bug.
-
 > `config.ini` is gitignored by design. If you edit it by hand, save it
 > before starting the server — the app re-reads it on every request.
 
@@ -88,15 +86,7 @@ Same address: **http://localhost:3000** (Vite + Express together).
 | Master CV (your canonical resume) | Top-right menu → **Master Candidate CV** |
 | Paste any JD without scraping | Top-right menu → **Manual JD ⌘J** (Analyze → Tailor CV → Download) |
 | Job portals directory | Top bar → **Job Portals** |
-| Tokens, scraper, bug reports | Top-right menu → **Settings ⌘,** |
-
-## How the bug report works locally
-
-Settings → **Report a Bug → GitHub Issue** posts to
-`POST /api/settings/bug-report` on your local server, which calls the
-GitHub Issues API with the PAT from `config.ini` and returns the new issue
-URL. No GitHub token configured? The form tells you exactly what to add —
-nothing else happens until then. See **[BUG_REPORTING.md](BUG_REPORTING.md)**.
+| Tokens & scraper behavior | Top-right menu → **Settings ⌘,** |
 
 ## Useful commands
 

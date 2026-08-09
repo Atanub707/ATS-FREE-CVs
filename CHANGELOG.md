@@ -2,14 +2,6 @@
 
 ## v1.3.0 (2026-08-09)
 
-### 🐞 In-App Bug Reports → GitHub Issues
-- **Settings → Report a Bug → GitHub Issue** — two automatic modes:
-  - **Owner mode** (GitHub PAT saved in Settings): issue is created instantly via the GitHub API, link shown immediately.
-  - **User mode** (no token, everyone else): GitHub opens with the report pre-filled (`/issues/new?title=…&body=…`) — any free GitHub account can review and submit; a **Copy report** button covers users without GitHub.
-- Server route `POST /api/settings/bug-report` builds the issue body (description + steps + app version / Node / platform / timestamp) and either calls the GitHub Issues API with the PAT from the `[github]` section of `config.ini` (owner/repo/token, stored locally, never committed) or returns the pre-filled URL.
-- Friendly error handling: 401, 403 (permissions/rate limit), 404 (repo), and network failures each get a plain-language message.
-- Docs: `docs/PLAN_BUG_REPORT.md`, `docs/BUG_REPORTING.md`, `docs/TOKENS.md`, `docs/LOCAL_SETUP.md`.
-
 ### 🎨 Manual JD polish (carried in this release)
 - Tailoring Updates panel is now a compact dashboard: Impact cards (with before→after score bar), added-skills chip cloud, rewritten bullets showing **BEFORE (struck) → AFTER** text, "What's preserved" row, collapsible review list, and a single auto-saving Download button.
 - Analysis panel always shows the honest current-CV score; the boosted score lives on the Tailor screen as `49% → 97%`.

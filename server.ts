@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import fs from 'fs';
 import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
@@ -383,80 +382,6 @@ async function startServer() {
       res.json({ success: true, config: loadConfig() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
-    }
-  });
-
-  // Bug report → GitHub issue (Settings → Report a Bug)
-  // Two modes:
-  //  1. PAT configured → issue is created instantly via the GitHub API.
-  //  2. No PAT → the user gets a pre-filled GitHub "New issue" page
-  //     (works for anyone with a free GitHub account, no token needed).
-  app.post('/api/settings/bug-report', async (req, res) => {
-    try {
-      const clean = (v: unknown, max: number) => String(v || '').trim().slice(0, max);
-      const title = clean(req.body?.title, 120);
-      const description = clean(req.body?.description, 4000);
-      const steps = clean(req.body?.steps, 4000);
-      if (!title || !description) {
-        res.status(400).json({ error: 'Please provide a title and a description.' });
-        return;
-      }
-      const cfg = loadConfig();
-      const token = (cfg.github?.token || '').trim();
-      const owner = (cfg.github?.owner || '').trim();
-      const repo = (cfg.github?.repo || '').trim();
-      if (!owner || !repo) {
-        res.status(400).json({ error: 'GitHub owner/repository is not configured. Open Settings → Bug Reports and check the Owner / Repository fields.' });
-        return;
-      }
-      const appVersion = (() => { try { return JSON.parse(fs.readFileSync('package.json', 'utf-8')).version; } catch { return 'dev'; } })();
-      const issueBody = [
-        description,
-        '',
-        '---',
-        `**App version:** ${appVersion}`,
-        `**Node:** ${process.version}`,
-        `**Platform:** ${process.platform} ${process.arch}`,
-        `**Reported:** ${new Date().toISOString()}`,
-        steps ? `\n**Steps to reproduce:**\n${steps}` : '',
-      ].join('\n');
-
-      if (!token) {
-        // Pre-filled flow — no token required. GitHub asks the user to
-        // sign in and click "Submit new issue"; the report is fully written.
-        const prefillUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(issueBody)}`;
-        res.json({ success: true, mode: 'prefill', prefillUrl, issueBody });
-        return;
-      }
-
-      const resp = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, body: issueBody }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        const ghMsg = typeof data.message === 'string' ? data.message : `GitHub API error ${resp.status}`;
-        if (resp.status === 401) {
-          res.status(502).json({ error: 'GitHub rejected the token (401). Check the token in Settings → Bug Reports and save again.' });
-        } else if (resp.status === 403) {
-          res.status(502).json({ error: `GitHub denied the request (403) — rate limit or the token lacks "Issues: write" permission. ${ghMsg}` });
-        } else if (resp.status === 404) {
-          res.status(502).json({ error: `Repository ${owner}/${repo} was not found, or the token cannot access it (404).` });
-        } else {
-          res.status(502).json({ error: `GitHub could not create the issue: ${ghMsg}` });
-        }
-        return;
-      }
-      res.json({ success: true, mode: 'api', issueUrl: data.html_url, issueNumber: data.number });
-    } catch (err: any) {
-      console.error('Bug report failed:', err);
-      res.status(500).json({ error: 'Failed to reach GitHub. Check your connection and try again.' });
     }
   });
 

@@ -212,11 +212,6 @@ export interface AppConfig {
     token: string;
     enabled: boolean;
   };
-  github: {
-    owner: string;
-    repo: string;
-    token: string;
-  };
 }
 
 export interface JobFilterQueryParams {

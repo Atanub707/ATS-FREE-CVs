@@ -129,9 +129,8 @@ ATS scoring and CV tailoring require an LLM API key. The app uses a **Bring Your
 4. Enter your **API Key**
 5. Click **Apply Config**
 
-> Full token guide (LLM + Apify + GitHub bug-report PAT): **[docs/TOKENS.md](docs/TOKENS.md)**
+> Full token guide (LLM + Apify): **[docs/TOKENS.md](docs/TOKENS.md)**
 > A-to-Z local setup: **[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)**
-> In-app bug reports → GitHub issues: **[docs/BUG_REPORTING.md](docs/BUG_REPORTING.md)**
 
 ### Option B: Edit config.ini
 

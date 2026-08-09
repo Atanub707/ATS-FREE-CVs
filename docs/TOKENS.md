@@ -1,15 +1,13 @@
 # Tokens & API Keys
 
-Tailor CV has **three** token slots. Two are required for full functionality
-(LLM + Apify) and one optional (GitHub, only for the in-app Bug Report
-feature). All tokens are stored **locally** in `config.ini` — a gitignored
-file that is never committed or sent anywhere except to the service itself.
+Tailor CV has **two** token slots. All tokens are stored **locally** in
+`config.ini` — a gitignored file that is never committed or sent anywhere
+except to the service itself.
 
 | Slot | Where to enter it | Required? | Used for |
 |---|---|---|---|
 | LLM API key | Settings → LLM Provider (Bring Your Own Key) | ✅ Yes | AI job scoring, CV analysis & tailoring |
 | Apify token | Settings → Apify — Reliable LinkedIn Source | ⚠️ Recommended | Unblocked LinkedIn scraping (falls back to free scraper) |
-| GitHub PAT | Settings → Report a Bug → GitHub Issue | ❌ Optional | Filing bug reports as GitHub issues |
 
 > **Security:** treat every token like a password. `config.ini` is
 > gitignored and mounted into Docker — it never leaves your machine
@@ -79,48 +77,12 @@ to the built-in free scraper — searches keep working.
 
 ---
 
-## 3. GitHub Personal Access Token (Bug Reports — owner only)
-
-Required only if you want the **Report a Bug** button in Settings to file
-issues **instantly** via the GitHub API.
-
-**Do other users need one? No.** Everyone else — no token at all — gets a
-pre-filled GitHub issue page and submits it with their free GitHub account
-(see `docs/BUG_REPORTING.md`).
-
-### Steps (fine-grained token — recommended)
-
-1. Open https://github.com/settings/personal-access-tokens/new
-   (GitHub → avatar → **Settings** → **Developer settings** →
-   **Personal access tokens** → **Fine-grained tokens** → **Generate new token**).
-2. **Token name:** `tailor-cv-bug-reports`.
-3. **Expiration:** your choice (e.g. 90 days).
-4. **Repository access:** "Only select repositories" → pick your repo
-   (e.g. `ATS-FREE-CVs`).
-5. Under **Permissions → Issues:** set to **Read and write**.
-6. Click **Generate token** and copy it (starts with `github_pat_`).
-   It is shown only once.
-7. Open the app → **Settings** → **Report a Bug → GitHub Issue**.
-8. Paste the token into **GitHub token**, confirm **Owner** (e.g. `Atanub707`)
-   and **Repository** (e.g. `ATS-FREE-CVs`), then **Apply Config**.
-
-### Classic token (alternative)
-
-https://github.com/settings/tokens → **Generate new token** → select
-**Issues** (`repo` scope also works) → generate. Starts with `ghp_`.
-
-> **Why it's needed:** GitHub does not allow anonymous issue creation.
-> The token identifies the repository where your bug reports land.
-
----
-
 ## Where tokens live
 
 ```
 config.ini                    ← gitignored, never committed
 ├── [llm]     apiKey=…        ← LLM key
-├── [apify]   token=…         ← Apify token
-└── [github]  token=…         ← GitHub PAT (bug reports)
+└── [apify]   token=…         ← Apify token
 ```
 
 You can edit `config.ini` directly instead of the Settings UI — the app
@@ -134,5 +96,3 @@ runs from (project root, or `/app/config.ini` inside Docker).
 | "No LLM API key configured" | Settings → LLM Provider → paste key → Apply Config |
 | Scores stuck / "LLM error" | Verify key + Base URL; try another model |
 | LinkedIn returns "No results found" | Add the Apify token (Section 2) |
-| Bug report opens GitHub pre-filled (no token) | That's the normal user flow — sign in and submit (BUG_REPORTING.md) |
-| Bug report → 403 (owner mode) | Token lacks **Issues: write** or is rate-limited |
