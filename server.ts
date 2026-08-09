@@ -385,6 +385,59 @@ async function startServer() {
     }
   });
 
+  // Test an LLM connection with the CURRENT form values (nothing is saved).
+  app.post('/api/settings/test-llm', async (req, res) => {
+    try {
+      const { provider, apiKey, baseUrl, model } = req.body || {};
+      const p = String(provider || 'opencode-go');
+      const key = String(apiKey || '').trim();
+      const mdl = String(model || '').trim();
+      if (!key) {
+        res.status(400).json({ ok: false, error: 'Enter an API key first.' });
+        return;
+      }
+      if (!mdl) {
+        res.status(400).json({ ok: false, error: 'Enter a model name first.' });
+        return;
+      }
+      const started = Date.now();
+      const check = async (): Promise<void> => {
+        if (p === 'gemini') {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mdl)}:generateContent?key=${encodeURIComponent(key)}`;
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
+          });
+          if (!r.ok) throw new Error(`Gemini API error ${r.status}`);
+          return;
+        }
+        if (p === 'anthropic') {
+          const r = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: mdl, max_tokens: 5, messages: [{ role: 'user', content: 'ping' }] }),
+          });
+          if (!r.ok) throw new Error(`Anthropic API error ${r.status}`);
+          return;
+        }
+        const base = String(baseUrl || '').trim().replace(/\/+$/, '');
+        if (!base) throw new Error('Enter a Base URL first.');
+        const r = await fetch(`${base}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: mdl, max_tokens: 5, messages: [{ role: 'user', content: 'ping' }] }),
+        });
+        if (!r.ok) throw new Error(`API error ${r.status}`);
+      };
+      await check();
+      res.json({ ok: true, latencyMs: Date.now() - started });
+    } catch (err: any) {
+      console.error('LLM test failed:', err.message);
+      res.status(502).json({ ok: false, error: String(err?.message || 'Connection failed.').slice(0, 300) });
+    }
+  });
+
   // Master CV routes (scoped to logged-in user)
   app.get('/api/cv/master', (req, res) => {
     const userId = getCurrentUserId();

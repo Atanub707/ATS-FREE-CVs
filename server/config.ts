@@ -31,6 +31,9 @@ const DEFAULT_CONFIG: AppConfig = {
     token: '',
     enabled: false,
   },
+  appearance: {
+    theme: 'system',
+  },
 };
 
 export function loadConfig(): AppConfig {
@@ -69,6 +72,9 @@ export function loadConfig(): AppConfig {
         token: parsed.apify?.token || '',
         enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
       },
+      appearance: {
+        theme: (['light', 'dark', 'system'].includes(parsed.appearance?.theme) ? parsed.appearance.theme : DEFAULT_CONFIG.appearance.theme) as any,
+      },
     };
   } catch (err) {
     console.error('Failed to load config.ini, using defaults:', err);
@@ -84,6 +90,7 @@ export function saveConfig(config: AppConfig): void {
       storage: config.storage,
       scraper: config.scraper,
       apify: config.apify,
+      appearance: config.appearance,
     });
     fs.writeFileSync(CONFIG_FILE_PATH, iniData, 'utf-8');
   } catch (err) {

@@ -212,6 +212,9 @@ export interface AppConfig {
     token: string;
     enabled: boolean;
   };
+  appearance: {
+    theme: 'light' | 'dark' | 'system';
+  };
 }
 
 export interface JobFilterQueryParams {
