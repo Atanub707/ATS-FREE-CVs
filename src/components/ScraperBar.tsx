@@ -20,6 +20,7 @@ interface ScraperBarProps {
     jobType?: 'all' | 'remote' | 'onsite' | 'hybrid';
     minSalary?: number;
     maxJobsPerSource?: number;
+    contractType?: string;
     experienceLevel?: string;
     under10Applicants?: boolean;
   }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[] } | void>;
@@ -35,7 +36,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [jobType, setJobType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('remote');
   const [jobTypeInfoOpen, setJobTypeInfoOpen] = useState(false);
-  const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
+  const [experienceLevel, setExperienceLevel] = useState('');
+  const [contractType, setContractType] = useState('');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(10);
   const [under10Applicants, setUnder10Applicants] = useState(false);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
@@ -63,7 +65,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       datePostedFilter,
       jobType,
       maxJobsPerSource,
-      experienceLevel,
+      contractType: contractType || undefined,
+      experienceLevel: experienceLevel || undefined,
       under10Applicants,
     });
 
@@ -250,11 +253,33 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
                 onChange={(e) => setExperienceLevel(e.target.value as any)}
                 className={selectClass}
               >
-                <option value="all">Any level</option>
-                <option value="entry">Junior</option>
-                <option value="mid">Mid</option>
-                <option value="senior">Senior</option>
-                <option value="lead">Lead</option>
+                <option value="">Any level</option>
+                <option value="1">Internship</option>
+                <option value="2">Entry</option>
+                <option value="3">Associate</option>
+                <option value="4">Mid-Senior</option>
+                <option value="5">Director</option>
+                <option value="6">Executive</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Contract type */}
+          <div className="flex flex-col gap-[6px]">
+            <label className="text-[11px] font-semibold text-slate-500">Contract</label>
+            <div className="relative">
+              <select
+                value={contractType}
+                onChange={(e) => setContractType(e.target.value as any)}
+                className={selectClass}
+              >
+                <option value="">Any contract</option>
+                <option value="F">Full-time</option>
+                <option value="P">Part-time</option>
+                <option value="C">Contract</option>
+                <option value="T">Temporary</option>
+                <option value="I">Internship</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

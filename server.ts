@@ -967,7 +967,7 @@ Return valid JSON only — NO markdown, NO code fences:
   // Scrape Jobs
   app.post('/api/jobs/scrape', async (req, res) => {
     try {
-      const { keywords, location, sources, datePostedFilter, jobType, minSalary, maxJobsPerSource, jobTitle, experienceLevel, under10Applicants } = req.body;
+      const { keywords, location, sources, datePostedFilter, jobType, minSalary, maxJobsPerSource, jobTitle, contractType, experienceLevel, under10Applicants } = req.body;
 
       if (!keywords || !keywords.trim()) {
         res.status(400).json({ error: 'Keywords parameter is required.' });
@@ -984,7 +984,8 @@ Return valid JSON only — NO markdown, NO code fences:
         minSalary: minSalary ? Number(minSalary) : undefined,
         maxJobsPerSource: maxJobsPerSource ? Number(maxJobsPerSource) : 15,
         jobTitle: jobTitle?.trim() || undefined,
-        experienceLevel: experienceLevel || 'all',
+        contractType: contractType || undefined,
+        experienceLevel: experienceLevel || undefined,
         under10Applicants: wantUnder10,
       });
 

@@ -175,8 +175,6 @@ export const CV_TEMPLATES: { id: TemplateId; label: string; description: string 
   { id: 'atanu', label: 'Atanu', description: 'Custom design — teal single-column with role subtitle' },
 ];
 
-export type ExperienceLevel = 'all' | 'entry' | 'mid' | 'senior' | 'lead';
-
 export interface ScraperParams {
   keywords: string;
   location?: string;
@@ -186,7 +184,8 @@ export interface ScraperParams {
   minSalary?: number;
   maxJobsPerSource?: number;
   jobTitle?: string;
-  experienceLevel?: ExperienceLevel;
+  contractType?: string;
+  experienceLevel?: string;
   under10Applicants?: boolean;
 }
 

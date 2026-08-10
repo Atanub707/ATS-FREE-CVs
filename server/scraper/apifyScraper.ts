@@ -207,6 +207,12 @@ export class ApifyLinkedInScraper {
         // LinkedIn's NATIVE work-type filter — applied by LinkedIn itself.
         input.remote = REMOTE_PARAMS[params.jobType];
       }
+      if (params.experienceLevel) {
+        input.experienceLevel = [params.experienceLevel];
+      }
+      if (params.contractType) {
+        input.contractType = [params.contractType];
+      }
 
       const response = await fetch(RUN_SYNC_URL(token), {
         method: 'POST',
