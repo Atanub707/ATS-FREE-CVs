@@ -169,6 +169,21 @@ const JobCard = React.memo(function JobCard({
             )}
           </div>
 
+          {/* Contract / Level / Easy Apply badges */}
+          {(job.contractType || job.experienceLevel || job.applyType === 'EASY_APPLY') && (
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {job.applyType === 'EASY_APPLY' && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700">⚡ Easy Apply</span>
+              )}
+              {job.contractType && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600">{job.contractType}</span>
+              )}
+              {job.experienceLevel && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600">{job.experienceLevel}</span>
+              )}
+            </div>
+          )}
+
           {/* Skills chips (matched skills from the last score/tailoring audit) */}
           {(job.gapAnalysis?.matchingSkills?.length ?? 0) > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 mt-2">

@@ -200,6 +200,27 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Contract / Level / Easy Apply badges */}
+            {(job.contractType || job.experienceLevel || job.applyType === 'EASY_APPLY') && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {job.applyType === 'EASY_APPLY' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700">⚡ Easy Apply</span>
+                )}
+                {job.contractType && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600">{job.contractType}</span>
+                )}
+                {job.experienceLevel && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600">{job.experienceLevel}</span>
+                )}
+              </div>
+            )}
+            {job.companyUrl && (
+              <a href={job.companyUrl} target="_blank" rel="noreferrer"
+                 className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-blue-600 hover:underline">
+                Open company <ExternalLink size={11} />
+              </a>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
