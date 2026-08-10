@@ -72,16 +72,19 @@ export function extractDescription(item: any): string {
   return '';
 }
 
-// Normalize any posted-date shape (ISO string, YYYY-MM-DD, epoch ms, or a
-// "N days ago" relative caption) into an ISO string, or '' when unknown.
-// Never show future dates and never fake a posting time with scrape time.
+// Normalize any posted-date shape (full ISO string, bare YYYY-MM-DD, epoch
+// ms, or a "N days ago" relative caption) into an ISO string, or '' when
+// unknown. Bare dates use noon (least-biased point); full timestamps keep
+// their exact time. Never show future dates and never fake a posting time
+// with scrape time.
 export function normalizeIsoDate(value: string | number | undefined, relativeCaption?: string): string {
   let rawPosted: Date | null = null;
   if (typeof value === 'number' && !isNaN(value)) {
     rawPosted = value > 1e12 ? new Date(value) : new Date(value * 1000); // ms vs s epoch
   } else if (typeof value === 'string' && value.trim()) {
-    const dateOnly = value.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (dateOnly) {
+    const trimmed = value.trim();
+    const isBareDate = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+    if (isBareDate) {
       const rel = String(relativeCaption || '').match(/(\d+)\s*(min|hour|day)s?\s*ago/i);
       if (rel) {
         const n = parseInt(rel[1], 10);
@@ -89,16 +92,25 @@ export function normalizeIsoDate(value: string | number | undefined, relativeCap
         const ms = unit === 'min' ? n * 60000 : unit === 'hour' ? n * 3600000 : n * 86400000;
         rawPosted = new Date(Date.now() - ms);
       } else {
-        rawPosted = new Date(`${dateOnly[1]}T12:00:00Z`);
+        rawPosted = new Date(`${trimmed}T12:00:00Z`);
       }
     } else {
-      rawPosted = new Date(value);
+      rawPosted = new Date(trimmed);
     }
   }
   if (!rawPosted || isNaN(rawPosted.getTime())) return '';
   const iso = rawPosted.toISOString();
   return new Date(iso).getTime() > Date.now() + 2 * 60 * 60 * 1000 ? '' : iso;
 }
+
+// Posted-window post-filter for actors with no native date input (Upwork).
+// Jobs without a postedDate are kept (unknown freshness must not nuke
+// results); jobs proven older than the window are dropped.
+const DATE_WINDOWS_MS: Record<string, number> = {
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+};
 
 export abstract class ApifyBaseScraper {
   abstract readonly source: JobSource;
@@ -151,6 +163,20 @@ export abstract class ApifyBaseScraper {
         if (relevant.length > 0) {
           console.log(`[Apify] ${before} ${this.source} fetched, ${before - relevant.length} irrelevant (no "${terms.join('" / "')}" in title/company)`);
           result = relevant;
+        }
+      }
+
+      // Posted-window guarantee for actors without a native date input:
+      // drop jobs proven older than the selected window (unknown dates kept).
+      if (params.datePostedFilter && params.datePostedFilter !== 'all') {
+        const windowMs = DATE_WINDOWS_MS[params.datePostedFilter];
+        if (windowMs) {
+          const cutoff = Date.now() - windowMs;
+          const before = result.length;
+          result = result.filter((j) => !j.postedDate || new Date(j.postedDate).getTime() >= cutoff);
+          if (result.length !== before) {
+            console.log(`[Apify] ${this.source}: ${before - result.length} jobs older than ${params.datePostedFilter} dropped (posted-window filter)`);
+          }
         }
       }
 
