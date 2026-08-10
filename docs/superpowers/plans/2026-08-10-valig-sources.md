@@ -4,7 +4,7 @@
 
 **Goal:** Add all 6 remaining Valig actors (Indeed, Naukri, Glassdoor, StepStone, Totaljobs, Upwork) as Apify-powered job sources, backed by a single shared source registry that Settings, ScraperBar, the scraper factory, and a new `GET /api/sources` endpoint all consume.
 
-**Architecture:** A registry (`src/constants/sources.ts`) is the single source of truth for every source (19 total): display meta (flag/country/region) + scrape meta (apifyActorId, needsApify, builtInFallback, pricePer1K). The server side gets a shared `ApifyBaseScraper` base class (moved plumbing from `apifyScraper.ts`) with 6 thin per-actor subclasses; `ScraperFactory` routes Apify sources generically from the registry and skips Apify-only sources with an explanatory reason when no Apify key is set. UI: ScraperBar shows the 6 new chips (disabled + "requires Apify key" hint until a key is saved, then an "Apify" badge), Settings' Apify card lists all 7 Apify-powered sources with per-1K prices.
+**Architecture:** A registry (`src/constants/sources.ts`) is the single source of truth for every source (20 registry keys — 19 real sources + `Custom`): display meta (flag/country/region) + scrape meta (apifyActorId, needsApify, builtInFallback, pricePer1K). The server side gets a shared `ApifyBaseScraper` base class (moved plumbing from `apifyScraper.ts`) with 6 thin per-actor subclasses; `ScraperFactory` routes Apify sources generically from the registry and skips Apify-only sources with an explanatory reason when no Apify key is set. UI: ScraperBar shows the 6 new chips (disabled + "requires Apify key" hint until a key is saved, then an "Apify" badge), Settings' Apify card lists all 7 Apify-powered sources with per-1K prices.
 
 **Tech Stack:** TypeScript (tsx server + Vite React client), Express, better-sqlite3, Apify REST API (run-sync-get-dataset-items). No test framework — verification is `npx tsc --noEmit` + `npx vite build` + live `curl` checks against the running server (per AGENTS.md).
 
@@ -1368,7 +1368,7 @@ With the server running (restart if it was started before Task 6):
 curl -s http://localhost:3000/api/sources | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.sources.length, 'sources;', j.sources.filter(s=>s.apifyActorId).length, 'Apify-powered')})"
 ```
 
-Expected: `19 sources; 7 Apify-powered`.
+Expected: `20 sources; 7 Apify-powered` (19 real sources + the `Custom` registry entry).
 
 - [ ] **Step 3: Live scrape — Indeed + Naukri**
 
