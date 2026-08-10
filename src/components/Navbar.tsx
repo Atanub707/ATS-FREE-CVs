@@ -91,12 +91,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Created by
               </span>
               <span className="nb-sep text-slate-300 text-[11px]">|</span>
-              <span
-                className="nb-sign text-[22px] sm:text-[26px] font-semibold leading-none text-slate-800"
+              <a
+                href="https://www.linkedin.com/in/atanu-biswas-006796239/"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Atanu on LinkedIn"
+                className="nb-sign text-[22px] sm:text-[26px] font-semibold leading-none text-slate-800 no-underline transition-opacity hover:opacity-70"
                 style={{ fontFamily: '"Snell Roundhand", "Brush Script MT", "Apple Chancery", cursive' }}
               >
                 Atanu
-              </span>
+              </a>
             </div>
           </div>
         </div>
