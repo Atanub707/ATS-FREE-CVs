@@ -339,6 +339,18 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     </div>
                   </div>
                 )}
+
+                {job.recruiterName && job.recruiterUrl && (
+                  <div className="mt-3 border border-slate-200 bg-slate-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      Recruiter: <b className="text-slate-800">{job.recruiterName}</b>
+                    </span>
+                    <a href={job.recruiterUrl} target="_blank" rel="noreferrer"
+                      className="ml-auto text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1">
+                      LinkedIn <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}
