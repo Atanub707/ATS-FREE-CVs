@@ -6,7 +6,6 @@ import {
   Loader2,
   CheckCircle2,
   ChevronDown,
-  Asterisk,
 } from 'lucide-react';
 import { JobSource } from '../types';
 import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
@@ -35,6 +34,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [location, setLocation] = useState('');
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [jobType, setJobType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('remote');
+  const [jobTypeInfoOpen, setJobTypeInfoOpen] = useState(false);
   const [experienceLevel, setExperienceLevel] = useState<'all' | 'entry' | 'mid' | 'senior' | 'lead'>('all');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(10);
   const [under10Applicants, setUnder10Applicants] = useState(false);
@@ -192,8 +192,20 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           <div className="flex flex-col gap-[6px]">
             <label className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
               Job Type
-              <span title="Job-type labels are detected from descriptions and may not always be accurate" className="inline-flex text-red-500">
-                <Asterisk className="w-3 h-3" />
+              <span className="relative inline-flex group">
+                <button
+                  type="button"
+                  aria-label="Job type may not be accurate"
+                  onClick={() => setJobTypeInfoOpen((v) => !v)}
+                  className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full border border-slate-300 bg-slate-100 text-slate-500 text-[9.5px] font-bold leading-none cursor-pointer transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600"
+                >
+                  i
+                </button>
+                <span
+                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-slate-900 text-white text-[10.5px] font-medium leading-relaxed rounded-lg px-2.5 py-2 shadow-lg z-20 pointer-events-none transition-opacity duration-150 ${jobTypeInfoOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                >
+                  Job-type labels are detected from descriptions and may not always be accurate.
+                </span>
               </span>
             </label>
             <div className="relative">
