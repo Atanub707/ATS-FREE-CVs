@@ -14,7 +14,7 @@ const DATE_DAYS: Record<string, string> = { '24h': '1', '7d': '7', '30d': '14' }
 // then defaults to its own behavior, and keyword-only searches are fine).
 const CITY_COUNTRIES: Record<string, string> = {
   // India
-  bangalore: 'in', mumbai: 'in', delhi: 'in', 'new delhi': 'in', hyderabad: 'in',
+  bangalore: 'in', bengaluru: 'in', mumbai: 'in', delhi: 'in', 'new delhi': 'in', hyderabad: 'in',
   pune: 'in', chennai: 'in', kolkata: 'in', gurgaon: 'in', gurugram: 'in',
   noida: 'in', ahmedabad: 'in',
   // USA
@@ -30,8 +30,8 @@ const CITY_COUNTRIES: Record<string, string> = {
 };
 
 function locationCountry(location: string): string | undefined {
-  const key = location.trim().toLowerCase().split(',')[0].trim();
-  return CITY_COUNTRIES[key] ?? CITY_COUNTRIES[location.trim().toLowerCase()];
+  const key = location.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(',')[0].trim();
+  return CITY_COUNTRIES[key] ?? CITY_COUNTRIES[location.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
 }
 
 export class IndeedScraper extends ApifyBaseScraper {
