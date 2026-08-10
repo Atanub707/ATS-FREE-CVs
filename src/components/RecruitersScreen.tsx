@@ -24,6 +24,7 @@ interface Contact {
 interface RecruitersScreenProps {
   isOpen: boolean;
   onClose: () => void;
+  focusRecruiter?: { name?: string | null; url?: string | null } | null;
 }
 
 const AVATAR_GRADIENTS = [
@@ -32,7 +33,7 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#10B981,#0EA5E9)',
 ];
 
-export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onClose }) => {
+export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onClose, focusRecruiter }) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
   const [q, setQ] = useState('');
@@ -41,6 +42,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,7 +59,22 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
   useEffect(() => { load(); }, [load]);
 
-  if (!isOpen) return null;
+  // Deep-link: badge click on a job card focuses that recruiter.
+  useEffect(() => {
+    if (focusRecruiter?.name) setQ(focusRecruiter.name);
+  }, [focusRecruiter?.name]);
+
+  useEffect(() => {
+    if (!focusRecruiter) { setFocusedId(null); return; }
+    const qn = (focusRecruiter.name || '').trim().toLowerCase();
+    const qu = (focusRecruiter.url || '').trim();
+    const hit = contacts.find(
+      (c) =>
+        (qn && ((c.name || '').toLowerCase() === qn || (c.recruiterName || '').toLowerCase() === qn || (c.name || '').toLowerCase().includes(qn))) ||
+        (qu && c.recruiterUrl === qu)
+    );
+    setFocusedId(hit ? hit.id : null);
+  }, [contacts, focusRecruiter]);
 
   const showToast = (text: string) => {
     setToast(text);
@@ -111,6 +128,15 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
 
+  useEffect(() => {
+    if (focusedId) {
+      const el = document.getElementById(`rc-card-${focusedId}`);
+      el?.scrollIntoView({ block: 'center' });
+    }
+  }, [focusedId, visible.length]);
+
+  if (!isOpen) return null;
+
   return (
     <div className="rc-screen">
       {/* Header */}
@@ -158,7 +184,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               const displayName = c.name || c.recruiterName || '';
               const hasPhoto = !!displayName;
               return (
-                <div key={c.id} className="rc-idcard">
+                <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''}`}>
                   <div className="rc-namerow">
                     <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
                       {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={20} />}
@@ -324,6 +350,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
         .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
+        .rc-idcard.rc-focus { box-shadow: 0 0 0 2px var(--blue), 0 6px 18px -6px rgba(37,99,235,.25); }
         .rc-namerow { display: flex; align-items: center; gap: 12px; }
         .rc-namefield { flex: 1; min-width: 0; }
         .rc-nm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }

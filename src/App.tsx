@@ -30,6 +30,7 @@ export default function App() {
   const [isManualJdOpen, setIsManualJdOpen] = useState(false);
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
   const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
+  const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
   // Loading states
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
@@ -439,6 +440,7 @@ export default function App() {
               pageSize={pageSize}
               setPageSize={setPageSize}
               onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
+            onOpenRecruiter={(job) => { setRecruiterFocus({ name: job.recruiterName, url: job.recruiterUrl }); setIsRecruitersOpen(true); }}
               onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
               onMatchJob={handleMatchJob}
               onTailorJob={handleTailorJob}
@@ -500,6 +502,7 @@ export default function App() {
           <RecruitersScreen
             isOpen={isRecruitersOpen}
             onClose={() => setIsRecruitersOpen(false)}
+            focusRecruiter={recruiterFocus}
           />
         </>
       )}

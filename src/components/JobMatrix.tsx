@@ -19,6 +19,7 @@ import {
   DollarSign,
   Loader2,
   TrendingUp,
+  User,
   Calendar,
   ExternalLink,
   Users,
@@ -41,6 +42,7 @@ interface JobMatrixProps {
   pageSize: number;
   setPageSize: (v: number) => void;
   onSelectJob: (job: Job) => void;
+  onOpenRecruiter?: (job: Job) => void;
   onSelectTailoredReview: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
@@ -57,6 +59,7 @@ const JobCard = React.memo(function JobCard({
   scoreMsg,
   tailorMsg,
   onSelectJob,
+  onOpenRecruiter,
   onSelectTailoredReview,
   onMatchJob,
   onTailorJob,
@@ -67,6 +70,7 @@ const JobCard = React.memo(function JobCard({
   scoreMsg: string[] | null;
   tailorMsg: string[] | null;
   onSelectJob: (job: Job) => void;
+  onOpenRecruiter?: (job: Job) => void;
   onSelectTailoredReview: (job: Job) => void;
   onMatchJob: (jobId: string) => Promise<void>;
   onTailorJob: (jobId: string) => Promise<void>;
@@ -160,6 +164,16 @@ const JobCard = React.memo(function JobCard({
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
               <span>{job.location}</span>
             </span>
+
+            {(job.recruiterName || job.recruiterUrl) && onOpenRecruiter && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenRecruiter(job); }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold hover:bg-blue-100 transition-colors cursor-pointer"
+                title="View recruiter details"
+              >
+                <User className="w-2.5 h-2.5" /> Recruiter
+              </button>
+            )}
 
             {(job.salaryText && job.salaryText !== 'Salary not mentioned') && (
               <span className="flex items-center space-x-1 text-green-700 font-medium">
@@ -356,6 +370,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   pageSize,
   setPageSize,
   onSelectJob,
+  onOpenRecruiter,
   onSelectTailoredReview,
   onMatchJob,
   onTailorJob,
@@ -575,6 +590,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 scoreMsg={scoreMessages[job.id] || null}
                 tailorMsg={tailorMessages[job.id] || null}
                 onSelectJob={onSelectJob}
+                onOpenRecruiter={onOpenRecruiter}
                 onSelectTailoredReview={onSelectTailoredReview}
                 onMatchJob={onMatchJob}
                 onTailorJob={onTailorJob}
