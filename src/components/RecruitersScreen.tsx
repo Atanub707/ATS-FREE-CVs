@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, MessageCircle } from 'lucide-react';
 
 interface Contact {
   id: string;
   email: string | null;
   phone: string | null;
+  whatsapp: boolean;
   recruiterName: string | null;
   recruiterUrl: string | null;
   name: string | null;
@@ -110,7 +111,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         <button className="rc-back" onClick={onClose}>← Back</button>
         <div className="rc-ttl">
           <b>Recruiters</b>
-          <span>Emails found in job descriptions — no extra scraping.</span>
+          <span>Identity cards — emails, phones & LinkedIn from job descriptions.</span>
         </div>
         <div className="rc-spacer" />
         <span className="rc-count">{visible.length} contact{visible.length === 1 ? '' : 's'}</span>
@@ -131,7 +132,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
         <div className="rc-note">
           <Mail size={13} />
-          Extracted automatically from scraped job descriptions. <b>Copy all</b> to build your outreach list.
+          Cards fill the screen — no long scrolling. Click any chip to copy.
         </div>
 
         {loading ? (
@@ -145,49 +146,69 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               : 'Try a different search or clear the filters.'}</p>
           </div>
         ) : (
-          <div className="rc-list">
-            {visible.map((c, i) => (
-              <div key={c.id} className="rc-contact">
-                <div className="rc-avatar" style={{ background: AVATAR_GRADIENTS[i % 3] }}>
-                  {(c.name || c.email?.[0] || c.phone?.[0] || '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="rc-cinfo">
-                  <div className="rc-name">
-                    {c.name || (c.email ? c.email.split('@')[0] : c.phone || c.recruiterName || 'Contact')}
-                    <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
+          <div className="rc-grid">
+            {visible.map((c, i) => {
+              const displayName = c.name || c.recruiterName || '';
+              const hasPhoto = !!displayName;
+              return (
+                <div key={c.id} className="rc-idcard">
+                  <div className="rc-idrow">
+                    <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
+                      {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={20} />}
+                    </div>
+                    <div className="rc-idmain">
+                      <div className="rc-idnm">
+                        <b>{displayName || 'Unnamed contact'}</b>
+                        <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
+                      </div>
+                      <div className="rc-idmail">
+                        {c.email ? <code>{c.email}</code> : <span className="rc-none">no email</span>}
+                      </div>
+                    </div>
                   </div>
-                  {c.email && <div className="rc-email"><code>{c.email}</code></div>}
-                  {c.phone && (
-                    <div className="rc-email rc-phone"><code>{c.phone}</code></div>
-                  )}
-                  <div className="rc-meta">
-                    <span>{c.company}</span>
+                  <div className="rc-chips">
+                    {c.email && (
+                      <span className="rc-chip" onClick={() => copyEmail(c)} title="Copy email">
+                        <Mail size={11} /> Email
+                      </span>
+                    )}
+                    {c.phone && !c.whatsapp && (
+                      <span className="rc-chip rc-chip-phone" onClick={() => copyEmail(c)} title="Copy phone">
+                        <Phone size={11} /> {c.phone}
+                      </span>
+                    )}
+                    {c.phone && c.whatsapp && (
+                      <span className="rc-chip rc-chip-wa" onClick={() => copyEmail(c)} title="Copy WhatsApp number">
+                        <MessageCircle size={11} /> WhatsApp
+                      </span>
+                    )}
+                    {c.recruiterUrl && (
+                      <a className="rc-chip rc-chip-li" href={c.recruiterUrl} target="_blank" rel="noreferrer" title="Open LinkedIn profile">
+                        <Linkedin size={11} /> LinkedIn
+                      </a>
+                    )}
+                    {!c.email && !c.phone && !c.recruiterUrl && (
+                      <span className="rc-chip"><span className="rc-none">no contact details</span></span>
+                    )}
+                  </div>
+                  <div className="rc-idmeta">
+                    <span className="rc-co">{c.company}</span>
                     <span className="rc-sep">·</span>
-                    <span>{c.jobRole}</span>
+                    <span className="rc-role">{c.jobRole}</span>
                     {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
                   </div>
-                  {c.context && <div className="rc-context">"{c.context}…"</div>}
+                  {c.context && <div className="rc-ctx">"{c.context}"</div>}
+                  <div className="rc-cact">
+                    <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
+                      {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+                    </button>
+                    <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="rc-acts">
-                  {c.recruiterUrl && (
-                    <a className="rc-btn rc-linkedin" href={c.recruiterUrl} target="_blank" rel="noreferrer" title="Open LinkedIn profile">
-                      <Linkedin size={13} /> LinkedIn
-                    </a>
-                  )}
-                  <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
-                    {copiedId === c.id ? <><CheckCircle2 size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
-                  </button>
-                  {c.sourceJobUrl && (
-                    <a className="rc-open" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
-                      Open job <ExternalLink size={11} />
-                    </a>
-                  )}
-                  <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -277,6 +298,35 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #F8FAFC; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
+        .rc-wrap { max-width: 1360px; }
+        .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
+        .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
+        .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
+        .rc-idrow { display: flex; align-items: center; gap: 12px; }
+        .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, #E2E8F0, #CBD5E1); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: #64748B; flex-shrink: 0; overflow: hidden; }
+        .rc-photo svg { width: 20px; height: 20px; opacity: .55; }
+        .rc-photo.has { background: linear-gradient(135deg, #2563EB, #7C3AED); color: #fff; font-weight: 800; font-size: 22px; border: 0; }
+        .rc-photo.has.alt1 { background: linear-gradient(135deg, #F59E0B, #EF4444); }
+        .rc-photo.has.alt2 { background: linear-gradient(135deg, #10B981, #0EA5E9); }
+        .rc-idmain { min-width: 0; flex: 1; }
+        .rc-idnm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .rc-idnm b { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+        .rc-idmail { font-size: 11.5px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .rc-idmail code { font-family: ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; font-size: 10.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+        .rc-none { color: var(--faint); font-size: 10.5px; font-style: italic; }
+        .rc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rc-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; border-radius: 7px; padding: 3px 8px; border: 1px solid var(--border); color: var(--muted); background: #fff; cursor: pointer; text-decoration: none; transition: all .15s ease; }
+        .rc-chip:hover { border-color: var(--blue-border); color: var(--blue); }
+        .rc-chip-phone { color: #7C3AED; border-color: #E9D5FF; background: #FAF5FF; }
+        .rc-chip-wa { color: #15803D; border-color: #BBF7D0; background: #F0FDF4; }
+        .rc-chip-li { color: #0A66C2; border-color: #B9D0EF; background: #F0F6FD; }
+        .rc-idmeta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); min-width: 0; flex-wrap: wrap; }
+        .rc-co { font-weight: 600; color: var(--muted); }
+        .rc-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+        .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
+        .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
+        .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
+        .rc-cact .rc-ghost { margin-left: auto; }
       `}</style>
     </div>
   );

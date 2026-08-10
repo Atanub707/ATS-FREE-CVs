@@ -384,8 +384,23 @@ export function getDb(): Database.Database {
   migrateToUsers(db);
   migrateRecoveryColumns(db);
   migrateContactsTable(db);
+  ensureWhatsappColumn(db);
   ensureContactIndexes(db);
   return db;
+}
+
+// Light migration: whatsapp flag column (default 0). A simple ALTER is
+// enough — no rebuild needed for a nullable column with a default.
+function ensureWhatsappColumn(d: Database.Database): void {
+  try {
+    const cols = new Set((d.pragma('table_info(hr_contacts)') as any[]).map((c) => c.name));
+    if (!cols.has('whatsapp')) {
+      d.exec(`ALTER TABLE hr_contacts ADD COLUMN whatsapp INTEGER DEFAULT 0`);
+      console.log('[Contacts] hr_contacts migrated to support whatsapp flags');
+    }
+  } catch (err) {
+    console.error('whatsapp column migration failed:', err);
+  }
 }
 
 // Partial unique indexes on the contact fields. NULLs may repeat, so
@@ -662,8 +677,8 @@ function upsertContactsFromJob(job: Job): void {
   const findByEmail = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND email = ?');
   const findByPhone = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND phone = ?');
   const insert = d.prepare(`
-    INSERT INTO hr_contacts (id, user_id, email, phone, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?)
+    INSERT INTO hr_contacts (id, user_id, email, phone, whatsapp, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?)
   `);
   const merge = d.prepare(`
     UPDATE hr_contacts SET
@@ -674,6 +689,7 @@ function upsertContactsFromJob(job: Job): void {
       name = CASE WHEN ? IS NOT NULL THEN ? ELSE name END,
       email = COALESCE(?, email),
       phone = COALESCE(?, phone),
+      whatsapp = MAX(whatsapp, ?),
       company = CASE WHEN company = '' THEN ? ELSE company END,
       job_role = CASE WHEN job_role = '' THEN ? ELSE job_role END,
       context = ?
@@ -686,13 +702,14 @@ function upsertContactsFromJob(job: Job): void {
     let existing: any = c.email ? findByEmail.get(userId, c.email) : undefined;
     if (!existing && c.phone) existing = findByPhone.get(userId, c.phone);
     if (existing) {
-      merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, job.company || '', job.title || '', c.context, existing.id);
+      merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, c.whatsapp ? 1 : 0, job.company || '', job.title || '', c.context, existing.id);
     } else {
       insert.run(
         `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         userId,
         c.email,
         c.phone,
+        c.whatsapp ? 1 : 0,
         c.name,
         c.type,
         c.typeLabel,
@@ -726,6 +743,7 @@ function upsertContactsFromJob(job: Job): void {
         name = CASE WHEN ? IS NOT NULL THEN ? ELSE name END,
         recruiter_name = COALESCE(?, recruiter_name),
         recruiter_url = COALESCE(?, recruiter_url),
+        whatsapp = MAX(whatsapp, 0),
         company = CASE WHEN company = '' THEN ? ELSE company END,
         job_role = CASE WHEN job_role = '' THEN ? ELSE job_role END
       WHERE id = ?
@@ -737,7 +755,7 @@ function upsertContactsFromJob(job: Job): void {
       recUpdate.run(now, recruiterName || null, recruiterName || null, recruiterName || null, recruiterUrl || null, job.company || '', job.title || '', existingRec.id);
     } else {
       const rid = `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      insert.run(rid, userId, null, null, recruiterName || null, 'recruit', 'Recruiting', job.company || '', job.title || '', job.id, job.url || '', '', now, now);
+      insert.run(rid, userId, null, null, 0, recruiterName || null, 'recruit', 'Recruiting', job.company || '', job.title || '', job.id, job.url || '', '', now, now);
       d.prepare('UPDATE hr_contacts SET recruiter_name = ?, recruiter_url = ? WHERE id = ?').run(recruiterName || null, recruiterUrl || null, rid);
     }
   }

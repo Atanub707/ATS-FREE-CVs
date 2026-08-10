@@ -6,6 +6,7 @@ export type ContactType = 'recruit' | 'hr' | 'careers' | 'company';
 export interface ExtractedContact {
   email: string | null;
   phone: string | null;
+  whatsapp: boolean;
   name: string | null;
   type: ContactType;
   typeLabel: string;
@@ -70,15 +71,21 @@ function looksLikePhone(raw: string, preceding: string): boolean {
   return true;
 }
 
-function extractPhonesFrom(text: string): { phone: string; name: string | null; context: string; index: number }[] {
-  const out: { phone: string; name: string | null; context: string; index: number }[] = [];
+function extractPhonesFrom(text: string): { phone: string; whatsapp: boolean; name: string | null; context: string; index: number }[] {
+  const out: { phone: string; whatsapp: boolean; name: string | null; context: string; index: number }[] = [];
   for (const match of text.matchAll(PHONE_RE)) {
     const raw = match[0].trim();
     const start = Math.max(0, match.index - 90);
     const preceding = text.slice(start, match.index);
     if (!looksLikePhone(raw, preceding)) continue;
+    const phone = raw.replace(/[\s.]+/g, ' ').trim();
+    const digits = phone.replace(/\D/g, '');
+    const whatsapp =
+      /whatsapp|wa\.me|\bwa\b/i.test(preceding) ||
+      /wa\.me\/[0-9]+/i.test(text) && text.match(/wa\.me\/(\d+)/i)?.[1]?.includes(digits.slice(-10));
     out.push({
-      phone: raw.replace(/[\s.]+/g, ' ').trim(),
+      phone,
+      whatsapp,
       name: extractName(preceding),
       context: cleanContext(preceding),
       index: match.index,
@@ -182,6 +189,7 @@ export function extractContactsFrom(text: string, company: string): ExtractedCon
     results.push({
       email,
       phone: null,
+      whatsapp: false,
       name: extractName(preceding),
       type,
       typeLabel,
@@ -200,12 +208,14 @@ export function extractContactsFrom(text: string, company: string): ExtractedCon
     });
     if (near) {
       near.phone = p.phone;
+      near.whatsapp = p.whatsapp;
       if (!near.name) near.name = p.name;
     } else {
       const { type, typeLabel } = classifyType('', company);
       results.push({
         email: null,
         phone: p.phone,
+        whatsapp: p.whatsapp,
         name: p.name,
         type,
         typeLabel,
