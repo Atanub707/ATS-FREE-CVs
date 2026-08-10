@@ -19,7 +19,6 @@ export const SOURCES: Record<JobSource, SourceMeta> = {
   Naukri: { id: 'Naukri', label: 'Naukri', flag: '🇮🇳', country: 'India', region: 'asia', apifyActorId: 'valig~naukri-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
   Glassdoor: { id: 'Glassdoor', label: 'Glassdoor', flag: '🌐', country: 'Global', region: 'global', apifyActorId: 'valig~glassdoor-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
   StepStone: { id: 'StepStone', label: 'StepStone', flag: '🇩🇪', country: 'Germany', region: 'eu', apifyActorId: 'valig~stepstone-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
-  Totaljobs: { id: 'Totaljobs', label: 'Totaljobs', flag: '🇬🇧', country: 'UK', region: 'uk', apifyActorId: 'valig~totaljobs-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
   Upwork: { id: 'Upwork', label: 'Upwork', flag: '🌐', country: 'Global freelance', region: 'global', apifyActorId: 'valig~upwork-jobs-scraper', needsApify: true, pricePer1K: '$0.20' },
 
   // ── Built-in free scrapers ──

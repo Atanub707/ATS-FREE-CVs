@@ -4,7 +4,6 @@ import { IndeedScraper } from './indeedScraper.js';
 import { NaukriScraper } from './naukriScraper.js';
 import { GlassdoorScraper } from './glassdoorScraper.js';
 import { StepStoneScraper } from './stepStoneScraper.js';
-import { TotaljobsScraper } from './totaljobsScraper.js';
 import { UpworkScraper } from './upworkScraper.js';
 import { isCrawlingAllowed } from './robotsGuard.js';
 import { ArbeitnowScraper } from './arbeitnowScraper.js';
@@ -32,7 +31,6 @@ const APIFY_SCRAPERS: Partial<Record<JobSource, () => ApifyBaseScraper>> = {
   Naukri: () => new NaukriScraper(),
   Glassdoor: () => new GlassdoorScraper(),
   StepStone: () => new StepStoneScraper(),
-  Totaljobs: () => new TotaljobsScraper(),
   Upwork: () => new UpworkScraper(),
 };
 
