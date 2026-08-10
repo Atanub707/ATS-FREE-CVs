@@ -680,10 +680,40 @@ function upsertContactsFromJob(job: Job): void {
     WHERE id = ?
   `);
 
+  const contacts = extractContactsFrom(job.description || '', job.company || '');
+
+  for (const c of contacts) {
+    let existing: any = c.email ? findByEmail.get(userId, c.email) : undefined;
+    if (!existing && c.phone) existing = findByPhone.get(userId, c.phone);
+    if (existing) {
+      merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, job.company || '', job.title || '', c.context, existing.id);
+    } else {
+      insert.run(
+        `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        userId,
+        c.email,
+        c.phone,
+        c.name,
+        c.type,
+        c.typeLabel,
+        job.company || '',
+        job.title || '',
+        job.id,
+        job.url || '',
+        c.context,
+        now,
+        now,
+      );
+    }
+  }
+
   // Recruiter enrichment — Apify actor output. Dedupe by LinkedIn URL,
   // then merge into a name-matching contact, else insert profile-only.
-  const recruiterName = (job as any).recruiterName ? String((job as any).recruiterName) : '';
-  const recruiterUrl = (job as any).recruiterUrl ? String((job as any).recruiterUrl) : '';
+  // Runs AFTER the description loop so its name lookup finds the row the
+  // loop just inserted by email/phone and attaches the URL to it instead
+  // of creating a second, never-merged row.
+  const recruiterName = job.recruiterName ? String(job.recruiterName) : '';
+  const recruiterUrl = job.recruiterUrl ? String(job.recruiterUrl) : '';
   if (recruiterName || recruiterUrl) {
     const recFindByUrl = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND recruiter_url = ?');
     const recFindByName = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND lower(name) = lower(?)');
@@ -709,34 +739,6 @@ function upsertContactsFromJob(job: Job): void {
       const rid = `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       insert.run(rid, userId, null, null, recruiterName || null, 'recruit', 'Recruiting', job.company || '', job.title || '', job.id, job.url || '', '', now, now);
       d.prepare('UPDATE hr_contacts SET recruiter_name = ?, recruiter_url = ? WHERE id = ?').run(recruiterName || null, recruiterUrl || null, rid);
-    }
-  }
-
-  const contacts = extractContactsFrom(job.description || '', job.company || '');
-  if (contacts.length === 0) return;
-
-  for (const c of contacts) {
-    let existing: any = c.email ? findByEmail.get(userId, c.email) : undefined;
-    if (!existing && c.phone) existing = findByPhone.get(userId, c.phone);
-    if (existing) {
-      merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, job.company || '', job.title || '', c.context, existing.id);
-    } else {
-      insert.run(
-        `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        userId,
-        c.email,
-        c.phone,
-        c.name,
-        c.type,
-        c.typeLabel,
-        job.company || '',
-        job.title || '',
-        job.id,
-        job.url || '',
-        c.context,
-        now,
-        now,
-      );
     }
   }
 }
