@@ -1,7 +1,7 @@
 import { Job, ScraperParams } from '../../src/types.js';
 import { loadConfig } from '../config.js';
 import { LinkedInScraper } from './linkedInScraper.js';
-import { classifyFromText, contradictsWanted } from './workMode.js';
+import { classifyFromText } from './workMode.js';
 
 // Optional LinkedIn source via Apify's cloud scraper
 // (valig/linkedin-jobs-scraper — ~$0.28–0.40 per 1K jobs, free $5/month
@@ -225,28 +225,30 @@ export class ApifyLinkedInScraper {
         .map(mapItem)
         .filter((j): j is Job => j !== null);
 
-      // Relevance: the FIRST significant keyword word must appear in the
-      // title or company ("devops" must not return "Recruiter").
+      // Relevance: at least ONE significant keyword word must appear in the
+      // title or company ("devops" must not return "Recruiter"). Any term
+      // counts — requiring only the first term ("devops" for "DevOps
+      // Engineer") wrongly drops Platform/SRE/Cloud Engineer roles that
+      // LinkedIn matched. If nothing matches (odd query), keep everything
+      // rather than nuking a search to zero.
       const terms = params.keywords.trim().toLowerCase().split(/\s+/).filter((t) => t.length > 2);
-      const primaryTerm = terms[0];
-      if (primaryTerm) {
+      if (terms.length > 0) {
         const before = result.length;
-        const relevant = result.filter((j) => `${j.title} ${j.company}`.toLowerCase().includes(primaryTerm));
+        const relevant = result.filter((j) => {
+          const hay = `${j.title} ${j.company}`.toLowerCase();
+          return terms.some((t) => hay.includes(t));
+        });
         if (relevant.length > 0) {
-          console.log(`[Apify] ${before} fetched, ${before - relevant.length} irrelevant (missing "${primaryTerm}" in title/company)`);
+          console.log(`[Apify] ${before} fetched, ${before - relevant.length} irrelevant (no "${terms.join('" / "')}" in title/company)`);
           result = relevant;
         }
       }
 
-      // Work-mode contradiction filter: a remote request must never return
-      // jobs whose description explicitly says Hybrid/On-site. Unknowns pass
-      // (LinkedIn's own f_WT filter already guaranteed the type).
-      if (params.jobType && params.jobType !== 'all') {
-        const wanted = params.jobType as 'remote' | 'hybrid' | 'onsite';
-        const filtered = result.filter((j) => !contradictsWanted(j.jobType, wanted));
-        console.log(`[Apify] ${result.length} relevant, kept ${filtered.length} for ${wanted} search`);
-        result = filtered;
-      }
+      // Work-mode: LinkedIn's NATIVE f_WT filter (applied above, before the
+      // actor even runs) already guarantees the wanted mode, so no further
+      // description-based contradiction filtering happens here. The relaxed
+      // contradictsWanted rule still applies downstream in the factory for
+      // jobs explicitly labeled On-site.
 
       console.log(`[Apify] Got ${result.length} LinkedIn jobs via Apify`);
       return result;

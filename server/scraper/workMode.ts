@@ -37,7 +37,16 @@ export function classifyFromText(text: string | undefined | null): WorkMode {
 
 /**
  * True if a job's existing jobType label contradicts the wanted search
- * mode (e.g. wanted="remote" but jobType contains "Hybrid" or "On-site").
+ * mode. Only jobs EXPLICITLY classified as the opposite, mutually
+ * exclusive mode are dropped:
+ *
+ *   remote search  -> drop jobs explicitly On-site   (Hybrid passes:
+ *                     remote postings commonly mention "hybrid" options,
+ *                     and a hybrid job still includes remote work)
+ *   onsite search  -> drop jobs explicitly Remote    (Hybrid passes, same
+ *                     reasoning)
+ *   hybrid search  -> drop jobs explicitly Remote or On-site
+ *
  * Jobs with an unstated/unknown mode never contradict — they pass through,
  * since we can't prove they DON'T match.
  */
@@ -46,8 +55,8 @@ export function contradictsWanted(
   wanted: 'remote' | 'hybrid' | 'onsite'
 ): boolean {
   const t = jobType || '';
-  if (wanted === 'remote') return t.includes('Hybrid') || t.includes('On-site');
-  if (wanted === 'onsite') return t.includes('Remote') || t.includes('Hybrid');
+  if (wanted === 'remote') return t.includes('On-site');
+  if (wanted === 'onsite') return t.includes('Remote');
   if (wanted === 'hybrid') return t.includes('Remote') || t.includes('On-site');
   return false;
 }
