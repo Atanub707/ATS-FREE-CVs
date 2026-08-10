@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileText, Settings, FileInput, LogOut, ChevronDown, Globe } from 'lucide-react';
-import { AtanuBadge } from './AtanuBadge';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -73,21 +72,32 @@ export const Navbar: React.FC<NavbarProps> = ({
     'w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 shrink-0';
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[64px] flex items-center justify-between">
-        {/* Brand lockup: Tailor CV / Created by Atanu */}
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 bg-white text-slate-900" style={{ borderBottom: '1px solid #E8EDF3' }}>
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 h-[80px] flex items-center justify-between">
+        {/* Brand lockup: [T] Tailor CV / CREATED BY | Atanu */}
+        <div className="flex items-center gap-4 sm:gap-5">
           <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white font-bold text-[17px]"
-            style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)', boxShadow: '0 4px 12px -2px rgba(37,99,235,.4)' }}
+            className="nb-logo w-12 h-12 sm:w-14 sm:h-14 rounded-[14px] sm:rounded-[16px] flex items-center justify-center text-white font-extrabold text-[24px] sm:text-[27px] tracking-tight"
+            style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)', boxShadow: '0 6px 18px -6px rgba(37,99,235,.45)' }}
           >
             T
           </div>
-          <div className="flex flex-col leading-tight">
-            <h1 className="text-[17px] font-bold text-slate-900 tracking-tight">
+          <div className="nb-brand flex flex-col justify-center leading-none">
+            <h1 className="nb-title text-[24px] sm:text-[29px] font-bold text-slate-900 tracking-[-0.02em] leading-none">
               Tailor CV
             </h1>
-            <AtanuBadge />
+            <div className="nb-credit mt-[7px] flex items-baseline gap-[9px]">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold uppercase text-slate-400 tracking-[0.18em]">
+                Created by
+              </span>
+              <span className="nb-sep text-slate-300 text-[11px]">|</span>
+              <span
+                className="nb-sign text-[22px] sm:text-[26px] font-semibold leading-none text-slate-800"
+                style={{ fontFamily: '"Snell Roundhand", "Brush Script MT", "Apple Chancery", cursive' }}
+              >
+                Atanu
+              </span>
+            </div>
           </div>
         </div>
 
@@ -231,7 +241,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       </div>
-      <style>{`@keyframes dd { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
+      <style>{`
+        @keyframes dd { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .nb-logo { animation: nb-rise .5s cubic-bezier(.22,1,.36,1) both; }
+        .nb-title { animation: nb-rise .5s .05s cubic-bezier(.22,1,.36,1) both; }
+        .nb-credit { animation: nb-rise-soft .55s .12s cubic-bezier(.22,1,.36,1) both; }
+        @keyframes nb-rise { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes nb-rise-soft { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) {
+          .nb-logo, .nb-title, .nb-credit { animation: none; }
+        }
+      `}</style>
     </header>
   );
 };
