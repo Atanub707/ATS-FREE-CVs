@@ -6,6 +6,7 @@ import {
   Loader2,
   CheckCircle2,
   ChevronDown,
+  Asterisk,
 } from 'lucide-react';
 import { JobSource } from '../types';
 import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
@@ -191,7 +192,9 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           <div className="flex flex-col gap-[6px]">
             <label className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
               Job Type
-              <span title="Job-type labels are detected from descriptions and may not always be accurate" className="text-red-500 text-[11px] leading-none">✱</span>
+              <span title="Job-type labels are detected from descriptions and may not always be accurate" className="inline-flex text-red-500">
+                <Asterisk className="w-3 h-3" />
+              </span>
             </label>
             <div className="relative">
               <select
