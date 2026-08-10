@@ -72,14 +72,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 text-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[76px] flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[64px] flex items-center justify-between">
         {/* Brand lockup: Tailor CV / Created by Atanu */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-[10px] bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white font-bold text-[17px]"
+            style={{ background: 'linear-gradient(135deg,#2563EB,#7C3AED)', boxShadow: '0 4px 12px -2px rgba(37,99,235,.4)' }}
+          >
             T
           </div>
           <div className="flex flex-col leading-tight">
-            <h1 className="text-[20px] font-bold text-slate-900 tracking-tight">
+            <h1 className="text-[17px] font-bold text-slate-900 tracking-tight">
               Tailor CV
             </h1>
             <AtanuBadge />
@@ -90,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onOpenJobPortals?.()}
-            className="hidden sm:flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
             title="Browse 184 job portals worldwide"
           >
             <Globe className="w-3.5 h-3.5 text-blue-500" />

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tailor CV — AppBar Design Exploration (20 Concepts)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F1F5F9; color: #0F172A; padding: 40px 32px 80px; }
+
+  .page-head { max-width: 1240px; margin: 0 auto 28px; }
+  .page-head h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+  .page-head p { color: #64748B; font-size: 13px; margin-top: 5px; }
+
+  .grid { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+  .card .meta { padding: 12px 16px; border-bottom: 1px solid #EEF2F7; display: flex; align-items: baseline; gap: 10px; }
+  .card .meta b { font-size: 12.5px; font-weight: 700; }
+  .card .meta span { font-size: 11px; color: #94A3B8; }
+  .card .meta .num { font-size: 10px; font-weight: 800; color: #2563EB; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 2px 6px; }
+
+  /* ── shared primitives ── */
+  .bar { display: flex; align-items: center; gap: 12px; padding: 0 16px; font-family: 'Inter', sans-serif; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #2563EB, #7C3AED); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .brand b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; display: block; }
+  .brand span { font-size: 9.5px; color: #94A3B8; font-weight: 500; letter-spacing: .06em; }
+  .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; font-family: inherit; }
+  .btn:hover { border-color: #BFDBFE; color: #2563EB; }
+  .btn.primary { background: #2563EB; border-color: #2563EB; color: #fff; }
+  .btn svg { width: 13px; height: 13px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #EF4444); color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 0 0 1px #E2E8F0; flex-shrink: 0; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; color: #64748B; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .icon-btn svg { width: 15px; height: 15px; }
+  .icon-btn:hover { border-color: #BFDBFE; color: #2563EB; }
+  .canvas { padding: 18px 0; }
+  .canvas .ctx { margin: 0 16px; border-radius: 10px; overflow: hidden; }
+  .canvas .ctx.grad-bg { background: linear-gradient(135deg, #DBEAFE, #E0E7FF); padding: 22px 0; }
+
+  /* small icons */
+  .i { display: inline-block; width: 14px; height: 14px; }
+  .chevr svg { width: 11px; height: 11px; }
+
+  /* ═══════ 01 Baseline ═══════ */
+  .b1 { height: 56px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b1 .avatar { margin-left: 4px; }
+
+  /* ═══════ 02 Centered search ═══════ */
+  .b2 { height: 58px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b2 .search { flex: 1; max-width: 420px; margin: 0 auto; display: flex; align-items: center; gap: 8px; height: 36px; background: #F1F5F9; border: 1px solid transparent; border-radius: 9px; padding: 0 12px; color: #94A3B8; font-size: 12.5px; transition: all .15s ease; }
+  .b2 .search:hover { background: #fff; border-color: #E2E8F0; }
+  .b2 .search:focus-within { background: #fff; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .b2 .search svg { width: 14px; height: 14px; }
+  .b2 .search em { font-style: normal; margin-left: auto; font-size: 10px; color: #94A3B8; border: 1px solid #E2E8F0; border-radius: 5px; padding: 1px 5px; background: #fff; }
+
+  /* ═══════ 03 Glass ═══════ */
+  .b3 { height: 60px; background: rgba(255,255,255,.62); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,.35); color: #0F172A; }
+  .b3 .logo { width: 32px; height: 32px; }
+  .b3 .btn { background: rgba(255,255,255,.7); backdrop-filter: blur(8px); }
+
+  /* ═══════ 04 Dark navy ═══════ */
+  .b4 { height: 58px; background: linear-gradient(135deg, #0B1F46, #123B7A); color: #fff; }
+  .b4 .brand b { color: #fff; }
+  .b4 .brand span { color: #A8B8D3; }
+  .b4 .btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: #E2E8F0; }
+  .b4 .btn:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.3); color: #fff; }
+  .b4 .icon-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: #CBD5E1; }
+  .b4 .avatar { border-color: rgba(255,255,255,.2); }
+
+  /* ═══════ 05 Gradient ═══════ */
+  .b5 { height: 58px; background: linear-gradient(90deg, #2563EB, #7C3AED); color: #fff; box-shadow: 0 4px 14px -4px rgba(37,99,235,.4); }
+  .b5 .brand b { color: #fff; }
+  .b5 .brand span { color: rgba(255,255,255,.75); }
+  .b5 .logo { background: rgba(255,255,255,.18); }
+  .b5 .btn { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.28); color: #fff; }
+  .b5 .btn:hover { background: rgba(255,255,255,.25); }
+  .b5 .icon-btn { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.28); color: #fff; }
+
+  /* ═══════ 06 Tabs below ═══════ */
+  .b6 { background: #fff; border-bottom: 1px solid #E2E8F0; padding: 0; }
+  .b6 .row1 { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+  .b6 .tabs { display: flex; gap: 2px; padding: 0 16px 0; border-top: 1px solid #F1F5F9; }
+  .b6 .tab { font-size: 12px; font-weight: 600; color: #64748B; padding: 9px 12px 11px; border-bottom: 2px solid transparent; cursor: pointer; }
+  .b6 .tab.on { color: #2563EB; border-bottom-color: #2563EB; }
+  .b6 .tab em { font-style: normal; font-size: 10px; color: #94A3B8; margin-left: 4px; }
+
+  /* ═══════ 07 Icon-only ═══════ */
+  .b7 { height: 54px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b7 .logo { width: 28px; height: 28px; border-radius: 8px; font-size: 14px; }
+  .b7 .icon-btn { border: 0; background: transparent; }
+  .b7 .icon-btn:hover { background: #F1F5F9; color: #2563EB; }
+  .b7 .icon-btn.hot { background: #EFF6FF; color: #2563EB; }
+
+  /* ═══════ 08 Pill actions ═══════ */
+  .b8 { height: 60px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b8 .pills { display: flex; gap: 6px; background: #F1F5F9; border-radius: 10px; padding: 4px; }
+  .b8 .pill { font-size: 12px; font-weight: 600; color: #64748B; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .b8 .pill.on { background: #fff; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,.1); }
+  .b8 .pill.primary { background: #2563EB; color: #fff; }
+
+  /* ═══════ 09 Breadcrumb ═══════ */
+  .b9 { height: 56px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b9 .crumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94A3B8; }
+  .b9 .crumb b { color: #0F172A; font-weight: 700; }
+  .b9 .crumb .sep { color: #CBD5E1; }
+  .b9 .btn { padding: 6px 11px; }
+
+  /* ═══════ 10 Command palette ═══════ */
+  .b10 { height: 58px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b10 .cmd { flex: 1; max-width: 300px; margin-left: auto; display: flex; align-items: center; gap: 8px; height: 34px; border: 1px solid #E2E8F0; border-radius: 9px; padding: 0 10px; color: #94A3B8; font-size: 12.5px; cursor: pointer; transition: all .15s ease; }
+  .b10 .cmd:hover { border-color: #BFDBFE; }
+  .b10 .cmd kbd { margin-left: auto; font-size: 10px; font-family: inherit; border: 1px solid #E2E8F0; border-radius: 5px; padding: 1px 5px; background: #F8FAFC; color: #94A3B8; }
+  .b10 .cmd svg { width: 13px; height: 13px; }
+
+  /* ═══════ 11 Underline tabs ═══════ */
+  .b11 { height: 56px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b11 .nav { display: flex; gap: 18px; margin: 0 auto; }
+  .b11 .nav a { font-size: 13px; font-weight: 600; color: #64748B; text-decoration: none; padding: 4px 0 18px; border-bottom: 2px solid transparent; }
+  .b11 .nav a.on { color: #0F172A; border-bottom-color: #0F172A; }
+
+  /* ═══════ 12 Slim ═══════ */
+  .b12 { height: 46px; background: #fff; border-bottom: 1px solid #E2E8F0; gap: 10px; padding: 0 14px; }
+  .b12 .logo { width: 24px; height: 24px; border-radius: 7px; font-size: 12px; }
+  .b12 .brand b { font-size: 12.5px; }
+  .b12 .btn { font-size: 11px; padding: 5px 9px; }
+  .b12 .avatar { width: 26px; height: 26px; font-size: 10px; }
+
+  /* ═══════ 13 Floating pill ═══════ */
+  .b13 { height: 56px; border-radius: 14px; border: 1px solid #E2E8F0; background: #fff; box-shadow: 0 8px 24px -8px rgba(15,23,42,.18); margin: 14px 20px; }
+
+  /* ═══════ 14 Two-tone ═══════ */
+  .b14 { height: 58px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b14 .brand-zone { display: flex; align-items: center; gap: 12px; height: 100%; background: linear-gradient(135deg, #0B1F46, #123B7A); padding: 0 18px; margin-left: -16px; }
+  .b14 .brand-zone .brand b { color: #fff; }
+  .b14 .brand-zone .brand span { color: #A8B8D3; }
+
+  /* ═══════ 15 Status-aware ═══════ */
+  .b15 { height: 58px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b15 .status { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 20px; padding: 5px 11px; }
+  .b15 .status .dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
+  .b15 .badge { position: relative; }
+  .b15 .badge .n { position: absolute; top: -4px; right: -4px; background: #DC2626; color: #fff; font-size: 9px; font-weight: 700; border-radius: 8px; padding: 1px 4px; }
+
+  /* ═══════ 16 Terminal ═══════ */
+  .b16 { height: 54px; background: #0B1220; border-bottom: 1px solid #1E293B; font-family: 'JetBrains Mono', monospace; color: #CBD5E1; }
+  .b16 .logo { background: none; border: 1px solid #334155; border-radius: 6px; color: #38BDF8; font-family: inherit; }
+  .b16 .brand b { font-family: inherit; font-size: 13px; color: #E2E8F0; }
+  .b16 .brand span { font-family: inherit; color: #475569; }
+  .b16 .btn { background: #0F172A; border-color: #334155; color: #94A3B8; font-family: inherit; font-size: 11.5px; }
+  .b16 .btn:hover { border-color: #38BDF8; color: #38BDF8; }
+  .b16 .prompt { font-size: 11.5px; color: #475569; }
+
+  /* ═══════ 17 Elevated ═══════ */
+  .b17 { height: 58px; background: #fff; border: 1px solid #E2E8F0; box-shadow: 0 12px 32px -10px rgba(15,23,42,.22); }
+
+  /* ═══════ 18 Rounded mega-bar ═══════ */
+  .b18 { height: 60px; border-radius: 18px; border: 1px solid #E2E8F0; background: #fff; margin: 16px 14px; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+
+  /* ═══════ 19 Notification ═══════ */
+  .b19 { height: 58px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b19 .bell { position: relative; }
+  .b19 .bell .n { position: absolute; top: -5px; right: -5px; background: #2563EB; color: #fff; font-size: 9px; font-weight: 700; min-width: 15px; height: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+  .b19 .quick { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #64748B; cursor: pointer; }
+  .b19 .quick:hover { color: #2563EB; }
+
+  /* ═══════ 20 Minimal wordmark ═══════ */
+  .b20 { height: 56px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+  .b20 .wm { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+  .b20 .wm em { font-style: normal; color: #2563EB; }
+  .b20 .wm u { text-decoration: none; background: linear-gradient(90deg, #2563EB, #7C3AED); height: 3px; width: 26px; border-radius: 2px; display: block; margin-top: 3px; }
+  .b20 .icon-btn { border: 0; background: transparent; }
+  .b20 .icon-btn:hover { background: #F1F5F9; color: #2563EB; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>AppBar Design Exploration — 20 Concepts</h1>
+  <p>Redesign directions for the Tailor CV top navigation. Click-through and hover states are simulated.</p>
+</div>
+
+<div class="grid">
+
+  <!-- 01 -->
+  <div class="card">
+    <div class="meta"><span class="num">01</span><b>Baseline</b><span>current style, cleaned up</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b1">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Job Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 02 -->
+  <div class="card">
+    <div class="meta"><span class="num">02</span><b>Centered Search</b><span>search in the middle</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b2">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>ATS OPTIMIZER</span></div>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg> Search jobs, roles, skills… <em>⌘K</em></div>
+      <div class="spacer"></div>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 03 -->
+  <div class="card">
+    <div class="meta"><span class="num">03</span><b>Glass</b><span>frosted translucent bar</span></div>
+    <div class="canvas"><div class="ctx grad-bg"><div class="bar b3">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Job Portals</button>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 04 -->
+  <div class="card">
+    <div class="meta"><span class="num">04</span><b>Dark Navy</b><span>premium dark (matches login)</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b4">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Job Portals</button>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 05 -->
+  <div class="card">
+    <div class="meta"><span class="num">05</span><b>Gradient Brand</b><span>blue → violet strip</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b5">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 06 -->
+  <div class="card">
+    <div class="meta"><span class="num">06</span><b>Tabs Below</b><span>title row + filter tabs</span></div>
+    <div class="canvas"><div class="ctx"><div class="b6">
+      <div class="row1">
+        <div class="logo">T</div>
+        <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+        <div class="spacer"></div>
+        <button class="btn primary">Search</button>
+        <div class="avatar">AB</div>
+      </div>
+      <div class="tabs">
+        <div class="tab on">All Jobs <em>128</em></div>
+        <div class="tab">Pending <em>24</em></div>
+        <div class="tab">Tailored <em>14</em></div>
+        <div class="tab">Applied <em>122</em></div>
+        <div class="spacer"></div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- 07 -->
+  <div class="card">
+    <div class="meta"><span class="num">07</span><b>Icon-Only</b><span>compact, no text labels</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b7">
+      <div class="logo">T</div>
+      <div class="spacer"></div>
+      <button class="icon-btn hot" title="Job Portals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+      <button class="icon-btn" title="Manual JD"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+      <button class="icon-btn" title="Master CV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></button>
+      <button class="icon-btn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 08 -->
+  <div class="card">
+    <div class="meta"><span class="num">08</span><b>Pill Actions</b><span>segmented controls</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b8">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <div class="pills">
+        <div class="pill on">All Jobs</div>
+        <div class="pill">Pending</div>
+        <div class="pill primary">Search</div>
+      </div>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 09 -->
+  <div class="card">
+    <div class="meta"><span class="num">09</span><b>Breadcrumb</b><span>workspace location trail</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b9">
+      <div class="logo">T</div>
+      <div class="crumb">Tailor CV <span class="sep">/</span> <b>Jobs</b></div>
+      <div class="spacer"></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 10 -->
+  <div class="card">
+    <div class="meta"><span class="num">10</span><b>Command Palette</b><span>⌘K quick actions</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b10">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <div class="cmd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg> Quick actions… <kbd>⌘K</kbd></div>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 11 -->
+  <div class="card">
+    <div class="meta"><span class="num">11</span><b>Underline Tabs</b><span>Vercel-style nav</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b11">
+      <div class="logo">T</div>
+      <div class="spacer"></div>
+      <nav class="nav">
+        <a class="on" href="#">Jobs</a>
+        <a href="#">Portals</a>
+        <a href="#">Master CV</a>
+        <a href="#">Settings</a>
+      </nav>
+      <div class="spacer"></div>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 12 -->
+  <div class="card">
+    <div class="meta"><span class="num">12</span><b>Slim 46px</b><span>maximum density</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b12">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 13 -->
+  <div class="card">
+    <div class="meta"><span class="num">13</span><b>Floating Pill</b><span>detached, elevated</span></div>
+    <div class="canvas" style="background:#E2E8F0"><div class="ctx"><div class="bar b13">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 14 -->
+  <div class="card">
+    <div class="meta"><span class="num">14</span><b>Two-Tone</b><span>dark brand zone + light actions</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b14">
+      <div class="brand-zone">
+        <div class="logo">T</div>
+        <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 15 -->
+  <div class="card">
+    <div class="meta"><span class="num">15</span><b>Status-Aware</b><span>connection + job badges</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b15">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <span class="status"><span class="dot"></span>LLM Connected</span>
+      <button class="btn badge">Jobs <span class="n">128</span></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 16 -->
+  <div class="card">
+    <div class="meta"><span class="num">16</span><b>Terminal</b><span>monospace, developer feel</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b16">
+      <div class="logo">T</div>
+      <div class="brand"><b>tailor-cv</b><span>~ atanu</span></div>
+      <div class="spacer"></div>
+      <span class="prompt">$</span>
+      <button class="btn">portals --list</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 17 -->
+  <div class="card">
+    <div class="meta"><span class="num">17</span><b>Elevated</b><span>strong soft shadow</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b17">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 18 -->
+  <div class="card">
+    <div class="meta"><span class="num">18</span><b>Rounded Mega-Bar</b><span>full-width pill shell</span></div>
+    <div class="canvas" style="background:#E2E8F0"><div class="ctx"><div class="bar b18">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+  <!-- 19 -->
+  <div class="card">
+    <div class="meta"><span class="num">19</span><b>Notification-Centric</b><span>bell + quick actions</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b19">
+      <div class="logo">T</div>
+      <div class="brand"><b>Tailor CV</b><span>CREATED BY ATANU</span></div>
+      <div class="spacer"></div>
+      <button class="btn">Job Portals</button>
+      <button class="icon-btn bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n">3</span></button>
+      <div class="quick">AB <span class="chevr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+    </div></div></div>
+  </div>
+
+  <!-- 20 -->
+  <div class="card">
+    <div class="meta"><span class="num">20</span><b>Minimal Wordmark</b><span>text brand + accent underline</span></div>
+    <div class="canvas"><div class="ctx"><div class="bar b20">
+      <div class="wm">Tailor<em>CV</em><u></u></div>
+      <div class="spacer"></div>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+      <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
+      <div class="avatar">AB</div>
+    </div></div></div>
+  </div>
+
+</div>
+</body>
+</html>
