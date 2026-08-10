@@ -11,6 +11,7 @@ export interface HrContact {
   id: string;
   email: string | null;
   phone: string | null;
+  whatsapp: boolean;
   recruiterName: string | null;
   recruiterUrl: string | null;
   name: string | null;
@@ -625,9 +626,9 @@ export function saveAllJobs(jobs: Job[]): void {
   }
 }
 
-export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
+export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number; newContacts: HrContact[] } {
   const userId = getCurrentUserId();
-  if (!userId) return { added: [], skipped: 0 };
+  if (!userId) return { added: [], skipped: 0, newContacts: [] };
   const d = getDb();
   const existingUrls = new Set((d.prepare('SELECT data FROM jobs WHERE user_id = ?').all(userId) as { data: string }[])
     .map((r) => { try { return (JSON.parse(r.data) as Job).url?.toLowerCase().trim(); } catch { return ''; } })
@@ -656,24 +657,26 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
   tx();
 
   // Extract recruiter/HR emails from the newly stored descriptions.
+  const newContacts: HrContact[] = [];
   for (const job of added) {
     try {
-      upsertContactsFromJob(job);
+      newContacts.push(...upsertContactsFromJob(job));
     } catch (err) {
       console.error('Error extracting contacts from job:', err);
     }
   }
 
-  return { added, skipped };
+  return { added, skipped, newContacts };
 }
 
 // ─────────────────── HR / Recruiter contacts ───────────────────
 
-function upsertContactsFromJob(job: Job): void {
+function upsertContactsFromJob(job: Job): HrContact[] {
   const userId = getCurrentUserId();
-  if (!userId) return;
+  if (!userId) return [];
   const d = getDb();
   const now = new Date().toISOString();
+  const newRows: HrContact[] = [];
   const findByEmail = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND email = ?');
   const findByPhone = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND phone = ?');
   const insert = d.prepare(`
@@ -704,8 +707,9 @@ function upsertContactsFromJob(job: Job): void {
     if (existing) {
       merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, c.whatsapp ? 1 : 0, job.company || '', job.title || '', c.context, existing.id);
     } else {
+      const rid = `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       insert.run(
-        `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        rid,
         userId,
         c.email,
         c.phone,
@@ -721,6 +725,14 @@ function upsertContactsFromJob(job: Job): void {
         now,
         now,
       );
+      newRows.push({
+        id: rid, email: c.email, phone: c.phone, whatsapp: c.whatsapp,
+        name: c.name, type: c.type as ContactType, typeLabel: c.typeLabel,
+        company: job.company || '', jobRole: job.title || '',
+        sourceJobId: job.id, sourceJobUrl: job.url || '', jobCount: 1,
+        context: c.context, firstSeen: now, lastSeen: now,
+        recruiterName: null, recruiterUrl: null,
+      });
     }
   }
 
@@ -757,8 +769,18 @@ function upsertContactsFromJob(job: Job): void {
       const rid = `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       insert.run(rid, userId, null, null, 0, recruiterName || null, 'recruit', 'Recruiting', job.company || '', job.title || '', job.id, job.url || '', '', now, now);
       d.prepare('UPDATE hr_contacts SET recruiter_name = ?, recruiter_url = ? WHERE id = ?').run(recruiterName || null, recruiterUrl || null, rid);
+      newRows.push({
+        id: rid, email: null, phone: null, whatsapp: false,
+        name: recruiterName || null, type: 'recruit', typeLabel: 'Recruiting',
+        company: job.company || '', jobRole: job.title || '',
+        sourceJobId: job.id, sourceJobUrl: job.url || '', jobCount: 1,
+        context: '', firstSeen: now, lastSeen: now,
+        recruiterName: recruiterName || null, recruiterUrl: recruiterUrl || null,
+      });
     }
   }
+
+  return newRows;
 }
 
 export function listContacts(opts?: { q?: string; company?: string }): HrContact[] {
@@ -785,6 +807,7 @@ export function listContacts(opts?: { q?: string; company?: string }): HrContact
       id: r.id,
       email: r.email || null,
       phone: r.phone || null,
+      whatsapp: r.whatsapp === 1,
       recruiterName: r.recruiter_name || null,
       recruiterUrl: r.recruiter_url || null,
       name: r.name || null,

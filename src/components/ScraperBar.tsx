@@ -23,7 +23,7 @@ interface ScraperBarProps {
     contractType?: string;
     experienceLevel?: string;
     under10Applicants?: boolean;
-  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[] } | void>;
+  }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[]; newContacts?: { name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null; company: string }[] } | void>;
   isLoading: boolean;
 }
 
@@ -41,6 +41,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(10);
   const [under10Applicants, setUnder10Applicants] = useState(false);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
+  const [scrapeNewContacts, setScrapeNewContacts] = useState<{ name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null }[]>([]);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
 
   const roleSuggestions = getRoleSuggestions(keywords);
@@ -58,6 +59,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
     if (!keywords.trim()) return;
 
     setScrapeSuccessMsg(null);
+    setScrapeNewContacts([]);
     const result = await onScrape({
       keywords: keywords.trim(),
       location,
@@ -74,6 +76,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       const filterNote = result.filteredOutCount && result.filteredOutCount > 0
         ? ` (${result.filteredOutCount} filtered out — over 10 applicants)`
         : '';
+      setScrapeNewContacts(result.newContacts || []);
       if (result.addedCount > 0) {
         setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! Added ${result.addedCount} new jobs to top (${result.skippedDuplicates} duplicates skipped).${filterNote}`);
       } else {
@@ -351,9 +354,26 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
           </div>
 
           {scrapeSuccessMsg && (
-            <div className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shrink-0">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{scrapeSuccessMsg}</span>
+            <div className="text-[12px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shrink-0">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{scrapeSuccessMsg}</span>
+              </div>
+              {scrapeNewContacts.length > 0 && (
+                <div className="mt-1.5 flex items-start gap-1.5 text-[11.5px]">
+                  <span className="font-bold whitespace-nowrap">
+                    +{scrapeNewContacts.length} recruiter{scrapeNewContacts.length > 1 ? 's' : ''}:
+                  </span>
+                  <span className="text-emerald-800">
+                    {scrapeNewContacts.slice(0, 6).map((c) => {
+                      const value = c.email || c.phone || c.recruiterUrl || '';
+                      const label = value.replace(/^https?:\/\//, '');
+                      return c.name ? `${c.name} (${label})` : label;
+                    }).join(' · ')}
+                    {scrapeNewContacts.length > 6 ? ` · +${scrapeNewContacts.length - 6} more` : ''}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

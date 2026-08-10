@@ -1018,7 +1018,7 @@ Return valid JSON only — NO markdown, NO code fences:
       // scraped descriptions (recruiter emails/phones).
       const sanitizedJobs = sanitizeJobs(scrapedJobs);
 
-      const { added, skipped } = saveNewJobs(sanitizedJobs);
+      const { added, skipped, newContacts } = saveNewJobs(sanitizedJobs);
 
       res.json({
         success: true,
@@ -1027,6 +1027,14 @@ Return valid JSON only — NO markdown, NO code fences:
         skippedDuplicates: skipped,
         filteredOutCount,
         skippedSources: ScraperFactory.lastSkippedSources,
+        newContacts: newContacts.map((c) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          whatsapp: c.whatsapp,
+          recruiterUrl: c.recruiterUrl,
+          company: c.company,
+        })),
       });
     } catch (err: any) {
       console.error('Scrape error:', err);
