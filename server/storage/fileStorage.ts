@@ -11,6 +11,8 @@ export interface HrContact {
   id: string;
   email: string | null;
   phone: string | null;
+  recruiterName: string | null;
+  recruiterUrl: string | null;
   name: string | null;
   type: ContactType;
   typeLabel: string;
@@ -410,17 +412,18 @@ function ensureContactIndexes(d: Database.Database): void {
 function migrateContactsTable(d: Database.Database): void {
   try {
     const cols = new Set((d.pragma('table_info(hr_contacts)') as any[]).map((c) => c.name));
-    if (!cols.has('phone')) {
+    if (!cols.has('phone') || !cols.has('recruiter_url')) {
       d.exec(`
         CREATE TABLE hr_contacts_new (
           id TEXT PRIMARY KEY, user_id TEXT NOT NULL, email TEXT, name TEXT,
           type TEXT NOT NULL DEFAULT 'company', type_label TEXT NOT NULL DEFAULT 'Company',
           company TEXT, job_role TEXT, source_job_id TEXT, source_job_url TEXT,
           job_count INTEGER DEFAULT 1, context TEXT, hidden INTEGER DEFAULT 0,
-          first_seen TEXT, last_seen TEXT, phone TEXT
+          first_seen TEXT, last_seen TEXT, phone TEXT,
+          recruiter_name TEXT, recruiter_url TEXT
         );
-        INSERT INTO hr_contacts_new (id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
-          SELECT id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen FROM hr_contacts;
+        INSERT INTO hr_contacts_new (id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen, phone, recruiter_name, recruiter_url)
+          SELECT id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen, phone, NULL, NULL FROM hr_contacts;
         DROP TABLE hr_contacts;
         ALTER TABLE hr_contacts_new RENAME TO hr_contacts;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_email ON hr_contacts (user_id, email) WHERE email IS NOT NULL AND email != '';
@@ -704,6 +707,38 @@ function upsertContactsFromJob(job: Job): void {
       );
     }
   }
+
+  // Recruiter enrichment — Apify actor output. Dedupe by LinkedIn URL,
+  // then merge into a name-matching contact, else insert profile-only.
+  const recruiterName = (job as any).recruiterName ? String((job as any).recruiterName) : '';
+  const recruiterUrl = (job as any).recruiterUrl ? String((job as any).recruiterUrl) : '';
+  if (recruiterName || recruiterUrl) {
+    const recFindByUrl = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND recruiter_url = ?');
+    const recFindByName = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND lower(name) = lower(?)');
+    const recUpdate = d.prepare(`
+      UPDATE hr_contacts SET
+        job_count = job_count + 1,
+        last_seen = ?,
+        type = 'recruit',
+        type_label = 'Recruiting',
+        name = CASE WHEN ? IS NOT NULL THEN ? ELSE name END,
+        recruiter_name = COALESCE(?, recruiter_name),
+        recruiter_url = COALESCE(?, recruiter_url),
+        company = CASE WHEN company = '' THEN ? ELSE company END,
+        job_role = CASE WHEN job_role = '' THEN ? ELSE job_role END
+      WHERE id = ?
+    `);
+    const existingRec =
+      (recruiterUrl ? recFindByUrl.get(userId, recruiterUrl) : undefined) ||
+      (recruiterName ? recFindByName.get(userId, recruiterName) : undefined);
+    if (existingRec) {
+      recUpdate.run(now, recruiterName || null, recruiterName || null, recruiterName || null, recruiterUrl || null, job.company || '', job.title || '', existingRec.id);
+    } else {
+      const rid = `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      insert.run(rid, userId, null, null, recruiterName || null, 'recruit', 'Recruiting', job.company || '', job.title || '', job.id, job.url || '', '', now, now);
+      d.prepare('UPDATE hr_contacts SET recruiter_name = ?, recruiter_url = ? WHERE id = ?').run(recruiterName || null, recruiterUrl || null, rid);
+    }
+  }
 }
 
 export function listContacts(opts?: { q?: string; company?: string }): HrContact[] {
@@ -730,6 +765,8 @@ export function listContacts(opts?: { q?: string; company?: string }): HrContact
       id: r.id,
       email: r.email || null,
       phone: r.phone || null,
+      recruiterName: r.recruiter_name || null,
+      recruiterUrl: r.recruiter_url || null,
       name: r.name || null,
       type: r.type,
       typeLabel: r.type_label,
