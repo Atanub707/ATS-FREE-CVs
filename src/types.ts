@@ -20,6 +20,10 @@ export interface Job {
   lowCompetition?: boolean; // LinkedIn "Be among the first N applicants" — very few applications
   recruiterName?: string;
   recruiterUrl?: string;
+  experienceLevel?: string;
+  contractType?: string;
+  companyUrl?: string;
+  applyType?: string;
   state: JobState;
   
   // AI Matching output
