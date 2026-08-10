@@ -189,7 +189,10 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
 
           {/* Job Type */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Job Type</label>
+            <label className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+              Job Type
+              <span title="Job-type labels are detected from descriptions and may not always be accurate" className="text-red-500 text-[11px] leading-none">✱</span>
+            </label>
             <div className="relative">
               <select
                 value={jobType}
