@@ -18,7 +18,6 @@ export const SOURCES: Record<JobSource, SourceMeta> = {
   Indeed: { id: 'Indeed', label: 'Indeed', flag: '🇺🇸', country: 'Global', region: 'global', apifyActorId: 'valig~indeed-jobs-scraper', needsApify: true, pricePer1K: '$0.10' },
   Naukri: { id: 'Naukri', label: 'Naukri', flag: '🇮🇳', country: 'India', region: 'asia', apifyActorId: 'valig~naukri-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
   Glassdoor: { id: 'Glassdoor', label: 'Glassdoor', flag: '🌐', country: 'Global', region: 'global', apifyActorId: 'valig~glassdoor-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
-  StepStone: { id: 'StepStone', label: 'StepStone', flag: '🇩🇪', country: 'Germany', region: 'eu', apifyActorId: 'valig~stepstone-jobs-scraper', needsApify: true, pricePer1K: '$0.40' },
   Upwork: { id: 'Upwork', label: 'Upwork', flag: '🌐', country: 'Global freelance', region: 'global', apifyActorId: 'valig~upwork-jobs-scraper', needsApify: true, pricePer1K: '$0.20' },
 
   // ── Built-in free scrapers ──

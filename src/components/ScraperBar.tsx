@@ -28,7 +28,7 @@ interface ScraperBarProps {
   apifyAvailable?: boolean; // Apify enabled + token saved — lights up Apify-only sources
 }
 
-const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely', 'Indeed', 'Naukri', 'Glassdoor', 'StepStone', 'Upwork'];
+const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely', 'Indeed', 'Naukri', 'Glassdoor', 'Upwork'];
 const COMING_SOON: JobSource[] = ['RemoteOK', 'WeWorkRemotely'];
 // Apify-powered sources stay visible in the main row (after LinkedIn);
 // the built-in sources live inside the "More" dropdown.
