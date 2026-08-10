@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { JobSource } from '../types';
 import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
-import { getSourceFlag, getSourceCountry } from '../constants/sourceMeta';
+import { getSourceFlag, getSourceCountry, getSourceMeta } from '../constants/sourceMeta';
 
 interface ScraperBarProps {
   onScrape: (params: {
@@ -25,12 +25,13 @@ interface ScraperBarProps {
     under10Applicants?: boolean;
   }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[]; newContacts?: { name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null; company: string }[] } | void>;
   isLoading: boolean;
+  apifyAvailable?: boolean; // Apify enabled + token saved — lights up Apify-only sources
 }
 
-const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely'];
+const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely', 'Indeed', 'Naukri', 'Glassdoor', 'StepStone', 'Totaljobs', 'Upwork'];
 const COMING_SOON: JobSource[] = ['RemoteOK', 'WeWorkRemotely'];
 
-export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) => {
+export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, apifyAvailable }) => {
   const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
@@ -47,8 +48,10 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const roleSuggestions = getRoleSuggestions(keywords);
   const keywordSuggestions = getKeywordSuggestions(keywords);
 
+  const isApifyGated = (source: JobSource) => !!getSourceMeta(source)?.needsApify && !apifyAvailable;
+
   const toggleSource = (source: JobSource) => {
-    if (COMING_SOON.includes(source)) return;
+    if (COMING_SOON.includes(source) || isApifyGated(source)) return;
     setSelectedSources((prev) =>
       prev.includes(source) ? prev.filter((s) => s !== source) : [...prev, source]
     );
@@ -83,8 +86,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
         setScrapeSuccessMsg(`Scraped ${result.scrapedTotal} live postings! (All ${result.skippedDuplicates} were already in your job list).${filterNote}`);
       }
     } else if (result?.skippedSources && result.skippedSources.length > 0) {
-      const skippedNames = result.skippedSources.map((s) => s.source).join(', ');
-      setScrapeSuccessMsg(`Searched — ${skippedNames} skipped: their robots.txt disallows automated access. You can disable robots.txt respect in Settings to include them (you take responsibility for their Terms of Service).`);
+      const skippedNames = result.skippedSources.map((s) => `${s.source} (${s.reason})`).join(', ');
+      setScrapeSuccessMsg(`Searched — skipped: ${skippedNames}.`);
     } else {
       const srcList = selectedSources.join(' + ');
       setScrapeSuccessMsg(`Searched ${srcList} — No results found in the selected window. Try different keywords, a wider posted window, or search again later.`);
@@ -98,15 +101,23 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
   const renderSourceChip = (src: JobSource) => {
     const isComingSoon = COMING_SOON.includes(src);
     const isSelected = selectedSources.includes(src);
+    const gated = isApifyGated(src);
+    const meta = getSourceMeta(src);
+    const disabled = isComingSoon || gated;
+    const title = isComingSoon
+      ? `${src} — Coming soon`
+      : gated
+      ? `${src} — requires Apify API key — enable in Settings`
+      : `${src} — ${getSourceCountry(src)}${meta?.pricePer1K ? ` · ${meta.pricePer1K}/1K jobs` : ''}`;
     return (
       <button
         key={src}
         type="button"
         onClick={() => toggleSource(src)}
-        disabled={isComingSoon}
-        title={isComingSoon ? `${src} — Coming soon` : `${src} — ${getSourceCountry(src)}`}
+        disabled={disabled}
+        title={title}
         className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[7px] rounded-lg text-[12px] font-medium border transition-colors whitespace-nowrap ${
-          isComingSoon
+          disabled
             ? 'opacity-45 cursor-not-allowed bg-white border-slate-200 text-slate-500'
             : isSelected
             ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold cursor-pointer'
@@ -115,6 +126,9 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading }) =
       >
         <span className="text-[13px] leading-none">{getSourceFlag(src)}</span>
         <span>{src}</span>
+        {meta?.apifyActorId && !gated && (
+          <span className="text-[9px] font-bold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 rounded px-1 py-[1px]">Apify</span>
+        )}
         {isComingSoon && (
           <span className="text-[9px] font-bold uppercase text-slate-400">Soon</span>
         )}

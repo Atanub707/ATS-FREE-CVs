@@ -419,7 +419,7 @@ export default function App() {
           />
 
           {/* Live Job Scraper Bar */}
-          <ScraperBar onScrape={handleScrape} isLoading={isScrapingLoading} />
+          <ScraperBar onScrape={handleScrape} isLoading={isScrapingLoading} apifyAvailable={!!config?.apify.enabled && !!config?.apify.token} />
 
           {/* Main Jobs Matrix View */}
           <main>
