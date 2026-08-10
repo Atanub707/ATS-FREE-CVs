@@ -1,5 +1,11 @@
 import { LinkedInScraper } from './linkedInScraper.js';
 import { ApifyLinkedInScraper } from './apifyScraper.js';
+import { IndeedScraper } from './indeedScraper.js';
+import { NaukriScraper } from './naukriScraper.js';
+import { GlassdoorScraper } from './glassdoorScraper.js';
+import { StepStoneScraper } from './stepStoneScraper.js';
+import { TotaljobsScraper } from './totaljobsScraper.js';
+import { UpworkScraper } from './upworkScraper.js';
 import { isCrawlingAllowed } from './robotsGuard.js';
 import { ArbeitnowScraper } from './arbeitnowScraper.js';
 import { SimplyHiredScraper } from './simplyHiredScraper.js';
@@ -13,12 +19,25 @@ import { GupyScraper } from './gupyScraper.js';
 import { JobsChScraper } from './jobsChScraper.js';
 import { DaijobScraper } from './daijobScraper.js';
 import { MyJobMagScraper } from './myJobMagScraper.js';
-import { Job, ScraperParams } from '../../src/types.js';
+import { Job, JobSource, ScraperParams } from '../../src/types.js';
 import { loadConfig } from '../config.js';
+import { SOURCES } from '../../src/constants/sources.js';
 import { contradictsWanted } from './workMode.js';
+import { ApifyBaseScraper } from './apifyBase.js';
+
+// Apify-powered sources — constructed from the shared registry (Task 1).
+const APIFY_SCRAPERS: Partial<Record<JobSource, () => ApifyBaseScraper>> = {
+  LinkedIn: () => new ApifyLinkedInScraper(),
+  Indeed: () => new IndeedScraper(),
+  Naukri: () => new NaukriScraper(),
+  Glassdoor: () => new GlassdoorScraper(),
+  StepStone: () => new StepStoneScraper(),
+  Totaljobs: () => new TotaljobsScraper(),
+  Upwork: () => new UpworkScraper(),
+};
 
 export class ScraperFactory {
-  // Populated by the last runScrape: sources skipped by the robots.txt guard.
+  // Populated by the last runScrape: sources skipped (robots.txt or Apify gate).
   static lastSkippedSources: { source: string; reason: string }[] = [];
   static async runScrape(params: ScraperParams): Promise<Job[]> {
     const sources = params.sources || ['LinkedIn'];
@@ -26,8 +45,9 @@ export class ScraperFactory {
     ScraperFactory.lastSkippedSources = [];
 
     // Good-faith crawler check: resolve robots.txt once per domain (parallel,
-    // cached 1h) and skip sources whose sites disallow crawling. Honor the
-    // user's setting — robots.txt respect can be disabled in Settings.
+    // cached 1h) and skip sources whose sites disallow crawling. Only applies
+    // to sources we crawl directly — Apify-powered sources run on Apify's
+    // infrastructure and are never in SOURCE_DOMAINS.
     const SOURCE_DOMAINS: Record<string, string> = {
       LinkedIn: 'www.linkedin.com',
       Arbeitnow: 'arbeitnow.com',
@@ -60,19 +80,25 @@ export class ScraperFactory {
         ScraperFactory.lastSkippedSources.push({ source, reason: `robots.txt disallows automated access (${domain})` });
         continue;
       }
+
       try {
         let jobs: Job[] = [];
-        if (source === 'LinkedIn') {
-          // Apify (optional, user-enabled) first — reliable + accurate work
-          // mode; falls back to the built-in free scraper on any failure.
-          const apify = new ApifyLinkedInScraper();
+        const meta = SOURCES[source];
+
+        if (meta?.apifyActorId) {
+          // Apify path — generic for all 7 Apify-powered sources.
           const apifyConfig = loadConfig().apify;
-          if (apifyConfig.enabled && apifyConfig.token?.trim()) {
-            jobs = await apify.scrape(params);
-            if (jobs.length === 0) {
-              jobs = await new LinkedInScraper().scrape(params);
-            }
-          } else {
+          const apifyAvailable = apifyConfig.enabled && !!apifyConfig.token?.trim();
+          if (meta.needsApify && !apifyAvailable) {
+            ScraperFactory.lastSkippedSources.push({ source, reason: 'requires Apify API key — enable in Settings' });
+            continue;
+          }
+          const make = APIFY_SCRAPERS[source];
+          if (make) {
+            jobs = await make().scrape(params);
+          }
+          // LinkedIn only: Apify → built-in free scraper fallback.
+          if (meta.builtInFallback && jobs.length === 0) {
             jobs = await new LinkedInScraper().scrape(params);
           }
         } else if (source === 'Arbeitnow') {
@@ -112,8 +138,7 @@ export class ScraperFactory {
     }
 
     // Work-mode guarantee across ALL sources: a remote request must never
-    // ADD jobs explicitly labeled Hybrid/On-site (and vice versa). Applied
-    // after every scraper so multi-source searches stay exact too.
+    // ADD jobs explicitly labeled Hybrid/On-site (and vice versa).
     if (params.jobType && params.jobType !== 'all') {
       const wanted = params.jobType as 'remote' | 'hybrid' | 'onsite';
       const before = allJobs.length;
