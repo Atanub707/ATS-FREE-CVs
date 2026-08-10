@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
 import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
+import { APIFY_SOURCES } from '../constants/sources';
 import pkg from '../../package.json';
 
 interface SettingsModalProps {
@@ -321,6 +322,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
                 <div className="set-hint">console.apify.com → Settings → Integrations</div>
+              </div>
+            )}
+            {formData.apify.enabled && (
+              <div style={{ padding: '4px 2px 2px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 7 }}>
+                  Powered by your Apify API key
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {APIFY_SOURCES.map((s) => (
+                    <span key={s.id} title={`${s.label} — ${s.pricePer1K}/1K jobs`}
+                      style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', background: '#EEF0FF', border: '1px solid #E0E4FE', borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap' }}>
+                      {s.label} <span style={{ fontWeight: 400, color: '#94A3B8' }}>· {s.pricePer1K}/1K</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
