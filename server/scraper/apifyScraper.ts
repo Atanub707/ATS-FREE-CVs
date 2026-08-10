@@ -169,6 +169,8 @@ function mapItem(item: any): Job | null {
     ...(applicants.count !== undefined ? { applicantCount: applicants.count } : {}),
     ...(applicants.caption ? { applicantCaption: applicants.caption } : {}),
     ...(applicants.lowCompetition ? { lowCompetition: true } : {}),
+    ...(item.recruiterName ? { recruiterName: String(item.recruiterName) } : {}),
+    ...(item.recruiterUrl ? { recruiterUrl: String(item.recruiterUrl) } : {}),
     state: 'pending',
     createdAt: now,
     updatedAt: now,

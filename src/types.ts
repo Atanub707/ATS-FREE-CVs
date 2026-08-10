@@ -18,6 +18,8 @@ export interface Job {
   applicantCount?: number; // number of applicants who applied (LinkedIn)
   applicantCaption?: string; // exact text LinkedIn's public page shows, e.g. "Over 200 applicants"
   lowCompetition?: boolean; // LinkedIn "Be among the first N applicants" — very few applications
+  recruiterName?: string;
+  recruiterUrl?: string;
   state: JobState;
   
   // AI Matching output
