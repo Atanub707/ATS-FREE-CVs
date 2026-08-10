@@ -16,9 +16,18 @@ export class UpworkScraper extends ApifyBaseScraper {
       keywords: params.keywords.trim(),
       limit: Math.min(params.maxJobsPerSource || 25, 1000),
     };
+    // Upwork's location filter is an array of CLIENT COUNTRIES — sending a
+    // city like "Bangalore" makes the actor return nothing. Only pass the
+    // filter when the input looks like a country name; otherwise leave it
+    // out (all Upwork jobs are remote; client country still shows on rows).
+    const COUNTRY_NAMES = new Set([
+      'india', 'united states', 'usa', 'u.s.', 'uk', 'united kingdom',
+      'germany', 'singapore', 'australia', 'canada', 'brazil', 'japan',
+      'switzerland', 'nigeria', 'hong kong', 'argentina', 'netherlands',
+    ]);
     const location = params.location?.trim() || '';
-    if (location && !/^(remote|anywhere|worldwide|open to remote)$/i.test(location)) {
-      input.location = [location]; // Upwork's location filter is client-country array
+    if (location && COUNTRY_NAMES.has(location.toLowerCase())) {
+      input.location = [location];
     }
     return input;
   }
