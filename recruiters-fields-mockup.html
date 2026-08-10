@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruiters — Field Card Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F6FA; --card: #FFFFFF; --border: #E4E9F1; --text: #0B1220;
+    --muted: #5B6472; --faint: #97A0AE; --blue: #2563EB; --blue-soft: #EFF4FF;
+    --blue-border: #C7D8FB; --linkedin: #0A66C2; --green: #15803D;
+    --green-soft: #ECF7F0; --green-border: #C3E6D0; --shadow: 0 1px 2px rgba(11,18,32,.05);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  .hdr { display: flex; align-items: center; gap: 12px; padding: 0 28px; height: 60px; border-bottom: 1px solid var(--border); background: var(--card); flex-shrink: 0; }
+  .back { padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .hdr .ttl b { font-size: 15px; font-weight: 700; display: block; line-height: 1.2; }
+  .hdr .ttl span { font-size: 11px; color: var(--faint); font-weight: 500; }
+  .spacer { flex: 1; }
+  .count-pill { font-size: 12px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-border); padding: 6px 13px; border-radius: 20px; }
+  .wrap { max-width: 1360px; width: 100%; margin: 0 auto; padding: 22px 28px 36px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .toolbar { display: flex; gap: 10px; }
+  .search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 13px; color: var(--faint); }
+  .search input { flex: 1; border: 0; outline: none; background: none; font-size: 13px; font-family: inherit; color: var(--text); }
+  .fselect { height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; font-family: inherit; padding: 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; align-content: start; }
+  .idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); }
+  .namerow { display: flex; align-items: center; gap: 12px; }
+  .photo { width: 52px; height: 52px; border-radius: 12px; background: linear-gradient(135deg, #E2E8F0, #CBD5E1); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: #64748B; flex-shrink: 0; }
+  .photo.has { background: linear-gradient(135deg, #2563EB, #7C3AED); color: #fff; font-weight: 800; font-size: 20px; border: 0; }
+  .photo.has.alt1 { background: linear-gradient(135deg, #F59E0B, #EF4444); }
+  .photo.has.alt2 { background: linear-gradient(135deg, #10B981, #0EA5E9); }
+  .namefield { flex: 1; min-width: 0; }
+  .namefield .nm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .namefield .nm b { font-size: 14px; font-weight: 700; }
+  .tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 20px; }
+  .tag.recruit { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-border); }
+  .tag.hr { background: #FEF6E7; color: #B45309; border: 1px solid #F5DCA8; }
+  .tag.company { background: #F1F5F9; color: var(--muted); border: 1px solid var(--border); }
+  .fields { display: flex; flex-direction: column; }
+  .frow { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px dashed #EDF0F5; }
+  .frow:last-child { border-bottom: 0; }
+  .frow .fl { width: 54px; flex-shrink: 0; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
+  .frow .fv { font-size: 12px; font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; }
+  .frow .fv a { color: var(--linkedin); text-decoration: none; }
+  .frow .fv a:hover { text-decoration: underline; }
+  .frow .fv .notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
+  .frow .fv svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .frow .fv code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+  .frow .fv .wabadge { font-size: 9px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 6px; }
+  .frow .fv .copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
+  .frow .fv .copyi:hover { color: var(--blue); }
+  .meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); flex-wrap: wrap; }
+  .meta .co { font-weight: 600; color: var(--muted); }
+  .meta .jobs { color: var(--green); font-weight: 700; background: var(--green-soft); border: 1px solid var(--green-border); padding: 1px 7px; border-radius: 20px; font-size: 10px; }
+  .ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
+  .cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
+  .cbtn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .cbtn:hover { border-color: var(--blue-border); color: var(--blue); }
+  .cbtn.ghost { border: 0; background: transparent; margin-left: auto; color: var(--faint); }
+  .cbtn.ghost:hover { color: var(--red); }
+  .actbar { position: sticky; bottom: 0; background: rgba(255,255,255,.94); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .actbar .note { font-size: 11.5px; color: var(--faint); }
+  .actbar .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn.primary { background: linear-gradient(135deg, #2563EB, #1D4ED8); border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text); color: #F8FAFC; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 50; opacity: 0; transition: opacity .25s ease; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header class="hdr">
+  <button class="back">← Back</button>
+  <div class="ttl"><b>Recruiters</b><span>Field cards — every slot shown, missing details marked "Not scraped".</span></div>
+  <div class="spacer"></div>
+  <span class="count-pill" id="countPill">12 contacts</span>
+</header>
+<div class="wrap">
+  <div class="toolbar">
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" placeholder="Search name, email, company…" />
+    </div>
+    <select class="fselect" id="companyFilter"><option value="">All companies</option></select>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+<div class="actbar">
+  <span class="note">Every card always shows all four fields — "Not scraped" = the source had no detail.</span>
+  <div class="spacer"></div>
+  <button class="btn">Close</button>
+  <button class="btn primary" id="copyAll">Copy all emails</button>
+</div>
+<div class="toast" id="toast"><span id="toastText">Copied</span></div>
+<script>
+  const DATA = [
+    { id: 1, name: 'Edward Laing', email: 'edward@isr.uk.com', phone: '07436 071 872', wa: false, li: 'https://www.linkedin.com/in/edwardlaing', company: 'ISR Recruitment', role: 'DevSecOps Engineer', jobs: 8, tag: 'recruit', ctx: 'Edward Laing, Senior Recruiter' },
+    { id: 2, name: null, email: 'adam.rees@identifysolutions.co.uk', phone: '07400 28 3333', wa: false, li: null, company: 'Identify Solutions', role: 'DevOps Engineer', jobs: 3, tag: 'recruit', ctx: 'Adam Rees' },
+    { id: 3, name: 'Rob Sheard', email: null, phone: null, wa: false, li: 'https://www.linkedin.com/in/robsheard', company: 'CGI', role: 'Platform Engineer', jobs: 1, tag: 'recruit', ctx: 'Recruiter for CGI Platform Engineer' },
+    { id: 4, name: null, email: 'rt@skillsearch.com', phone: '+44 7700 900123', wa: true, li: null, company: 'Skillsearch', role: 'DevSecOps Engineer', jobs: 2, tag: 'recruit', ctx: 'Reachable via email or WhatsApp' },
+    { id: 5, name: 'Tanja Kaysen', email: 'tanja.kaysen@wecompare.dk', phone: null, wa: false, li: 'https://www.linkedin.com/in/tanjakaysen', company: 'We Compare', role: 'Vulnerability & Security Specialist', jobs: 1, tag: 'recruit', ctx: 'Tanja Kaysen, Founder & Trusted Advisor' },
+    { id: 6, name: null, email: null, phone: null, wa: false, li: null, company: 'Denari', role: 'Multiple roles', jobs: 2, tag: 'company', ctx: 'Careers inbox — details pending enrichment' },
+    { id: 7, name: 'Sofia Lindberg', email: null, phone: '+45 61 23 45 67', wa: true, li: 'https://www.linkedin.com/in/sofialindberg', company: 'Insero Air Traffic Solutions', role: 'Vulnerability & Security Specialist', jobs: 1, tag: 'hr', ctx: 'Sofia Lindberg, Talent Partner' },
+    { id: 8, name: null, email: 'emsom@airbus.com', phone: null, wa: false, li: null, company: 'Airbus', role: 'Platform Engineer', jobs: 1, tag: 'company', ctx: 'Direct contact from description' },
+    { id: 9, name: 'Marcus Reid', email: 'marcus.reid@harmonyhealthit.com', phone: '0973725006', wa: true, li: null, company: 'Harmony Healthcare IT', role: 'AWS DevOps Engineer', jobs: 1, tag: 'recruit', ctx: 'Marcus Reid, Technical Recruiter' },
+    { id: 10, name: null, email: 'hr@expleogroup.com', phone: '020 7780 6706', wa: false, li: null, company: 'Expleo Group', role: 'DevSecOps Engineer', jobs: 3, tag: 'hr', ctx: 'HR department' },
+    { id: 11, name: null, email: null, phone: '0973725006', wa: false, li: null, company: 'VMO', role: 'DevOps Engineer', jobs: 1, tag: 'company', ctx: 'Mobile contact only' },
+    { id: 12, name: 'Anita R.', email: null, phone: null, wa: false, li: 'https://www.linkedin.com/in/rexinger', company: 'NVIDIA', role: 'Security Engineer', jobs: 1, tag: 'recruit', ctx: 'Recruiter for NVIDIA Security Engineer' },
+  ];
+  const AV = ['has', 'has alt1', 'has alt2'];
+  const grid = document.getElementById('grid');
+  const companies = [...new Set(DATA.map(c => c.company))].sort();
+  companies.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; companyFilter.appendChild(o); });
+  const ICONS = {
+    mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    li: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
+  };
+  function card(c, i) {
+    const el = document.createElement('div');
+    el.className = 'idcard';
+    const initial = (c.name || '?').charAt(0).toUpperCase();
+    el.innerHTML = `
+      <div class="namerow">
+        <div class="photo ${c.name ? AV[i % 3] : ''}">${c.name ? initial : ''}</div>
+        <div class="namefield">
+          <div class="nm">
+            ${c.name ? '<b>' + c.name + '</b>' : '<span class="notscraped" style="font-size:12.5px">Not scraped</span>'}
+            <span class="tag ${c.tag}">${c.tag === 'recruit' ? 'Recruiting' : c.tag === 'hr' ? 'HR' : 'Company'}</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--faint);margin-top:2px">${c.company}</div>
+        </div>
+      </div>
+      <div class="fields">
+        <div class="frow"><span class="fl">Phone</span>
+          <span class="fv">${c.phone
+            ? '<button class="copyi" onclick="copyVal(this)">' + ICONS.phone + '</button><code>' + c.phone + '</code>' + (c.wa ? '<span class="wabadge">WhatsApp</span>' : '')
+            : '<span class="notscraped">Not scraped</span>'}</span>
+        </div>
+        <div class="frow"><span class="fl">Email</span>
+          <span class="fv">${c.email
+            ? '<button class="copyi" onclick="copyVal(this)">' + ICONS.mail + '</button><code>' + c.email + '</code>'
+            : '<span class="notscraped">Not scraped</span>'}</span>
+        </div>
+        <div class="frow"><span class="fl">Social</span>
+          <span class="fv">${c.li
+            ? ICONS.li + '<a href="' + c.li + '" target="_blank" rel="noreferrer">LinkedIn profile ↗</a>'
+            : '<span class="notscraped">Not scraped</span>'}</span>
+        </div>
+      </div>
+      <div class="meta"><span class="co">${c.company}</span><span>·</span><span>${c.role}</span><span class="jobs">${c.jobs} job${c.jobs > 1 ? 's' : ''}</span></div>
+      <div class="ctx">"${c.ctx}"</div>
+      <div class="cact">
+        <button class="cbtn" onclick="copyBest(${c.id})">Copy</button>
+        <button class="cbtn ghost" onclick="this.closest('.idcard').style.display='none';render()">✕</button>
+      </div>`;
+    return el;
+  }
+  function copyVal(btn) {
+    const v = btn.nextElementSibling ? btn.nextElementSibling.textContent : '';
+    navigator.clipboard.writeText(v);
+    btn.innerHTML = '✓';
+    setTimeout(() => { btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>'; }, 1200);
+    toast(v + ' copied');
+  }
+  function copyBest(id) {
+    const c = DATA.find(x => x.id === id);
+    const v = c.email || c.phone || c.li || '';
+    if (v) navigator.clipboard.writeText(v);
+    toast((c.name || 'Contact') + ' — ' + (v || 'no details to copy'));
+  }
+  function render() {
+    const q = searchInput.value.trim().toLowerCase();
+    const comp = companyFilter.value;
+    const visible = DATA.filter(c =>
+      (!comp || c.company === comp) &&
+      (!q || (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || c.company.toLowerCase().includes(q))
+    );
+    countPill.textContent = visible.length + ' contact' + (visible.length === 1 ? '' : 's');
+    grid.innerHTML = '';
+    visible.forEach((c, i) => grid.appendChild(card(c, i)));
+  }
+  let toastT;
+  function toast(t) { document.getElementById('toastText').textContent = t; const el = document.getElementById('toast'); el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800); }
+  searchInput.addEventListener('input', render);
+  companyFilter.addEventListener('change', render);
+  document.getElementById('copyAll').addEventListener('click', () => {
+    const emails = DATA.filter(c => c.email).map(c => c.email);
+    navigator.clipboard.writeText(emails.join('\n'));
+    toast(emails.length + ' emails copied');
+  });
+  render();
+</script>
+</body>
+</html>

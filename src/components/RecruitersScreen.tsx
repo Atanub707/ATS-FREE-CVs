@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, MessageCircle } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -62,6 +62,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const showToast = (text: string) => {
     setToast(text);
     setTimeout(() => setToast(null), 2000);
+  };
+
+  const copyValue = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(`${value} copied`);
+    } catch { showToast('Could not copy'); }
   };
 
   const copyEmail = async (c: Contact) => {
@@ -152,44 +159,59 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               const hasPhoto = !!displayName;
               return (
                 <div key={c.id} className="rc-idcard">
-                  <div className="rc-idrow">
+                  <div className="rc-namerow">
                     <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
                       {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={20} />}
                     </div>
-                    <div className="rc-idmain">
-                      <div className="rc-idnm">
-                        <b>{displayName || 'Unnamed contact'}</b>
+                    <div className="rc-namefield">
+                      <div className="rc-nm">
+                        {displayName ? <b>{displayName}</b> : <span className="rc-notscraped">Not scraped</span>}
                         <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                       </div>
-                      <div className="rc-idmail">
-                        {c.email ? <code>{c.email}</code> : <span className="rc-none">no email</span>}
-                      </div>
+                      <div className="rc-co-line">{c.company}</div>
                     </div>
                   </div>
-                  <div className="rc-chips">
-                    {c.email && (
-                      <span className="rc-chip" onClick={() => copyEmail(c)} title="Copy email">
-                        <Mail size={11} /> Email
+                  <div className="rc-fields">
+                    <div className="rc-frow">
+                      <span className="rc-fl">Phone</span>
+                      <span className="rc-fv">
+                        {c.phone ? (
+                          <>
+                            <button className="rc-copyi" title="Copy phone" onClick={() => copyValue(c.phone!)}><Phone size={11} /></button>
+                            <code>{c.phone}</code>
+                            {c.whatsapp && <span className="rc-wabadge">WhatsApp</span>}
+                          </>
+                        ) : (
+                          <span className="rc-notscraped">Not scraped</span>
+                        )}
                       </span>
-                    )}
-                    {c.phone && !c.whatsapp && (
-                      <span className="rc-chip rc-chip-phone" onClick={() => copyEmail(c)} title="Copy phone">
-                        <Phone size={11} /> {c.phone}
+                    </div>
+                    <div className="rc-frow">
+                      <span className="rc-fl">Email</span>
+                      <span className="rc-fv">
+                        {c.email ? (
+                          <>
+                            <button className="rc-copyi" title="Copy email" onClick={() => copyValue(c.email!)}><Mail size={11} /></button>
+                            <code>{c.email}</code>
+                          </>
+                        ) : (
+                          <span className="rc-notscraped">Not scraped</span>
+                        )}
                       </span>
-                    )}
-                    {c.phone && c.whatsapp && (
-                      <span className="rc-chip rc-chip-wa" onClick={() => copyEmail(c)} title="Copy WhatsApp number">
-                        <MessageCircle size={11} /> WhatsApp
+                    </div>
+                    <div className="rc-frow">
+                      <span className="rc-fl">Social</span>
+                      <span className="rc-fv">
+                        {c.recruiterUrl ? (
+                          <>
+                            <Linkedin size={11} />
+                            <a href={c.recruiterUrl} target="_blank" rel="noreferrer">LinkedIn profile ↗</a>
+                          </>
+                        ) : (
+                          <span className="rc-notscraped">Not scraped</span>
+                        )}
                       </span>
-                    )}
-                    {c.recruiterUrl && (
-                      <a className="rc-chip rc-chip-li" href={c.recruiterUrl} target="_blank" rel="noreferrer" title="Open LinkedIn profile">
-                        <Linkedin size={11} /> LinkedIn
-                      </a>
-                    )}
-                    {!c.email && !c.phone && !c.recruiterUrl && (
-                      <span className="rc-chip"><span className="rc-none">no contact details</span></span>
-                    )}
+                    </div>
                   </div>
                   <div className="rc-idmeta">
                     <span className="rc-co">{c.company}</span>
@@ -233,7 +255,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-screen {
           --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0; --text: #0F172A;
           --muted: #64748B; --faint: #94A3B8; --blue: #2563EB; --blue-soft: #EFF6FF;
-          --blue-border: #BFDBFE; --green: #059669; --green-soft: #ECFDF5; --green-border: #A7F3D0;
+          --blue-border: #BFDBFE; --linkedin: #0A66C2; --green: #059669; --green-soft: #ECFDF5; --green-border: #A7F3D0;
           --amber: #D97706; --amber-soft: #FFFBEB; --amber-border: #FDE68A; --red: #DC2626;
           --shadow: 0 1px 3px rgba(15,23,42,.06);
           position: fixed; inset: 0; z-index: 60; background: var(--bg); color: var(--text);
@@ -302,6 +324,24 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
         .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
+        .rc-namerow { display: flex; align-items: center; gap: 12px; }
+        .rc-namefield { flex: 1; min-width: 0; }
+        .rc-nm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .rc-nm b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+        .rc-co-line { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
+        .rc-notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
+        .rc-fields { display: flex; flex-direction: column; }
+        .rc-frow { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px dashed #EDF0F5; }
+        .rc-frow:last-child { border-bottom: 0; }
+        .rc-fl { width: 54px; flex-shrink: 0; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
+        .rc-fv { font-size: 12px; font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; }
+        .rc-fv a { color: var(--linkedin); text-decoration: none; }
+        .rc-fv a:hover { text-decoration: underline; }
+        .rc-fv svg { width: 11px; height: 11px; flex-shrink: 0; }
+        .rc-fv code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+        .rc-wabadge { font-size: 9px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 6px; }
+        .rc-copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
+        .rc-copyi:hover { color: var(--blue); }
         .rc-idrow { display: flex; align-items: center; gap: 12px; }
         .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, #E2E8F0, #CBD5E1); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: #64748B; flex-shrink: 0; overflow: hidden; }
         .rc-photo svg { width: 20px; height: 20px; opacity: .55; }
