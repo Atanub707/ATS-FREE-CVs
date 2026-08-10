@@ -102,6 +102,27 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
     }
     return out;
   })();
+
+  // Phone numbers mentioned in the raw description (client-side mirror).
+  const jobPhones = (() => {
+    if (!job?.description) return [];
+    const out: string[] = [];
+    for (const m of job.description.matchAll(/(?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,5}\)[\s-]?)?\d{2,5}[\s.-]?\d{2,4}[\s.-]?\d{2,4}(?:[\s.-]?\d{2,4})?/g)) {
+      const raw = m[0].trim();
+      const digits = raw.replace(/\D/g, '');
+      if (digits.length < 7 || digits.length > 15) continue;
+      if (/^(19|20)\d{2}$/.test(digits)) continue;
+      if (!/[\s\-().]/.test(raw) && digits.length < 9) continue;
+      const prev = job.description.slice(Math.max(0, m.index - 16), m.index).toLowerCase();
+      if (/(\$|€|£|₹|usd|salary|year|k\b|applicants?|years?|%|monthly|hour)/.test(prev)) continue;
+      if (raw.includes('.') && !raw.includes('+') && !raw.includes('(')) {
+        const g = raw.split('.');
+        if (g.length >= 2 && g.every((x) => /^\d{1,2}$/.test(x))) continue;
+      }
+      out.push(raw.replace(/[\s.]+/g, ' ').trim());
+    }
+    return [...new Set(out)];
+  })();
   const [copiedText, setCopiedText] = useState(false);
 
   const gap = job.gapAnalysis;
@@ -296,7 +317,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (navigator.clipboard?.writeText) navigator.clipboard.writeText(jobEmails.join('\n'));
+                          if (navigator.clipboard?.writeText) navigator.clipboard.writeText([...jobEmails, ...jobPhones].join('\n'));
                         }}
                         className="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-colors cursor-pointer"
                         title="Copy all emails"
@@ -308,6 +329,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                       {jobEmails.map((em) => (
                         <code key={em} className="text-[11px] font-mono bg-white border border-emerald-200 rounded-lg px-2 py-1 text-slate-800">
                           {em}
+                        </code>
+                      ))}
+                      {jobPhones.map((ph) => (
+                        <code key={ph} className="text-[11px] font-mono bg-white border border-purple-200 rounded-lg px-2 py-1 text-purple-800">
+                          {ph}
                         </code>
                       ))}
                     </div>

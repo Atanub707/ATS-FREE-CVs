@@ -3,7 +3,8 @@ import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink } from 'lucid
 
 interface Contact {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string | null;
   type: string;
   typeLabel: string;
@@ -61,16 +62,17 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const copyEmail = async (c: Contact) => {
+    const value = c.email || c.phone || '';
     try {
-      await navigator.clipboard.writeText(c.email);
+      await navigator.clipboard.writeText(value);
       setCopiedId(c.id);
       setTimeout(() => setCopiedId(null), 1400);
-      showToast(`${c.email} copied`);
+      showToast(`${value} copied`);
     } catch { showToast('Could not copy — select manually'); }
   };
 
   const copyAll = async () => {
-    const emails = contacts.map((c) => c.email);
+    const emails = contacts.map((c) => c.email).filter((e): e is string => !!e);
     if (emails.length === 0) return;
     try {
       await navigator.clipboard.writeText(emails.join('\n'));
@@ -96,7 +98,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const visible = contacts.filter(
     (c) =>
       (!company || c.company === company) &&
-      (!ql || (c.name || '').toLowerCase().includes(ql) || c.email.toLowerCase().includes(ql) || c.company.toLowerCase().includes(ql))
+      (!ql || (c.name || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
 
   return (
@@ -137,7 +139,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             <div className="rc-empty-ico"><Mail size={24} /></div>
             <b>{contacts.length === 0 ? 'No emails found yet' : 'No contacts match'}</b>
             <p>{contacts.length === 0
-              ? 'Emails appear here automatically as jobs are scraped — HR, recruiting and company addresses found in descriptions.'
+              ? 'Emails and phone numbers appear here automatically as jobs are scraped — HR, recruiting and company contacts found in descriptions.'
               : 'Try a different search or clear the filters.'}</p>
           </div>
         ) : (
@@ -145,14 +147,17 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             {visible.map((c, i) => (
               <div key={c.id} className="rc-contact">
                 <div className="rc-avatar" style={{ background: AVATAR_GRADIENTS[i % 3] }}>
-                  {(c.name || c.email[0]).charAt(0).toUpperCase()}
+                  {(c.name || c.email?.[0] || c.phone?.[0] || '?').charAt(0).toUpperCase()}
                 </div>
                 <div className="rc-cinfo">
                   <div className="rc-name">
-                    {c.name || c.email.split('@')[0]}
+                    {c.name || (c.email ? c.email.split('@')[0] : c.phone || 'Contact')}
                     <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                   </div>
-                  <div className="rc-email"><code>{c.email}</code></div>
+                  {c.email && <div className="rc-email"><code>{c.email}</code></div>}
+                  {c.phone && (
+                    <div className="rc-email rc-phone"><code>{c.phone}</code></div>
+                  )}
                   <div className="rc-meta">
                     <span>{c.company}</span>
                     <span className="rc-sep">·</span>
@@ -185,8 +190,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         <span className="rc-note-text">Emails are pulled from job descriptions you already scrape.</span>
         <div className="rc-spacer" />
         <button className="rc-btn2" onClick={onClose}>Close</button>
-        <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={contacts.length === 0}>
-          {copiedAll ? <><CheckCircle2 size={14} /> {contacts.length} emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
+        <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
+          {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
       </div>
 
@@ -240,6 +245,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-tag-careers { background: #F0FDF4; color: var(--green); border: 1px solid var(--green-border); }
         .rc-tag-company { background: #F1F5F9; color: var(--muted); border: 1px solid var(--border); }
         .rc-email { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+        .rc-phone code { color: #7C3AED; background: #FAF5FF; border-color: #E9D5FF; }
         .rc-email code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
         .rc-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); margin-top: 6px; flex-wrap: wrap; }
         .rc-sep { color: #CBD5E1; }

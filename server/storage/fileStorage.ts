@@ -9,7 +9,8 @@ import { extractContactsFrom, ContactType } from '../extract/contactExtractor.js
 
 export interface HrContact {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string | null;
   type: ContactType;
   typeLabel: string;
@@ -362,7 +363,7 @@ export function getDb(): Database.Database {
     CREATE TABLE IF NOT EXISTS hr_contacts (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
-      email TEXT NOT NULL,
+      email TEXT,
       name TEXT,
       type TEXT NOT NULL DEFAULT 'company',
       type_label TEXT NOT NULL DEFAULT 'Company',
@@ -375,12 +376,61 @@ export function getDb(): Database.Database {
       hidden INTEGER DEFAULT 0,
       first_seen TEXT,
       last_seen TEXT,
-      UNIQUE (user_id, email)
+      phone TEXT
     );
   `);
   migrateToUsers(db);
   migrateRecoveryColumns(db);
+  migrateContactsTable(db);
+  ensureContactIndexes(db);
   return db;
+}
+
+// Partial unique indexes on the contact fields. NULLs may repeat, so
+// phone-only rows coexist with email rows. Must run AFTER the migration
+// has added the phone column on legacy databases.
+function ensureContactIndexes(d: Database.Database): void {
+  try {
+    const cols = new Set((d.pragma('table_info(hr_contacts)') as any[]).map((c) => c.name));
+    if (!cols.has('phone')) return;
+    d.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_email ON hr_contacts (user_id, email) WHERE email IS NOT NULL AND email != '';
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_phone ON hr_contacts (user_id, phone) WHERE phone IS NOT NULL AND phone != '';
+    `);
+  } catch (err) {
+    console.error('Contact index creation failed:', err);
+  }
+}
+
+// Older hr_contacts had email NOT NULL + UNIQUE(user_id, email) and no
+// phone column. SQLite cannot drop NOT NULL via ALTER, so the table is
+// rebuilt with nullable email, a phone column, and per-field unique
+// indexes (NULLs are allowed to repeat, so phone-only rows coexist with
+// email rows).
+function migrateContactsTable(d: Database.Database): void {
+  try {
+    const cols = new Set((d.pragma('table_info(hr_contacts)') as any[]).map((c) => c.name));
+    if (!cols.has('phone')) {
+      d.exec(`
+        CREATE TABLE hr_contacts_new (
+          id TEXT PRIMARY KEY, user_id TEXT NOT NULL, email TEXT, name TEXT,
+          type TEXT NOT NULL DEFAULT 'company', type_label TEXT NOT NULL DEFAULT 'Company',
+          company TEXT, job_role TEXT, source_job_id TEXT, source_job_url TEXT,
+          job_count INTEGER DEFAULT 1, context TEXT, hidden INTEGER DEFAULT 0,
+          first_seen TEXT, last_seen TEXT, phone TEXT
+        );
+        INSERT INTO hr_contacts_new (id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
+          SELECT id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen FROM hr_contacts;
+        DROP TABLE hr_contacts;
+        ALTER TABLE hr_contacts_new RENAME TO hr_contacts;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_email ON hr_contacts (user_id, email) WHERE email IS NOT NULL AND email != '';
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_phone ON hr_contacts (user_id, phone) WHERE phone IS NOT NULL AND phone != '';
+      `);
+      console.log('[Contacts] hr_contacts migrated to support phones');
+    }
+  } catch (err) {
+    console.error('hr_contacts migration failed:', err);
+  }
 }
 
 // Idempotent: adds the recovery-question columns to users tables created
@@ -609,22 +659,38 @@ function upsertContactsFromJob(job: Job): void {
 
   const d = getDb();
   const now = new Date().toISOString();
-  const find = d.prepare('SELECT id FROM hr_contacts WHERE user_id = ? AND email = ?');
+  const findByEmail = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND email = ?');
+  const findByPhone = d.prepare('SELECT * FROM hr_contacts WHERE user_id = ? AND phone = ?');
   const insert = d.prepare(`
-    INSERT INTO hr_contacts (id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?)
+    INSERT INTO hr_contacts (id, user_id, email, phone, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?)
   `);
-  const bump = d.prepare('UPDATE hr_contacts SET job_count = job_count + 1, last_seen = ?, type = ?, type_label = ? WHERE user_id = ? AND email = ?');
+  const merge = d.prepare(`
+    UPDATE hr_contacts SET
+      job_count = job_count + 1,
+      last_seen = ?,
+      type = ?,
+      type_label = ?,
+      name = CASE WHEN ? IS NOT NULL THEN ? ELSE name END,
+      email = COALESCE(?, email),
+      phone = COALESCE(?, phone),
+      company = CASE WHEN company = '' THEN ? ELSE company END,
+      job_role = CASE WHEN job_role = '' THEN ? ELSE job_role END,
+      context = ?
+    WHERE id = ?
+  `);
 
   for (const c of contacts) {
-    const existing = find.get(userId, c.email) as { id: string } | undefined;
+    let existing: any = c.email ? findByEmail.get(userId, c.email) : undefined;
+    if (!existing && c.phone) existing = findByPhone.get(userId, c.phone);
     if (existing) {
-      bump.run(now, c.type, c.typeLabel, userId, c.email);
+      merge.run(now, c.type, c.typeLabel, c.name, c.name, c.email, c.phone, job.company || '', job.title || '', c.context, existing.id);
     } else {
       insert.run(
         `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         userId,
         c.email,
+        c.phone,
         c.name,
         c.type,
         c.typeLabel,
@@ -662,7 +728,8 @@ export function listContacts(opts?: { q?: string; company?: string }): HrContact
     const rows = d.prepare(sql).all(...params) as any[];
     return rows.map((r) => ({
       id: r.id,
-      email: r.email,
+      email: r.email || null,
+      phone: r.phone || null,
       name: r.name || null,
       type: r.type,
       typeLabel: r.type_label,
