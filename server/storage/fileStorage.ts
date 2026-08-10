@@ -783,6 +783,49 @@ function upsertContactsFromJob(job: Job): HrContact[] {
   return newRows;
 }
 
+function mapContactRow(r: any): HrContact {
+  return {
+    id: r.id,
+    email: r.email || null,
+    phone: r.phone || null,
+    whatsapp: r.whatsapp === 1,
+    recruiterName: r.recruiter_name || null,
+    recruiterUrl: r.recruiter_url || null,
+    name: r.name || null,
+    type: r.type,
+    typeLabel: r.type_label,
+    company: r.company || '',
+    jobRole: r.job_role || '',
+    sourceJobId: r.source_job_id || '',
+    sourceJobUrl: r.source_job_url || '',
+    jobCount: r.job_count || 1,
+    context: r.context || '',
+    firstSeen: r.first_seen || '',
+    lastSeen: r.last_seen || '',
+  };
+}
+
+export function listContactsForJob(jobId: string, recruiterUrl?: string | null): HrContact[] {
+  const userId = getCurrentUserId();
+  if (!userId || !jobId) return [];
+  try {
+    const d = getDb();
+    if (recruiterUrl) {
+      const rows = d.prepare(
+        'SELECT * FROM hr_contacts WHERE user_id = ? AND (source_job_id = ? OR recruiter_url = ?) ORDER BY job_count DESC'
+      ).all(userId, jobId, recruiterUrl) as any[];
+      return rows.map(mapContactRow);
+    }
+    const rows = d.prepare(
+      'SELECT * FROM hr_contacts WHERE user_id = ? AND source_job_id = ? ORDER BY job_count DESC'
+    ).all(userId, jobId) as any[];
+    return rows.map(mapContactRow);
+  } catch (err) {
+    console.error('Error listing contacts for job:', err);
+    return [];
+  }
+}
+
 export function listContacts(opts?: { q?: string; company?: string }): HrContact[] {
   const userId = getCurrentUserId();
   if (!userId) return [];
@@ -803,25 +846,7 @@ export function listContacts(opts?: { q?: string; company?: string }): HrContact
     }
     sql += ' ORDER BY last_seen DESC';
     const rows = d.prepare(sql).all(...params) as any[];
-    return rows.map((r) => ({
-      id: r.id,
-      email: r.email || null,
-      phone: r.phone || null,
-      whatsapp: r.whatsapp === 1,
-      recruiterName: r.recruiter_name || null,
-      recruiterUrl: r.recruiter_url || null,
-      name: r.name || null,
-      type: r.type,
-      typeLabel: r.type_label,
-      company: r.company || '',
-      jobRole: r.job_role || '',
-      sourceJobId: r.source_job_id || '',
-      sourceJobUrl: r.source_job_url || '',
-      jobCount: r.job_count || 1,
-      context: r.context || '',
-      firstSeen: r.first_seen || '',
-      lastSeen: r.last_seen || '',
-    }));
+    return rows.map(mapContactRow);
   } catch (err) {
     console.error('Error listing contacts:', err);
     return [];

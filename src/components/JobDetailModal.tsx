@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Job, JobState, TemplateId } from '../types';
 import { formatTimeAgo } from '../lib/dateUtils';
 import { applicantCountLabel } from '../lib/applicantInfo';
@@ -102,6 +102,22 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
     }
     return out;
   })();
+
+  // Recruiters tied to this job (server: hr_contacts by source job / recruiter URL).
+  const [jobContacts, setJobContacts] = useState<{ id: string; name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null; company: string; jobRole: string; jobCount: number }[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    if (job?.id) {
+      fetch(`/api/jobs/${job.id}/contacts`)
+        .then((r) => r.json())
+        .then((d) => { if (alive) setJobContacts(d.contacts || []); })
+        .catch(() => { if (alive) setJobContacts([]); });
+    } else {
+      setJobContacts([]);
+    }
+    return () => { alive = false; };
+  }, [job?.id]);
 
   // Phone numbers mentioned in the raw description (client-side mirror).
   const jobPhones = (() => {
@@ -274,6 +290,64 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {/* TAB 1: Job Description */}
           {activeTab === 'details' && (
             <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
+              {/* Recruiters — who posted this job */}
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide mb-3">
+                  Recruiters — who posted this job
+                </h4>
+                {jobContacts.length === 0 && !job.recruiterName && !job.recruiterUrl ? (
+                  <p className="text-[11px] text-slate-400 italic">Not scraped — no recruiter details found for this job.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {jobContacts.map((rc) => (
+                      <div key={rc.id} className="bg-white border border-slate-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-bold text-slate-800">{rc.name || 'Not scraped'}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-1.5 py-0.5">
+                            {rc.jobCount > 1 ? `${rc.jobCount} jobs` : 'Recruiter'}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex gap-2">
+                            <span className="w-12 text-[9px] font-bold uppercase tracking-wider text-slate-400">Phone</span>
+                            {rc.phone ? (
+                              <span className="text-[11px] font-semibold text-slate-800">
+                                {rc.phone}
+                                {rc.whatsapp && <span className="ml-1.5 text-[9px] font-bold text-green-700 bg-green-50 border border-green-200 rounded-full px-1.5 py-0.5">WhatsApp</span>}
+                              </span>
+                            ) : <span className="text-[11px] text-slate-400 italic">Not scraped</span>}
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="w-12 text-[9px] font-bold uppercase tracking-wider text-slate-400">Email</span>
+                            {rc.email ? <span className="text-[11px] font-semibold text-slate-800 font-mono">{rc.email}</span> : <span className="text-[11px] text-slate-400 italic">Not scraped</span>}
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="w-12 text-[9px] font-bold uppercase tracking-wider text-slate-400">Social</span>
+                            {rc.recruiterUrl ? (
+                              <a href={rc.recruiterUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-blue-600 hover:underline">LinkedIn profile ↗</a>
+                            ) : <span className="text-[11px] text-slate-400 italic">Not scraped</span>}
+                          </div>
+                        </div>
+                        {rc.company && <div className="text-[10px] text-slate-400 mt-1.5">{rc.company} · {rc.jobRole}</div>}
+                      </div>
+                    ))}
+                    {jobContacts.length === 0 && (job.recruiterName || job.recruiterUrl) && (
+                      <div className="bg-white border border-slate-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-bold text-slate-800">{job.recruiterName || 'Recruiter'}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="w-12 text-[9px] font-bold uppercase tracking-wider text-slate-400">Social</span>
+                          {job.recruiterUrl ? (
+                            <a href={job.recruiterUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-blue-600 hover:underline">LinkedIn profile ↗</a>
+                          ) : <span className="text-[11px] text-slate-400 italic">Not scraped</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
@@ -340,17 +414,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   </div>
                 )}
 
-                {job.recruiterName && job.recruiterUrl && (
-                  <div className="mt-3 border border-slate-200 bg-slate-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      Recruiter: <b className="text-slate-800">{job.recruiterName}</b>
-                    </span>
-                    <a href={job.recruiterUrl} target="_blank" rel="noreferrer"
-                      className="ml-auto text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1">
-                      LinkedIn <ExternalLink size={11} />
-                    </a>
-                  </div>
-                )}
+
               </div>
             </div>
           )}

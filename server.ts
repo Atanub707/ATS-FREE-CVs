@@ -88,6 +88,7 @@ import {
   removePortalBookmark,
   listContacts,
   listContactCompanies,
+  listContactsForJob,
   setContactHidden,
   backfillContacts,
 } from './server/storage/fileStorage.js';
@@ -1095,6 +1096,16 @@ Return valid JSON only — NO markdown, NO code fences:
       const q = typeof req.query.q === 'string' ? req.query.q : '';
       const company = typeof req.query.company === 'string' ? req.query.company : '';
       res.json({ contacts: listContacts({ q, company }), companies: listContactCompanies() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/jobs/:id/contacts', (req, res) => {
+    try {
+      const job = getJobById(req.params.id);
+      const contacts = listContactsForJob(req.params.id, job?.recruiterUrl);
+      res.json({ contacts });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
