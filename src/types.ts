@@ -187,6 +187,7 @@ export interface ScraperParams {
   contractType?: string;
   experienceLevel?: string;
   under10Applicants?: boolean;
+  jobIds?: string[];
 }
 
 export type LlmProvider = 'opencode-go' | 'openrouter' | 'openai' | 'gemini' | 'anthropic' | 'nvidia';

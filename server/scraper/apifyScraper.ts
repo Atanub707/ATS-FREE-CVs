@@ -213,6 +213,9 @@ export class ApifyLinkedInScraper {
       if (params.contractType) {
         input.contractType = [params.contractType];
       }
+      if (params.jobIds && params.jobIds.length > 0) {
+        input.skipJobId = params.jobIds;
+      }
 
       const response = await fetch(RUN_SYNC_URL(token), {
         method: 'POST',

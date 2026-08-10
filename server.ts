@@ -975,6 +975,18 @@ Return valid JSON only — NO markdown, NO code fences:
       }
 
       const wantUnder10 = under10Applicants === true;
+
+      // skipJobId: tell the Apify actor to skip LinkedIn jobs we already have
+      // (avoids re-fetching and re-paying for duplicates).
+      let jobIds: string[] = [];
+      try {
+        const existing = getAllJobs().filter((j) => j.source === 'LinkedIn' && j.id.startsWith('linkedin-'));
+        jobIds = existing
+          .map((j) => j.id.replace(/^linkedin-/, ''))
+          .filter((id) => /^\d+$/.test(id))
+          .slice(0, 1000);
+      } catch { jobIds = []; }
+
       const scrapedJobsRaw = await ScraperFactory.runScrape({
         keywords: keywords.trim(),
         location: location || 'Remote',
@@ -987,6 +999,7 @@ Return valid JSON only — NO markdown, NO code fences:
         contractType: contractType || undefined,
         experienceLevel: experienceLevel || undefined,
         under10Applicants: wantUnder10,
+        jobIds,
       });
 
       // Deterministic "under 10 applicants" guarantee: LinkedIn's f_AL=true
