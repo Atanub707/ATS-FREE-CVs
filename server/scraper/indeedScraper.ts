@@ -8,6 +8,32 @@ import { ApifyBaseScraper, cleanDescription, extractDescription, normalizeIsoDat
 
 const DATE_DAYS: Record<string, string> = { '24h': '1', '7d': '7', '30d': '14' };
 
+// The Valig Indeed actor needs an ISO country code for location searches
+// (it searches that country's Indeed subdomain). Map known cities of the
+// markets this app serves; unmatched locations are left out (the actor
+// then defaults to its own behavior, and keyword-only searches are fine).
+const CITY_COUNTRIES: Record<string, string> = {
+  // India
+  bangalore: 'in', mumbai: 'in', delhi: 'in', 'new delhi': 'in', hyderabad: 'in',
+  pune: 'in', chennai: 'in', kolkata: 'in', gurgaon: 'in', gurugram: 'in',
+  noida: 'in', ahmedabad: 'in',
+  // USA
+  'new york': 'us', 'new york city': 'us', 'san francisco': 'us', 'los angeles': 'us',
+  seattle: 'us', austin: 'us', chicago: 'us', boston: 'us', 'san jose': 'us',
+  'washington dc': 'us', dallas: 'us',
+  // UK
+  london: 'gb', manchester: 'gb', birmingham: 'gb', edinburgh: 'gb', glasgow: 'gb',
+  // Germany
+  berlin: 'de', munich: 'de', hamburg: 'de', frankfurt: 'de', cologne: 'de', leipzig: 'de',
+  // Rest of supported markets
+  singapore: 'sg', tokyo: 'jp', 'sao paulo': 'br', zurich: 'ch', lagos: 'ng',
+};
+
+function locationCountry(location: string): string | undefined {
+  const key = location.trim().toLowerCase().split(',')[0].trim();
+  return CITY_COUNTRIES[key] ?? CITY_COUNTRIES[location.trim().toLowerCase()];
+}
+
 export class IndeedScraper extends ApifyBaseScraper {
   readonly source: JobSource = 'Indeed';
   readonly actorId = 'valig~indeed-jobs-scraper';
@@ -20,6 +46,10 @@ export class IndeedScraper extends ApifyBaseScraper {
     const location = params.location?.trim() || '';
     if (location && !/^(remote|anywhere|worldwide|open to remote)$/i.test(location)) {
       input.location = location;
+      const country = locationCountry(location);
+      if (country) {
+        input.country = country;
+      }
     }
     if (params.datePostedFilter && params.datePostedFilter !== 'all' && DATE_DAYS[params.datePostedFilter]) {
       input.datePosted = DATE_DAYS[params.datePostedFilter];
