@@ -99,6 +99,7 @@ import { sanitizeJobs } from './server/scraper/sanitizer.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
+import { SOURCES } from './src/constants/sources.js';
 import { compressCv } from './server/ai/cvCompressor.js';
 import { getMarketData } from './server/ai/marketData.js';
 
@@ -379,6 +380,12 @@ async function startServer() {
   // Configuration routes
   app.get('/api/config', (req, res) => {
     res.json(loadConfig());
+  });
+
+  // Source registry — lets clients (and API consumers) see which sources
+  // are Apify-powered and what each Apify source costs per 1K jobs.
+  app.get('/api/sources', (_req, res) => {
+    res.json({ sources: Object.values(SOURCES) });
   });
 
   app.post('/api/config', (req, res) => {
