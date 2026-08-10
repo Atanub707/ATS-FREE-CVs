@@ -30,6 +30,10 @@ interface ScraperBarProps {
 
 const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely', 'Indeed', 'Naukri', 'Glassdoor', 'StepStone', 'Totaljobs', 'Upwork'];
 const COMING_SOON: JobSource[] = ['RemoteOK', 'WeWorkRemotely'];
+// Apify-powered sources stay visible in the main row (after LinkedIn);
+// the built-in sources live inside the "More" dropdown.
+const APIFY_SOURCES_VISIBLE = ALL_SOURCES.filter((src) => getSourceMeta(src)?.apifyActorId);
+const MORE_SOURCES = ALL_SOURCES.filter((src) => !getSourceMeta(src)?.apifyActorId);
 
 export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, apifyAvailable }) => {
   const [keywords, setKeywords] = useState('');
@@ -342,25 +346,25 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <span className="text-[11px] font-semibold text-slate-500 pt-[7px] whitespace-nowrap">Sources</span>
             <div className="flex items-center gap-2 flex-nowrap min-w-0">
-              {ALL_SOURCES.slice(0, 3).map((src) => renderSourceChip(src))}
+              {APIFY_SOURCES_VISIBLE.map((src) => renderSourceChip(src))}
 
-              {/* More — hover/focus opens the full source list */}
+              {/* More — hover/focus opens the built-in source list */}
               <div className="relative group shrink-0">
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 pl-2 pr-2.5 py-[7px] rounded-lg text-[12px] font-semibold text-slate-600 border border-slate-200 bg-white hover:border-slate-300 transition-colors cursor-pointer whitespace-nowrap"
-                  title="All sources this search can capture"
+                  title="Built-in sources this search can capture"
                 >
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                   <span>More</span>
-                  <span className="text-[10px] font-bold text-slate-400">({ALL_SOURCES.length - 3})</span>
+                  <span className="text-[10px] font-bold text-slate-400">({MORE_SOURCES.length})</span>
                 </button>
                 <div className="absolute right-0 top-full mt-1.5 z-30 w-[330px] bg-white border border-slate-200 rounded-xl shadow-lg p-3 opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto transition-all">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
-                    All sources this search can capture
+                    Built-in sources this search can capture
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {ALL_SOURCES.slice(3).map((src) => renderSourceChip(src))}
+                    {MORE_SOURCES.map((src) => renderSourceChip(src))}
                   </div>
                 </div>
               </div>
