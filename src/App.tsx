@@ -7,6 +7,7 @@ import { MasterCvScreen } from './components/MasterCvScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
+import { RecruitersScreen } from './components/RecruitersScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
 import { llmErrorMessage } from './lib/llmError';
@@ -28,6 +29,7 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManualJdOpen, setIsManualJdOpen] = useState(false);
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
+  const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
 
   // Loading states
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
@@ -412,6 +414,7 @@ export default function App() {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenManualJd={() => setIsManualJdOpen(true)}
             onOpenJobPortals={() => setIsJobPortalsOpen(true)}
+            onOpenRecruiters={() => setIsRecruitersOpen(true)}
           />
 
           {/* Live Job Scraper Bar */}
@@ -491,6 +494,12 @@ export default function App() {
           <JobPortalsScreen
             isOpen={isJobPortalsOpen}
             onClose={() => setIsJobPortalsOpen(false)}
+          />
+
+          {/* Recruiters — emails found in job descriptions */}
+          <RecruitersScreen
+            isOpen={isRecruitersOpen}
+            onClose={() => setIsRecruitersOpen(false)}
           />
         </>
       )}

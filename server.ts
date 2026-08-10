@@ -86,6 +86,10 @@ import {
   listPortalBookmarks,
   addPortalBookmark,
   removePortalBookmark,
+  listContacts,
+  listContactCompanies,
+  setContactHidden,
+  backfillContacts,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
@@ -1063,6 +1067,33 @@ Return valid JSON only — NO markdown, NO code fences:
   });
 
   // Get Jobs list with filters & pagination
+  // HR / Recruiter contacts
+  app.get('/api/contacts', (req, res) => {
+    try {
+      const q = typeof req.query.q === 'string' ? req.query.q : '';
+      const company = typeof req.query.company === 'string' ? req.query.company : '';
+      res.json({ contacts: listContacts({ q, company }), companies: listContactCompanies() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/hide', (req, res) => {
+    try {
+      res.json({ success: setContactHidden(req.params.id, true) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/unhide', (req, res) => {
+    try {
+      res.json({ success: setContactHidden(req.params.id, false) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get('/api/jobs', (req, res) => {
     try {
       const queryParams: JobFilterQueryParams = {
@@ -1736,6 +1767,20 @@ Return valid JSON only — NO markdown, NO code fences:
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`ATS Job Search & CV Tailor server running at http://0.0.0.0:${PORT}`);
   });
+
+  // One-time backfill: extract recruiter/HR emails from descriptions of
+  // jobs that were scraped before the contacts feature existed.
+  try {
+    let total = 0;
+    for (const u of listUsers()) {
+      runWithUser(u.id, () => {
+        total += backfillContacts();
+      });
+    }
+    console.log(`[Contacts] Backfilled ${total} new contact rows from existing job descriptions`);
+  } catch (err: any) {
+    console.warn('[Contacts] Backfill skipped:', err?.message || err);
+  }
 }
 
 startServer();

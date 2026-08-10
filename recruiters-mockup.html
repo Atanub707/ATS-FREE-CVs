@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruiters — Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0; --divider: #F1F5F9;
+    --text: #0F172A; --muted: #64748B; --faint: #94A3B8;
+    --blue: #2563EB; --blue-soft: #EFF6FF; --blue-border: #BFDBFE;
+    --green: #059669; --green-soft: #ECFDF5; --green-border: #A7F3D0;
+    --amber: #D97706; --amber-soft: #FFFBEB; --amber-border: #FDE68A;
+    --red: #DC2626; --red-soft: #FEF2F2;
+    --shadow: 0 1px 3px rgba(15,23,42,.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+  /* ── Header ── */
+  .hdr { display: flex; align-items: center; gap: 12px; padding: 0 28px; height: 60px; border-bottom: 1px solid var(--border); background: var(--card); flex-shrink: 0; }
+  .back { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .back:hover { color: var(--text); border-color: var(--blue-border); background: var(--blue-soft); }
+  .hdr .ttl b { font-size: 15px; font-weight: 700; display: block; line-height: 1.2; }
+  .hdr .ttl span { font-size: 11px; color: var(--faint); font-weight: 500; }
+  .spacer { flex: 1; }
+  .count-pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-border); padding: 6px 13px; border-radius: 20px; }
+  .count-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+
+  /* ── Content ── */
+  .wrap { max-width: 920px; width: 100%; margin: 0 auto; padding: 26px 28px 48px; flex: 1; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; }
+  .search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 13px; color: var(--faint); }
+  .search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
+  .search input { flex: 1; border: 0; outline: none; background: none; font-size: 13px; font-family: inherit; color: var(--text); }
+  .search input::placeholder { color: var(--faint); }
+  .search svg { width: 14px; height: 14px; }
+  .fselect { height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; font-family: inherit; padding: 0 10px; outline: none; cursor: pointer; }
+  .fselect:focus { border-color: var(--blue); }
+  .info-note { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--faint); margin-bottom: 14px; }
+  .info-note b { color: var(--muted); font-weight: 600; }
+
+  /* ── Contact list ── */
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .contact { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 13px; padding: 14px 16px; box-shadow: var(--shadow); transition: box-shadow .15s ease, opacity .2s ease; }
+  .contact:hover { box-shadow: 0 4px 14px -4px rgba(15,23,42,.12); }
+  .contact.removing { opacity: 0; transform: translateX(14px); transition: all .25s ease; }
+
+  .cavatar { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, #2563EB, #7C3AED); color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cavatar.alt { background: linear-gradient(135deg, #F59E0B, #EF4444); }
+  .cavatar.alt2 { background: linear-gradient(135deg, #10B981, #0EA5E9); }
+
+  .cinfo { flex: 1; min-width: 0; }
+  .cinfo .name { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; }
+  .cinfo .name .tag { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 20px; }
+  .tag.recruit { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-border); }
+  .tag.hr { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+  .tag.generic { background: #F1F5F9; color: var(--muted); border: 1px solid var(--border); }
+  .cinfo .email { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .cinfo .email code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
+  .cinfo .meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); margin-top: 6px; flex-wrap: wrap; }
+  .cinfo .meta .sep { color: #CBD5E1; }
+  .cinfo .meta .jobs { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-weight: 600; background: var(--green-soft); border: 1px solid var(--green-border); padding: 2px 8px; border-radius: 20px; }
+
+  .cacts { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .cbtn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+  .cbtn:hover { border-color: var(--blue-border); color: var(--blue); }
+  .cbtn.copied { border-color: var(--green-border); color: var(--green); background: var(--green-soft); }
+  .cbtn.ghost { border: 0; background: transparent; padding: 0 6px; }
+  .cbtn.ghost:hover { color: var(--red); }
+  .cbtn svg { width: 13px; height: 13px; }
+  .open-link { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--blue); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
+  .open-link:hover { background: var(--blue-soft); }
+
+  /* ── Sticky bar ── */
+  .actbar { position: sticky; bottom: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 12px; }
+  .actbar .note { font-size: 11.5px; color: var(--faint); }
+  .actbar .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+  .btn:hover { border-color: var(--blue-border); }
+  .btn.primary { background: linear-gradient(135deg, #2563EB, #1D4ED8); border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
+  .btn svg { width: 14px; height: 14px; }
+
+  .toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%) translateY(90px); background: var(--text); color: #F8FAFC; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: transform .3s cubic-bezier(.2,.8,.3,1); z-index: 50; opacity: 0; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .empty { display: none; text-align: center; padding: 70px 20px; }
+  .empty.show { display: block; }
+  .empty .eico { width: 56px; height: 56px; border-radius: 16px; background: var(--blue-soft); border: 1px solid var(--blue-border); color: var(--blue); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .empty b { font-size: 14px; }
+  .empty p { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <button class="back">← Back</button>
+  <div class="ttl">
+    <b>Recruiters</b>
+    <span>Emails found in job descriptions — no extra scraping.</span>
+  </div>
+  <div class="spacer"></div>
+  <span class="count-pill"><span class="dot"></span><span id="countLabel">24 contacts</span></span>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" placeholder="Search name, email, or company…" />
+    </div>
+    <select class="fselect" id="companyFilter">
+      <option value="">All companies</option>
+    </select>
+  </div>
+
+  <div class="info-note">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    Extracted automatically from scraped job descriptions. Dismissed emails are excluded. <b>Copy all</b> to build your outreach list.
+  </div>
+
+  <!-- List -->
+  <div class="list" id="list"></div>
+
+  <!-- Empty -->
+  <div class="empty" id="empty">
+    <div class="eico">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+    </div>
+    <b>No contacts found</b>
+    <p>Emails appear here automatically as jobs are scraped.<br />Try a different search or clear the filters.</p>
+  </div>
+</div>
+
+<div class="actbar">
+  <span class="note">Emails are pulled from job descriptions you already scrape.</span>
+  <div class="spacer"></div>
+  <button class="btn" id="backBtn">Cancel</button>
+  <button class="btn primary" id="copyAllBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span id="copyAllLabel">Copy all emails</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span id="toastText">Done</span></div>
+
+<script>
+  // ── Sample data (in real app: from /api/contacts) ──
+  const SAMPLE = [
+    { id: 1, email: 'tanja.kaysen@wecompare.dk', name: 'Tanja Kaysen', tag: 'recruit', tagLabel: 'Recruiter', company: 'We Compare', role: 'Founder & Trusted Advisor', jobs: 2, avatar: 0, context: 'Tanja Kaysen, Founder & Trusted Advisor — "Kontakt mig allerede i dag."' },
+    { id: 2, email: 'talent@bendingspoons.com', name: null, tag: 'generic', tagLabel: 'Company', company: 'Bending Spoons', role: 'Graduate security engineer', jobs: 1, avatar: 1, context: 'Talent acquisition — "Send your CV to talent@bendingspoons.com"' },
+    { id: 3, email: 'hr@expleogroup.com', name: null, tag: 'hr', tagLabel: 'HR', company: 'Expleo Group', role: 'DevSecOps Engineer', jobs: 3, avatar: 2, context: 'HR department — "For questions contact hr@expleogroup.com"' },
+    { id: 4, email: 'recruiting@free-work.com', name: null, tag: 'recruit', tagLabel: 'Recruiting', company: 'Free-Work', role: 'DevsecOps Azure (IT)', jobs: 1, avatar: 0, context: 'Recruiting team — "recruiting@free-work.com"' },
+    { id: 5, email: 'sofia.lindberg@insero.dk', name: 'Sofia Lindberg', tag: 'recruit', tagLabel: 'Recruiter', company: 'Insero Air Traffic Solutions', role: 'Information Technology Vulnerability & Security Specialist', jobs: 1, avatar: 1, context: 'Sofia Lindberg, Talent Partner — "Kontakt Sofia direkte"' },
+    { id: 6, email: 'careers@neurogent.ai', name: null, tag: 'generic', tagLabel: 'Careers', company: 'neurogent.ai', role: 'Senior DevOps Engineer', jobs: 1, avatar: 2, context: 'Careers page — "careers@neurogent.ai"' },
+    { id: 7, email: 'james.otieno@expleogroup.com', name: 'James Otieno', tag: 'recruit', tagLabel: 'Recruiter', company: 'Expleo Group', role: 'DevSecOps Engineer', jobs: 2, avatar: 0, context: 'James Otieno, Senior Recruiter — "Reach out directly"' },
+    { id: 8, email: 'people@elvia.no', name: null, tag: 'hr', tagLabel: 'People', company: 'Elvia', role: 'Platform Engineer', jobs: 1, avatar: 1, context: 'People team — "people@elvia.no"' },
+    { id: 9, email: 'hiring@jobright.ai', name: null, tag: 'recruit', tagLabel: 'Hiring', company: 'Jobright.ai', role: 'Member of Technical Staff', jobs: 1, avatar: 2, context: 'Hiring — "hiring@jobright.ai"' },
+    { id: 10, email: 'marcus.reid@harmonyhealthit.com', name: 'Marcus Reid', tag: 'recruit', tagLabel: 'Recruiter', company: 'Harmony Healthcare IT', role: 'AWS DevOps Engineer', jobs: 1, avatar: 0, context: 'Marcus Reid, Technical Recruiter' },
+    { id: 11, email: 'jobs@stratascorp.com', name: null, tag: 'generic', tagLabel: 'Jobs', company: 'StratasCorp Technologies', role: 'DevSecOps Engineer', jobs: 2, avatar: 1, context: 'Jobs inbox — "jobs@stratascorp.com"' },
+    { id: 12, email: 'amara.okafor@snorkel.ai', name: 'Amara Okafor', tag: 'hr', tagLabel: 'HR', company: 'Snorkel AI', role: 'Software Engineer in Test', jobs: 1, avatar: 2, context: 'Amara Okafor, HR Business Partner' },
+    { id: 13, email: 'talent@cargill.com', name: null, tag: 'generic', tagLabel: 'Talent', company: 'Cargill', role: 'Senior Platform Engineer - API', jobs: 1, avatar: 0, context: 'Talent acquisition' },
+    { id: 14, email: 'recruit@ridgeline.com', name: null, tag: 'recruit', tagLabel: 'Recruiting', company: 'Ridgeline', role: 'Senior Staff Production Engineering Lead', jobs: 1, avatar: 1, context: 'Recruiting — "recruit@ridgeline.com"' },
+  ];
+
+  const AVATARS = ['cavatar', 'cavatar alt', 'cavatar alt2'];
+  const list = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  const countLabel = document.getElementById('countLabel');
+  const searchInput = document.getElementById('searchInput');
+  const companyFilter = document.getElementById('companyFilter');
+  const companies = [...new Set(SAMPLE.map(c => c.company))].sort();
+  companies.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; companyFilter.appendChild(o); });
+
+  let hidden = new Set();
+  let copiedEmail = null;
+
+  function render() {
+    const q = searchInput.value.trim().toLowerCase();
+    const comp = companyFilter.value;
+    const rows = SAMPLE.filter(c =>
+      !hidden.has(c.id) &&
+      (!comp || c.company === comp) &&
+      (!q || (c.name || '').toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.company.toLowerCase().includes(q))
+    );
+    countLabel.textContent = rows.length + ' contact' + (rows.length === 1 ? '' : 's');
+    empty.classList.toggle('show', rows.length === 0);
+    list.innerHTML = '';
+    rows.forEach((c) => {
+      const el = document.createElement('div');
+      el.className = 'contact';
+      el.innerHTML = `
+        <div class="${AVATARS[c.avatar % 3]}">${(c.name || c.email[0]).charAt(0).toUpperCase()}</div>
+        <div class="cinfo">
+          <div class="name">${c.name || c.email.split('@')[0]} <span class="tag ${c.tag}">${c.tagLabel}</span></div>
+          <div class="email"><code>${c.email}</code></div>
+          <div class="meta">
+            <span>${c.company}</span><span class="sep">·</span><span>${c.role}</span>
+            <span class="jobs">${c.jobs} job${c.jobs > 1 ? 's' : ''}</span>
+          </div>
+        </div>
+        <div class="cacts">
+          <button class="cbtn copy" title="Copy email">Copy</button>
+          <a class="open-link" href="#">Open job ↗</a>
+          <button class="cbtn ghost hide" title="Dismiss">✕</button>
+        </div>`;
+      el.querySelector('.copy').addEventListener('click', (e) => {
+        const b = e.currentTarget;
+        navigator.clipboard.writeText(c.email);
+        b.textContent = 'Copied ✓';
+        b.classList.add('copied');
+        setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('copied'); }, 1400);
+        showToast(c.email + ' copied');
+      });
+      el.querySelector('.hide').addEventListener('click', () => {
+        hidden.add(c.id);
+        el.classList.add('removing');
+        setTimeout(render, 260);
+        showToast('Contact dismissed');
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function showToast(text) {
+    document.getElementById('toastText').textContent = text;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  searchInput.addEventListener('input', render);
+  companyFilter.addEventListener('change', render);
+  document.getElementById('copyAllBtn').addEventListener('click', (e) => {
+    const visible = SAMPLE.filter(c => !hidden.has(c.id)).map(c => c.email);
+    navigator.clipboard.writeText(visible.join('\n'));
+    const b = e.currentTarget;
+    document.getElementById('copyAllLabel').textContent = visible.length + ' emails copied ✓';
+    b.classList.add('copied');
+    setTimeout(() => { document.getElementById('copyAllLabel').textContent = 'Copy all emails'; b.classList.remove('copied'); }, 1800);
+    showToast(visible.length + ' emails copied to clipboard');
+  });
+
+  render();
+</script>
+</body>
+</html>

@@ -5,6 +5,23 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import Database from 'better-sqlite3';
 import { Job, MasterCv, JobFilterQueryParams } from '../../src/types.js';
 import { classifyWorkMode, classifyFromText } from '../scraper/workMode.js';
+import { extractContactsFrom, ContactType } from '../extract/contactExtractor.js';
+
+export interface HrContact {
+  id: string;
+  email: string;
+  name: string | null;
+  type: ContactType;
+  typeLabel: string;
+  company: string;
+  jobRole: string;
+  sourceJobId: string;
+  sourceJobUrl: string;
+  jobCount: number;
+  context: string;
+  firstSeen: string;
+  lastSeen: string;
+}
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
@@ -342,6 +359,24 @@ export function getDb(): Database.Database {
       created_at TEXT,
       PRIMARY KEY (user_id, portal_name)
     );
+    CREATE TABLE IF NOT EXISTS hr_contacts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      name TEXT,
+      type TEXT NOT NULL DEFAULT 'company',
+      type_label TEXT NOT NULL DEFAULT 'Company',
+      company TEXT,
+      job_role TEXT,
+      source_job_id TEXT,
+      source_job_url TEXT,
+      job_count INTEGER DEFAULT 1,
+      context TEXT,
+      hidden INTEGER DEFAULT 0,
+      first_seen TEXT,
+      last_seen TEXT,
+      UNIQUE (user_id, email)
+    );
   `);
   migrateToUsers(db);
   migrateRecoveryColumns(db);
@@ -552,7 +587,135 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number } {
   });
   tx();
 
+  // Extract recruiter/HR emails from the newly stored descriptions.
+  for (const job of added) {
+    try {
+      upsertContactsFromJob(job);
+    } catch (err) {
+      console.error('Error extracting contacts from job:', err);
+    }
+  }
+
   return { added, skipped };
+}
+
+// ─────────────────── HR / Recruiter contacts ───────────────────
+
+function upsertContactsFromJob(job: Job): void {
+  const userId = getCurrentUserId();
+  if (!userId) return;
+  const contacts = extractContactsFrom(job.description || '', job.company || '');
+  if (contacts.length === 0) return;
+
+  const d = getDb();
+  const now = new Date().toISOString();
+  const find = d.prepare('SELECT id FROM hr_contacts WHERE user_id = ? AND email = ?');
+  const insert = d.prepare(`
+    INSERT INTO hr_contacts (id, user_id, email, name, type, type_label, company, job_role, source_job_id, source_job_url, job_count, context, hidden, first_seen, last_seen)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?)
+  `);
+  const bump = d.prepare('UPDATE hr_contacts SET job_count = job_count + 1, last_seen = ?, type = ?, type_label = ? WHERE user_id = ? AND email = ?');
+
+  for (const c of contacts) {
+    const existing = find.get(userId, c.email) as { id: string } | undefined;
+    if (existing) {
+      bump.run(now, c.type, c.typeLabel, userId, c.email);
+    } else {
+      insert.run(
+        `hr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        userId,
+        c.email,
+        c.name,
+        c.type,
+        c.typeLabel,
+        job.company || '',
+        job.title || '',
+        job.id,
+        job.url || '',
+        c.context,
+        now,
+        now,
+      );
+    }
+  }
+}
+
+export function listContacts(opts?: { q?: string; company?: string }): HrContact[] {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  try {
+    const d = getDb();
+    const q = (opts?.q || '').trim().toLowerCase();
+    const company = (opts?.company || '').trim();
+    let sql = 'SELECT * FROM hr_contacts WHERE user_id = ? AND hidden = 0';
+    const params: any[] = [userId];
+    if (q) {
+      sql += ' AND (lower(email) LIKE ? OR lower(coalesce(name,"")) LIKE ? OR lower(company) LIKE ?)';
+      const like = `%${q}%`;
+      params.push(like, like, like);
+    }
+    if (company) {
+      sql += ' AND company = ?';
+      params.push(company);
+    }
+    sql += ' ORDER BY last_seen DESC';
+    const rows = d.prepare(sql).all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      email: r.email,
+      name: r.name || null,
+      type: r.type,
+      typeLabel: r.type_label,
+      company: r.company || '',
+      jobRole: r.job_role || '',
+      sourceJobId: r.source_job_id || '',
+      sourceJobUrl: r.source_job_url || '',
+      jobCount: r.job_count || 1,
+      context: r.context || '',
+      firstSeen: r.first_seen || '',
+      lastSeen: r.last_seen || '',
+    }));
+  } catch (err) {
+    console.error('Error listing contacts:', err);
+    return [];
+  }
+}
+
+export function listContactCompanies(): string[] {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  try {
+    const d = getDb();
+    const rows = d.prepare(
+      "SELECT DISTINCT company FROM hr_contacts WHERE user_id = ? AND hidden = 0 AND company != '' ORDER BY company"
+    ).all(userId) as { company: string }[];
+    return rows.map((r) => r.company);
+  } catch {
+    return [];
+  }
+}
+
+export function setContactHidden(id: string, hidden: boolean): boolean {
+  const userId = getCurrentUserId();
+  if (!userId) return false;
+  try {
+    const d = getDb();
+    return d.prepare('UPDATE hr_contacts SET hidden = ? WHERE id = ? AND user_id = ?').run(hidden ? 1 : 0, id, userId).changes > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function backfillContacts(): number {
+  const userId = getCurrentUserId();
+  if (!userId) return 0;
+  let count = 0;
+  for (const job of getJobsForUser(userId)) {
+    const before = listContacts().length;
+    upsertContactsFromJob(job);
+    count += listContacts().length - before;
+  }
+  return count;
 }
 
 export function getJobById(id: string): Job | undefined {

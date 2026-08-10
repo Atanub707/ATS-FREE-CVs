@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onOpenManualJd: () => void;
   onOpenJobPortals?: () => void;
+  onOpenRecruiters?: () => void;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
   onLogout?: () => void;
 }
@@ -16,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onOpenManualJd,
   onOpenJobPortals,
+  onOpenRecruiters,
   user,
   onLogout,
 }) => {
@@ -100,6 +102,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Job Portals</span>
           </button>
 
+          <button
+            onClick={() => onOpenRecruiters?.()}
+            className="hidden sm:flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 transition-colors cursor-pointer"
+            title="HR & recruiting emails found in job descriptions"
+          >
+            <FileInput className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Recruiters</span>
+          </button>
+
           <div className="relative" ref={rootRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
@@ -176,6 +187,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
                 Job Portals
                 <span className="ml-auto text-[10px] text-slate-400 font-semibold">190+</span>
+              </button>
+              <button role="menuitem" onClick={closeAnd(() => onOpenRecruiters?.())} className={ddItemCls}>
+                <span className={ddIconCls}>
+                  <FileText className="w-4 h-4" />
+                </span>
+                Recruiters
+                <span className="ml-auto text-[10px] text-slate-400 font-semibold">HR emails</span>
               </button>
 
               {/* System */}

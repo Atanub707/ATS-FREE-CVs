@@ -20,6 +20,7 @@ import {
   Check,
   Calendar,
   TrendingUp,
+  FileInput,
   Mail,
   Phone,
   Github,
@@ -81,6 +82,26 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   if (!job) return null;
 
   const [activeTab, setActiveTab] = useState<'details' | 'gap' | 'tailored'>(initialTab || 'details');
+
+  // Emails mentioned in the raw description (client-side mirror of the
+  // server extractor — used for the in-modal display only).
+  const jobEmails = (() => {
+    if (!job?.description) return [];
+    const junkLocal =
+      /^(noreply|no-reply|no_reply|donotreply|do-not-reply|mailer-daemon|postmaster|webmaster|sentry|unsubscribe|abuse|support|help|info|contact|hello|admin|team|sales|marketing|billing|account|privacy|status|newsletter)$/i;
+    const junkDomain =
+      /(^|\.)(example|example\.com|example\.org|example\.net|test|localhost|yourdomain|your-?company|company\.com|email\.com|domain\.com|acme|sample)\.?$/i;
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const m of job.description.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g)) {
+      const email = m[0].toLowerCase();
+      const [local, domain] = email.split('@');
+      if (!local || !domain || seen.has(email) || junkLocal.test(local) || junkDomain.test(domain)) continue;
+      seen.add(email);
+      out.push(email);
+    }
+    return out;
+  })();
   const [copiedText, setCopiedText] = useState(false);
 
   const gap = job.gapAnalysis;
@@ -265,6 +286,33 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 <div className="whitespace-pre-wrap font-sans space-y-2">
                   {job.description.replace(/^[ \t]*Show more[ \t]*$/gim, '').replace(/^[ \t]*Show less[ \t]*$/gim, '').trim()}
                 </div>
+
+                {jobEmails.length > 0 && (
+                  <div className="mt-4 border border-emerald-200 bg-emerald-50/60 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-emerald-800 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                        <FileInput className="w-3.5 h-3.5" /> Emails found in this description
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.clipboard?.writeText) navigator.clipboard.writeText(jobEmails.join('\n'));
+                        }}
+                        className="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-colors cursor-pointer"
+                        title="Copy all emails"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {jobEmails.map((em) => (
+                        <code key={em} className="text-[11px] font-mono bg-white border border-emerald-200 rounded-lg px-2 py-1 text-slate-800">
+                          {em}
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
