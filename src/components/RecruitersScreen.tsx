@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin } from 'lucide-react';
 
 interface Contact {
   id: string;
   email: string | null;
   phone: string | null;
+  recruiterName: string | null;
+  recruiterUrl: string | null;
   name: string | null;
   type: string;
   typeLabel: string;
@@ -62,7 +64,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const copyEmail = async (c: Contact) => {
-    const value = c.email || c.phone || '';
+    const value = c.email || c.phone || c.recruiterUrl || '';
     try {
       await navigator.clipboard.writeText(value);
       setCopiedId(c.id);
@@ -98,7 +100,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const visible = contacts.filter(
     (c) =>
       (!company || c.company === company) &&
-      (!ql || (c.name || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
+      (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
 
   return (
@@ -151,7 +153,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                 </div>
                 <div className="rc-cinfo">
                   <div className="rc-name">
-                    {c.name || (c.email ? c.email.split('@')[0] : c.phone || 'Contact')}
+                    {c.name || (c.email ? c.email.split('@')[0] : c.phone || c.recruiterName || 'Contact')}
                     <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                   </div>
                   {c.email && <div className="rc-email"><code>{c.email}</code></div>}
@@ -167,6 +169,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                   {c.context && <div className="rc-context">"{c.context}…"</div>}
                 </div>
                 <div className="rc-acts">
+                  {c.recruiterUrl && (
+                    <a className="rc-btn rc-linkedin" href={c.recruiterUrl} target="_blank" rel="noreferrer" title="Open LinkedIn profile">
+                      <Linkedin size={13} /> LinkedIn
+                    </a>
+                  )}
                   <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                     {copiedId === c.id ? <><CheckCircle2 size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
                   </button>
@@ -255,6 +262,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .rc-btn:hover { border-color: var(--blue-border); color: var(--blue); }
         .rc-btn.copied { border-color: var(--green-border); color: var(--green); background: var(--green-soft); }
+        .rc-linkedin { border-color: #B3C7F0; color: #0A66C2; background: #F5F8FE; }
+        .rc-linkedin:hover { background: #E9F0FC; border-color: #0A66C2; }
         .rc-open { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--blue); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
         .rc-open:hover { background: var(--blue-soft); }
         .rc-ghost { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
