@@ -59,6 +59,12 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
   useEffect(() => { load(); }, [load]);
 
+  // Refetch every time the screen opens — contacts scraped since the app
+  // loaded (or since the last visit) must appear immediately.
+  useEffect(() => {
+    if (isOpen) load();
+  }, [isOpen, load]);
+
   // Deep-link: badge click on a job card focuses that recruiter.
   useEffect(() => {
     if (focusRecruiter?.name) setQ(focusRecruiter.name);
