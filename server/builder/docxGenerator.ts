@@ -781,38 +781,38 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         doc.x = leftMargin;
         doc.moveDown(0.2);
       } else {
+        // Row-wise pairing — identical to the browser preview's CSS grid
+        // (categories flow left→right, row by row; each row's height is the
+        // taller of its two cells; a row never splits across pages).
         const colGap = geo.skillsColumnGap; // 18 pt (shared)
         const colW = cvSkillsColumnWidth('atanu'); // (contentWidth - colGap) / 2, shared formula
-        const half = Math.ceil(skillCats.length / 2);
-        let yLeft = doc.y;
-        let yRight = doc.y;
+        const leftX = leftMargin;
+        const rightX = leftMargin + colW + colGap;
+        const cellText = (cat: { name: string; list: string }) => (cat.name ? `${cat.name}: ${cat.list}` : cat.list);
+        const cellHeight = (cat: { name: string; list: string }) => Math.max(0, doc.heightOfString(cellText(cat), { width: colW, lineGap: LINE_GAP }));
+        const rowGap = 2.5; // mirrors the preview's per-cell marginBottom (pt(2.5))
 
-        skillCats.forEach((cat, i) => {
-          const isRight = i >= half;
-          const colX = isRight ? leftMargin + colW + colGap : leftMargin;
-          const curY = isRight ? yRight : yLeft;
-          const line = cat.name ? `${cat.name}: ${cat.list}` : cat.list;
-
-          ensurePageSpace(14);
-          if (doc.y + 14 > pageBottom) {
-            doc.addPage();
-            doc.y = MARGIN_Y;
-            yLeft = doc.y;
-            yRight = doc.y;
+        for (let i = 0; i < skillCats.length; i += 2) {
+          const left = skillCats[i];
+          const right = skillCats[i + 1];
+          const rowH = Math.max(left ? cellHeight(left) : 0, right ? cellHeight(right) : 0) + rowGap;
+          ensurePageSpace(rowH + 4);
+          const rowY = doc.y;
+          if (left) {
+            doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
+            doc.text(left.name ? left.name + ': ' : '', leftX, rowY, { continued: true, width: colW });
+            doc.font('Helvetica').fillColor('#374151').text(left.list, { width: colW, lineGap: LINE_GAP });
           }
+          if (right) {
+            doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
+            doc.text(right.name ? right.name + ': ' : '', rightX, rowY, { continued: true, width: colW });
+            doc.font('Helvetica').fillColor('#374151').text(right.list, { width: colW, lineGap: LINE_GAP });
+          }
+          doc.y = rowY + rowH;
+          doc.x = leftMargin;
+        }
 
-          const lineY = curY;
-          doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
-          doc.text(cat.name ? cat.name + ': ' : '', colX, lineY, { continued: true, width: colW });
-          doc.font('Helvetica').fillColor('#374151').text(cat.list, { width: colW, lineGap: LINE_GAP });
-
-          const lineH = doc.heightOfString(line, { width: colW }) + 4;
-          if (isRight) yRight = lineY + lineH;
-          else yLeft = lineY + lineH;
-        });
-
-        doc.y = Math.max(yLeft, yRight);
-        doc.x = leftMargin;
+        doc.moveDown(0.2);
         doc.moveDown(0.2);
       }
     }
@@ -1301,26 +1301,35 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
       : [];
     if (skillCats.length > 0) {
       section('Skills');
-      // Two-column grid: first half left, second half right — shared column
-      // width formula (same as the browser preview).
+      // Row-wise pairing — identical to the browser preview's CSS grid
+      // (categories flow left→right, row by row; a row never splits).
       const colGap = geo.skillsColumnGap; // 20 pt (shared)
       const colW = cvSkillsColumnWidth('jake'); // (contentWidth - colGap) / 2
-      const half = Math.ceil(skillCats.length / 2);
-      let yLeft = doc.y;
-      let yRight = doc.y;
-      skillCats.forEach((cat, i) => {
-        const isRight = i >= half;
-        const colX = isRight ? leftMargin + colW + colGap : leftMargin;
-        const y = isRight ? yRight : yLeft;
-        const line = cat.name + ': ' + cat.list;
-        ensurePageSpace(13);
-        const h = doc.heightOfString(line, { width: colW });
-        doc.font('Helvetica-Bold').fontSize(9).fillColor('#111111').text(cat.name + ': ', colX, y, { continued: true, width: colW });
-        doc.font('Helvetica').fillColor(INK).text(cat.list, { width: colW, lineGap: 1 });
-        if (isRight) yRight = y + h + 4; else yLeft = y + h + 4;
-      });
-      doc.y = Math.max(yLeft, yRight);
-      doc.x = leftMargin;
+      const leftX = leftMargin;
+      const rightX = leftMargin + colW + colGap;
+      const cellText = (cat: { name: string; list: string }) => `${cat.name}: ${cat.list}`;
+      const cellHeight = (cat: { name: string; list: string }) => Math.max(0, doc.heightOfString(cellText(cat), { width: colW, lineGap: LINE_GAP }));
+      const rowGap = 2.5; // mirrors the preview's per-cell marginBottom (pt(2.5))
+
+      for (let i = 0; i < skillCats.length; i += 2) {
+        const left = skillCats[i];
+        const right = skillCats[i + 1];
+        const rowH = Math.max(left ? cellHeight(left) : 0, right ? cellHeight(right) : 0) + rowGap;
+        ensurePageSpace(rowH + 3);
+        const rowY = doc.y;
+        if (left) {
+          doc.font('Helvetica-Bold').fontSize(9).fillColor('#111111');
+          doc.text(left.name + ': ', leftX, rowY, { continued: true, width: colW });
+          doc.font('Helvetica').fillColor(INK).text(left.list, { width: colW, lineGap: LINE_GAP });
+        }
+        if (right) {
+          doc.font('Helvetica-Bold').fontSize(9).fillColor('#111111');
+          doc.text(right.name + ': ', rightX, rowY, { continued: true, width: colW });
+          doc.font('Helvetica').fillColor(INK).text(right.list, { width: colW, lineGap: LINE_GAP });
+        }
+        doc.y = rowY + rowH;
+        doc.x = leftMargin;
+      }
       doc.moveDown(0.15);
     }
 
