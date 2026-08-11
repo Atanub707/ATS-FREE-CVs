@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenManualJd: () => void;
   onOpenJobPortals?: () => void;
   onOpenRecruiters?: () => void;
+  recruiterBadge?: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
   onLogout?: () => void;
 }
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenManualJd,
   onOpenJobPortals,
   onOpenRecruiters,
+  recruiterBadge = 0,
   user,
   onLogout,
 }) => {
@@ -118,11 +120,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onOpenRecruiters?.()}
-            className="hidden sm:flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 transition-colors cursor-pointer"
+            className="relative hidden sm:flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 bg-white hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 transition-colors cursor-pointer"
             title="HR & recruiting emails found in job descriptions"
           >
             <FileInput className="w-3.5 h-3.5 text-emerald-500" />
             <span>Recruiters</span>
+            {recruiterBadge > 0 && (
+              <span
+                className="absolute -top-2 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm"
+                title={`${recruiterBadge} new recruiter${recruiterBadge > 1 ? 's' : ''} found`}
+              >
+                {recruiterBadge > 99 ? '99+' : recruiterBadge}
+              </span>
+            )}
           </button>
 
           <div className="relative" ref={rootRef}>

@@ -30,6 +30,7 @@ export default function App() {
   const [isManualJdOpen, setIsManualJdOpen] = useState(false);
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
   const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
+  const [recruiterBadge, setRecruiterBadge] = useState(0);
   const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
   // Loading states
@@ -189,7 +190,12 @@ export default function App() {
         setActiveStateTab('all');
         setPage(1);
         await fetchJobs();
-        return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0, filteredOutCount: data.filteredOutCount || 0, skippedSources: data.skippedSources || [] };
+        // Notification badge: new recruiters found in this scrape's
+        // descriptions (accumulates until the Recruiters screen is opened).
+        if (data.newContacts?.length > 0) {
+          setRecruiterBadge((prev) => prev + data.newContacts.length);
+        }
+        return { scrapedTotal: data.scrapedTotal || 0, addedCount: data.addedCount || 0, skippedDuplicates: data.skippedDuplicates || 0, filteredOutCount: data.filteredOutCount || 0, skippedSources: data.skippedSources || [], newContacts: data.newContacts || [] };
       } else {
         const err = await res.json();
         alert(`Scrape error: ${err.error}`);
@@ -415,7 +421,11 @@ export default function App() {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenManualJd={() => setIsManualJdOpen(true)}
             onOpenJobPortals={() => setIsJobPortalsOpen(true)}
-            onOpenRecruiters={() => setIsRecruitersOpen(true)}
+            onOpenRecruiters={() => {
+              setRecruiterBadge(0);
+              setIsRecruitersOpen(true);
+            }}
+            recruiterBadge={recruiterBadge}
           />
 
           {/* Live Job Scraper Bar */}
