@@ -119,6 +119,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [tailoredCv, setTailoredCv] = useState<any | null>(null);
   const [cvLoadFailed, setCvLoadFailed] = useState(false);
   const [cut, setCut] = useState(50);
+  // View step — lets users click a completed step in the stepper to go back.
+  // Auto-follows the derived step whenever the flow advances.
+  const [viewStep, setViewStep] = useState<1 | 2 | 3>(1);
   const draggingRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const oldScrollRef = useRef<HTMLDivElement>(null);
@@ -128,6 +131,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   useEffect(() => {
     if (isOpen && historyOpen) loadHistory();
   }, [isOpen, historyOpen]);
+
+  // Keep the view step in sync with the flow's natural progression.
+  useEffect(() => {
+    const s = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
+    setViewStep(s);
+  }, [result, diff, tailoring]);
 
   useEffect(() => {
     if (!tailoredCv) return;
@@ -317,7 +326,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const panelCls = (n: number) =>
     `absolute inset-0 p-5 overflow-y-auto transition-all duration-[450ms] ease-[cubic-bezier(.25,.8,.3,1)] ${
-      step === n ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-10 pointer-events-none'
+      viewStep === n ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-10 pointer-events-none'
     }`;
 
   const originalCv = masterCv ? masterCvToPdfShape(masterCv) : null;
@@ -356,23 +365,33 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
         </div>
       </header>
 
-      {/* Workflow stepper */}
+      {/* Workflow stepper — completed steps are clickable to go back */}
       <div className="px-5 sm:px-8 pt-4 flex items-center justify-center gap-2 flex-wrap shrink-0">
         {[
-          { n: 1, label: 'Add JD', on: step >= 2 },
-          { n: 2, label: 'Analysis', on: step >= 3 },
-          { n: 3, label: 'Tailor', on: step >= 3 && !tailoring },
-        ].map((s, i) => (
-          <React.Fragment key={s.n}>
-            {i > 0 && <ArrowRight className="w-3 h-3 text-slate-300" />}
-            <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-              s.on ? 'bg-slate-900 border-slate-900 text-white' : step === s.n ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'
-            }`}>
-              <span className={`w-4.5 h-4.5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${s.on || step === s.n ? 'bg-white/25' : 'bg-slate-100 text-slate-500'}`}>{s.on ? '✓' : s.n}</span>
-              {s.label}
-            </span>
-          </React.Fragment>
-        ))}
+          { n: 1 as const, label: 'Add JD', on: step >= 2, reachable: true },
+          { n: 2 as const, label: 'Analysis', on: step >= 3, reachable: !!result },
+          { n: 3 as const, label: 'Tailor', on: step >= 3 && !tailoring, reachable: !!diff },
+        ].map((s, i) => {
+          const isCurrent = viewStep === s.n;
+          const canClick = !loading && !tailoring && s.reachable;
+          return (
+            <React.Fragment key={s.n}>
+              {i > 0 && <ArrowRight className="w-3 h-3 text-slate-300" />}
+              <button
+                type="button"
+                onClick={() => canClick && setViewStep(s.n)}
+                disabled={!canClick}
+                title={canClick ? `Go back to ${s.label}` : undefined}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
+                  s.on ? 'bg-slate-900 border-slate-900 text-white' : isCurrent ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'
+                } ${canClick ? 'cursor-pointer hover:opacity-85' : 'cursor-default'}`}
+              >
+                <span className={`w-4.5 h-4.5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${s.on || isCurrent ? 'bg-white/25' : 'bg-slate-100 text-slate-500'}`}>{s.on ? '✓' : s.n}</span>
+                {s.label}
+              </button>
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
@@ -385,7 +404,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
             </span>
-            <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">Step {step} of 3</span>
+            <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">Step {viewStep} of 3</span>
           </div>
 
           <div className="relative flex-1 min-h-0 overflow-hidden bg-white">
