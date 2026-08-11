@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, Copy, ChevronsLeftRight } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
@@ -733,15 +733,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         )}
                       </div>
                     </div>
-                    <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80 flex gap-2">
-                      <button onClick={() => download('pdf')} disabled={!downloadToken} className="flex-1 min-h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
-                        <Download className="w-4 h-4" /> Download PDF
-                      </button>
-                      <button onClick={() => download('txt')} disabled={!downloadToken} className="flex-1 min-h-[46px] rounded-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
-                        <Copy className="w-4 h-4" /> Copy text
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-slate-400 text-center mt-2">Downloading also saves the tailored CV to your history.</p>
                   </>
                 )}
               </div>
@@ -775,6 +766,15 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => download('pdf')}
+                disabled={!downloadToken}
+                title={downloadToken ? 'Download the tailored CV as PDF (in the selected template)' : 'Tailor your CV first to download'}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-slate-900 text-white hover:bg-slate-700"
+              >
+                <Download className="w-3 h-3" /> PDF
+              </button>
               <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">
                 {tailoredCv ? 'Drag to compare' : 'Original CV'}
               </span>
