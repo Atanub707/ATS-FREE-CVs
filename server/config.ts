@@ -84,15 +84,25 @@ export function loadConfig(): AppConfig {
 
 export function saveConfig(config: AppConfig): void {
   try {
-    const iniData = ini.stringify({
-      thresholds: config.thresholds,
-      llm: config.llm,
-      storage: config.storage,
-      scraper: config.scraper,
-      apify: config.apify,
-      appearance: config.appearance,
-    });
-    fs.writeFileSync(CONFIG_FILE_PATH, iniData, 'utf-8');
+    // Merge instead of blind overwrite: a save that arrives with missing or
+    // undefined sections (a partial UI payload) must never clobber the other
+    // sections in the file with the literal string "undefined" — which once
+    // destroyed every section except apify and lost the LLM key.
+    let existing: Record<string, any> = {};
+    try {
+      if (fs.existsSync(CONFIG_FILE_PATH)) {
+        existing = ini.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
+      }
+    } catch { /* ignore — start from scratch */ }
+    const valid = (v: any) => v !== undefined && v !== null && typeof v === 'object' && Object.keys(v).length > 0;
+    const out: Record<string, any> = {};
+    for (const sec of ['thresholds', 'llm', 'storage', 'scraper', 'apify', 'appearance'] as const) {
+      const incoming = (config as any)[sec];
+      if (valid(incoming)) out[sec] = incoming;
+      else if (valid(existing[sec])) out[sec] = existing[sec];
+      // else: section omitted — loadConfig re-defaults it on next read
+    }
+    fs.writeFileSync(CONFIG_FILE_PATH, ini.stringify(out), 'utf-8');
   } catch (err) {
     console.error('Failed to write config.ini:', err);
   }
