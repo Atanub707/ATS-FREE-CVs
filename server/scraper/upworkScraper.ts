@@ -11,6 +11,10 @@ export class UpworkScraper extends ApifyBaseScraper {
   readonly source: JobSource = 'Upwork';
   readonly actorId = 'valig~upwork-jobs-scraper';
 
+  // Upwork's actor has no date input — the posted-window post-filter keeps
+  // "last 24 hours" searches honest (exact publishTime stamps).
+  protected readonly applyPostedWindowFilter = true;
+
   protected buildInput(params: ScraperParams): Record<string, any> {
     const input: Record<string, any> = {
       keywords: params.keywords.trim(),

@@ -116,6 +116,13 @@ export abstract class ApifyBaseScraper {
   abstract readonly source: JobSource;
   abstract readonly actorId: string;
 
+  // Actors with a native date input (LinkedIn r86400, Indeed days, Naukri
+  // jobAge, Glassdoor daysOld) already window correctly — double-filtering
+  // on date-only stamps would wrongly drop fresh jobs (a job posted 23h ago
+  // but dated "yesterday" is stamped noon-yesterday ≈ 30h → dropped). Only
+  // actors WITHOUT a native date input opt in (Upwork has exact timestamps).
+  protected readonly applyPostedWindowFilter: boolean = false;
+
   protected abstract buildInput(params: ScraperParams): Record<string, any>;
   protected abstract mapItem(item: any): Job | null;
 
@@ -166,9 +173,10 @@ export abstract class ApifyBaseScraper {
         }
       }
 
-      // Posted-window guarantee for actors without a native date input:
-      // drop jobs proven older than the selected window (unknown dates kept).
-      if (params.datePostedFilter && params.datePostedFilter !== 'all') {
+      // Posted-window guarantee for actors without a native date input
+      // (opt-in): drop jobs proven older than the selected window (unknown
+      // dates kept).
+      if (this.applyPostedWindowFilter && params.datePostedFilter && params.datePostedFilter !== 'all') {
         const windowMs = DATE_WINDOWS_MS[params.datePostedFilter];
         if (windowMs) {
           const cutoff = Date.now() - windowMs;
