@@ -87,7 +87,7 @@ export function normalizeIsoDate(value: string | number | undefined, relativeCap
     // Hour/minute captions ("34 minutes ago", "4 hours ago") override the
     // date stamp — day-level captions ("1 day ago") add no precision over
     // the date, so those fall through to the stamp.
-    const rel = String(relativeCaption || '').match(/(\d+)\s*(min|hour)s?\s*ago/i);
+    const rel = String(relativeCaption || '').match(/(\d+)\s*(min(?:ute)?|hour)s?\s*ago/i);
     if (rel) {
       const n = parseInt(rel[1], 10);
       const ms = rel[2].toLowerCase() === 'min' ? n * 60000 : n * 3600000;
