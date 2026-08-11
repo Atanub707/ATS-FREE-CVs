@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
 import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
+import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
 import pkg from '../../package.json';
 
@@ -56,14 +57,7 @@ const PROVIDER_MODELS: Record<LlmProvider, string[]> = {
   'nvidia': ['deepseek-ai/deepseek-v4-flash', 'deepseek-ai/deepseek-v4-pro', 'meta/llama-3.3-70b-instruct', 'mistralai/mistral-large', 'Custom (type below)'],
 };
 
-const PROVIDER_BASE_URLS: Record<LlmProvider, string> = {
-  'opencode-go': 'https://opencode.ai/zen/go/v1',
-  'openrouter': 'https://openrouter.ai/api/v1',
-  'openai': 'https://api.openai.com/v1',
-  'gemini': '',
-  'anthropic': '',
-  'nvidia': 'https://integrate.api.nvidia.com/v1',
-};
+const PROVIDER_BASE_URLS = LLM_PRESETS;
 
 const PROVIDER_LOGO: Record<LlmProvider, { bg: string; text: string }> = {
   'opencode-go': { bg: 'linear-gradient(135deg,#3B82F6,#2563EB)', text: 'OG' },
@@ -225,7 +219,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-                <div className="set-hint">Stored in <b>config.ini</b> — never committed.</div>
               </div>
               <div className="set-row" style={{ borderTop: 0 }}>
                 <label>Model</label>
@@ -246,7 +239,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label>Base URL</label>
                 <input type="text" className="set-mono" value={formData.llm.baseUrl}
                   onChange={(e) => setFormData({ ...formData, llm: { ...formData.llm, baseUrl: e.target.value } })}
-                  placeholder="https://api.example.com/v1" />
+                  placeholder={PROVIDER_BASE_URLS[provider] || 'Not required for this provider'} />
               </div>
               <div className="set-row">
                 <label>&nbsp;</label>

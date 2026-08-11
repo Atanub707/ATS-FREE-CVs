@@ -2,15 +2,7 @@ import { loadConfig } from '../config.js';
 import { askOpenAi } from './providers/openaiProvider.js';
 import { askGemini } from './providers/geminiProvider.js';
 import { askAnthropic } from './providers/anthropicProvider.js';
-
-const PROVIDER_BASE_URLS: Record<string, string> = {
-  'opencode-go': 'https://opencode.ai/zen/go/v1',
-  'openrouter': 'https://openrouter.ai/api/v1',
-  'openai': 'https://api.openai.com/v1',
-  'gemini': '',
-  'anthropic': '',
-  'nvidia': 'https://integrate.api.nvidia.com/v1',
-};
+import { PROVIDER_BASE_URLS } from '../../src/constants/llmPresets.js';
 
 function resolveApiKey(configuredKey: string): string | undefined {
   if (configuredKey) return configuredKey;
