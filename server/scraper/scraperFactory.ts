@@ -71,7 +71,14 @@ export class ScraperFactory {
 
     for (const source of sources) {
       const domain = SOURCE_DOMAINS[source];
-      if (respectRobotsTxt && domain && robotsAllowed.get(domain) === false) {
+      const meta = SOURCES[source];
+      const isApifySource = !!meta?.apifyActorId;
+      // robots.txt only governs sources WE crawl directly. Apify-powered
+      // sources run on Apify's infrastructure — their actors do the crawling
+      // — so the guard must never skip them (LinkedIn was wrongly skipped
+      // before this fix). The built-in LinkedIn fallback still checks it.
+      const robotsBlocked = respectRobotsTxt && domain && robotsAllowed.get(domain) === false;
+      if (!isApifySource && robotsBlocked) {
         console.warn(`[ScraperFactory] ${source}: skipped — robots.txt disallows crawling (${domain}/robots.txt)`);
         ScraperFactory.lastSkippedSources.push({ source, reason: `robots.txt disallows automated access (${domain})` });
         continue;
@@ -79,10 +86,9 @@ export class ScraperFactory {
 
       try {
         let jobs: Job[] = [];
-        const meta = SOURCES[source];
 
         if (meta?.apifyActorId) {
-          // Apify path — generic for all 7 Apify-powered sources.
+          // Apify path — generic for all Apify-powered sources.
           const apifyConfig = loadConfig().apify;
           const apifyAvailable = apifyConfig.enabled && !!apifyConfig.token?.trim();
           if (meta.needsApify && !apifyAvailable) {
@@ -93,9 +99,14 @@ export class ScraperFactory {
           if (make) {
             jobs = await make().scrape(params);
           }
-          // LinkedIn only: Apify → built-in free scraper fallback.
+          // LinkedIn only: Apify → built-in free scraper fallback (respects
+          // robots.txt since we would be crawling linkedin.com ourselves).
           if (meta.builtInFallback && jobs.length === 0) {
-            jobs = await new LinkedInScraper().scrape(params);
+            if (robotsBlocked) {
+              ScraperFactory.lastSkippedSources.push({ source, reason: `robots.txt disallows automated access (${domain})` });
+            } else {
+              jobs = await new LinkedInScraper().scrape(params);
+            }
           }
         } else if (source === 'Arbeitnow') {
           jobs = await new ArbeitnowScraper().scrape(params);
