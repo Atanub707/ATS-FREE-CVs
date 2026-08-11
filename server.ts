@@ -95,7 +95,6 @@ import {
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
-import { sanitizeJobs } from './server/scraper/sanitizer.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
@@ -1022,11 +1021,9 @@ Return valid JSON only — NO markdown, NO code fences:
 
       const filteredOutCount = scrapedJobsRaw.length - scrapedJobs.length;
 
-      // Legal-readiness: never store personal contact data found inside
-      // scraped descriptions (recruiter emails/phones).
-      const sanitizedJobs = sanitizeJobs(scrapedJobs);
-
-      const { added, skipped, newContacts } = saveNewJobs(sanitizedJobs);
+      // Descriptions are stored exactly as scraped — the user runs these
+      // sources with their own official Apify key, so no contact stripping.
+      const { added, skipped, newContacts } = saveNewJobs(scrapedJobs);
 
       res.json({
         success: true,
