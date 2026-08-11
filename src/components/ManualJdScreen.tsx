@@ -145,6 +145,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     };
   }, [tailoredCv]);
 
+  // Closed screen → render nothing (Back / X buttons call onClose).
+  if (!isOpen) return null;
+
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
