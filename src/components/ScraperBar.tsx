@@ -370,15 +370,16 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
               </div>
             </div>
           </div>
+        </div>
 
-          {scrapeSuccessMsg && (
-            <div className="text-[12px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shrink-0">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{scrapeSuccessMsg}</span>
-              </div>
+        {/* ── Scrape result banner (own row — never overlaps the source chips) ── */}
+        {scrapeSuccessMsg && (
+          <div className="flex items-start gap-2 w-full bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-[12px] font-medium text-emerald-700">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-[1px]" />
+            <div className="min-w-0">
+              <span>{scrapeSuccessMsg}</span>
               {scrapeNewContacts.length > 0 && (
-                <div className="mt-1.5 flex items-start gap-1.5 text-[11.5px]">
+                <div className="mt-1 flex items-start gap-1.5 text-[11.5px]">
                   <span className="font-bold whitespace-nowrap">
                     +{scrapeNewContacts.length} recruiter{scrapeNewContacts.length > 1 ? 's' : ''}:
                   </span>
@@ -393,8 +394,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </form>
     </div>
   );
