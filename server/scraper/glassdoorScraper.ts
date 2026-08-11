@@ -23,9 +23,10 @@ export class GlassdoorScraper extends ApifyBaseScraper {
     if (params.datePostedFilter && params.datePostedFilter !== 'all' && DAYS_OLD[params.datePostedFilter]) {
       input.daysOld = DAYS_OLD[params.datePostedFilter];
     }
-    if (params.jobType === 'remote') {
-      input.remoteWorkType = true;
-    }
+    // NOTE: the actor's remoteWorkType=true filter returns ZERO results for
+    // common keywords (verified live). Work-mode filtering is therefore left
+    // to the factory's description-evidence guard (contradictsWanted), like
+    // every other source without a reliable native work-mode filter.
     return input;
   }
 
