@@ -154,6 +154,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     };
   }, [tailoredCv]);
 
+  // Template selector for the preview + PDF download (defaults to the
+  // Master CV's template). Declared here — BEFORE the isOpen guard — so
+  // the hook count never changes between renders.
+  const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu'>(masterCv?.templateId || 'harvard');
+
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
 
@@ -331,7 +336,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const originalCv = masterCv ? masterCvToPdfShape(masterCv) : null;
   const newCv = tailoredCv ? compressedCvToPdfShape(tailoredCv) : null;
-  const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu'>(masterCv?.templateId || 'harvard');
 
   // Keep the ORIGINAL and TAILORED sheets at the same scroll position so the
   // slider always compares matching areas of the two CVs.
