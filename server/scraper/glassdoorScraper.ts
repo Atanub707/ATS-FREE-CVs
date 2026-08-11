@@ -44,6 +44,20 @@ export class GlassdoorScraper extends ApifyBaseScraper {
     const cleanedDescription = cleanDescription(rawDescription);
     const description = [cleanedDescription, rating].filter(Boolean).join('\n\n') || 'Description not available';
 
+    // Glassdoor's actor reports only an age bucket ("ageInDays"), never an
+    // exact posting timestamp. Anchor to the START of the posting DAY (a
+    // "0 days old" post = today 00:00) so the shown time is the source's
+    // posting day — stable across scrapes — instead of a scrape-derived
+    // "N minutes ago" that moves every time the job is fetched.
+    const postedStamp =
+      typeof item.ageInDays === 'number'
+        ? (() => {
+            const dayStart = new Date();
+            dayStart.setHours(0, 0, 0, 0);
+            return new Date(dayStart.getTime() - item.ageInDays * 86400000).toISOString();
+          })()
+        : '';
+
     return {
       id: `glassdoor-${id}`,
       title,
@@ -52,12 +66,7 @@ export class GlassdoorScraper extends ApifyBaseScraper {
       source: 'Glassdoor',
       description,
       url: item.url || `https://www.glassdoor.com/job-listing/j?jl=${id}`,
-      ...(typeof item.ageInDays === 'number'
-        ? { postedDate: new Date(Date.now() - item.ageInDays * 86400000).toISOString() }
-        : {}),
-      ...(typeof item.ageInDays === 'number'
-        ? { postedDateParsed: new Date(Date.now() - item.ageInDays * 86400000).toISOString().slice(0, 10) }
-        : {}),
+      ...(postedStamp ? { postedDate: postedStamp, postedDateParsed: postedStamp.slice(0, 10) } : {}),
       ...(salary?.text ? { salaryText: salary.text } : {}),
       ...(salary?.min !== undefined ? { salaryMin: salary.min } : {}),
       ...(salary?.max !== undefined ? { salaryMax: salary.max } : {}),
