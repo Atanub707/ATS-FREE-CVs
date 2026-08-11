@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, Copy, ChevronsLeftRight } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 
@@ -90,8 +90,90 @@ function normalizeAdditions(missing: string[], missingKw: string[], jd: string):
   return [...groups.values()].sort((a, b) => b.count - a.count || a.display.localeCompare(b.display));
 }
 
-export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+/* ───────────────── CV sheet data (for the right-hand preview) ───────────────── */
+
+interface CvSheetData {
+  name: string;
+  role: string;
+  contact: string;
+  summary: string;
+  exp: { title: string; company: string; dates: string; bullets: string[] }[];
+  skills: string[];
+}
+
+function fromMasterCv(mv: MasterCv | null | undefined): CvSheetData | null {
+  if (!mv || !mv.fullName) return null;
+  return {
+    name: mv.fullName,
+    role: mv.experiences?.[0]?.title || 'Resume',
+    contact: [mv.email, mv.phone, mv.location, mv.linkedin].filter(Boolean).join(' · '),
+    summary: mv.summary || '',
+    exp: (mv.experiences || []).map((e) => ({
+      title: e.title || '',
+      company: e.company || '',
+      dates: e.dates || '',
+      bullets: e.responsibilities || [],
+    })),
+    skills: (mv.skills || []).flatMap((c) => c.items || []),
+  };
+}
+
+function fromTailoredCv(cv: any): CvSheetData | null {
+  if (!cv || !cv.candidateName) return null;
+  return {
+    name: cv.candidateName,
+    role: cv.targetRole || 'Tailored CV',
+    contact: [cv.contactInfo?.email, cv.contactInfo?.phone, cv.contactInfo?.location, cv.contactInfo?.linkedin].filter(Boolean).join(' · '),
+    summary: cv.professionalSummary || '',
+    exp: (cv.workExperience || []).map((e: any) => ({
+      title: e.title || '',
+      company: e.company || '',
+      dates: e.dates || '',
+      bullets: e.highlights || [],
+    })),
+    skills: (cv.technicalSkills || []).flatMap((c: any) => c.skills || []),
+  };
+}
+
+const CvSheet: React.FC<{ data: CvSheetData }> = ({ data }) => (
+  <div className="bg-white p-6 sm:p-8 min-h-full shadow-sm">
+    <p className="text-[17px] font-extrabold tracking-tight text-slate-900">{data.name}</p>
+    <p className="text-[10.5px] text-slate-500 mt-0.5">{data.role}</p>
+    {data.contact && <p className="text-[10px] text-slate-400 mt-1">{data.contact}</p>}
+    <div className="h-[2px] bg-slate-900 my-2.5" />
+    {data.summary && (
+      <>
+        <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Professional Summary</p>
+        <p className="text-[11px] text-slate-600 leading-relaxed mb-2">{data.summary}</p>
+      </>
+    )}
+    <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Experience</p>
+    {data.exp.length === 0 && <p className="text-[11px] text-slate-400 italic">No experience listed</p>}
+    {data.exp.map((e, i) => (
+      <div key={i} className="mb-2.5">
+        <p className="text-[11px] font-bold text-slate-900">
+          {e.title}{e.company && <span className="font-normal text-slate-500"> — {e.company}</span>}
+          {e.dates && <span className="text-slate-400"> ({e.dates})</span>}
+        </p>
+        {e.bullets.map((b, bi) => (
+          <p key={bi} className="text-[10.5px] text-slate-500 leading-relaxed pl-2.5 relative ml-1 mb-0.5">
+            <span className="absolute left-0 text-slate-300">•</span>{b}
+          </p>
+        ))}
+      </div>
+    ))}
+    {data.skills.length > 0 && (
+      <>
+        <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Skills</p>
+        <p className="text-[11px] text-slate-700 font-medium">{data.skills.join(' · ')}</p>
+      </>
+    )}
+  </div>
+);
+
+/* ───────────────── Main screen ───────────────── */
+
+export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
@@ -114,10 +196,31 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const [showAllAddedSkills, setShowAllAddedSkills] = useState(false);
   const [showAllRewrites, setShowAllRewrites] = useState(false);
   const [showAllReview, setShowAllReview] = useState(false);
+  const [tailoredCv, setTailoredCv] = useState<any | null>(null);
+  const [cvLoadFailed, setCvLoadFailed] = useState(false);
+  const [cut, setCut] = useState(50);
+  const draggingRef = useRef(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && historyOpen) loadHistory();
   }, [isOpen, historyOpen]);
+
+  useEffect(() => {
+    if (!tailoredCv) return;
+    const onMove = (e: PointerEvent) => {
+      if (!draggingRef.current || !wrapRef.current) return;
+      const r = wrapRef.current.getBoundingClientRect();
+      setCut(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+    };
+    const onUp = () => { draggingRef.current = false; };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [tailoredCv]);
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -132,6 +235,16 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   };
 
   const openHistory = () => { setHistoryOpen(true); loadHistory(); };
+
+  const loadTailoredJson = async (token: string) => {
+    try {
+      const res = await fetch(`/api/analyze-jd/download?token=${encodeURIComponent(token)}&format=json`);
+      if (!res.ok) { setCvLoadFailed(true); return; }
+      const cv = await res.json();
+      if (cv && cv.candidateName) { setTailoredCv(cv); setCvLoadFailed(false); }
+      else setCvLoadFailed(true);
+    } catch { setCvLoadFailed(true); }
+  };
 
   const restoreAnalysis = async (id: string) => {
     try {
@@ -152,7 +265,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setHistoryId(a.id);
       setTailorError(false);
       setHistoryOpen(false);
-      if ((a.tailored_cv || a.tailoredCv) && a.diff?.scoreBoost !== undefined) setDownloadToken(payload.downloadToken || `restored-${a.id}`);
+      const restoredToken = payload.downloadToken || `restored-${a.id}`;
+      if ((a.tailored_cv || a.tailoredCv) && a.diff?.scoreBoost !== undefined) {
+        setDownloadToken(restoredToken);
+        loadTailoredJson(restoredToken);
+      }
     } catch (e: any) { setError(e.message); }
   };
 
@@ -164,7 +281,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null);
+    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false);
     setShowAllMatched(false); setShowAllAdditions(false); setShowAllAddedSkills(false); setShowAllRewrites(false); setShowAllReview(false);
     try {
       const res = await fetch('/api/analyze-jd', {
@@ -206,13 +323,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
       setDownloadToken(data.downloadToken);
       if (data.diff) setDiff(data.diff);
       if (data.historyId) setHistoryId(data.historyId);
+      if (data.downloadToken) loadTailoredJson(data.downloadToken);
     } catch (e: any) { setError(e.message); }
     finally { setTailoring(false); }
   };
 
-  const download = () => {
+  const download = (format: 'pdf' | 'txt') => {
     if (!downloadToken) return;
-    window.open(`/api/analyze-jd/download?token=${downloadToken}&format=pdf`, '_blank');
+    window.open(`/api/analyze-jd/download?token=${downloadToken}&format=${format}`, '_blank');
   };
 
   const missing = result?.gapAnalysis?.missingSkills || [];
@@ -239,7 +357,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   ];
   const visibleReview = showAllReview ? reviewItems : reviewItems.slice(0, REVIEW_CAP);
 
-
   const SKILL_PALETTE = [
     { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', checkBg: 'bg-blue-600' },
     { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', checkBg: 'bg-purple-600' },
@@ -261,38 +378,24 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
   const inputCls = 'w-full min-h-[46px] border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 bg-white focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10 outline-none transition-colors';
   const btnBase = 'w-full min-h-[48px] rounded-[10px] font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40';
 
-  // Pop-in stage — panels appear ONE BY ONE, never all at once
-  const panelStyle = (n: 1 | 2 | 3): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      position: 'absolute', top: 6, bottom: 6, background: '#fff', border: '1px solid #E2E8F0',
-      borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
-      opacity: 0, pointerEvents: 'none',
-      transition: 'left .55s cubic-bezier(.25,.8,.3,1), width .55s cubic-bezier(.25,.8,.3,1), opacity .3s ease, transform .45s cubic-bezier(.25,.8,.3,1)',
-      transform: 'translateX(24px) scale(.97)',
-    };
-    if (step === 1) {
-      if (n === 1) return { ...base, left: '27%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      return base;
-    }
-    if (step === 2) {
-      if (n === 1) return { ...base, left: '2%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      if (n === 2) return { ...base, left: '52%', width: '46%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-      return base;
-    }
-    const left = n === 1 ? '2%' : n === 2 ? '34.5%' : '67%';
-    return { ...base, left, width: '31%', opacity: 1, pointerEvents: 'auto', transform: 'none' };
-  };
-
   const stepBadge = (n: number) => (
     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[13px] font-bold shrink-0 ${step >= n ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'}`}>{n}</span>
   );
 
   const loadingOverlay = (text: string) => (
-    <div className="absolute inset-0 z-10 bg-white/90 rounded-[14px] flex flex-col items-center justify-center gap-3">
+    <div className="absolute inset-0 z-10 bg-white/90 flex flex-col items-center justify-center gap-3">
       <div className="w-[30px] h-[30px] border-[3px] border-slate-200 border-t-slate-900 rounded-full animate-spin" />
       <p className="text-[12px] font-semibold text-slate-500">{text}</p>
     </div>
   );
+
+  const panelCls = (n: number) =>
+    `absolute inset-0 p-5 overflow-y-auto transition-all duration-[450ms] ease-[cubic-bezier(.25,.8,.3,1)] ${
+      step === n ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-10 pointer-events-none'
+    }`;
+
+  const originalCv = fromMasterCv(masterCv);
+  const newCv = tailoredCv ? fromTailoredCv(tailoredCv) : null;
 
   return (
     <div className="fixed inset-0 z-40 bg-slate-50 text-slate-700 flex flex-col font-sans">
@@ -338,340 +441,420 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose 
 
       {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-red-600">{error}</p>}
 
-      {/* Centered stage — ONE panel at a time, popping in step by step */}
-      <div className="flex-1 overflow-hidden">
-        <div className="relative mx-auto" style={{ width: '100%', height: '100%', padding: '10px 32px 0' }}>
-          {/* PANEL 1 · Add job description (centered, step 1) */}
-          <div style={panelStyle(1)} className="overflow-hidden">
-            <h2 className="text-[18px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
-              Add job description {stepBadge(1)}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
-                <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
-              </div>
-              <div>
-                <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
-                <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
-              </div>
-              <div>
-                <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
-                <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={8}
-                  placeholder="Paste the full job description…" className={`${inputCls} min-h-[150px] resize-none leading-relaxed`} />
-                <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
-              </div>
-              <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
-                className={`${btnBase} ${analysisStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</>
-                  : analysisStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> Analysis Complete</>
-                  : analysisStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
-                  : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
-              </button>
-            </div>
+      {/* ── 50/50 stage: left = workspace, right = CV comparison ── */}
+      <div className="flex-1 min-h-0 p-4 sm:p-5 flex gap-0">
+        {/* LEFT · Workspace */}
+        <section className="flex-1 min-w-0 bg-white border border-slate-200 rounded-l-[14px] overflow-hidden flex flex-col">
+          <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
+            </span>
+            <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">Step {step} of 3</span>
           </div>
 
-          {/* PANEL 2 · Analysis (pops in on the right with loading) */}
-          <div style={panelStyle(2)} className="overflow-hidden">
-            {loading && loadingOverlay('Analyzing your CV against the JD…')}
-            <div className={`flex flex-col h-full min-h-0 transition-opacity duration-200 ${loading ? 'opacity-10' : 'opacity-100'}`}>
-              <h2 className="text-[18px] font-bold text-slate-900 mb-3 flex items-center justify-between gap-2 shrink-0">
-                Analysis {stepBadge(2)}
+          <div className="relative flex-1 min-h-0 overflow-hidden bg-white">
+            {/* PANEL 1 · Add JD */}
+            <div className={panelCls(1)}>
+              <h2 className="text-[16px] font-bold text-slate-900 mb-4 flex items-center justify-between gap-2">
+                Add job description {stepBadge(1)}
               </h2>
-              {!result ? (
-                <div className="flex-1 flex items-center justify-center text-center">
-                  <div>
-                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-slate-400" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-500">Click Analyze Match to begin</p>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="mj-role" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Role name</label>
+                  <input id="mj-role" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. DevOps Engineer" className={inputCls} />
                 </div>
-              ) : (
-                <>
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
-                    <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-[40px] font-bold text-blue-600 leading-none shrink-0">{displayScore}%</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-slate-900">
-                          {matchedSkills.length} of {additions.length + matchedSkills.length} skills matched
+                <div>
+                  <label htmlFor="mj-company" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Company</label>
+                  <input id="mj-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="mj-description" className="block text-[13px] font-semibold text-slate-700 mb-1.5">Job description</label>
+                  <textarea id="mj-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={9}
+                    placeholder="Paste the full job description…" className={`${inputCls} min-h-[150px] resize-none leading-relaxed`} />
+                  <p className="text-right text-xs text-slate-400 mt-1">{description.length.toLocaleString()} chars</p>
+                </div>
+                <button onClick={handleAnalyze} disabled={loading || !title.trim() || !description.trim()} aria-live="polite"
+                  className={`${btnBase} ${analysisStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</>
+                    : analysisStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> Analysis Complete</>
+                    : analysisStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
+                    : <><Sparkles className="w-4 h-4" /> Analyze Match</>}
+                </button>
+              </div>
+            </div>
+
+            {/* PANEL 2 · Analysis */}
+            <div className={panelCls(2)}>
+              {loading && loadingOverlay('Analyzing your CV against the JD…')}
+              <div className={`flex flex-col h-full min-h-0 transition-opacity duration-200 ${loading ? 'opacity-10' : 'opacity-100'}`}>
+                <h2 className="text-[16px] font-bold text-slate-900 mb-3 flex items-center justify-between gap-2 shrink-0">
+                  Analysis {stepBadge(2)}
+                </h2>
+                {!result ? (
+                  <div className="flex-1 flex items-center justify-center text-center">
+                    <div>
+                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-500">Click Analyze Match to begin</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
+                      <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="text-[40px] font-bold text-blue-600 leading-none shrink-0">{displayScore}%</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-slate-900">
+                            {matchedSkills.length} of {additions.length + matchedSkills.length} skills matched
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">Excellent fit — you're missing a few skills to reach 100%</div>
                         </div>
-                        <div className="text-xs text-slate-500 mt-0.5">Excellent fit — you're missing a few skills to reach 100%</div>
                       </div>
-                    </div>
 
-                    <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
-                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-2">Tailoring changes</h3>
-                      <div className="space-y-1.5 text-[12px] leading-relaxed">
-                        <p className="text-slate-700">
-                          <span className="font-bold text-green-600">+ Add:</span>{' '}
-                          {selectedSkills.size > 0 ? [...selectedSkills].join(' · ') : 'nothing selected'}
-                        </p>
-                        <p className="text-slate-700">
-                          <span className="font-bold text-blue-600">✎ Rewrite:</span> existing experience bullets to naturally integrate the additions
-                        </p>
-                        <p className="text-slate-400">
-                          <span className="font-bold">✓ Preserve:</span> Job titles · Employers · Dates
-                        </p>
+                      <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
+                        <h3 className="text-[12.5px] font-bold text-slate-900 mb-2">Tailoring changes</h3>
+                        <div className="space-y-1.5 text-[12px] leading-relaxed">
+                          <p className="text-slate-700">
+                            <span className="font-bold text-green-600">+ Add:</span>{' '}
+                            {selectedSkills.size > 0 ? [...selectedSkills].join(' · ') : 'nothing selected'}
+                          </p>
+                          <p className="text-slate-700">
+                            <span className="font-bold text-blue-600">✎ Rewrite:</span> existing experience bullets to naturally integrate the additions
+                          </p>
+                          <p className="text-slate-400">
+                            <span className="font-bold">✓ Preserve:</span> Job titles · Employers · Dates
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    {matchedSkills.length > 0 && (
+                      {matchedSkills.length > 0 && (
+                        <div>
+                          <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                            Already matched
+                            <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{matchedSkills.length}</span>
+                            {matchedSkills.length > CHIP_CAP && (
+                              <button onClick={() => setShowAllMatched((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                                {showAllMatched ? 'Show less' : `+${matchedSkills.length - CHIP_CAP} more`}
+                              </button>
+                            )}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 min-w-0">
+                            {visibleMatched.map((s) => (
+                              <span key={s} className="inline-flex items-center gap-[7px] px-[11px] py-1.5 rounded-[9px] text-[13px] font-semibold border bg-green-50 border-green-200 text-green-700 max-w-full">
+                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                <span className="break-words min-w-0">{s}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
-                          Already matched
-                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{matchedSkills.length}</span>
-                          {matchedSkills.length > CHIP_CAP && (
-                            <button onClick={() => setShowAllMatched((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
-                              {showAllMatched ? 'Show less' : `+${matchedSkills.length - CHIP_CAP} more`}
+                          Recommended additions
+                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{additions.length}</span>
+                          {additions.length > CHIP_CAP && (
+                            <button onClick={() => setShowAllAdditions((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                              {showAllAdditions ? 'Show less' : `+${additions.length - CHIP_CAP} more`}
                             </button>
                           )}
                         </h3>
-                        <div className="flex flex-wrap gap-2 min-w-0">
-                          {visibleMatched.map((s) => (
-                            <span key={s} className="inline-flex items-center gap-[7px] px-[11px] py-1.5 rounded-[9px] text-[13px] font-semibold border bg-green-50 border-green-200 text-green-700 max-w-full">
-                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                              <span className="break-words min-w-0">{s}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        Recommended additions
-                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{additions.length}</span>
-                        {additions.length > CHIP_CAP && (
-                          <button onClick={() => setShowAllAdditions((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
-                            {showAllAdditions ? 'Show less' : `+${additions.length - CHIP_CAP} more`}
-                          </button>
+                        {additions.length === 0 ? (
+                          <p className="text-xs text-slate-500">No missing skills detected — your CV already covers this JD well.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 min-w-0">
+                            {visibleAdditions.map((g) => {
+                              const on = g.raws.some((r) => selectedSkills.has(r));
+                              const c = skillColor(g.display);
+                              return (
+                                <button key={g.display} onClick={() => setSelectedSkills((p) => {
+                                  const n2 = new Set(p);
+                                  const anySel = g.raws.some((r) => n2.has(r));
+                                  if (anySel) g.raws.forEach((r) => n2.delete(r)); else n2.add(g.display);
+                                  return n2;
+                                })}
+                                  aria-pressed={on}
+                                  className={`inline-flex items-center gap-[7px] px-[11px] py-1.5 rounded-[9px] text-[13px] font-semibold border cursor-pointer transition-colors max-w-full wrap-anywhere ${on ? `${c.bg} ${c.border} ${c.text}` : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                                  <span className={`w-4 h-4 rounded flex items-center justify-center text-[10px] shrink-0 ${on ? `${c.checkBg} text-white border-transparent` : 'border border-slate-300 text-transparent'}`}>{on ? '✓' : ''}</span>
+                                  <span className="break-words min-w-0">{g.display}</span>
+                                  {g.count > 1 && <span className={`text-[11px] shrink-0 ${on ? 'opacity-60' : 'text-slate-400'}`}>×{g.count}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
-                      </h3>
-                      {additions.length === 0 ? (
-                        <p className="text-xs text-slate-500">No missing skills detected — your CV already covers this JD well.</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2 min-w-0">
-                          {visibleAdditions.map((g) => {
-                            const on = g.raws.some((r) => selectedSkills.has(r));
-                            const c = skillColor(g.display);
-                            return (
-                              <button key={g.display} onClick={() => setSelectedSkills((p) => {
-                                const n2 = new Set(p);
-                                const anySel = g.raws.some((r) => n2.has(r));
-                                if (anySel) g.raws.forEach((r) => n2.delete(r)); else n2.add(g.display);
-                                return n2;
-                              })}
-                                aria-pressed={on}
-                                className={`inline-flex items-center gap-[7px] px-[11px] py-1.5 rounded-[9px] text-[13px] font-semibold border cursor-pointer transition-colors max-w-full wrap-anywhere ${on ? `${c.bg} ${c.border} ${c.text}` : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-                                <span className={`w-4 h-4 rounded flex items-center justify-center text-[10px] shrink-0 ${on ? `${c.checkBg} text-white border-transparent` : 'border border-slate-300 text-transparent'}`}>{on ? '✓' : ''}</span>
-                                <span className="break-words min-w-0">{g.display}</span>
-                                {g.count > 1 && <span className={`text-[11px] shrink-0 ${on ? 'opacity-60' : 'text-slate-400'}`}>×{g.count}</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                      </div>
+
+                      <p className="text-xs text-slate-400">Tap a chip to include or exclude it. Only your selected additions are applied — never all keywords.</p>
                     </div>
 
-                    <p className="text-xs text-slate-400">Tap a chip to include or exclude it. Only your selected additions are applied — never all keywords.</p>
-                  </div>
-
-                  <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80">
-                    <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0} aria-live="polite"
-                      title={generateStatus === 'success' ? 'Regenerate CV with the selected skills' : undefined}
-                      className={`${btnBase} ${generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
-                      {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Tailoring CV…</>
-                        : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
-                        : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Generated</>
-                        : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
-                    </button>
-                    {tailorError && error && <p className="text-xs text-red-600 mt-2">{error}</p>}
-                    <p className="text-xs text-slate-400 text-center mt-2">AI will tailor your CV with the selected additions</p>
-                  </div>
-                </>
-              )}
+                    <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80">
+                      <button onClick={() => handleTailor()} disabled={tailoring || selectedSkills.size === 0} aria-live="polite"
+                        title={generateStatus === 'success' ? 'Regenerate CV with the selected skills' : undefined}
+                        className={`${btnBase} ${generateStatus === 'error' ? 'bg-white border border-red-200 text-red-600 hover:bg-red-50' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                        {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Tailoring CV…</>
+                          : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
+                          : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Generated</>
+                          : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
+                      </button>
+                      {tailorError && error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+                      <p className="text-xs text-slate-400 text-center mt-2">AI will tailor your CV with the selected additions</p>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* PANEL 3 · Tailoring updates (pops in on the right with loading) */}
-          <div style={panelStyle(3)} className="overflow-hidden">
-            {tailoring && loadingOverlay('Tailoring your CV…')}
-            <div className={`flex flex-col h-full min-h-0 transition-opacity duration-200 ${tailoring ? 'opacity-10' : 'opacity-100'}`}>
-              <h2 className="text-[18px] font-bold text-slate-900 mb-3 flex items-center justify-between gap-2 shrink-0">
-                Tailoring updates {stepBadge(3)}
-              </h2>
-              {!diff ? (
-                <div className="flex-1 flex items-center justify-center text-center">
-                  <div>
-                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-slate-400" />
+            {/* PANEL 3 · ATS result */}
+            <div className={panelCls(3)}>
+              {tailoring && loadingOverlay('Tailoring your CV…')}
+              <div className={`flex flex-col h-full min-h-0 transition-opacity duration-200 ${tailoring ? 'opacity-10' : 'opacity-100'}`}>
+                <h2 className="text-[16px] font-bold text-slate-900 mb-3 flex items-center justify-between gap-2 shrink-0">
+                  Tailoring updates {stepBadge(3)}
+                </h2>
+                {!diff ? (
+                  <div className="flex-1 flex items-center justify-center text-center">
+                    <div>
+                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-500">Tailor your CV to see updates</p>
                     </div>
-                    <p className="text-sm font-semibold text-slate-500">Tailor your CV to see updates</p>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[15px] font-bold text-green-600 leading-none">{diff.beforeScore}% → {diff.afterScore}%</div>
-                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">ATS score boost +{diff.scoreBoost}%</div>
-                          <div className="h-1.5 rounded-full bg-slate-200 relative overflow-hidden mt-1.5">
+                ) : (
+                  <>
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
+                      <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="text-[36px] font-bold text-green-600 leading-none shrink-0">{diff.afterScore}%</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-slate-900">
+                            ATS score after tailoring <span className="text-[11px] font-extrabold text-green-600 bg-green-50 border border-green-200 rounded-lg px-1.5 py-0.5 ml-1">+{diff.scoreBoost}%</span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">{diff.beforeScore}% before → {diff.afterScore}% after</div>
+                          <div className="h-1.5 rounded-full bg-slate-200 relative overflow-hidden mt-2">
                             <div className="absolute inset-y-0 bg-green-500" style={{ left: `${diff.beforeScore}%`, width: `${Math.max(0, diff.afterScore - diff.beforeScore)}%` }} />
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
-                          <Plus className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[17px] font-bold text-green-600 leading-none">+{reviewSkills.length}</div>
-                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Skills added</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
-                          <PenLine className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[17px] font-bold text-green-600 leading-none">+{reviewBullets.length}</div>
-                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Bullets rewritten</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                          <Ban className="w-4 h-4 text-slate-500" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[17px] font-bold text-slate-500 leading-none">{diff.notIntegrable?.length || 0}</div>
-                          <div className="text-[10px] text-slate-500 mt-1 leading-tight">Skipped — no honest way to add</div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {reviewSkills.length > 0 && (
-                      <div>
-                        <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
-                          What's been added
-                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
-                          {reviewSkills.length > ADDED_CAP && (
-                            <button onClick={() => setShowAllAddedSkills((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
-                              {showAllAddedSkills ? 'Show less' : `+${reviewSkills.length - ADDED_CAP} more`}
-                            </button>
-                          )}
-                        </h3>
-                        <div className="flex flex-wrap gap-1.5 min-w-0">
-                          {visibleAddedSkills.map((s) => (
-                            <span key={s} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold bg-green-50 border border-green-200 text-green-700 max-w-full">
-                              <Plus className="w-3 h-3 shrink-0" />
-                              <span className="break-words min-w-0">{s}</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
+                            <Plus className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[16px] font-bold text-green-600 leading-none">+{reviewSkills.length}</div>
+                            <div className="text-[9.5px] text-slate-500 mt-1 leading-tight">Skills added</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center shrink-0">
+                            <PenLine className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[16px] font-bold text-green-600 leading-none">+{reviewBullets.length}</div>
+                            <div className="text-[9.5px] text-slate-500 mt-1 leading-tight">Bullets rewritten</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                            <Ban className="w-4 h-4 text-slate-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[16px] font-bold text-slate-500 leading-none">{diff.notIntegrable?.length || 0}</div>
+                            <div className="text-[9.5px] text-slate-500 mt-1 leading-tight">Skipped — no honest way to add</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {reviewSkills.length > 0 && (
+                        <div>
+                          <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                            What's been added
+                            <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
+                            {reviewSkills.length > ADDED_CAP && (
+                              <button onClick={() => setShowAllAddedSkills((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                                {showAllAddedSkills ? 'Show less' : `+${reviewSkills.length - ADDED_CAP} more`}
+                              </button>
+                            )}
+                          </h3>
+                          <div className="flex flex-wrap gap-1.5 min-w-0">
+                            {visibleAddedSkills.map((s) => (
+                              <span key={s} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold bg-green-50 border border-green-200 text-green-700 max-w-full">
+                                <Plus className="w-3 h-3 shrink-0" />
+                                <span className="break-words min-w-0">{s}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {reviewBullets.length > 0 && (
+                        <div>
+                          <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
+                            What's been rewritten
+                            <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
+                            {reviewBullets.length > REWRITE_CAP && (
+                              <button onClick={() => setShowAllRewrites((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+                                {showAllRewrites ? 'Show less' : `+${reviewBullets.length - REWRITE_CAP} more`}
+                              </button>
+                            )}
+                          </h3>
+                          <div className="space-y-1.5">
+                            {visibleRewrites.map((br, bi) => (
+                              <div key={`rw:${bi}`} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+                                <div className="flex items-start gap-2">
+                                  <PenLine className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Before</p>
+                                    <p className="text-[11.5px] text-slate-400 line-through leading-relaxed break-words mt-0.5" style={clamp1}>{br.original}</p>
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-green-600 mt-1.5">After</p>
+                                    <p className="text-[12px] text-slate-700 leading-relaxed break-words mt-0.5" style={clamp2}>{br.rewritten}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="border border-slate-200 rounded-xl px-3.5 py-2.5 bg-slate-50/70">
+                        <h3 className="text-[12.5px] font-bold text-slate-900 mb-1.5">What's preserved</h3>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                          {['Job titles', 'Employers', 'Employment dates'].map((x) => (
+                            <span key={x} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" /> {x}
                             </span>
                           ))}
                         </div>
                       </div>
-                    )}
 
-                    {reviewBullets.length > 0 && (
                       <div>
                         <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
-                          What's been rewritten
-                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
-                          {reviewBullets.length > REWRITE_CAP && (
-                            <button onClick={() => setShowAllRewrites((v) => !v)} className="ml-auto text-[11.5px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
-                              {showAllRewrites ? 'Show less' : `+${reviewBullets.length - REWRITE_CAP} more`}
-                            </button>
-                          )}
+                          Review changes — remove what you don't like
+                          <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
                         </h3>
-                        <div className="space-y-1.5">
-                          {visibleRewrites.map((br, bi) => (
-                            <div key={`rw:${bi}`} className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
-                              <div className="flex items-start gap-2">
-                                <PenLine className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Before</p>
-                                  <p className="text-[11.5px] text-slate-400 line-through leading-relaxed break-words mt-0.5" style={clamp1}>{br.original}</p>
-                                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-green-600 mt-1.5">After</p>
-                                  <p className="text-[12px] text-slate-700 leading-relaxed break-words mt-0.5" style={clamp2}>{br.rewritten}</p>
+                        <div className="divide-y divide-slate-100">
+                          {visibleReview.map((item) => {
+                            const removed = removedPoints.has(item.key);
+                            return item.kind === 'skill' ? (
+                              <div key={item.key} className={`flex items-center gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
+                                <div className="flex-1 text-[12.5px] text-slate-700 min-w-0 break-words">
+                                  {removed ? <span className="line-through text-slate-400">Added skill {item.label}</span> : <>Added skill <b className="text-green-600">{item.label}</b></>}
                                 </div>
+                                <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
+                                  aria-label={removed ? `Restore ${item.label}` : `Remove ${item.label}`}
+                                  className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                  {removed ? '↺' : '✕'}
+                                </button>
                               </div>
-                            </div>
-                          ))}
+                            ) : (
+                              <div key={item.key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10.5px] text-slate-400 line-through leading-relaxed break-words" style={clamp1}>{item.original}</p>
+                                  <p className={`text-[12px] leading-relaxed break-words mt-0.5 ${removed ? 'line-through text-slate-400' : 'text-slate-700'}`} style={clamp2} title={item.label}>{item.label}</p>
+                                </div>
+                                <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
+                                  aria-label={removed ? 'Restore change' : 'Remove change'}
+                                  className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                  {removed ? '↺' : '✕'}
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    )}
-
-                    <div className="border border-slate-200 rounded-xl px-3.5 py-2.5 bg-slate-50/70">
-                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-1.5">What's preserved</h3>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        {['Job titles', 'Employers', 'Employment dates'].map((x) => (
-                          <span key={x} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" /> {x}
-                          </span>
-                        ))}
+                        {reviewItems.length > REVIEW_CAP && (
+                          <button onClick={() => setShowAllReview((v) => !v)} className="w-full mt-2 py-1.5 rounded-lg border border-slate-200 text-[11.5px] font-bold text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors">
+                            {showAllReview ? 'Show less' : `+${reviewItems.length - REVIEW_CAP} more additions`}
+                          </button>
+                        )}
+                        {reviewItems.length === 0 && (
+                          <p className="text-xs text-slate-500">No changes to review.</p>
+                        )}
                       </div>
                     </div>
-
-                    <div>
-                      <h3 className="text-[12.5px] font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        Review changes — remove what you don't like
-                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
-                      </h3>
-                      <div className="divide-y divide-slate-100">
-                        {visibleReview.map((item) => {
-                          const removed = removedPoints.has(item.key);
-                          return item.kind === 'skill' ? (
-                            <div key={item.key} className={`flex items-center gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
-                              <div className="flex-1 text-[12.5px] text-slate-700 min-w-0 break-words">
-                                {removed ? <span className="line-through text-slate-400">Added skill {item.label}</span> : <>Added skill <b className="text-green-600">{item.label}</b></>}
-                              </div>
-                              <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
-                                aria-label={removed ? `Restore ${item.label}` : `Remove ${item.label}`}
-                                className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
-                                {removed ? '↺' : '✕'}
-                              </button>
-                            </div>
-                          ) : (
-                            <div key={item.key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10.5px] text-slate-400 line-through leading-relaxed break-words" style={clamp1}>{item.original}</p>
-                                <p className={`text-[12px] leading-relaxed break-words mt-0.5 ${removed ? 'line-through text-slate-400' : 'text-slate-700'}`} style={clamp2} title={item.label}>{item.label}</p>
-                              </div>
-                              <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
-                                aria-label={removed ? 'Restore change' : 'Remove change'}
-                                className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
-                                {removed ? '↺' : '✕'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {reviewItems.length > REVIEW_CAP && (
-                        <button onClick={() => setShowAllReview((v) => !v)} className="w-full mt-2 py-1.5 rounded-lg border border-slate-200 text-[11.5px] font-bold text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors">
-                          {showAllReview ? 'Show less' : `+${reviewItems.length - REVIEW_CAP} more additions`}
-                        </button>
-                      )}
-                      {reviewItems.length === 0 && (
-                        <p className="text-xs text-slate-500">No changes to review.</p>
-                      )}
+                    <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80 flex gap-2">
+                      <button onClick={() => download('pdf')} disabled={!downloadToken} className="flex-1 min-h-[46px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
+                        <Download className="w-4 h-4" /> Download PDF
+                      </button>
+                      <button onClick={() => download('txt')} disabled={!downloadToken} className="flex-1 min-h-[46px] rounded-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
+                        <Copy className="w-4 h-4" /> Copy text
+                      </button>
                     </div>
-                  </div>
-                  <div className="shrink-0 pt-3 mt-3 border-t border-slate-200/80">
-                    <button onClick={download} disabled={!downloadToken} className="w-full min-h-[48px] rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-40">
-                      <Download className="w-4 h-4" /> Download Tailored CV
-                    </button>
                     <p className="text-[11px] text-slate-400 text-center mt-2">Downloading also saves the tailored CV to your history.</p>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* RIGHT · CV Preview — original + tailored with sliding comparison */}
+        <section className="flex-1 min-w-0 bg-white border border-slate-200 border-l-0 rounded-r-[14px] overflow-hidden flex flex-col">
+          <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> CV Preview
+            </span>
+            <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">
+              {tailoredCv ? 'Drag to compare' : 'Original CV'}
+            </span>
+          </div>
+
+          <div className="relative flex-1 min-h-0 bg-slate-100" ref={wrapRef}>
+            {!tailoredCv ? (
+              originalCv ? (
+                <div className="absolute inset-0 overflow-y-auto">
+                  <CvSheet data={originalCv} />
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <FileText className="w-9 h-9 text-slate-300" />
+                  <p className="text-[12px] font-semibold">No CV yet — tailor to compare</p>
+                  {!masterCv && <p className="text-[10.5px] text-slate-300">Add your Master CV in the CV screen first</p>}
+                </div>
+              )
+            ) : (
+              <>
+                {/* ORIGINAL layer */}
+                <div className="absolute inset-0 overflow-y-auto bg-slate-100">
+                  {originalCv && <CvSheet data={originalCv} />}
+                </div>
+                {/* TAILORED layer (clipped by the slider) */}
+                {newCv && (
+                  <div className="absolute inset-0 overflow-y-auto bg-slate-100" style={{ clipPath: `inset(0 0 0 ${cut}%)` }}>
+                    <CvSheet data={newCv} />
+                  </div>
+                )}
+                {/* Handle */}
+                <div
+                  className="absolute top-0 bottom-0 w-[2px] bg-blue-600 z-10 cursor-ew-resize"
+                  style={{ left: `${cut}%` }}
+                  onPointerDown={(e) => { e.preventDefault(); draggingRef.current = true; }}
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center shadow-md">
+                    <ChevronsLeftRight className="w-4 h-4 text-blue-600" />
+                  </div>
+                </div>
+                {/* Tags */}
+                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-slate-500 bg-white/95 border border-slate-200 rounded-full px-2.5 py-1 shadow-sm">ORIGINAL</span>
+                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-blue-600 bg-blue-50/95 border border-blue-200 rounded-full px-2.5 py-1 shadow-sm">TAILORED</span>
+                {cvLoadFailed && (
+                  <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center">
+                    <span className="text-[10.5px] font-semibold text-amber-700 bg-amber-50/95 border border-amber-200 rounded-full px-3 py-1.5 shadow-sm">
+                      Tailored CV unavailable — download it from the workspace
+                    </span>
+                  </div>
+                )}
+                {!cvLoadFailed && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-[10.5px] font-semibold text-slate-600 bg-white/95 border border-slate-200 rounded-full px-3 py-1.5 shadow-sm whitespace-nowrap">
+                    ↔ Drag to slide between Original &amp; Tailored
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
       </div>
 
       {/* Footer */}

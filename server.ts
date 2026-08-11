@@ -1600,6 +1600,9 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.txt"`);
         res.send(textCv);
+      } else if (format === 'json') {
+        // Used by the Manual JD comparison slider to render the new CV.
+        res.json(data.tailoredCv);
       } else {
         const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
