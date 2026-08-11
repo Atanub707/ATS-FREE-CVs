@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, Copy, ChevronsLeftRight } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
+import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
@@ -90,87 +91,6 @@ function normalizeAdditions(missing: string[], missingKw: string[], jd: string):
   return [...groups.values()].sort((a, b) => b.count - a.count || a.display.localeCompare(b.display));
 }
 
-/* ───────────────── CV sheet data (for the right-hand preview) ───────────────── */
-
-interface CvSheetData {
-  name: string;
-  role: string;
-  contact: string;
-  summary: string;
-  exp: { title: string; company: string; dates: string; bullets: string[] }[];
-  skills: string[];
-}
-
-function fromMasterCv(mv: MasterCv | null | undefined): CvSheetData | null {
-  if (!mv || !mv.fullName) return null;
-  return {
-    name: mv.fullName,
-    role: mv.experiences?.[0]?.title || 'Resume',
-    contact: [mv.email, mv.phone, mv.location, mv.linkedin].filter(Boolean).join(' · '),
-    summary: mv.summary || '',
-    exp: (mv.experiences || []).map((e) => ({
-      title: e.title || '',
-      company: e.company || '',
-      dates: e.dates || '',
-      bullets: e.responsibilities || [],
-    })),
-    skills: (mv.skills || []).flatMap((c) => c.items || []),
-  };
-}
-
-function fromTailoredCv(cv: any): CvSheetData | null {
-  if (!cv || !cv.candidateName) return null;
-  return {
-    name: cv.candidateName,
-    role: cv.targetRole || 'Tailored CV',
-    contact: [cv.contactInfo?.email, cv.contactInfo?.phone, cv.contactInfo?.location, cv.contactInfo?.linkedin].filter(Boolean).join(' · '),
-    summary: cv.professionalSummary || '',
-    exp: (cv.workExperience || []).map((e: any) => ({
-      title: e.title || '',
-      company: e.company || '',
-      dates: e.dates || '',
-      bullets: e.highlights || [],
-    })),
-    skills: (cv.technicalSkills || []).flatMap((c: any) => c.skills || []),
-  };
-}
-
-const CvSheet: React.FC<{ data: CvSheetData }> = ({ data }) => (
-  <div className="bg-white p-6 sm:p-8 min-h-full shadow-sm">
-    <p className="text-[17px] font-extrabold tracking-tight text-slate-900">{data.name}</p>
-    <p className="text-[10.5px] text-slate-500 mt-0.5">{data.role}</p>
-    {data.contact && <p className="text-[10px] text-slate-400 mt-1">{data.contact}</p>}
-    <div className="h-[2px] bg-slate-900 my-2.5" />
-    {data.summary && (
-      <>
-        <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Professional Summary</p>
-        <p className="text-[11px] text-slate-600 leading-relaxed mb-2">{data.summary}</p>
-      </>
-    )}
-    <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Experience</p>
-    {data.exp.length === 0 && <p className="text-[11px] text-slate-400 italic">No experience listed</p>}
-    {data.exp.map((e, i) => (
-      <div key={i} className="mb-2.5">
-        <p className="text-[11px] font-bold text-slate-900">
-          {e.title}{e.company && <span className="font-normal text-slate-500"> — {e.company}</span>}
-          {e.dates && <span className="text-slate-400"> ({e.dates})</span>}
-        </p>
-        {e.bullets.map((b, bi) => (
-          <p key={bi} className="text-[10.5px] text-slate-500 leading-relaxed pl-2.5 relative ml-1 mb-0.5">
-            <span className="absolute left-0 text-slate-300">•</span>{b}
-          </p>
-        ))}
-      </div>
-    ))}
-    {data.skills.length > 0 && (
-      <>
-        <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1 mb-1.5">Skills</p>
-        <p className="text-[11px] text-slate-700 font-medium">{data.skills.join(' · ')}</p>
-      </>
-    )}
-  </div>
-);
-
 /* ───────────────── Main screen ───────────────── */
 
 export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
@@ -201,6 +121,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [cut, setCut] = useState(50);
   const draggingRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const oldScrollRef = useRef<HTMLDivElement>(null);
+  const newScrollRef = useRef<HTMLDivElement>(null);
+  const syncingScrollRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && historyOpen) loadHistory();
@@ -394,8 +317,18 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       step === n ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-10 pointer-events-none'
     }`;
 
-  const originalCv = fromMasterCv(masterCv);
-  const newCv = tailoredCv ? fromTailoredCv(tailoredCv) : null;
+  const originalCv = masterCv ? masterCvToPdfShape(masterCv) : null;
+  const newCv = tailoredCv ? compressedCvToPdfShape(tailoredCv) : null;
+  const templateId: 'harvard' | 'jake' | 'atanu' = masterCv?.templateId || 'harvard';
+
+  // Keep the ORIGINAL and TAILORED sheets at the same scroll position so the
+  // slider always compares matching areas of the two CVs.
+  const syncScroll = (from: HTMLDivElement, to: HTMLDivElement | null) => {
+    if (!to || syncingScrollRef.current) return;
+    syncingScrollRef.current = true;
+    to.scrollTop = from.scrollTop;
+    requestAnimationFrame(() => { syncingScrollRef.current = false; });
+  };
 
   return (
     <div className="fixed inset-0 z-40 bg-slate-50 text-slate-700 flex flex-col font-sans">
@@ -805,7 +738,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             {!tailoredCv ? (
               originalCv ? (
                 <div className="absolute inset-0 overflow-y-auto">
-                  <CvSheet data={originalCv} />
+                  <CvPdfPreview cv={originalCv} template={templateId} fitToWidth />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -817,13 +750,22 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             ) : (
               <>
                 {/* ORIGINAL layer */}
-                <div className="absolute inset-0 overflow-y-auto bg-slate-100">
-                  {originalCv && <CvSheet data={originalCv} />}
+                <div
+                  ref={oldScrollRef}
+                  onScroll={(e) => syncScroll(e.currentTarget, newScrollRef.current)}
+                  className="absolute inset-0 overflow-y-auto bg-slate-100"
+                >
+                  {originalCv && <CvPdfPreview cv={originalCv} template={templateId} fitToWidth />}
                 </div>
                 {/* TAILORED layer (clipped by the slider) */}
                 {newCv && (
-                  <div className="absolute inset-0 overflow-y-auto bg-slate-100" style={{ clipPath: `inset(0 0 0 ${cut}%)` }}>
-                    <CvSheet data={newCv} />
+                  <div
+                    ref={newScrollRef}
+                    onScroll={(e) => syncScroll(e.currentTarget, oldScrollRef.current)}
+                    className="absolute inset-0 overflow-y-auto bg-slate-100"
+                    style={{ clipPath: `inset(0 0 0 ${cut}%)` }}
+                  >
+                    <CvPdfPreview cv={newCv} template={templateId} fitToWidth />
                   </div>
                 )}
                 {/* Handle */}
