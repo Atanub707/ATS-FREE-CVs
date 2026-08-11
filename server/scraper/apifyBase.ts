@@ -73,29 +73,29 @@ export function extractDescription(item: any): string {
 }
 
 // Normalize any posted-date shape (full ISO string, bare YYYY-MM-DD, epoch
-// ms, or a "N days ago" relative caption) into an ISO string, or '' when
-// unknown. Bare dates use noon (least-biased point); full timestamps keep
-// their exact time. Never show future dates and never fake a posting time
-// with scrape time.
+// ms, or a "N hours ago" relative caption) into an ISO string, or '' when
+// unknown. The relative caption carries the finest precision the actors
+// offer (minutes/hours) and is preferred over date stamps, which LinkedIn's
+// actor rounds to midnight of the posting day. Bare dates use noon
+// (least-biased point). Never show future dates and never fake a posting
+// time with scrape time.
 export function normalizeIsoDate(value: string | number | undefined, relativeCaption?: string): string {
   let rawPosted: Date | null = null;
   if (typeof value === 'number' && !isNaN(value)) {
     rawPosted = value > 1e12 ? new Date(value) : new Date(value * 1000); // ms vs s epoch
   } else if (typeof value === 'string' && value.trim()) {
-    const trimmed = value.trim();
-    const isBareDate = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
-    if (isBareDate) {
-      const rel = String(relativeCaption || '').match(/(\d+)\s*(min|hour|day)s?\s*ago/i);
-      if (rel) {
-        const n = parseInt(rel[1], 10);
-        const unit = rel[2].toLowerCase();
-        const ms = unit === 'min' ? n * 60000 : unit === 'hour' ? n * 3600000 : n * 86400000;
-        rawPosted = new Date(Date.now() - ms);
-      } else {
-        rawPosted = new Date(`${trimmed}T12:00:00Z`);
-      }
+    // Hour/minute captions ("34 minutes ago", "4 hours ago") override the
+    // date stamp — day-level captions ("1 day ago") add no precision over
+    // the date, so those fall through to the stamp.
+    const rel = String(relativeCaption || '').match(/(\d+)\s*(min|hour)s?\s*ago/i);
+    if (rel) {
+      const n = parseInt(rel[1], 10);
+      const ms = rel[2].toLowerCase() === 'min' ? n * 60000 : n * 3600000;
+      rawPosted = new Date(Date.now() - ms);
     } else {
-      rawPosted = new Date(trimmed);
+      const trimmed = value.trim();
+      const isBareDate = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+      rawPosted = isBareDate ? new Date(`${trimmed}T12:00:00Z`) : new Date(trimmed);
     }
   }
   if (!rawPosted || isNaN(rawPosted.getTime())) return '';
