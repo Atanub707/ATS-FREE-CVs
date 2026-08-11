@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { TailoredCv } from '../../src/types.js';
+import { CV_TEMPLATE_GEOMETRY, cvSkillsColumnWidth } from '../../src/constants/cvTemplateConfig.js';
 
 interface ContactLink {
   type: 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
@@ -569,14 +570,16 @@ function pdfDebug(el: string, x: number, y: number, w: number, h: number, nextY:
 }
 
 function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
+  const geo = CV_TEMPLATE_GEOMETRY.atanu;
   const ACCENT = '#0F766E';
   const NAVY = '#0F172A';
   const BODY = '#1F2937';
   const MUTED = '#6B7280';
   const FAINT = '#9CA3AF';
 
-  const MARGIN_X = 0.5 * 72;  // 36 pt
-  const MARGIN_Y = 0.45 * 72; // 32.4 pt
+  const MARGIN_X = geo.marginLeft;  // 36 pt (shared)
+  const MARGIN_Y = geo.marginTop;   // 32.4 pt (shared)
+  const LINE_GAP = geo.pdfLineGap;  // 1.2 pt (shared)
   const PAGE_W = 8.5 * 72;    // 612
   const PAGE_H = 11 * 72;     // 792
   const leftMargin = MARGIN_X;
@@ -713,7 +716,10 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
       const clean = sanitizeText(String(text).replace(/^[*•\-]\s*/, '').trim());
       if (!clean) return;
 
-      ensurePageSpace(15);
+      // Bullets are atomic (mirrors the preview's block pagination): a bullet
+      // that does not fit on the current page moves whole to the next.
+      const bulletH = doc.heightOfString(clean, { width: contentWidth - 11, lineGap: LINE_GAP });
+      ensurePageSpace((isFinite(bulletH) && bulletH > 0 ? bulletH : 12) + 2);
       const bulletX = leftMargin;
       const textX = leftMargin + 11;
       const tWidth = contentWidth - 11;
@@ -724,12 +730,12 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
       const normUrl = linkUrl ? normalizeUrl(linkUrl) : undefined;
       doc.font('Helvetica').fontSize(9.5).fillColor(BODY);
       if (normUrl) {
-        doc.fillColor(ACCENT).text(clean, textX, currentY, { width: tWidth, lineGap: 1.2, align: 'justify' });
+        doc.fillColor(ACCENT).text(clean, textX, currentY, { width: tWidth, lineGap: LINE_GAP, align: 'justify' });
         const rawH = doc.heightOfString(clean, { width: tWidth });
         const h = isFinite(rawH) && rawH > 0 ? rawH : 12;
         doc.link(textX, currentY, tWidth, h, normUrl);
       } else {
-        doc.fillColor(BODY).text(clean, textX, currentY, { width: tWidth, lineGap: 1.2, align: 'justify' });
+        doc.fillColor(BODY).text(clean, textX, currentY, { width: tWidth, lineGap: LINE_GAP, align: 'justify' });
       }
 
       doc.x = leftMargin;
@@ -744,7 +750,7 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         ensurePageSpace(20);
         doc.font('Helvetica').fontSize(9.5).fillColor(BODY).text(cleanSummary, leftMargin, doc.y, {
           width: contentWidth,
-          lineGap: 1.2,
+          lineGap: LINE_GAP,
           align: 'justify',
         });
         doc.x = leftMargin;
@@ -770,13 +776,13 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         ensurePageSpace(15);
         doc.font('Helvetica').fontSize(9.5).fillColor(BODY).text(
           cv.coreCompetencies.map((c) => sanitizeText(c)).filter(Boolean).join(', '),
-          leftMargin, doc.y, { width: contentWidth, lineGap: 1.2 }
+          leftMargin, doc.y, { width: contentWidth, lineGap: LINE_GAP }
         );
         doc.x = leftMargin;
         doc.moveDown(0.2);
       } else {
-        const colGap = 18;
-        const colW = (contentWidth - colGap) / 2;
+        const colGap = geo.skillsColumnGap; // 18 pt (shared)
+        const colW = cvSkillsColumnWidth('atanu'); // (contentWidth - colGap) / 2, shared formula
         const half = Math.ceil(skillCats.length / 2);
         let yLeft = doc.y;
         let yRight = doc.y;
@@ -798,7 +804,7 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
           const lineY = curY;
           doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY);
           doc.text(cat.name ? cat.name + ': ' : '', colX, lineY, { continued: true, width: colW });
-          doc.font('Helvetica').fillColor('#374151').text(cat.list, { width: colW, lineGap: 1.2 });
+          doc.font('Helvetica').fillColor('#374151').text(cat.list, { width: colW, lineGap: LINE_GAP });
 
           const lineH = doc.heightOfString(line, { width: colW }) + 4;
           if (isRight) yRight = lineY + lineH;
@@ -893,7 +899,7 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
             ensurePageSpace(15);
             doc.font('Helvetica').fontSize(9.5).fillColor(BODY).text(desc, leftMargin, doc.y, {
               width: contentWidth,
-              lineGap: 1.2,
+              lineGap: LINE_GAP,
             });
             doc.x = leftMargin;
             doc.moveDown(0.05);
@@ -976,9 +982,11 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
  * US Letter, margins 0.6in top/bottom, 0.7in sides.
  */
 function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
+  const geo = CV_TEMPLATE_GEOMETRY.harvard;
   const INK = '#111111';
-  const MARGIN_X = 0.7 * 72;  // 50.4 pt
-  const MARGIN_Y = 0.6 * 72;  // 43.2 pt
+  const MARGIN_X = geo.marginLeft;  // 50.4 pt (shared)
+  const MARGIN_Y = geo.marginTop;   // 43.2 pt (shared)
+  const LINE_GAP = geo.pdfLineGap;  // 1 pt (shared)
   const PAGE_W = 612;
   const PAGE_H = 792;
   const leftMargin = MARGIN_X;
@@ -1048,10 +1056,13 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
       if (!text) return;
       const clean = sanitizeText(String(text).replace(/^[*•\-]\s*/, '').trim());
       if (!clean) return;
-      ensurePageSpace(14);
+      // Atomic bullets — a bullet that does not fit moves whole to the next
+      // page (mirrors the preview's block pagination).
+      const bulletH = doc.heightOfString(clean, { width: contentWidth - 13, lineGap: LINE_GAP });
+      ensurePageSpace((isFinite(bulletH) && bulletH > 0 ? bulletH : 12) + 2);
       const y0 = doc.y;
       doc.font('Helvetica').fontSize(10.5).fillColor(INK).text('\u2022', leftMargin, y0, { lineBreak: false });
-      doc.text(clean, leftMargin + 13, y0, { width: contentWidth - 13, align: 'justify', lineGap: 1 });
+      doc.text(clean, leftMargin + 13, y0, { width: contentWidth - 13, align: 'justify', lineGap: LINE_GAP });
       doc.x = leftMargin;
       doc.moveDown(0.18);
     };
@@ -1062,7 +1073,7 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
       if (s) {
         section('Summary');
         ensurePageSpace(18);
-        doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(s, leftMargin, doc.y, { width: contentWidth, align: 'justify', lineGap: 1 });
+        doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(s, leftMargin, doc.y, { width: contentWidth, align: 'justify', lineGap: LINE_GAP });
         doc.x = leftMargin;
         doc.moveDown(0.2);
       }
@@ -1149,7 +1160,7 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
         ensurePageSpace(14);
         const y0 = doc.y;
         doc.font('Helvetica-Bold').fontSize(10.5).fillColor(INK).text(cat.name + ': ', leftMargin, y0, { continued: true });
-        doc.font('Helvetica').fillColor(INK).text(cat.list, { width: contentWidth - 1, lineGap: 1 });
+        doc.font('Helvetica').fillColor(INK).text(cat.list, { width: contentWidth - 1, lineGap: LINE_GAP });
         doc.x = leftMargin;
         doc.moveDown(0.15);
       }
@@ -1183,11 +1194,13 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
  * US Letter, margins 0.45in top/bottom, 0.5in sides.
  */
 function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
+  const geo = CV_TEMPLATE_GEOMETRY.jake;
   const INK = '#1a1a1a';
   const MUTED = '#555555';
   const FAINT = '#777777';
-  const MARGIN_X = 0.5 * 72;
-  const MARGIN_Y = 0.45 * 72;
+  const MARGIN_X = geo.marginLeft;  // 36 pt (shared)
+  const MARGIN_Y = geo.marginTop;   // 32.4 pt (shared)
+  const LINE_GAP = geo.pdfLineGap;  // 1 pt (shared)
   const PAGE_W = 612;
   const PAGE_H = 792;
   const leftMargin = MARGIN_X;
@@ -1260,10 +1273,12 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
       if (!text) return;
       const clean = sanitizeText(String(text).replace(/^[*•\-]\s*/, '').trim());
       if (!clean) return;
-      ensurePageSpace(13);
+      // Atomic bullets — mirror the preview's block pagination.
+      const bulletH = doc.heightOfString(clean, { width: contentWidth - 12, lineGap: LINE_GAP });
+      ensurePageSpace((isFinite(bulletH) && bulletH > 0 ? bulletH : 12) + 2);
       const y0 = doc.y;
       doc.font('Helvetica').fontSize(9).fillColor(INK).text('\u2014', leftMargin, y0, { lineBreak: false });
-      doc.text(clean, leftMargin + 12, y0, { width: contentWidth - 12, align: 'justify', lineGap: 1 });
+      doc.text(clean, leftMargin + 12, y0, { width: contentWidth - 12, align: 'justify', lineGap: LINE_GAP });
       doc.x = leftMargin;
       doc.moveDown(0.12);
     };
@@ -1286,9 +1301,10 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
       : [];
     if (skillCats.length > 0) {
       section('Skills');
-      // Two-column grid: first half left, second half right
-      const colGap = 20;
-      const colW = (contentWidth - colGap) / 2;
+      // Two-column grid: first half left, second half right — shared column
+      // width formula (same as the browser preview).
+      const colGap = geo.skillsColumnGap; // 20 pt (shared)
+      const colW = cvSkillsColumnWidth('jake'); // (contentWidth - colGap) / 2
       const half = Math.ceil(skillCats.length / 2);
       let yLeft = doc.y;
       let yRight = doc.y;

@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { MasterCv, TemplateId } from '../types';
+import { CV_PAGE, CV_TEMPLATE_GEOMETRY, cvContentHeight, cvContentWidth } from '../constants/cvTemplateConfig';
 
 // Normalized shape mirroring server-side TailoredCv (as produced by generatePdfBuffer)
 export interface PdfCvShape {
@@ -91,15 +92,11 @@ function getContactItems(cv: PdfCvShape): { label: string; url?: string }[] {
   return items;
 }
 
-// ── Page geometry (Letter 8.5x11 at 72dpi, mirroring pdfkit) ──
-const PAGE_W = 612;
-const PAGE_H = 792;
-const MARGIN_X = 54; // 0.75in (default)
-const MARGIN_Y = 43.2; // 0.6in (default)
-// Harvard Classic uses 0.5in sides / 0.45in top-bottom + 1.42 line-height
-const HARVARD_MARGIN_X = 36;
-const HARVARD_MARGIN_Y = 32.4;
-const HARVARD_LINE_HEIGHT = 1.42;
+// ── Page geometry — shared with the PDF generator (cvTemplateConfig.ts) ──
+// Letter 8.5x11 at 72dpi. All margins/content widths come from the shared
+// config so the preview lays out with EXACTLY the PDF's geometry.
+const PAGE_W = CV_PAGE.width;
+const PAGE_H = CV_PAGE.height;
 
 // Scale a pt value to the current zoom (all sizes scale linearly, so the
 // wrap points and relative heights stay identical at every zoom level).
@@ -119,21 +116,30 @@ export interface CvTemplateStyle {
   expTitleSize: number;
   lineHeight: number;
   nameWeight: number;
+  skillsColumnGap: number;  // 0 = single column
+}
+
+// Derived from the shared geometry config — never defined twice.
+function toTemplateStyle(g: (typeof CV_TEMPLATE_GEOMETRY)['harvard']): CvTemplateStyle {
+  return {
+    accent: g.accent,
+    nameSize: g.nameSize,
+    roleColor: g.roleColor,
+    ruleWidth: g.ruleWidth,
+    bodySize: g.bodySize,
+    bulletSize: g.bulletSize,
+    sectionGap: g.sectionSpacing,
+    expTitleSize: g.expTitleSize,
+    lineHeight: g.bodyLineHeight,
+    nameWeight: g.nameWeight,
+    skillsColumnGap: g.skillsColumnGap,
+  };
 }
 
 export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
-  'harvard': {
-    accent: '#111111', nameSize: 15, roleColor: '#111111', ruleWidth: 0,
-    bodySize: 10.5, bulletSize: 10.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.3, nameWeight: 700,
-  },
-  'jake': {
-    accent: '#111111', nameSize: 24, roleColor: '#555555', ruleWidth: 1,
-    bodySize: 9, bulletSize: 9, sectionGap: 8, expTitleSize: 9.5, lineHeight: 1.35, nameWeight: 700,
-  },
-  'atanu': {
-    accent: '#0F766E', nameSize: 24, roleColor: '#0F766E', ruleWidth: 1.2,
-    bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10.5, lineHeight: 1.42, nameWeight: 700,
-  },
+  'harvard': toTemplateStyle(CV_TEMPLATE_GEOMETRY.harvard),
+  'jake': toTemplateStyle(CV_TEMPLATE_GEOMETRY.jake),
+  'atanu': toTemplateStyle(CV_TEMPLATE_GEOMETRY.atanu),
 };
 // A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
 // the block requires at least that many pt to remain below it, otherwise it
@@ -163,11 +169,12 @@ interface CvPdfPreviewProps {
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
   const safeTemplate: TemplateId = template === 'jake' || template === 'atanu' || template === 'harvard' ? template : 'harvard';
   const style = CV_TEMPLATE_STYLES[safeTemplate] || CV_TEMPLATE_STYLES.harvard;
-  const marginX = safeTemplate === 'harvard' ? 50.4 : MARGIN_X;
-  const marginY = safeTemplate === 'harvard' ? 43.2 : HARVARD_MARGIN_Y;
-  const contentW = PAGE_W - marginX * 2;
-  const contentH = PAGE_H - marginY * 2;
-  const lineHeight = safeTemplate === 'harvard' ? 1.3 : safeTemplate === 'jake' ? 1.35 : HARVARD_LINE_HEIGHT;
+  // Margins/content from the SHARED geometry (identical to the PDF).
+  const marginX = CV_TEMPLATE_GEOMETRY[safeTemplate].marginLeft;
+  const marginY = CV_TEMPLATE_GEOMETRY[safeTemplate].marginTop;
+  const contentW = cvContentWidth(safeTemplate);
+  const contentH = cvContentHeight(safeTemplate);
+  const lineHeight = style.lineHeight;
   const blocks = useMemo(() => buildBlocks(cv, style, safeTemplate), [cv, style, safeTemplate]);
   const measurerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -287,10 +294,10 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
     return buildHarvardBlocks(cv);
   }
   if (template === 'jake') {
-    return buildJakeBlocks(cv);
+    return buildJakeBlocks(cv, s);
   }
   if (template === 'atanu') {
-    return buildAtanuBlocks(cv);
+    return buildAtanuBlocks(cv, s);
   }
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
@@ -691,7 +698,7 @@ const Bullet: React.FC<{ zoom: number; text: string; style: CvTemplateStyle }> =
   );
 };
 
-function buildAtanuBlocks(cv: PdfCvShape): CvBlock[] {
+function buildAtanuBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
 
@@ -801,7 +808,7 @@ function buildAtanuBlocks(cv: PdfCvShape): CvBlock[] {
       blocks.push({
         key: 'skills-grid',
         render: (zoom) => (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: pt(18, zoom), paddingBottom: pt(4, zoom) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: pt(s.skillsColumnGap, zoom), paddingBottom: pt(4, zoom) }}>
             {cv.technicalSkills.map((cat, i) => (
               <div key={i} style={{ fontSize: `${pt(9.5, zoom)}px`, lineHeight: 1.42, marginBottom: pt(2.5, zoom), color: '#1F2937' }}>
                 <span style={{ fontWeight: 700, color: '#0F172A' }}>{cat.category}: </span>
@@ -943,7 +950,7 @@ const HarvardBullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text })
 // ── Jake — Jake Ryan one-page developer resume ──
 // black ink, uppercase name left, '—' bullets, black rules under
 // headings, 2-column skills grid, tight 9px type.
-function buildJakeBlocks(cv: PdfCvShape): CvBlock[] {
+function buildJakeBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
 
@@ -1003,19 +1010,19 @@ function buildJakeBlocks(cv: PdfCvShape): CvBlock[] {
 
   if (cv.technicalSkills.length > 0) {
     blocks.push(section('Skills'));
-    blocks.push({
-      key: 'skills-grid',
-      render: (zoom) => (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: pt(20, zoom), paddingBottom: pt(4, zoom) }}>
-          {cv.technicalSkills.map((cat, i) => (
-            <div key={i} style={{ fontSize: `${pt(9, zoom)}px`, lineHeight: 1.35, marginBottom: pt(2.5, zoom) }}>
-              <span style={{ fontWeight: 700, color: '#111111' }}>{cat.category}: </span>
-              <span style={{ color: '#1A1A1A' }}>{cat.skills.join(', ')}</span>
-            </div>
-          ))}
-        </div>
-      ),
-    });
+      blocks.push({
+        key: 'skills-grid',
+        render: (zoom) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: pt(s.skillsColumnGap, zoom), paddingBottom: pt(4, zoom) }}>
+            {cv.technicalSkills.map((cat, i) => (
+              <div key={i} style={{ fontSize: `${pt(9, zoom)}px`, lineHeight: 1.35, marginBottom: pt(2.5, zoom) }}>
+                <span style={{ fontWeight: 700, color: '#111111' }}>{cat.category}: </span>
+                <span style={{ color: '#1A1A1A' }}>{cat.skills.join(', ')}</span>
+              </div>
+            ))}
+          </div>
+        ),
+      });
   }
 
   if (cv.workExperience.length > 0) {
