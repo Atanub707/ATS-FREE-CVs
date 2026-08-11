@@ -1590,8 +1590,14 @@ Return valid JSON only — NO markdown, NO code fences:
       const safeName = data.tailoredCv.candidateName.replace(/ /g, '_');
       const safeCompany = data.company.replace(/[^a-zA-Z0-9]/g, '_');
 
+      // Template: explicit ?template= wins (Manual JD selector); otherwise
+      // the Master CV's template is the default.
+      const requestedTemplate = req.query.template as string | undefined;
+      const masterTemplate = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
+      const effectiveTemplate = requestedTemplate && ['harvard', 'jake', 'atanu'].includes(requestedTemplate) ? requestedTemplate : masterTemplate;
+
       if (format === 'pdf') {
-        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, effectiveTemplate);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);
@@ -1604,7 +1610,7 @@ Return valid JSON only — NO markdown, NO code fences:
         // Used by the Manual JD comparison slider to render the new CV.
         res.json(data.tailoredCv);
       } else {
-        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
+        const pdfBuffer = await generatePdfBuffer(data.tailoredCv, effectiveTemplate);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${safeName}_${safeCompany}.pdf"`);
         res.send(pdfBuffer);

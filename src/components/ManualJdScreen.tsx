@@ -265,7 +265,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const download = (format: 'pdf' | 'txt') => {
     if (!downloadToken) return;
-    window.open(`/api/analyze-jd/download?token=${downloadToken}&format=${format}`, '_blank');
+    window.open(`/api/analyze-jd/download?token=${downloadToken}&format=${format}&template=${previewTemplate}`, '_blank');
   };
 
   const missing = result?.gapAnalysis?.missingSkills || [];
@@ -331,7 +331,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const originalCv = masterCv ? masterCvToPdfShape(masterCv) : null;
   const newCv = tailoredCv ? compressedCvToPdfShape(tailoredCv) : null;
-  const templateId: 'harvard' | 'jake' | 'atanu' = masterCv?.templateId || 'harvard';
+  const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu'>(masterCv?.templateId || 'harvard');
 
   // Keep the ORIGINAL and TAILORED sheets at the same scroll position so the
   // slider always compares matching areas of the two CVs.
@@ -747,20 +747,41 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
         {/* RIGHT · CV Preview — original + tailored with sliding comparison */}
         <section className="flex-1 min-w-0 bg-white border border-slate-200 border-l-0 rounded-r-[14px] overflow-hidden flex flex-col">
-          <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
+          <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-2 shrink-0">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> CV Preview
             </span>
-            <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">
-              {tailoredCv ? 'Drag to compare' : 'Original CV'}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-0.5">
+                {([
+                  { id: 'harvard', label: 'Harvard' },
+                  { id: 'jake', label: 'Jake' },
+                  { id: 'atanu', label: 'Atanu' },
+                ] as const).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPreviewTemplate(t.id)}
+                    title={`Preview and download in the ${t.label} template`}
+                    className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer ${
+                      previewTemplate === t.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[10.5px] font-bold text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">
+                {tailoredCv ? 'Drag to compare' : 'Original CV'}
+              </span>
+            </div>
           </div>
 
           <div className="relative flex-1 min-h-0 bg-slate-100" ref={wrapRef}>
             {!tailoredCv ? (
               originalCv ? (
                 <div className="absolute inset-0 overflow-y-auto">
-                  <CvPdfPreview cv={originalCv} template={templateId} fitToWidth />
+                  <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -777,7 +798,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   onScroll={(e) => syncScroll(e.currentTarget, newScrollRef.current)}
                   className="absolute inset-0 overflow-y-auto bg-slate-100"
                 >
-                  {originalCv && <CvPdfPreview cv={originalCv} template={templateId} fitToWidth />}
+                  {originalCv && <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />}
                 </div>
                 {/* TAILORED layer (clipped by the slider) */}
                 {newCv && (
@@ -787,7 +808,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     className="absolute inset-0 overflow-y-auto bg-slate-100"
                     style={{ clipPath: `inset(0 0 0 ${cut}%)` }}
                   >
-                    <CvPdfPreview cv={newCv} template={templateId} fitToWidth />
+                    <CvPdfPreview cv={newCv} template={previewTemplate} fitToWidth />
                   </div>
                 )}
                 {/* Handle */}
