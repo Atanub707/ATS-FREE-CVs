@@ -579,8 +579,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                       </div>
                       <div className="rc-co-line">
-                        {c.company}
-                        {c.jobRole && <><span className="rc-sep">·</span>{c.jobRole}</>}
+                        <span className="rc-co-txt">
+                          {c.company}
+                          {c.jobRole && <><span className="rc-sep">·</span>{c.jobRole}</>}
+                        </span>
                         {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
                         {c.sourceJobUrl && (
                           <a className="rc-srcjob" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
@@ -1046,7 +1048,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .rc-nm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
         .rc-nm b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
-        .rc-co-line { font-size: 10.5px; color: var(--faint); margin-top: 2px; display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
+        .rc-co-line { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 2px; }
+        .rc-co-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--faint); }
+        .rc-co-txt .rc-sep { margin: 0 5px; color: var(--color-faint); }
+        .rc-co-line .rc-jobs { flex-shrink: 0; }
+        .rc-co-line .rc-srcjob { flex-shrink: 0; }
         .rc-notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
         .rc-chips { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
         .rc-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; border-radius: 7px; padding: 3px 8px; border: 1px solid var(--border); color: var(--muted); background: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; text-decoration: none; transition: all .15s ease; }
