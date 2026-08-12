@@ -208,7 +208,6 @@ function fallbackParseCvFromText(rawText: string) {
 
 import { ask } from './server/llm/llmAdapter.js';
 import nodemailer from 'nodemailer';
-import { displayUrl } from './src/lib/displayUrl.js';
 
 // Convert the stored Master CV into the TailoredCv shape the PDF generator
 // consumes (same conversion the master-download route uses).
@@ -1158,6 +1157,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const name = contact.name || contact.recruiterName || 'there';
       const company = contact.company || job?.company || 'your company';
       const role = job?.title || contact.jobRole || 'the role';
+      const firstName = (contact.name || contact.recruiterName || '').trim().split(/\s+/)[0] || '';
 
       const prompt = `You are a senior career coach writing a cold outreach email that reads like a real human wrote it.
 
@@ -1170,8 +1170,9 @@ Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate location: ${masterCv?.location || ''}
 
 Rules — this must feel human, not AI:
+- FIRST LINE: a greeting — literally "${firstName ? 'Hi ' + firstName + ',' : 'Hi there,'}" followed by a newline, then continue with the email. Nothing may appear before the greeting.
 - Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
-- 55-80 words total. Three short paragraphs maximum, ideally two.
+- 55-80 words total (excluding the greeting and signature). Three short paragraphs maximum, ideally two.
 - No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", exclamation marks.
 - Open with a direct, specific line tied to their role or company (one sentence).
 - Middle: ONE concrete link between the candidate's experience and their opening. No buzzword lists.
@@ -1187,9 +1188,11 @@ Return valid JSON only, no markdown:
       const body = String(parsed.body || '').trim();
       // Deterministic signature: candidate name, then their saved phone and
       // portfolio URL (from the Master CV) — each line only when it exists.
+      // The portfolio keeps its full https:// URL so mail clients render it
+      // as a clickable link in the sent email.
       const nameLine = masterCv?.fullName ? masterCv.fullName.trim() : '';
       const phoneLine = masterCv?.phone ? masterCv.phone.trim() : '';
-      const portfolioLine = masterCv?.website ? displayUrl(masterCv.website) : '';
+      const portfolioLine = masterCv?.website ? masterCv.website.trim() : '';
       const signature = [nameLine, phoneLine, portfolioLine].filter(Boolean).join('\n');
       res.json({
         success: true,
