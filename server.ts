@@ -1363,7 +1363,7 @@ Rules: if the name looks like a company/department ("Talent Acquisition", "Compa
       const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```\s*$/, ''));
       const name = typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : null;
       const title = typeof parsed.title === 'string' && parsed.title.trim() ? parsed.title.trim() : null;
-      updateContactIdentity(contact.id, { name, jobRole: title });
+      updateContactIdentity(contact.id, { name: name ?? undefined, jobRole: title ?? undefined });
       res.json({ success: true, contact: { ...contact, name: name ?? contact.name, jobRole: title ?? contact.jobRole } });
     } catch (err: any) {
       console.error('Contact enrich error:', err);
@@ -1387,7 +1387,7 @@ Rules: if the name looks like a company/department ("Talent Acquisition", "Compa
       }
       res.json({ format: valid, mx, detail: !valid ? 'invalid-format' : mx === null ? 'unknown' : mx ? 'valid' : 'no-mx' });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: 'Verification failed.' });
     }
   });
 

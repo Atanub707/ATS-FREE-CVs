@@ -322,6 +322,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: c.email }),
       });
       const d = await res.json();
+      if (!res.ok) { setVerifyMap((m) => ({ ...m, [c.id]: 'unknown' })); return; }
       setVerifyMap((m) => ({ ...m, [c.id]: d.detail }));
     } catch { setVerifyMap((m) => ({ ...m, [c.id]: 'unknown' })); }
   };
