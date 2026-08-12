@@ -411,28 +411,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
 
       <style>{`
   .login-page { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; background: #F8FAFC; }
-  .brand-panel { background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 48px 56px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-  .brand-content { display: flex; flex-direction: column; position: relative; z-index: 1; }
+  .brand-panel { background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 26px 48px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .brand-content { display: flex; flex-direction: column; position: relative; z-index: 1; flex: 1; }
   .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; pointer-events: none; z-index: 0; }
   .blob.b1 { width: 320px; height: 320px; right: -90px; top: 8%; background: rgba(37,99,235,.12); }
   .blob.b2 { width: 280px; height: 280px; left: -110px; bottom: 12%; background: rgba(5,150,105,.10); }
   .blob.b3 { width: 240px; height: 240px; left: 38%; top: -90px; background: rgba(124,58,237,.08); }
   .brand-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; border-radius: 999px; padding: 7px 14px; width: fit-content; }
   .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #2563EB; }
-  .logo-row { display: flex; align-items: center; gap: 13px; margin-top: 34px; }
+  .logo-row { display: flex; align-items: center; gap: 13px; margin-top: 12px; }
   .logo-icon { width: 46px; height: 46px; border-radius: 13px; background: #2563EB; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
   .brand-name { font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: #0F172A; }
   .created-by { display: flex; align-items: baseline; gap: 7px; font-size: 9.5px; font-weight: 700; letter-spacing: .16em; color: #94A3B8; text-transform: uppercase; margin-top: 2px; }
   .signature { font-size: 21px; font-weight: 600; color: #0F172A; text-transform: none; letter-spacing: 0; font-family: "Snell Roundhand", "Brush Script MT", "Apple Chancery", cursive; }
-  .headline { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; color: #0F172A; margin-top: 56px; }
+  .headline { font-size: 26px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; color: #0F172A; margin-top: 16px; }
   .headline span { display: block; }
-  .description { font-size: 14px; color: #64748B; margin-top: 14px; max-width: 420px; line-height: 1.65; }
-  .login-scene { position: relative; flex: 1; min-height: 300px; margin: 26px 0 10px; }
+  .description { font-size: 13px; color: #64748B; margin-top: 8px; max-width: 420px; line-height: 1.6; }
+  .login-scene { position: relative; flex: 1; min-height: 230px; margin: 16px 0 8px; }
   .scene-bg { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; border: 1px solid #E2E8F0; }
   .scene-bg img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.08); animation: kenburns 22s ease-in-out infinite alternate; }
   @keyframes kenburns { from { transform: scale(1.06) translateX(-1.5%); } to { transform: scale(1.14) translateX(1.5%); } }
   .scene-veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(249,250,251,.28) 55%, rgba(249,250,251,.92)); }
-  .cv-card { position: absolute; left: 26px; top: 34px; width: 218px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 15px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.22); animation: float 5.5s ease-in-out infinite; z-index: 3; }
+  .cv-card { position: absolute; left: 20px; top: 20px; width: 204px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 12px 13px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.22); animation: float 5.5s ease-in-out infinite; z-index: 3; }
   .cv-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
   .cv-name { font-size: 12.5px; font-weight: 800; color: #0F172A; }
   .cv-role { font-size: 9px; color: #64748B; font-weight: 600; }
@@ -446,19 +446,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .cv-card .skill-ok { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
   .cv-card .skill-add { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
   @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
-  .chat-card { position: absolute; right: 22px; bottom: 26px; width: 236px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 13px 14px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.20); animation: float 6s .6s ease-in-out infinite; z-index: 3; }
-  .chat-peeps { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
-  .chat-av { width: 28px; height: 28px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2563EB, #7C3AED); }
-  .chat-peeps b { font-size: 10.5px; font-weight: 700; color: #0F172A; display: block; }
-  .chat-peeps span { font-size: 9px; color: #94A3B8; }
-  .chat-bubble { font-size: 10.5px; line-height: 1.45; padding: 8px 11px; border-radius: 12px; margin-bottom: 7px; max-width: 85%; animation: bubbleIn .5s ease-out both; }
+  .chat-card { position: absolute; right: 18px; bottom: 18px; width: 220px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 10px 12px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.20); animation: float 6s .6s ease-in-out infinite; z-index: 3; }
+  .chat-peeps { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .chat-av { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2563EB, #7C3AED); }
+  .chat-peeps b { font-size: 10px; font-weight: 700; color: #0F172A; display: block; }
+  .chat-peeps span { font-size: 8.5px; color: #94A3B8; }
+  .chat-bubble { font-size: 10px; line-height: 1.4; padding: 7px 10px; border-radius: 12px; margin-bottom: 5px; max-width: 85%; animation: bubbleIn .5s ease-out both; }
   .chat-bubble.left { background: #F1F5F9; color: #475569; border-bottom-left-radius: 4px; }
   .chat-bubble.right { margin-left: auto; background: #EFF6FF; color: #0F172A; border-bottom-right-radius: 4px; font-weight: 600; }
   .chat-bubble.right b { color: #2563EB; }
   .chat-bubble.b2 { animation-delay: 1.1s; }
   .chat-bubble.b3 { animation-delay: 2s; }
   @keyframes bubbleIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  .chat-typing { display: inline-flex; gap: 3px; padding: 9px 12px; background: #F1F5F9; border-radius: 12px; border-bottom-left-radius: 4px; }
+  .chat-typing { display: inline-flex; gap: 3px; padding: 7px 10px; background: #F1F5F9; border-radius: 12px; border-bottom-left-radius: 4px; }
   .chat-typing i { width: 5px; height: 5px; border-radius: 50%; background: #94A3B8; animation: typing 1.2s ease-in-out infinite; }
   .chat-typing i:nth-child(2) { animation-delay: .18s; }
   .chat-typing i:nth-child(3) { animation-delay: .36s; }
@@ -469,16 +469,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .chip-float.c2 { right: 34%; top: 56px; color: #D97706; animation: float 4.8s .9s ease-in-out infinite; }
   .chip-float.c3 { left: 8%; bottom: 40px; color: #7C3AED; animation: float 5.2s .4s ease-in-out infinite; }
   .chip-float.c4 { right: 8%; top: 40%; color: #2563EB; animation: float 4.6s 1.2s ease-in-out infinite; }
-  .login-feats { margin-top: 30px; display: flex; flex-direction: column; gap: 13px; }
-  .feature-item { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 600; color: #475569; }
-  .feature-item .feat-ico { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .feature-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .login-feats { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .feature-item { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 600; color: #475569; background: #FAFAF9; border: 1px solid #E2E8F0; border-radius: 11px; padding: 9px 11px; }
+  .feature-item .feat-ico { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .feature-item svg { width: 13px; height: 13px; flex-shrink: 0; }
   .feat-ico.blue { background: #EFF6FF; color: #2563EB; }
   .feat-ico.violet { background: #F5F3FF; color: #7C3AED; }
   .feat-ico.emerald { background: #ECFDF5; color: #059669; }
   .feat-ico.amber { background: #FFFBEB; color: #D97706; }
   .brand-footer { margin-top: auto; font-size: 11px; color: #94A3B8; position: relative; z-index: 1; }
-  .form-panel { display: flex; align-items: center; justify-content: center; padding: 48px; background: #F8FAFC; position: relative; }
+  .form-panel { display: flex; align-items: center; justify-content: center; padding: 32px 48px; background: #F8FAFC; position: relative; }
   .form-container { width: 100%; max-width: 380px; }
   .form-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #0F172A; }
   .form-header p { font-size: 13px; color: #64748B; margin: 6px 0 24px; line-height: 1.5; }
@@ -514,6 +514,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   @keyframes lgn-spin { to { transform: rotate(360deg); } }
   .form-footer { position: absolute; bottom: 20px; font-size: 11px; color: #94A3B8; }
   @media (max-width: 1000px) { .login-page { grid-template-columns: 1fr; } .brand-panel { display: none; } .form-panel { padding: 32px 20px; } }
+  @media (max-height: 700px) {
+    .brand-panel { padding: 18px 40px; }
+    .logo-row { margin-top: 10px; }
+    .headline { font-size: 23px; margin-top: 12px; }
+    .description { font-size: 12.5px; margin-top: 7px; line-height: 1.5; }
+    .login-scene { min-height: 185px; margin: 12px 0 6px; }
+    .cv-card { width: 192px; padding: 10px 12px; top: 14px; left: 16px; }
+    .chat-card { width: 200px; padding: 8px 10px; bottom: 10px; right: 14px; }
+    .chat-peeps { margin-bottom: 5px; }
+    .chat-av { width: 22px; height: 22px; font-size: 8.5px; }
+    .chat-peeps b { font-size: 9px; }
+    .chat-peeps span { font-size: 7.5px; }
+    .chat-bubble { font-size: 8.5px; line-height: 1.35; padding: 5px 8px; margin-bottom: 4px; }
+    .chat-typing { padding: 6px 9px; }
+    .chat-typing i { width: 4px; height: 4px; }
+    .chip-float { font-size: 8.5px; padding: 4px 9px; }
+    .login-feats { gap: 7px; margin-top: 10px; }
+    .feature-item { font-size: 11px; padding: 7px 9px; gap: 7px; }
+    .feature-item .feat-ico { width: 23px; height: 23px; border-radius: 7px; }
+    .form-panel { padding: 16px 32px; }
+    .form-footer { bottom: 10px; }
+  }
   @media (prefers-reduced-motion: reduce) { .scene-bg img, .cv-card, .chat-card, .chip-float, .badge-dot, .chat-typing i { animation: none; } .ring-bar { stroke-dashoffset: 4; } }
 `}</style>
     </main>
