@@ -588,30 +588,30 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-white text-slate-900 flex">
+    <div className="fixed inset-0 z-40 bg-white text-[var(--color-ink)] flex">
       {/* LEFT: EDITOR */}
-      <div className="w-[46%] min-w-[420px] border-r border-slate-200 flex flex-col bg-white">
+      <div className="w-[46%] min-w-[420px] border-r border-[var(--color-hairline)] flex flex-col bg-white">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 border-b border-[var(--color-hairline)] bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
             <button
               onClick={onClose}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAFF] border border-[var(--color-hairline)] transition-colors cursor-pointer"
               title="Back to dashboard"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
             </button>
-            <User className="w-5 h-5 text-slate-700 ml-1" />
+            <User className="w-5 h-5 text-[var(--color-muted)] ml-1" />
             <div>
-              <h2 className="text-sm font-bold text-slate-900 leading-tight">Master Candidate CV</h2>
-              <p className="text-[10.5px] text-slate-400 font-medium">Edits apply to every score &amp; tailor · autosaved on Save</p>
+              <h2 className="text-sm font-bold text-[var(--color-ink)] leading-tight">Master Candidate CV</h2>
+              <p className="text-[10.5px] text-[var(--color-faint)] font-medium">Edits apply to every score &amp; tailor · autosaved on Save</p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
             {savedSuccess && (
-              <span className="text-xs text-emerald-600 font-semibold flex items-center space-x-1">
+              <span className="text-xs text-[var(--color-cta)] font-semibold flex items-center space-x-1">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Saved!</span>
               </span>
@@ -624,7 +624,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   onClick={handleSave}
                   disabled={isSaving}
                   id="btn-save-master-cv"
-                  className="px-3 py-1.5 rounded-l-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                  className="px-3 py-1.5 rounded-l-lg text-xs font-semibold bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] text-white transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSaving ? 'Saving...' : 'Save'}</span>
@@ -632,7 +632,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSaveMenuOpen((v) => !v)}
-                  className="px-1.5 py-1.5 rounded-r-lg text-white bg-blue-600 hover:bg-blue-700 border-l border-blue-500 transition-colors cursor-pointer"
+                  className="px-1.5 py-1.5 rounded-r-lg text-white bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] border-l border-blue-500 transition-colors cursor-pointer"
                   title="More options"
                 >
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${saveMenuOpen ? 'rotate-180' : ''}`} />
@@ -642,24 +642,24 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               {saveMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setSaveMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1.5">
-                    <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[var(--color-hairline)] rounded-xl shadow-lg z-50 p-1.5">
+                    <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-faint)]">
                       Export
                     </div>
                     <button
                       type="button"
                       onClick={() => { setSaveMenuOpen(false); handleDownloadPdf(); }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-slate-700 hover:bg-slate-100 cursor-pointer text-left"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] cursor-pointer text-left"
                     >
-                      <FileDown className="w-4 h-4 text-slate-500" />
+                      <FileDown className="w-4 h-4 text-[var(--color-faint)]" />
                       Download PDF
                     </button>
                     <button
                       type="button"
                       onClick={() => { setSaveMenuOpen(false); handleSave(); }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-slate-700 hover:bg-slate-100 cursor-pointer text-left"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] cursor-pointer text-left"
                     >
-                      <Save className="w-4 h-4 text-slate-500" />
+                      <Save className="w-4 h-4 text-[var(--color-faint)]" />
                       Save changes
                     </button>
                   </div>
@@ -673,7 +673,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <button
               type="button"
               onClick={() => { setVersionsOpen(true); loadVersions(); }}
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-[var(--color-faint)] hover:text-[var(--color-ink)] hover:bg-[var(--color-brand-soft)] border border-transparent hover:border-[var(--color-hairline)] transition-colors cursor-pointer"
               title="CV versions & backups"
             >
               <History className="w-4 h-4" />
@@ -682,18 +682,18 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         </div>
 
         {/* Editor Body Form */}
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-slate-800">
+        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-[var(--color-ink)]">
           {/* File Upload & Quick Paste Auto-Extract Banner */}
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-blue-900 space-y-3 shadow-xs">
+          <div className="bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] p-4 rounded-xl text-blue-900 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Sparkles className="w-4.5 h-4.5 text-blue-600" />
+                <Sparkles className="w-4.5 h-4.5 text-[var(--color-brand)]" />
                 <span className="font-bold text-xs text-blue-950">Upload & Scrape Resume (PDF, DOCX, TXT)</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPasteBox(!showPasteBox)}
-                className="text-xs text-blue-700 font-semibold underline hover:text-blue-900 cursor-pointer"
+                className="text-xs text-[var(--color-brand)] font-semibold underline hover:text-blue-900 cursor-pointer"
               >
                 {showPasteBox ? 'Hide Raw Text Box' : 'Paste Raw Text Instead'}
               </button>
@@ -711,22 +711,22 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               />
               <label
                 htmlFor="cv-file-upload-input"
-                className={`border-2 border-dashed rounded-lg p-4 bg-white hover:bg-blue-50/50 border-blue-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center cursor-pointer text-center ${
+                className={`border-2 border-dashed rounded-lg p-4 bg-white hover:bg-[var(--color-brand-soft)]/50 border-[var(--color-brand)] hover:border-blue-500 transition-all flex flex-col items-center justify-center cursor-pointer text-center ${
                   isParsingText ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >
                 {isParsingText ? (
-                  <div className="flex items-center space-x-2 py-1 text-blue-700 font-bold">
+                  <div className="flex items-center space-x-2 py-1 text-[var(--color-brand)] font-bold">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>AI is reading & extracting A to Z resume details...</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center space-y-1">
-                    <Upload className="w-6 h-6 text-blue-600 mb-1" />
+                    <Upload className="w-6 h-6 text-[var(--color-brand)] mb-1" />
                     <span className="font-bold text-blue-900 text-xs">
                       Click to upload candidate CV (PDF, DOCX, TXT)
                     </span>
-                    <span className="text-[11px] text-blue-600">
+                    <span className="text-[11px] text-[var(--color-brand)]">
                       Gemini AI will automatically extract contact details, summary, work history, education, & skills into the fields below!
                     </span>
                   </div>
@@ -735,22 +735,22 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             </div>
 
             {extractedFileName && (
-              <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center justify-between text-emerald-800 text-xs font-medium">
+              <div className="bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] p-2.5 rounded-lg flex items-center justify-between text-emerald-800 text-xs font-medium">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-[var(--color-cta)]" />
                   <span>Successfully extracted from <strong>{extractedFileName}</strong>! All fields populated below.</span>
                 </div>
               </div>
             )}
 
             {parseError && (
-              <p className="text-xs text-red-600 font-semibold bg-red-50 p-2 rounded border border-red-200">
+              <p className="text-xs text-[var(--color-danger)] font-semibold bg-[var(--color-danger-soft)] p-2 rounded border border-[#FECACA]">
                 {parseError}
               </p>
             )}
 
             {showPasteBox && (
-              <div className="space-y-2 pt-2 border-t border-blue-200">
+              <div className="space-y-2 pt-2 border-t border-[var(--color-brand-line)]">
                 <p className="text-[11px] text-blue-800">
                   Paste raw text from candidate's resume to parse directly:
                 </p>
@@ -759,14 +759,14 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   value={rawPasteText}
                   onChange={(e) => setRawPasteText(e.target.value)}
                   placeholder="Paste candidate's full resume text here..."
-                  className="w-full bg-white border border-blue-300 rounded p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full bg-white border border-[var(--color-brand)] rounded p-2.5 text-xs text-[var(--color-ink)] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
                 <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={handleParseRawText}
                     disabled={isParsingText || !rawPasteText.trim()}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] disabled:bg-blue-300 text-white font-semibold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-xs"
                   >
                     {isParsingText ? (
                       <>
@@ -805,55 +805,55 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </datalist>
 
           {/* Contact Details Section */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-              <User className="w-3.5 h-3.5 text-slate-600" />
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+            <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+              <User className="w-3.5 h-3.5 text-[var(--color-muted)]" />
               <span>Contact Information</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Full Name</label>
+                <label className="block text-[var(--color-muted)] font-medium mb-1">Full Name</label>
                 <input
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   placeholder="e.g. Alex Johnson"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 font-medium"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Email Address</label>
+                <label className="block text-[var(--color-muted)] font-medium mb-1">Email Address</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="alex@example.com"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Phone Number</label>
+                <label className="block text-[var(--color-muted)] font-medium mb-1">Phone Number</label>
                 <input
                   type="text"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+1 (555) 000-0000"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Location</label>
+                <label className="block text-[var(--color-muted)] font-medium mb-1">Location</label>
                 <input
                   type="text"
                   list="mastercv-locations"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="City, State / Country or Remote"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
                   {PREDEFINED_LOCATIONS.slice(0, 4).map((loc) => (
@@ -861,7 +861,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       type="button"
                       key={loc}
                       onClick={() => setFormData({ ...formData, location: loc })}
-                      className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded cursor-pointer border border-slate-200"
+                      className="text-[10px] bg-[#F1F0FA] hover:bg-slate-200 text-[var(--color-muted)] px-1.5 py-0.5 rounded cursor-pointer border border-[var(--color-hairline)]"
                     >
                       {loc}
                     </button>
@@ -870,8 +870,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1 flex items-center space-x-1">
-                  <Linkedin className="w-3 h-3 text-blue-600" />
+                <label className="block text-[var(--color-muted)] font-medium mb-1 flex items-center space-x-1">
+                  <Linkedin className="w-3 h-3 text-[var(--color-brand)]" />
                   <span>LinkedIn Profile</span>
                 </label>
                 <input
@@ -879,13 +879,13 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   value={formData.linkedin || ''}
                   onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                   placeholder="https://linkedin.com/in/username"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1 flex items-center space-x-1">
-                  <Github className="w-3 h-3 text-slate-800" />
+                <label className="block text-[var(--color-muted)] font-medium mb-1 flex items-center space-x-1">
+                  <Github className="w-3 h-3 text-[var(--color-ink)]" />
                   <span>GitHub Profile</span>
                 </label>
                 <input
@@ -893,13 +893,13 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   value={formData.github || ''}
                   onChange={(e) => setFormData({ ...formData, github: e.target.value })}
                   placeholder="https://github.com/username"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1 flex items-center space-x-1">
-                  <Globe className="w-3 h-3 text-emerald-600" />
+                <label className="block text-[var(--color-muted)] font-medium mb-1 flex items-center space-x-1">
+                  <Globe className="w-3 h-3 text-[var(--color-cta)]" />
                   <span>Portfolio / Personal Website</span>
                 </label>
                 <input
@@ -907,23 +907,23 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   value={formData.website || ''}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   placeholder="https://portfolio.dev or https://alexjohnson.com"
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
               </div>
             </div>
           </div>
 
           {/* Master Professional Summary */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px]">
                 Master Professional Summary
               </h3>
               <button
                 type="button"
                 onClick={handleAskAiSummary}
                 disabled={isImprovingSummary}
-                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[var(--color-ink)] hover:bg-[#14113B] text-white transition-colors cursor-pointer disabled:opacity-50"
                 title="Ask AI to improve your summary"
               >
                 {isImprovingSummary ? (
@@ -944,16 +944,16 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
               placeholder="Candidate's comprehensive professional background summary..."
-              className="w-full bg-white border border-slate-200 rounded p-2.5 text-slate-900 leading-relaxed focus:outline-none focus:ring-1 focus:ring-slate-900"
+              className="w-full bg-white border border-[var(--color-hairline)] rounded p-2.5 text-[var(--color-ink)] leading-relaxed focus:outline-none focus:ring-1 focus:ring-slate-900"
             />
 
             {summaryError && (
-              <p className="text-[11px] text-red-600 font-medium">{summaryError}</p>
+              <p className="text-[11px] text-[var(--color-danger)] font-medium">{summaryError}</p>
             )}
 
             {summarySuggestions.length > 0 && (
               <div className="space-y-2 pt-1">
-                <p className="text-[11px] font-semibold text-blue-700 flex items-center space-x-1">
+                <p className="text-[11px] font-semibold text-[var(--color-brand)] flex items-center space-x-1">
                   <Sparkles className="w-3 h-3" />
                   <span>AI Suggested Summaries — click one to apply:</span>
                 </p>
@@ -962,13 +962,13 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     type="button"
                     key={idx}
                     onClick={() => applySummarySuggestion(opt.text)}
-                    className="w-full text-left p-3 rounded-lg border border-blue-200 bg-white hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer group"
+                    className="w-full text-left p-3 rounded-lg border border-[var(--color-brand-line)] bg-white hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer group"
                     title={`Apply "${opt.label}"`}
                   >
-                    <span className="block text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1 group-hover:underline">
+                    <span className="block text-[10px] font-bold text-[var(--color-brand)] uppercase tracking-wide mb-1 group-hover:underline">
                       {opt.label}
                     </span>
-                    <span className="text-xs text-slate-700 leading-relaxed">{opt.text}</span>
+                    <span className="text-xs text-[var(--color-muted)] leading-relaxed">{opt.text}</span>
                   </button>
                 ))}
               </div>
@@ -976,17 +976,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Work Experience History */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-slate-600" />
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                 <span>Work Experience History</span>
               </h3>
 
               <button
                 type="button"
                 onClick={addExperience}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Position</span>
@@ -1003,18 +1003,18 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 className={`bg-white p-3.5 rounded-lg border space-y-3 cursor-grab active:cursor-grabbing transition-all ${
                   dragExpIdx === expIdx
                     ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-[var(--color-hairline)] hover:border-[var(--color-brand-line)]'
                 }`}
               >
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="font-bold text-slate-700 text-[11px] flex items-center space-x-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-hairline)]">
+                  <span className="font-bold text-[var(--color-muted)] text-[11px] flex items-center space-x-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
                     <span>Position #{expIdx + 1}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => removeExperience(expIdx)}
-                    className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1022,7 +1022,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Job Title</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Job Title</label>
                     <input
                       type="text"
                       list="mastercv-roles"
@@ -1032,12 +1032,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         updated.experiences[expIdx].title = e.target.value;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Company</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Company</label>
                     <input
                       type="text"
                       value={exp.company}
@@ -1046,12 +1046,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         updated.experiences[expIdx].company = e.target.value;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Location</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Location</label>
                     <input
                       type="text"
                       value={exp.location || ''}
@@ -1061,12 +1061,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. San Francisco, CA / Remote"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Dates / Period</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Dates / Period</label>
                     <DateRangePicker
                       value={exp.dates || ''}
                       onChange={(v) => {
@@ -1080,7 +1080,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 text-[11px] mb-1 font-semibold">Responsibilities & Achievements</label>
+                  <label className="block text-[var(--color-faint)] text-[11px] mb-1 font-semibold">Responsibilities & Achievements</label>
                   <div className="space-y-1.5">
                     {exp.responsibilities.map((resp, respIdx) => (
                       <div key={respIdx} className="flex items-center space-x-1.5">
@@ -1088,12 +1088,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                           type="text"
                           value={resp}
                           onChange={(e) => updateExperienceResponsibility(expIdx, respIdx, e.target.value)}
-                          className="flex-1 border border-slate-200 rounded px-2 py-1 text-slate-800"
+                          className="flex-1 border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                         />
                         <button
                           type="button"
                           onClick={() => removeExperienceResponsibility(expIdx, respIdx)}
-                          className="p-1 text-slate-400 hover:text-red-600 cursor-pointer"
+                          className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1104,7 +1104,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => addExperienceResponsibility(expIdx)}
-                    className="mt-2 text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                    className="mt-2 text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add Responsibility Bullet</span>
@@ -1115,17 +1115,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Education History */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-slate-600" />
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                 <span>Education History</span>
               </h3>
 
               <button
                 type="button"
                 onClick={addEducation}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Education</span>
@@ -1133,13 +1133,13 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             </div>
 
             {(formData.education || []).map((edu, eduIdx) => (
-              <div key={edu.id || eduIdx} className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+              <div key={edu.id || eduIdx} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-700 text-[11px]">Degree #{eduIdx + 1}</span>
+                  <span className="font-bold text-[var(--color-muted)] text-[11px]">Degree #{eduIdx + 1}</span>
                   <button
                     type="button"
                     onClick={() => removeEducation(eduIdx)}
-                    className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1147,7 +1147,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Degree / Qualification</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Degree / Qualification</label>
                     <input
                       type="text"
                       value={edu.degree}
@@ -1156,12 +1156,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         updated.education[eduIdx].degree = e.target.value;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Institution / University</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Institution / University</label>
                     <input
                       type="text"
                       value={edu.institution}
@@ -1170,12 +1170,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         updated.education[eduIdx].institution = e.target.value;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Dates / Graduation Year</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Dates / Graduation Year</label>
                     <DateRangePicker
                       value={edu.dates || ''}
                       onChange={(v) => {
@@ -1188,7 +1188,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Honors / Details</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Honors / Details</label>
                     <input
                       type="text"
                       value={edu.details || ''}
@@ -1197,7 +1197,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         updated.education[eduIdx].details = e.target.value;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
                 </div>
@@ -1206,17 +1206,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Technical Skills */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                <Code className="w-3.5 h-3.5 text-slate-600" />
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                <Code className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                 <span>Technical Skills & Core Competencies</span>
               </h3>
 
               <button
                 type="button"
                 onClick={addSkillCategory}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Skill Category</span>
@@ -1225,7 +1225,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
             <div className="space-y-2">
               {formData.skills.map((sk, skIdx) => (
-                <div key={skIdx} className="flex items-center space-x-2 bg-white p-2 rounded border border-slate-200">
+                <div key={skIdx} className="flex items-center space-x-2 bg-white p-2 rounded border border-[var(--color-hairline)]">
                   <input
                     type="text"
                     value={sk.category}
@@ -1235,7 +1235,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       setFormData(updated);
                     }}
                     placeholder="Category Name"
-                    className="w-1/3 border border-slate-200 rounded px-2 py-1 font-bold text-slate-900"
+                    className="w-1/3 border border-[var(--color-hairline)] rounded px-2 py-1 font-bold text-[var(--color-ink)]"
                   />
                   <TagInput
                     value={sk.items}
@@ -1249,7 +1249,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => removeSkillCategory(skIdx)}
-                    className="p-1 text-slate-400 hover:text-red-600 cursor-pointer"
+                    className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1259,17 +1259,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Projects Section */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                <FolderGit2 className="w-3.5 h-3.5 text-slate-600" />
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                <FolderGit2 className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                 <span>Featured Projects & Portfolio</span>
               </h3>
 
               <button
                 type="button"
                 onClick={addProject}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Project</span>
@@ -1286,18 +1286,18 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 className={`bg-white p-3 rounded-lg border space-y-2.5 cursor-grab active:cursor-grabbing transition-all ${
                   dragProjectIdx === pIdx
                     ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-[var(--color-hairline)] hover:border-[var(--color-brand-line)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center space-x-1.5 font-bold text-slate-700 text-[11px]">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="flex items-center space-x-1.5 font-bold text-[var(--color-muted)] text-[11px]">
+                    <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
                     <span>Project #{pIdx + 1}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => removeProject(pIdx)}
-                    className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1305,7 +1305,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Project Name</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Project Name</label>
                     <input
                       type="text"
                       value={proj.name}
@@ -1316,12 +1316,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. AI Portfolio Generator"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Dates / Period</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Dates / Period</label>
                     <DateRangePicker
                       value={proj.dates || ''}
                       onChange={(v) => {
@@ -1335,7 +1335,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-slate-500 text-[11px]">Description & Achievements</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Description & Achievements</label>
                     <textarea
                       rows={2}
                       value={proj.description}
@@ -1346,12 +1346,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="Brief overview of project architecture, impact, and features..."
-                      className="w-full border border-slate-200 rounded p-2 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded p-2 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Technologies Used (Comma-separated)</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Technologies Used (Comma-separated)</label>
                     <input
                       type="text"
                       value={(proj.technologies || []).join(', ')}
@@ -1362,12 +1362,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. React, Node.js, PostgreSQL"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Project / Repository Link</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Project / Repository Link</label>
                     <input
                       type="text"
                       value={proj.link || ''}
@@ -1378,7 +1378,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="https://github.com/..."
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
                 </div>
@@ -1387,17 +1387,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Certifications & Credentials */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                <Award className="w-3.5 h-3.5 text-slate-600" />
+              <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                <Award className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                 <span>Certifications, Licenses & Credentials</span>
               </h3>
 
               <button
                 type="button"
                 onClick={addCertification}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Certification</span>
@@ -1414,18 +1414,18 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 className={`bg-white p-3 rounded-lg border space-y-2 cursor-grab active:cursor-grabbing transition-all ${
                   dragCertIdx === cIdx
                     ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-[var(--color-hairline)] hover:border-[var(--color-brand-line)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-700 text-[11px] flex items-center space-x-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="font-bold text-[var(--color-muted)] text-[11px] flex items-center space-x-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
                     <span>Certification #{cIdx + 1}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => removeCertification(cIdx)}
-                    className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1433,7 +1433,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="sm:col-span-2">
-                    <label className="block text-slate-500 text-[11px]">Certification Title / Name</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Certification Title / Name</label>
                     <input
                       type="text"
                       value={cert.name}
@@ -1444,12 +1444,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. AWS Certified Solutions Architect - Associate"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900 font-bold"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Issuer / Organization</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Issuer / Organization</label>
                     <input
                       type="text"
                       value={cert.issuer || ''}
@@ -1460,12 +1460,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. Amazon Web Services, Google, Coursera"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 text-[11px]">Date Issued / Expiration</label>
+                    <label className="block text-[var(--color-faint)] text-[11px]">Date Issued / Expiration</label>
                     <input
                       type="text"
                       value={cert.date || ''}
@@ -1476,7 +1476,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                         setFormData(updated);
                       }}
                       placeholder="e.g. Nov 2023"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                     />
                   </div>
                 </div>
@@ -1485,47 +1485,47 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Skill Gaps Section */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+          <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-lg overflow-hidden">
             <button
               type="button"
               onClick={() => {
                 if (!showGaps) fetchSkillGaps();
                 setShowGaps(!showGaps);
               }}
-              className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer"
             >
               <div className="flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <TrendingUp className="w-4 h-4 text-[var(--color-brand)]" />
                 <span>Skill Gaps from Market</span>
                 {skillGaps.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 text-[10px] font-bold">
+                  <span className="px-1.5 py-0.2 rounded bg-[var(--color-brand-soft)] text-[var(--color-brand)] text-[10px] font-bold">
                     {skillGaps.length}
                   </span>
                 )}
               </div>
-              {showGaps ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+              {showGaps ? <ChevronDown className="w-4 h-4 text-[var(--color-faint)]" /> : <ChevronRight className="w-4 h-4 text-[var(--color-faint)]" />}
             </button>
 
             {showGaps && (
               <div className="px-3.5 pb-3.5 space-y-2">
                 {gapsLoading ? (
-                  <div className="flex items-center space-x-2 text-xs text-slate-500 py-2">
+                  <div className="flex items-center space-x-2 text-xs text-[var(--color-faint)] py-2">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Analyzing scored jobs...</span>
                   </div>
                 ) : skillGaps.length === 0 ? (
-                  <div className="flex items-center space-x-2 text-xs text-slate-500 py-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <div className="flex items-center space-x-2 text-xs text-[var(--color-faint)] py-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-amber,#C2410C)]" />
                     <span>No scored jobs yet. Run match analysis on jobs first.</span>
                   </div>
                 ) : (
                   <>
                     {gapsAddedMsg && (
-                      <div className="px-2 py-1.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium">
+                      <div className="px-2 py-1.5 rounded bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] text-emerald-800 text-[11px] font-medium">
                         {gapsAddedMsg}
                       </div>
                     )}
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-[var(--color-faint)]">
                       Skills most frequently missing across {skillGaps[0]?.totalScored || 0} scored jobs. Check the ones you have and add them to your CV.
                     </p>
                     <div className="max-h-48 overflow-y-auto space-y-1">
@@ -1538,10 +1538,10 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                             type="checkbox"
                             checked={selectedGaps.has(gap.skill)}
                             onChange={() => toggleGap(gap.skill)}
-                            className="rounded border-slate-300 cursor-pointer"
+                            className="rounded border-[var(--color-hairline2)] cursor-pointer"
                           />
-                          <span className="flex-1 font-medium text-slate-800">{gap.skill}</span>
-                          <span className="text-[10px] font-semibold text-slate-500">
+                          <span className="flex-1 font-medium text-[var(--color-ink)]">{gap.skill}</span>
+                          <span className="text-[10px] font-semibold text-[var(--color-faint)]">
                             {gap.count}/{gap.totalScored} jobs
                           </span>
                         </label>
@@ -1551,7 +1551,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       <button
                         type="button"
                         onClick={addSelectedGapsToCv}
-                        className="w-full px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                        className="w-full px-3 py-1.5 rounded-md text-xs font-semibold bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] text-white transition-colors cursor-pointer"
                       >
                         Add {selectedGaps.size} Skill{selectedGaps.size > 1 ? 's' : ''} to CV
                       </button>
@@ -1565,12 +1565,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
       </div>
 
       {/* RIGHT: LIVE PDF PREVIEW */}
-      <div className="flex-1 bg-slate-100 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0 gap-3">
-          <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+      <div className="flex-1 bg-[#F1F0FA] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-hairline)] bg-white/80 backdrop-blur-sm shrink-0 gap-3">
+          <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-faint)] whitespace-nowrap">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-cta-soft)]0" />
             </span>
             <span>Live PDF Preview</span>
           </span>
@@ -1581,27 +1581,27 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               ref={tplBtnRef}
               type="button"
               onClick={openTemplateMenu}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] transition-colors cursor-pointer"
               title="Choose CV template"
             >
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <FileText className="w-3.5 h-3.5 text-[var(--color-faint)]" />
               <span className="whitespace-nowrap">{CV_TEMPLATES.find((t) => t.id === template)?.label || 'Template'}</span>
-              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${templateMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3 h-3 text-[var(--color-faint)] transition-transform ${templateMenuOpen ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
           <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
             {/* PDF rename */}
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden lg:inline">PDF name</span>
+              <span className="text-[10px] font-bold text-[var(--color-faint)] uppercase tracking-wider hidden lg:inline">PDF name</span>
               <input
                 type="text"
                 value={downloadFilename}
                 onChange={(e) => setDownloadFilename(e.target.value.replace(/[^a-zA-Z0-9_\- ]/g, ''))}
-                className="w-36 bg-white border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-36 bg-white border border-[var(--color-hairline)] rounded px-2 py-1 text-[11px] text-[var(--color-ink)] font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
                 title="Rename the downloaded PDF (extension .pdf added automatically)"
               />
-              <span className="text-[11px] text-slate-400 font-mono hidden xl:inline">.pdf</span>
+              <span className="text-[11px] text-[var(--color-faint)] font-mono hidden xl:inline">.pdf</span>
             </div>
 
             {/* AI Compress */}
@@ -1609,7 +1609,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               type="button"
               onClick={handleAiCompress}
               disabled={aiState === 'running'}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20 whitespace-nowrap"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-blue-600/20 whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{aiState === 'running' ? 'Compressing…' : 'AI Compress'}</span>
@@ -1620,11 +1620,11 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={previewZoom} template={template} />
 
           {/* Floating zoom control — bottom-right corner, stays visible while scrolling */}
-          <div className="sticky bottom-4 ml-auto w-fit flex items-center bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+          <div className="sticky bottom-4 ml-auto w-fit flex items-center bg-white border border-[var(--color-hairline)] rounded-lg shadow-lg overflow-hidden">
             <button
               type="button"
               onClick={() => setPreviewZoom((z) => Math.max(40, z - 10))}
-              className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
               title="Zoom out"
             >
               −
@@ -1632,7 +1632,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <button
               type="button"
               onClick={() => setPreviewZoom(75)}
-              className="px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer tabular-nums"
+              className="px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer tabular-nums"
               title="Reset zoom to 75%"
             >
               {previewZoom}%
@@ -1640,7 +1640,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <button
               type="button"
               onClick={() => setPreviewZoom((z) => Math.min(150, z + 10))}
-              className="px-2.5 py-1.5 text-[13px] font-extrabold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
               title="Zoom in"
             >
               +
@@ -1651,29 +1651,29 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
       {/* AI progress overlay */}
       {aiState === 'running' && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[var(--color-ink)]/40 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white rounded-2xl shadow-2xl w-[420px] p-6">
             <div className="flex items-center space-x-2.5">
-              <span className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
+              <span className="w-9 h-9 rounded-xl bg-[var(--color-brand)] flex items-center justify-center">
                 <Sparkles className="w-4.5 h-4.5 text-white" />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-900">AI Compressing your CV</p>
-                <p className="text-[11px] text-slate-400">Analyzing against live market data</p>
+                <p className="text-sm font-bold text-[var(--color-ink)]">AI Compressing your CV</p>
+                <p className="text-[11px] text-[var(--color-faint)]">Analyzing against live market data</p>
               </div>
             </div>
             <div className="mt-5 space-y-3">
               {AI_STEPS.map((label, i) => (
                 <div key={label} className="flex items-center space-x-3">
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-extrabold shrink-0 ${
-                    i < aiStep ? 'border-emerald-500 bg-emerald-500 text-white'
-                    : i === aiStep ? 'border-blue-500 text-blue-600'
-                    : 'border-slate-200 text-slate-300'
+                    i < aiStep ? 'border-emerald-500 bg-[var(--color-cta-soft)]0 text-white'
+                    : i === aiStep ? 'border-blue-500 text-[var(--color-brand)]'
+                    : 'border-[var(--color-hairline)] text-slate-300'
                   }`}>
                     {i < aiStep ? '✓' : i + 1}
                   </span>
-                  <span className={`text-xs font-medium ${i <= aiStep ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
-                  {i === aiStep && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
+                  <span className={`text-xs font-medium ${i <= aiStep ? 'text-[var(--color-ink)]' : 'text-[var(--color-faint)]'}`}>{label}</span>
+                  {i === aiStep && <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-brand)]" />}
                 </div>
               ))}
             </div>
@@ -1683,7 +1683,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
       {/* AI error */}
       {aiError && aiState !== 'running' && (
-        <div className="absolute top-16 right-6 z-[70] bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-lg px-4 py-2.5 shadow-lg">
+        <div className="absolute top-16 right-6 z-[70] bg-[var(--color-danger-soft)] border border-[#FECACA] text-red-700 text-xs font-semibold rounded-lg px-4 py-2.5 shadow-lg">
           {aiError}
         </div>
       )}
@@ -1692,32 +1692,32 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
       {aiState === 'result' && compressResult && (
         <div className="fixed inset-0 z-50 bg-[#F7F8FA] flex flex-col">
           {/* Sticky header */}
-          <div className="px-6 py-3.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+          <div className="px-6 py-3.5 border-b border-[var(--color-hairline)] bg-white flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3.5 min-w-0">
               <button
                 type="button"
                 onClick={() => { setAiState('idle'); setCompressResult(null); }}
-                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAFF] border border-[var(--color-hairline)] transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
               </button>
-              <span className="text-sm font-extrabold text-slate-900 whitespace-nowrap">AI Compression Result</span>
-              <span className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
-                <span className="text-xs font-extrabold text-slate-400 line-through">{pagesBefore > 0 ? `${pagesBefore} pages` : '…'}</span>
+              <span className="text-sm font-extrabold text-[var(--color-ink)] whitespace-nowrap">AI Compression Result</span>
+              <span className="inline-flex items-center gap-1.5 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-full px-3 py-1">
+                <span className="text-xs font-extrabold text-[var(--color-faint)] line-through">{pagesBefore > 0 ? `${pagesBefore} pages` : '…'}</span>
                 <span className="text-slate-300">→</span>
-                <span className="text-sm font-extrabold text-emerald-600">{pagesAfter > 0 ? pagesAfter : '…'}</span>
-                <span className="text-xs font-extrabold text-emerald-600">pages</span>
-                <span className="text-[10px] text-slate-400 font-semibold">· fit for any ATS</span>
+                <span className="text-sm font-extrabold text-[var(--color-cta)]">{pagesAfter > 0 ? pagesAfter : '…'}</span>
+                <span className="text-xs font-extrabold text-[var(--color-cta)]">pages</span>
+                <span className="text-[10px] text-[var(--color-faint)] font-semibold">· fit for any ATS</span>
               </span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button type="button" onClick={() => { setAiState('idle'); setCompressResult(null); }}
-                className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 cursor-pointer">
+                className="px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] cursor-pointer">
                 Cancel
               </button>
               <button type="button" onClick={() => setConfirmOpen(true)}
-                className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer">
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] shadow-md shadow-blue-600/20 cursor-pointer">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Apply</span>
               </button>
@@ -1728,32 +1728,32 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           <div className="flex-1 overflow-y-auto">
             <div className="px-6 py-5">
               {/* Outcome hero */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-5 flex-wrap">
-                <span className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+              <div className="bg-white border border-[var(--color-hairline)] rounded-2xl p-5 shadow-sm flex items-center gap-5 flex-wrap">
+                <span className="w-12 h-12 rounded-xl bg-[var(--color-brand)] flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
                   <Sparkles className="w-5 h-5 text-white" />
                 </span>
                 <div className="flex-1 min-w-[220px]">
-                  <p className="text-[15px] font-extrabold text-slate-900">Your CV is now {pagesAfter > 0 ? pagesAfter : 2} pages — concise, keyword-rich, ATS-ready</p>
-                  <p className="text-[11.5px] text-slate-500 mt-1">
+                  <p className="text-[15px] font-extrabold text-[var(--color-ink)]">Your CV is now {pagesAfter > 0 ? pagesAfter : 2} pages — concise, keyword-rich, ATS-ready</p>
+                  <p className="text-[11.5px] text-[var(--color-faint)] mt-1">
                     Every achievement, metric, and key skill kept · tightened for impact · tailored with {compressResult.marketSummary?.topKeywords?.length ?? 0} live market keywords
                   </p>
                 </div>
                 <div className="flex gap-7 flex-wrap">
                   <div className="text-center min-w-[64px]">
-                    <div className="text-xl font-extrabold text-blue-600 tabular-nums">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">pages</div>
+                    <div className="text-xl font-extrabold text-[var(--color-brand)] tabular-nums">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
+                    <div className="text-[10px] text-[var(--color-faint)] font-semibold">pages</div>
                   </div>
                   <div className="text-center min-w-[64px]">
-                    <div className="text-xl font-extrabold text-emerald-600">−{Math.max(0, Math.round((1 - compressResult.wordCountAfter / Math.max(1, compressResult.wordCountBefore)) * 100))}%</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">word count</div>
+                    <div className="text-xl font-extrabold text-[var(--color-cta)]">−{Math.max(0, Math.round((1 - compressResult.wordCountAfter / Math.max(1, compressResult.wordCountBefore)) * 100))}%</div>
+                    <div className="text-[10px] text-[var(--color-faint)] font-semibold">word count</div>
                   </div>
                   <div className="text-center min-w-[64px]">
-                    <div className="text-xl font-extrabold text-emerald-600">100%</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">metrics kept</div>
+                    <div className="text-xl font-extrabold text-[var(--color-cta)]">100%</div>
+                    <div className="text-[10px] text-[var(--color-faint)] font-semibold">metrics kept</div>
                   </div>
                   <div className="text-center min-w-[64px]">
-                    <div className="text-xl font-extrabold text-slate-900">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">market keywords</div>
+                    <div className="text-xl font-extrabold text-[var(--color-ink)]">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
+                    <div className="text-[10px] text-[var(--color-faint)] font-semibold">market keywords</div>
                   </div>
                 </div>
               </div>
@@ -1764,18 +1764,18 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 const allChanges = sections.flatMap((s: any) => s.changes || []);
                 if (allChanges.length === 0) return null;
                 return (
-                  <div className="mt-4 bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
-                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2.5">What changes</p>
+                  <div className="mt-4 bg-white border border-[var(--color-hairline)] rounded-xl px-5 py-4 shadow-sm">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--color-faint)] mb-2.5">What changes</p>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
                       {allChanges.map((c: any, i: number) => (
                         <div key={i} className="flex items-start gap-2 text-[11.5px] leading-relaxed">
                           <span className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center text-[8.5px] font-extrabold shrink-0 ${
-                            c.type === 'tighten' ? 'bg-blue-50 text-blue-600' : c.type === 'merge' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                            c.type === 'tighten' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand)]' : c.type === 'merge' ? 'bg-[var(--color-amber-soft,#FFF7ED)] text-[var(--color-amber,#C2410C)]' : 'bg-[var(--color-cta-soft)] text-[var(--color-cta)]'
                           }`}>
                             {c.type === 'tighten' ? '~' : c.type === 'merge' ? '+' : '✓'}
                           </span>
-                          <span className="text-slate-600">
-                            <b className="text-slate-800">{c.type === 'tighten' ? 'Tightened' : c.type === 'merge' ? 'Merged' : 'Kept'}: </b>
+                          <span className="text-[var(--color-muted)]">
+                            <b className="text-[var(--color-ink)]">{c.type === 'tighten' ? 'Tightened' : c.type === 'merge' ? 'Merged' : 'Kept'}: </b>
                             {c.reason}
                           </span>
                         </div>
@@ -1790,8 +1790,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="w-2 h-2 rounded-full bg-slate-300" />
-                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">Original</span>
-                    <span className="ml-auto text-[10px] font-bold text-slate-400">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
+                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-faint)]">Original</span>
+                    <span className="ml-auto text-[10px] font-bold text-[var(--color-faint)]">{pagesBefore > 0 ? `${pagesBefore} pages` : ''} · {compressResult.wordCountBefore?.toLocaleString()} words</span>
                   </div>
                   <div className="opacity-60">
                     <CvPdfPreview cv={masterCvToPdfShape(formData)} zoom={75} fitToWidth template={template} onPageCount={setPagesBefore} />
@@ -1799,17 +1799,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-2 h-2 rounded-full bg-blue-600" />
-                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">New CV</span>
-                    <span className="text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">AI ✦</span>
-                    <span className="ml-auto text-[10px] font-bold text-emerald-600">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
+                    <span className="w-2 h-2 rounded-full bg-[var(--color-brand)]" />
+                    <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-faint)]">New CV</span>
+                    <span className="text-[9px] font-extrabold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] rounded-full px-2 py-0.5">AI ✦</span>
+                    <span className="ml-auto text-[10px] font-bold text-[var(--color-cta)]">{pagesAfter > 0 ? `${pagesAfter} pages` : ''} · {compressResult.wordCountAfter?.toLocaleString()} words</span>
                   </div>
                   <CvPdfPreview cv={compressedCvToPdfShape(compressResult.compressedCv)} zoom={75} fitToWidth template={template} onPageCount={setPagesAfter} />
                   <div className="flex gap-2.5 mt-4 justify-end">
                     <button
                       type="button"
                       onClick={handleDownloadPdf}
-                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAFF] transition-colors cursor-pointer"
                     >
                       <FileDown className="w-3.5 h-3.5" />
                       <span>Download new CV</span>
@@ -1817,7 +1817,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => setConfirmOpen(true)}
-                      className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer"
+                      className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] shadow-md shadow-blue-600/20 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Apply</span>
@@ -1832,26 +1832,26 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
       {/* Confirm modal */}
       {confirmOpen && compressResult && (
-        <div className="fixed inset-0 z-[60] bg-slate-900/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-[var(--color-ink)]/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-[520px] p-6">
-            <p className="text-sm font-extrabold text-slate-900">Apply AI-compressed CV?</p>
-            <p className="text-[11px] text-slate-500 mt-1">The original will be saved automatically — you can restore it anytime.</p>
+            <p className="text-sm font-extrabold text-[var(--color-ink)]">Apply AI-compressed CV?</p>
+            <p className="text-[11px] text-[var(--color-faint)] mt-1">The original will be saved automatically — you can restore it anytime.</p>
             <div className="grid grid-cols-3 gap-2.5 my-4">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                <div className="text-base font-extrabold text-blue-600">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
-                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">pages before → after</div>
+              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+                <div className="text-base font-extrabold text-[var(--color-brand)]">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
+                <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">pages before → after</div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                <div className="text-base font-extrabold text-emerald-600">100%</div>
-                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">metrics preserved</div>
+              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+                <div className="text-base font-extrabold text-[var(--color-cta)]">100%</div>
+                <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">metrics preserved</div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-                <div className="text-base font-extrabold text-emerald-600">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
-                <div className="text-[9px] text-slate-400 font-semibold mt-0.5">market keywords added</div>
+              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+                <div className="text-base font-extrabold text-[var(--color-cta)]">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
+                <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">market keywords added</div>
               </div>
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10.5px] text-slate-600 leading-relaxed">
-              <b className="text-slate-800">What changes:</b>{' '}
+            <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-[10.5px] text-[var(--color-muted)] leading-relaxed">
+              <b className="text-[var(--color-ink)]">What changes:</b>{' '}
               {(() => {
                 const counts: Record<string, number> = { tighten: 0, merge: 0, keep: 0 };
                 compressResult.guidance?.sections?.forEach((s: any) => (s.changes || []).forEach((c: any) => { if (counts[c.type] !== undefined) counts[c.type]++; }));
@@ -1860,10 +1860,10 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               Original saved as <b>“Before AI compression”</b>. You can restore it via <b>Versions</b>.
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={() => setConfirmOpen(false)} className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 cursor-pointer">
+              <button type="button" onClick={() => setConfirmOpen(false)} className="px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] cursor-pointer">
                 Keep original
               </button>
-              <button type="button" onClick={handleAcceptCompressed} className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 cursor-pointer">
+              <button type="button" onClick={handleAcceptCompressed} className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] shadow-md shadow-blue-600/20 cursor-pointer">
                 Yes, apply &amp; backup
               </button>
             </div>
@@ -1874,24 +1874,24 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
       {/* Versions drawer */}
       {versionsOpen && (
         <div className="fixed inset-0 z-[60] bg-black/20 flex justify-end">
-          <div className="w-96 max-w-[90vw] bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col">
-            <div className="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between">
-              <p className="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                <History className="w-4 h-4 text-blue-600" />
+          <div className="w-96 max-w-[90vw] bg-white h-full shadow-2xl border-l border-[var(--color-hairline)] flex flex-col">
+            <div className="px-4 py-3.5 border-b border-[var(--color-hairline)] flex items-center justify-between">
+              <p className="text-sm font-bold text-[var(--color-ink)] flex items-center space-x-2">
+                <History className="w-4 h-4 text-[var(--color-brand)]" />
                 <span>CV Versions</span>
               </p>
-              <button type="button" onClick={() => setVersionsOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-700 cursor-pointer">
+              <button type="button" onClick={() => setVersionsOpen(false)} className="p-1.5 text-[var(--color-faint)] hover:text-[var(--color-muted)] cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {versions.length === 0 && <p className="text-xs text-slate-400 text-center py-8">No backups yet. AI compression creates them automatically.</p>}
+              {versions.length === 0 && <p className="text-xs text-[var(--color-faint)] text-center py-8">No backups yet. AI compression creates them automatically.</p>}
               {versions.map((v) => (
-                <div key={v.id} className="border border-slate-200 rounded-xl p-3.5 bg-slate-50">
-                  <p className="text-xs font-bold text-slate-900">{v.note || 'CV version'}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{v.pages > 0 ? `${v.pages} pages · ` : ''}{new Date(v.createdAt).toLocaleString()}</p>
+                <div key={v.id} className="border border-[var(--color-hairline)] rounded-xl p-3.5 bg-[#FAFAFF]">
+                  <p className="text-xs font-bold text-[var(--color-ink)]">{v.note || 'CV version'}</p>
+                  <p className="text-[10px] text-[var(--color-faint)] mt-0.5">{v.pages > 0 ? `${v.pages} pages · ` : ''}{new Date(v.createdAt).toLocaleString()}</p>
                   <button type="button" onClick={() => restoreVersion(v.id)}
-                    className="mt-2.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 cursor-pointer">
+                    className="mt-2.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] hover:bg-[#E3E6FD] cursor-pointer">
                     Restore
                   </button>
                 </div>
@@ -1908,14 +1908,14 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           <div className="fixed inset-0 z-[90]" onClick={closeTemplateMenu} />
           <div
             role="menu"
-            className="fixed z-[100] w-72 bg-white border border-slate-200 rounded-xl shadow-2xl p-1.5 max-h-72 overflow-y-auto"
+            className="fixed z-[100] w-72 bg-white border border-[var(--color-hairline)] rounded-xl shadow-2xl p-1.5 max-h-72 overflow-y-auto"
             style={{
               top: tplMenuPos.top,
               bottom: tplMenuPos.bottom,
               left: tplMenuPos.left,
             }}
           >
-            <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">CV Template</p>
+            <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-faint)]">CV Template</p>
             {CV_TEMPLATES.map((t) => (
               <button
                 key={t.id}
@@ -1923,17 +1923,17 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                 type="button"
                 onClick={() => { setTemplate(t.id); closeTemplateMenu(); }}
                 className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
-                  template === t.id ? 'bg-blue-50' : 'hover:bg-slate-100'
+                  template === t.id ? 'bg-[var(--color-brand-soft)]' : 'hover:bg-[var(--color-brand-soft)]'
                 }`}
               >
                 <span className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                  template === t.id ? 'border-blue-600' : 'border-slate-300'
+                  template === t.id ? 'border-blue-600' : 'border-[var(--color-hairline2)]'
                 }`}>
-                  {template === t.id && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                  {template === t.id && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)]" />}
                 </span>
                 <span>
-                  <span className="block text-[12.5px] font-bold text-slate-800">{t.label}</span>
-                  <span className="block text-[10.5px] text-slate-400 font-medium mt-0.5 leading-snug">{t.description}</span>
+                  <span className="block text-[12.5px] font-bold text-[var(--color-ink)]">{t.label}</span>
+                  <span className="block text-[10.5px] text-[var(--color-faint)] font-medium mt-0.5 leading-snug">{t.description}</span>
                 </span>
               </button>
             ))}

@@ -30,9 +30,9 @@ interface RecruitersScreenProps {
 }
 
 const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#2563EB,#7C3AED)',
+  'linear-gradient(135deg,var(--color-brand),#7C3AED)',
   'linear-gradient(135deg,#F59E0B,#EF4444)',
-  'linear-gradient(135deg,#10B981,#0EA5E9)',
+  'linear-gradient(135deg,var(--color-cta),#0EA5E9)',
 ];
 
 export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onClose, focusRecruiter }) => {
@@ -493,10 +493,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
       <style>{`
         .rc-screen {
-          --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0; --text: #0F172A;
-          --muted: #64748B; --faint: #94A3B8; --blue: #2563EB; --blue-soft: #EFF6FF;
-          --blue-border: #BFDBFE; --linkedin: #0A66C2; --green: #059669; --green-soft: #ECFDF5; --green-border: #A7F3D0;
-          --amber: #D97706; --amber-soft: #FFFBEB; --amber-border: #FDE68A; --red: #DC2626;
+          --bg: #FAFAFF; --card: #FFFFFF; --border: var(--color-hairline); --text: var(--color-ink);
+          --muted: var(--color-muted); --faint: var(--color-faint); --blue: var(--color-brand); --blue-soft: var(--color-brand-soft);
+          --blue-border: var(--color-brand-line); --linkedin: #0A66C2; --green: #059669; --green-soft: var(--color-cta-soft); --green-border: var(--color-cta-line);
+          --amber: #D97706; --amber-soft: #FFFBEB; --amber-border: #FDE68A; --red: var(--color-danger);
           --shadow: 0 1px 3px rgba(15,23,42,.06);
           position: fixed; inset: 0; z-index: 60; background: var(--bg); color: var(--text);
           display: flex; flex-direction: column; font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -533,12 +533,12 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-tag-recruit { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue-border); }
         .rc-tag-hr { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
         .rc-tag-careers { background: #F0FDF4; color: var(--green); border: 1px solid var(--green-border); }
-        .rc-tag-company { background: #F1F5F9; color: var(--muted); border: 1px solid var(--border); }
+        .rc-tag-company { background: var(--color-hairline); color: var(--muted); border: 1px solid var(--border); }
         .rc-email { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
         .rc-phone code { color: #7C3AED; background: #FAF5FF; border-color: #E9D5FF; }
         .rc-email code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
         .rc-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); margin-top: 6px; flex-wrap: wrap; }
-        .rc-sep { color: #CBD5E1; }
+        .rc-sep { color: var(--color-faint); }
         .rc-jobs { color: var(--green); font-weight: 600; background: var(--green-soft); border: 1px solid var(--green-border); padding: 2px 8px; border-radius: 20px; }
         .rc-context { font-size: 11px; color: var(--faint); font-style: italic; margin-top: 5px; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .rc-acts { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -550,16 +550,16 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-open { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--blue); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
         .rc-open:hover { background: var(--blue-soft); }
         .rc-ghost { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .rc-ghost:hover { color: var(--red); background: #FEF2F2; }
+        .rc-ghost:hover { color: var(--red); background: var(--color-danger-soft); }
         .rc-actbar { position: sticky; bottom: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
         .rc-note-text { font-size: 11.5px; color: var(--faint); }
         .rc-btn2 { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .rc-btn2:hover { border-color: var(--blue-border); }
-        .rc-btn2.primary { background: linear-gradient(135deg, #2563EB, #1D4ED8); border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
+        .rc-btn2.primary { background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong)); border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
-        .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #F8FAFC; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
+        .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAFF; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
@@ -584,11 +584,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
         .rc-copyi:hover { color: var(--blue); }
         .rc-idrow { display: flex; align-items: center; gap: 12px; }
-        .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, #E2E8F0, #CBD5E1); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: #64748B; flex-shrink: 0; overflow: hidden; }
+        .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, var(--color-hairline), var(--color-faint)); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--color-muted); flex-shrink: 0; overflow: hidden; }
         .rc-photo svg { width: 20px; height: 20px; opacity: .55; }
-        .rc-photo.has { background: linear-gradient(135deg, #2563EB, #7C3AED); color: #fff; font-weight: 800; font-size: 22px; border: 0; }
+        .rc-photo.has { background: linear-gradient(135deg, var(--color-brand), #7C3AED); color: #fff; font-weight: 800; font-size: 22px; border: 0; }
         .rc-photo.has.alt1 { background: linear-gradient(135deg, #F59E0B, #EF4444); }
-        .rc-photo.has.alt2 { background: linear-gradient(135deg, #10B981, #0EA5E9); }
+        .rc-photo.has.alt2 { background: linear-gradient(135deg, var(--color-cta), #0EA5E9); }
         .rc-idmain { min-width: 0; flex: 1; }
         .rc-idnm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
         .rc-idnm b { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
@@ -608,8 +608,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
         .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
         .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
-        .rc-emailchip.sent { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
-        .rc-emailchip.failed { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+        .rc-emailchip.sent { background: var(--color-cta-soft); color: #059669; border: 1px solid var(--color-cta-line); }
+        .rc-emailchip.failed { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
         .rc-cact .rc-ghost { margin-left: auto; }
       `}</style>
     </div>
