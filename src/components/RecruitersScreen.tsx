@@ -223,6 +223,22 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     } catch { showToast('Could not copy'); }
   };
 
+  const exportCsv = async () => {
+    try {
+      const res = await fetch('/api/contacts/export');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'recruiters.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded');
+    } catch {
+      showToast('Could not export');
+    }
+  };
+
   const hideContact = async (id: string) => {
     const prev = contacts;
     setContacts((c) => c.filter((x) => x.id !== id));
@@ -530,6 +546,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         <span className="rc-note-text">Emails are pulled from job descriptions you already scrape.</span>
         <div className="rc-spacer" />
         <button className="rc-btn2" onClick={onClose}>Close</button>
+        <button className="rc-btn2" onClick={exportCsv} disabled={!contacts.length}>
+          <FileText size={14} /> Export CSV
+        </button>
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
