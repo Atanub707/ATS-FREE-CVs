@@ -20,7 +20,7 @@
 
 ## 📋 Overview
 
-Tailor scrapes job listings from 10 global sources, scores them against your CV using AI, and generates tailored ATS-optimized CVs. Everything runs locally on your machine — your data never leaves your computer. Each person gets their own **local account** with fully isolated CV, jobs, and match history.
+Tailor scrapes job listings from **17 sources** — 5 Apify-powered (LinkedIn, Indeed, Naukri, Glassdoor, Upwork) plus 12 free built-ins — scores them against your CV using AI, and generates tailored ATS-optimized CVs. A **job portals browser** adds links to 190+ boards worldwide. Everything runs locally on your machine — your data never leaves your computer. Each person gets their own **local account** with fully isolated CV, jobs, and match history.
 
 ---
 
@@ -28,16 +28,20 @@ Tailor scrapes job listings from 10 global sources, scores them against your CV 
 
 | Feature | Description |
 |---|---|
-| **Multi-Source Job Search** | 10 active sources: LinkedIn, Arbeitnow, SimplyHired, Dice, Reed, MyCareersFuture, Cutshort, Gupy, JobsCh, Daijob, MyJobMag |
+| **Multi-Source Job Search** | 17 sources: Apify-powered LinkedIn, Indeed, Naukri, Glassdoor, Upwork + 12 free built-ins (Arbeitnow, SimplyHired, Dice, Reed, RemoteOK, WeWorkRemotely, MyCareersFuture, Cutshort, Gupy, JobsCh, Daijob, MyJobMag) |
 | **AI ATS Scoring** | Score jobs against your CV. Get match %, skill gaps, missing keywords, recommendations |
 | **CV Tailoring** | Generate ATS-optimized CVs tailored to specific job descriptions |
+| **Master CV & AI Compression** | Full-screen editor with live page-wise PDF preview, PDF/DOCX/TXT import, and **AI Compress** — analyzes your CV against live market keywords and compresses it to 1–2 pages (analyze → rewrite → verify) |
+| **Recruiters & Cold Email** | Recruiter contacts extracted from job descriptions, AI-drafted emails, sent via your own SMTP — with sent/failed status on every card |
+| **Job Portals Browser** | 190+ job boards worldwide, organized into 13 categories with country flags |
+| **Manual JD Analysis** | Paste any job description, get scored and get a tailored CV — no scraping needed; every analysis is saved and restorable |
 | **Applicant Counts** | See how many people applied to each LinkedIn job — right in the listing |
 | **Local Accounts** | Email+password or guest sign-in; each account has its own CV, jobs, and history |
-| **Manual JD Analysis** | Paste any job description, get scored and get a tailored CV — no scraping needed |
 | **Smart Filtering** | Filter by date posted, job type, experience level, source, competition, keyword |
-| **Batch Processing** | One-click "Score Pending" and "Tailor Matched" for the whole list |
+| **Batch Processing** | One-click "Score Pending" and "Tailor Matched" for the whole list (3 concurrent, no UI freeze) |
+| **Guided Onboarding** | Auto-runs on first sign-in — highlights search, sources, recruiters, and settings |
 | **Export** | Download tailored CVs as PDF |
-| **Local & Private** | Runs entirely on your machine. Your CV and API key stay local |
+| **Local & Private** | Runs entirely on your machine. Your CV and API keys stay local |
 
 ---
 
@@ -50,6 +54,7 @@ Before installing, make sure you have one of these:
 | **Docker** | Docker install | [Download Docker Desktop](https://www.docker.com/products/docker-desktop/) (free) |
 | **Node.js 18+** | Script / Manual install | [Download Node.js](https://nodejs.org/) (LTS recommended) |
 | **LLM API Key** | All methods | Required for ATS scoring and CV tailoring. See [LLM Providers](#-supported-llm-providers) below |
+| **Apify Token** (optional) | Apify-powered sources | Only needed for LinkedIn/Indeed/Naukri/Glassdoor/Upwork. Set in Settings → Integrations |
 
 ---
 
@@ -117,17 +122,16 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 🔑 Setting Up Your API Key
+## 🔑 Setting Up Your Keys
 
-ATS scoring and CV tailoring require an LLM API key. The app uses a **Bring Your Own Key (BYOK)** model — no keys are bundled.
+ATS scoring and CV tailoring require an LLM API key. The app uses a **Bring Your Own Key (BYOK)** model — no keys are bundled. Apify-powered sources need an Apify token.
 
 ### Option A: Use the Settings UI
 
 1. Start the app and sign in
 2. Click the **account button** (avatar, top-right) → **Settings**
-3. Select your **LLM Provider**
-4. Enter your **API Key**
-5. Click **Apply Config**
+3. Go to **Integrations** and select your **LLM Provider** / enter your **API Key** (and **Apify Token** for the Apify sources)
+4. Click **Apply Config**
 
 > Full token guide (LLM + Apify): **[docs/TOKENS.md](docs/TOKENS.md)**
 > A-to-Z local setup: **[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)**
@@ -150,13 +154,14 @@ temperature=0.2
 
 | Provider | Free Tier? | How to Get a Key |
 |---|---|---|
+| **OpenCode Go** | ✅ Free (default) | Built-in default provider — pre-selected in Settings |
 | **Google Gemini** | ✅ Free (via Google) | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 | **NVIDIA (Free Tier)** | ✅ Free, no key needed | Select `NVIDIA` in Settings |
 | **OpenAI** | ❌ Paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | **Anthropic (Claude)** | ❌ Paid | [console.anthropic.com](https://console.anthropic.com) |
 | **OpenRouter** | ❌ Paid | [openrouter.ai/keys](https://openrouter.ai/keys) — access 200+ models |
 
-> 💡 **Recommendation:** Google Gemini offers a free tier with generous quota. Sign up, get your key, and you're ready to go.
+> 💡 **Recommendation:** OpenCode Go works with zero setup; Google Gemini also offers a generous free tier. Sign up, get your key, and you're ready to go.
 
 ---
 
@@ -172,6 +177,11 @@ Click the **account button** (avatar, top-right) → **Master Candidate CV** and
 - Certifications & projects
 
 This is the baseline CV that all jobs will be scored and tailored against. Each account has its own Master CV.
+
+**Tips:**
+- The editor shows a **live page-wise PDF preview** as you type
+- **Upload** an existing resume (PDF, DOCX, or TXT) to import it instead of typing
+- Use **AI Compress** to shrink your CV to 1–2 pages using live market keywords (reversible via the Versions drawer)
 
 ---
 
@@ -189,22 +199,30 @@ This is the baseline CV that all jobs will be scored and tailored against. Each 
 
 | Source | Best For | Method | API Key? |
 |---|---|---|---|
-| **LinkedIn** | Global listings | Guest API | No |
+| **LinkedIn** | Global listings | Apify actor | Apify token |
+| **Indeed** | Global listings | Apify actor | Apify token |
+| **Naukri** 🇮🇳 | India | Apify actor | Apify token |
+| **Glassdoor** | Global listings | Apify actor | Apify token |
+| **Upwork** | Global freelance | Apify actor | Apify token |
 | **Arbeitnow** | Germany/Europe | Free API | No |
-| **SimplyHired** | Global coverage | HTML parsing | No |
+| **SimplyHired** | USA coverage | HTML parsing | No |
 | **Dice** | US tech jobs | JSON-LD extraction | No |
 | **Reed** | UK jobs | Next.js SSR | No |
+| **RemoteOK** | Global remote | Free API | No |
+| **WeWorkRemotely** | Global remote | HTML parsing | No |
 | **MyCareersFuture** 🇸🇬 | Singapore | Official gov API | No |
 | **Cutshort** 🇮🇳 | India | HTML scraping | No |
 | **Gupy** 🇧🇷 | Brazil | HTML scraping | No |
 | **JobsCh** 🇨🇭 | Switzerland | HTML scraping | No |
 | **Daijob** 🇯🇵 | Japan | HTML scraping | No |
 | **MyJobMag** 🇳🇬 | Nigeria | HTML scraping | No |
-| RemoteOK / WeWorkRemotely | Global remote | — | Coming soon |
+| **Custom** | Any URL | Scrape any posting | No |
 
 > ℹ️ **Dice, Reed, SimplyHired** use original posting dates. If you select "Last 24 Hours" and get 0 results, switch to "Anytime" — the jobs are still active, just older.
 >
 > 👥 **Applicant counts** are shown for LinkedIn jobs ("200 applicants") — see competition at a glance without opening the posting.
+>
+> 🗂️ **Job Portals:** the **Job Portals** button in the navbar opens 190+ boards worldwide (13 categories), so you can search beyond the built-in sources.
 
 ---
 
@@ -242,9 +260,22 @@ Paste any job description manually and get a scored, tailored CV without searchi
 5. Click **Generate Tailored CV**
 6. Download as PDF
 
+> 📚 **History:** every analysis is saved per account — restore any past analysis or its tailored CV anytime.
+
 ---
 
-### Step 6: Sign Out & Switch Accounts
+### Step 6: Recruiters & Cold Email
+
+1. Click **Recruiters** in the navbar — contacts (name, email, phone, LinkedIn) are extracted from your job descriptions
+2. Click a contact to **draft an email** — the AI writes a tailored intro based on the job and your CV
+3. Review it, then **Send** — the email goes out through **your own SMTP server** (configured in Settings → Integrations → Email)
+4. Every card shows its status: **sent / failed**, with the timestamp
+
+> 📬 **Privacy:** nothing is sent through third-party services — the app uses the SMTP account you bring (e.g., Gmail app password, Outlook, your own mail server). Set it up in **Settings → Integrations → Email** (auto-detects SSL/STARTTLS by port, with a one-click test).
+
+---
+
+### Step 7: Sign Out & Switch Accounts
 
 1. Click the **account button** (avatar, top-right)
 2. **Sign out** returns you to the login screen
@@ -280,7 +311,7 @@ stealthMode=true
 maxRetries=3
 ```
 
-You can edit this file directly or use the **Settings** UI in the app.
+You can edit this file directly or use the **Settings** UI in the app (Apify token and SMTP credentials are configured in Settings → Integrations).
 
 ---
 
@@ -288,13 +319,14 @@ You can edit this file directly or use the **Settings** UI in the app.
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 19, TypeScript, Tailwind CSS v4, Lucide icons |
+| **Frontend** | React 19, TypeScript, Tailwind CSS v4, Phosphor + Lucide icons, driver.js (onboarding) |
 | **Backend** | Express 4, TypeScript, tsx |
 | **LLM Integration** | OpenAI-compatible providers (OpenCode Go, OpenRouter, OpenAI, Gemini, Anthropic, NVIDIA) |
-| **Scraping** | Native `fetch`, cheerio |
+| **Scraping** | Native `fetch`, cheerio, Apify REST API (LinkedIn, Indeed, Naukri, Glassdoor, Upwork) |
 | **Storage** | SQLite (`better-sqlite3`, WAL) — users, sessions, jobs, master CVs |
 | **Auth** | Local accounts — scrypt password hashing, httpOnly cookie sessions |
-| **Documents** | pdfkit (PDF) |
+| **Email** | nodemailer — AI-drafted cold emails via your own SMTP |
+| **Documents** | pdfkit (PDF), mammoth + pdf-parse (DOCX/PDF CV import) |
 | **Build** | Vite, esbuild |
 | **CI/CD** | GitHub Actions — gitleaks, npm audit, Trivy, auto-release to GitHub Releases + GHCR |
 
