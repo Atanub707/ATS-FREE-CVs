@@ -8,6 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { RecruitersScreen } from './components/RecruitersScreen';
+import { OnboardingTour, startTour } from './components/OnboardingTour';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
 import { llmErrorMessage } from './lib/llmError';
@@ -403,6 +404,7 @@ export default function App() {
   };
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
+      <OnboardingTour />
       {authLoading ? (
         <div className="min-h-screen flex items-center justify-center text-slate-500">Loading…</div>
       ) : !currentUser ? (
@@ -426,6 +428,7 @@ export default function App() {
               setIsRecruitersOpen(true);
             }}
             recruiterBadge={recruiterBadge}
+            onTour={startTour}
           />
 
           {/* Live Job Scraper Bar */}

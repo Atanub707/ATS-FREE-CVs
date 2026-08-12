@@ -4,6 +4,7 @@ import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
+import { startTour } from './OnboardingTour';
 import pkg from '../../package.json';
 
 interface SettingsModalProps {
@@ -552,6 +553,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         Tailor CV v1.2.0 — created by <b>Atanu Biswas</b> · © 2026 Atanu Biswas.
         All rights reserved. This software is licensed for personal use only —
         redistribution or white-labeling is prohibited (see LICENSE).
+        <div style={{ marginTop: 8 }}>
+          <button type="button" onClick={startTour} className="set-btn set-btn-sm" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+            ▶ Replay the tutorial
+          </button>
+        </div>
       </div>
 
       {/* Saved toast */}

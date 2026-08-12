@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileText, Settings, FileInput, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { FileText, Settings, FileInput, LogOut, ChevronDown, Globe, HelpCircle } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenManualJd: () => void;
   onOpenJobPortals?: () => void;
   onOpenRecruiters?: () => void;
+  onTour?: () => void;
   recruiterBadge?: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
   onLogout?: () => void;
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenManualJd,
   onOpenJobPortals,
   onOpenRecruiters,
+  onTour,
   recruiterBadge = 0,
   user,
   onLogout,
@@ -234,6 +236,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Sign out */}
               <div className="my-1.5 h-px bg-slate-100" />
+              <button role="menuitem" onClick={closeAnd(() => onTour?.())} className={ddItemCls}>
+                <span className={ddIconCls}>
+                  <HelpCircle className="w-4 h-4" />
+                </span>
+                Take a tour
+              </button>
               <button
                 role="menuitem"
                 onClick={closeAnd(() => onLogout?.())}
