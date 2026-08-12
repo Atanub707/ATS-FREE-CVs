@@ -418,6 +418,21 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     });
   };
   const selectAllVisible = () => setSelected(new Set(visible.map((c) => c.id)));
+  const bulkDismiss = async () => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    const res = await fetch('/api/contacts/bulk-hide', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+    });
+    const d = await res.json();
+    if (d.success) {
+      setContacts((prev) => prev.filter((x) => !selected.has(x.id)));
+      setSelected(new Set());
+      showToast(`${d.count} contact${d.count === 1 ? '' : 's'} dismissed`);
+    } else {
+      showToast('Could not dismiss');
+    }
+  };
   const startBatch = () => {
     const q = contacts.filter((c) => selected.has(c.id) && c.email);
     if (!q.length) return;
@@ -897,6 +912,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             <Send size={14} /> Send {selected.size}
           </button>
         )}
+        {batchMode && (
+          <button className="rc-btn2 danger" onClick={bulkDismiss} disabled={!selected.size}>
+            <Trash2 size={14} /> Dismiss ({selected.size})
+          </button>
+        )}
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
@@ -986,6 +1006,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
         .rc-btn2.active { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
+        .rc-btn2.danger { border-color: #FECACA; color: var(--color-danger); background: var(--color-danger-soft); }
+        .rc-btn2.danger:hover { filter: brightness(.97); }
         .rc-batchcheck { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--faint); cursor: pointer; }
         .rc-batchcheck input { accent-color: var(--blue); cursor: pointer; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
