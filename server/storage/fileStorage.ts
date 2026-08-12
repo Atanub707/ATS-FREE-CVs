@@ -28,7 +28,14 @@ export interface HrContact {
   lastEmailSent?: string;
   emailStatus?: string;
   emailMessageId?: string;
+  notes?: string;
+  followUpAt?: string;
+  followedUp?: boolean;
+  pipelineStatus?: string;
 }
+
+export interface ContactEmail { id: string; recipient: string; subject: string; body: string; attachmentName: string | null; status: string; sentAt: string; }
+export interface EmailTemplate { id: string; name: string; subject: string; body: string; createdAt: string; }
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
@@ -305,11 +312,23 @@ function ensureDataDir(): void {
 
 // ─────────────────── SQLite connection ───────────────────
 let db: Database.Database | null = null;
+let dbPathOverride: string | null = null;
+
+export function initDbWithPath(path: string): Database.Database {
+  dbPathOverride = path;
+  if (db) { try { db.close(); } catch { /* noop */ } db = null; }
+  return getDb();
+}
+
+export function resetDbForTests(): void {
+  dbPathOverride = null;
+  if (db) { try { db.close(); } catch { /* noop */ } db = null; }
+}
 
 export function getDb(): Database.Database {
   if (db) return db;
   ensureDataDir();
-  db = new Database(SQLITE_DB_PATH);
+  db = new Database(dbPathOverride || SQLITE_DB_PATH);
   db.pragma('journal_mode = WAL');
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -390,6 +409,9 @@ export function getDb(): Database.Database {
   migrateContactsTable(db);
   ensureWhatsappColumn(db);
   ensureEmailColumns(db);
+  ensureRecruitersFeatureColumns(db);
+  ensureContactEmailsTable(db);
+  ensureEmailTemplatesTable(db);
   ensureContactIndexes(db);
   return db;
 }
@@ -411,6 +433,51 @@ function ensureEmailColumns(d: Database.Database): void {
   } catch (err) {
     console.error('email column migration failed:', err);
   }
+}
+
+function ensureRecruitersFeatureColumns(db: Database.Database): void {
+  const cols = new Set(
+    (db.prepare(`PRAGMA table_info(hr_contacts)`).all() as { name: string }[]).map((c) => c.name)
+  );
+  const adds: Array<[string, string]> = [
+    ['notes', 'TEXT'],
+    ['follow_up_at', 'TEXT'],
+    ['followed_up', 'INTEGER DEFAULT 0'],
+    ['pipeline_status', 'TEXT'],
+  ];
+  for (const [name, def] of adds) {
+    if (!cols.has(name)) db.exec(`ALTER TABLE hr_contacts ADD COLUMN ${name} ${def}`);
+  }
+}
+
+function ensureContactEmailsTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS contact_emails (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      contact_id TEXT NOT NULL,
+      recipient TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      attachment_name TEXT,
+      status TEXT NOT NULL,
+      sent_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_contact_emails_contact ON contact_emails(contact_id);
+  `);
+}
+
+function ensureEmailTemplatesTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS email_templates (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `);
 }
 
 // Light migration: whatsapp flag column (default 0). A simple ALTER is
@@ -828,6 +895,10 @@ function mapContactRow(r: any): HrContact {
     lastEmailSent: r.last_email_sent || undefined,
     emailStatus: r.email_status || undefined,
     emailMessageId: r.email_message_id || undefined,
+    notes: r.notes || '',
+    followUpAt: r.follow_up_at || undefined,
+    followedUp: !!r.followed_up,
+    pipelineStatus: r.pipeline_status || undefined,
   };
 }
 
@@ -923,6 +994,106 @@ export function setContactHidden(id: string, hidden: boolean): boolean {
   } catch {
     return false;
   }
+}
+
+export function addContactNote(id: string, note: string): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  return getDb().prepare('UPDATE hr_contacts SET notes = ? WHERE id = ? AND user_id = ?').run(note, id, userId).changes > 0;
+}
+
+export function setContactFollowUp(id: string, date: string | null): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  return getDb().prepare('UPDATE hr_contacts SET follow_up_at = ? WHERE id = ? AND user_id = ?').run(date, id, userId).changes > 0;
+}
+
+export function setContactFollowedUp(id: string, value: boolean): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  return getDb().prepare('UPDATE hr_contacts SET followed_up = ? WHERE id = ? AND user_id = ?').run(value ? 1 : 0, id, userId).changes > 0;
+}
+
+export function setContactPipeline(id: string, status: string | null): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  const valid = ['replied', 'interview', 'offer', 'rejected'];
+  const v = status && valid.includes(status) ? status : null;
+  return getDb().prepare('UPDATE hr_contacts SET pipeline_status = ? WHERE id = ? AND user_id = ?').run(v, id, userId).changes > 0;
+}
+
+export function recordContactEmailDetail(contactId: string, detail: { recipient: string; subject: string; body: string; attachmentName?: string | null; status: 'sent' | 'failed' }): void {
+  const userId = getCurrentUserId();
+  if (!userId || !contactId) return;
+  getDb().prepare(
+    `INSERT INTO contact_emails (id, user_id, contact_id, recipient, subject, body, attachment_name, status, sent_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(crypto.randomUUID(), userId, contactId, detail.recipient, detail.subject, detail.body, detail.attachmentName || null, detail.status, new Date().toISOString());
+}
+
+export function listContactEmails(contactId: string): ContactEmail[] {
+  const userId = getCurrentUserId();
+  if (!userId || !contactId) return [];
+  const rows = getDb().prepare(
+    'SELECT * FROM contact_emails WHERE user_id = ? AND contact_id = ? ORDER BY sent_at DESC'
+  ).all(userId, contactId) as any[];
+  return rows.map((r) => ({
+    id: r.id, recipient: r.recipient, subject: r.subject, body: r.body,
+    attachmentName: r.attachment_name || null, status: r.status, sentAt: r.sent_at,
+  }));
+}
+
+export function listEmailTemplates(): EmailTemplate[] {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  const rows = getDb().prepare(
+    'SELECT * FROM email_templates WHERE user_id = ? ORDER BY created_at DESC'
+  ).all(userId) as any[];
+  return rows.map((r) => ({ id: r.id, name: r.name, subject: r.subject, body: r.body, createdAt: r.created_at }));
+}
+
+export function saveEmailTemplate(tpl: { name: string; subject: string; body: string }): EmailTemplate {
+  const userId = getCurrentUserId();
+  const id = crypto.randomUUID();
+  const t = { id, name: tpl.name.trim(), subject: tpl.subject.trim(), body: tpl.body.trim(), createdAt: new Date().toISOString() };
+  getDb().prepare(
+    'INSERT INTO email_templates (id, user_id, name, subject, body, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(id, userId, t.name, t.subject, t.body, t.createdAt);
+  return t;
+}
+
+export function deleteEmailTemplate(id: string): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  return getDb().prepare('DELETE FROM email_templates WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
+}
+
+export function getContactStats(): { total: number; withEmail: number; withPhone: number; sent: number; companies: number } {
+  const userId = getCurrentUserId();
+  if (!userId) return { total: 0, withEmail: 0, withPhone: 0, sent: 0, companies: 0 };
+  const d = getDb();
+  const one = (sql: string): number => (d.prepare(sql).get(userId) as { n: number }).n || 0;
+  return {
+    total: one('SELECT count(*) AS n FROM hr_contacts WHERE user_id = ? AND hidden = 0'),
+    withEmail: one("SELECT count(*) AS n FROM hr_contacts WHERE user_id = ? AND hidden = 0 AND email IS NOT NULL AND email != ''"),
+    withPhone: one("SELECT count(*) AS n FROM hr_contacts WHERE user_id = ? AND hidden = 0 AND phone IS NOT NULL AND phone != ''"),
+    sent: one("SELECT count(*) AS n FROM hr_contacts WHERE user_id = ? AND hidden = 0 AND email_status = 'sent'"),
+    companies: one("SELECT count(DISTINCT company) AS n FROM hr_contacts WHERE user_id = ? AND hidden = 0 AND company != ''"),
+  };
+}
+
+export function listContactsCsv(): Array<{ email: string | null; name: string | null; company: string; jobRole: string; phone: string | null; whatsapp: boolean; recruiterUrl: string | null; typeLabel: string; context: string; lastSeen: string }> {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  const rows = getDb().prepare(
+    'SELECT * FROM hr_contacts WHERE user_id = ? AND hidden = 0 ORDER BY last_seen DESC'
+  ).all(userId) as any[];
+  return rows.map((r) => ({
+    email: r.email || null, name: r.name || r.recruiter_name || null, company: r.company || '',
+    jobRole: r.job_role || '', phone: r.phone || null, whatsapp: !!r.whatsapp,
+    recruiterUrl: r.recruiter_url || null, typeLabel: r.type_label || '',
+    context: r.context || '', lastSeen: r.last_seen || '',
+  }));
 }
 
 export function backfillContacts(): number {
