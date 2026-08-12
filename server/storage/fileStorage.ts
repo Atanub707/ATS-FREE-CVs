@@ -1022,6 +1022,19 @@ export function setContactPipeline(id: string, status: string | null): boolean {
   return getDb().prepare('UPDATE hr_contacts SET pipeline_status = ? WHERE id = ? AND user_id = ?').run(v, id, userId).changes > 0;
 }
 
+export function updateContactIdentity(id: string, patch: { name?: string | null; recruiterName?: string | null; jobRole?: string | null }): boolean {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return false;
+  const cols: string[] = [];
+  const params: any[] = [];
+  if (patch.name !== undefined) { cols.push('name = ?'); params.push(patch.name); }
+  if (patch.recruiterName !== undefined) { cols.push('recruiter_name = ?'); params.push(patch.recruiterName); }
+  if (patch.jobRole !== undefined) { cols.push('job_role = ?'); params.push(patch.jobRole); }
+  if (!cols.length) return false;
+  params.push(id, userId);
+  return getDb().prepare(`UPDATE hr_contacts SET ${cols.join(', ')} WHERE id = ? AND user_id = ?`).run(...params).changes > 0;
+}
+
 export function recordContactEmailDetail(contactId: string, detail: { recipient: string; subject: string; body: string; attachmentName?: string | null; status: 'sent' | 'failed' }): void {
   const userId = getCurrentUserId();
   if (!userId || !contactId) return;

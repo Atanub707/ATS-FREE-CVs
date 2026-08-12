@@ -93,6 +93,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchQueue, setBatchQueue] = useState<Contact[]>([]);
   const [batchIndex, setBatchIndex] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -311,6 +312,21 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       setTimeout(() => setCopiedId(null), 1400);
       showToast(`${value} copied`);
     } catch { showToast('Could not copy — select manually'); }
+  };
+
+  const enrichContact = async (c: Contact) => {
+    setBusyId(c.id);
+    try {
+      const res = await fetch(`/api/contacts/${c.id}/enrich`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) { showToast(d.error || 'Enrichment failed'); return; }
+      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...d.contact } : x)));
+      showToast('Profile enriched');
+    } catch {
+      showToast('Enrichment failed');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const copyAll = async () => {
@@ -622,6 +638,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     </select>
                     <button className="rc-ghost" title="Email history" onClick={() => openHistory(c)}>
                       <Clock size={14} />
+                    </button>
+                    <button className="rc-btn" title="AI-enrich missing details from LinkedIn + job context"
+                      onClick={() => enrichContact(c)} disabled={busyId === c.id}>
+                      {busyId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Enrich
                     </button>
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
