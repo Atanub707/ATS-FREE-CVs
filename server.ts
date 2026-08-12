@@ -208,6 +208,7 @@ function fallbackParseCvFromText(rawText: string) {
 
 import { ask } from './server/llm/llmAdapter.js';
 import nodemailer from 'nodemailer';
+import { displayUrl } from './src/lib/displayUrl.js';
 
 // Convert the stored Master CV into the TailoredCv shape the PDF generator
 // consumes (same conversion the master-download route uses).
@@ -1184,11 +1185,12 @@ Return valid JSON only, no markdown:
       const raw = await ask(prompt, 0.5);
       const parsed = JSON.parse(raw);
       const body = String(parsed.body || '').trim();
-      // Deterministic signature: candidate name, plus their saved phone
-      // (from the Master CV) only when one exists.
+      // Deterministic signature: candidate name, then their saved phone and
+      // portfolio URL (from the Master CV) — each line only when it exists.
       const nameLine = masterCv?.fullName ? masterCv.fullName.trim() : '';
       const phoneLine = masterCv?.phone ? masterCv.phone.trim() : '';
-      const signature = phoneLine ? `${nameLine}\n${phoneLine}` : nameLine;
+      const portfolioLine = masterCv?.website ? displayUrl(masterCv.website) : '';
+      const signature = [nameLine, phoneLine, portfolioLine].filter(Boolean).join('\n');
       res.json({
         success: true,
         draft: {
