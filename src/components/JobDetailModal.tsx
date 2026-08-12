@@ -172,7 +172,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
     <div className="fixed inset-0 z-50 bg-[var(--color-ink)]/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <div className="bg-white border border-[var(--color-hairline)] rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden text-[var(--color-ink)]">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[var(--color-hairline)] flex items-start justify-between bg-[#FAFAFF]/80 sticky top-0 z-10">
+        <div className="px-6 py-4 border-b border-[var(--color-hairline)] flex items-start justify-between bg-[#FAFAF9]/80 sticky top-0 z-10">
           <div>
             <div className="flex items-center space-x-2 mb-1 text-xs">
               <span
@@ -238,7 +238,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center space-x-2 px-6 pt-2 border-b border-[var(--color-hairline)] bg-[#FAFAFF]/50 text-xs font-medium">
+        <div className="flex items-center space-x-2 px-6 pt-2 border-b border-[var(--color-hairline)] bg-[#FAFAF9]/50 text-xs font-medium">
           <button
             onClick={() => setActiveTab('details')}
             className={`pb-2 px-3 border-b-2 transition-colors cursor-pointer ${
@@ -291,7 +291,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {activeTab === 'details' && (
             <div className="space-y-4 text-xs text-[var(--color-muted)] leading-relaxed">
               {/* Recruiters — who posted this job */}
-              <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)]">
+              <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)]">
                 <h4 className="font-bold text-[var(--color-ink)] text-xs uppercase tracking-wide mb-3">
                   Recruiters — who posted this job
                 </h4>
@@ -348,7 +348,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 )}
               </div>
 
-              <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)]">
+              <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)]">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-bold text-[var(--color-ink)] text-xs uppercase tracking-wide">
                     Full Raw Job Text
@@ -423,7 +423,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {activeTab === 'gap' && (
             <div className="space-y-6">
               {!gap ? (
-                <div className="text-center py-10 bg-[#FAFAFF] rounded-lg border border-[var(--color-hairline)]">
+                <div className="text-center py-10 bg-[#FAFAF9] rounded-lg border border-[var(--color-hairline)]">
                   <Zap className="w-8 h-8 text-[var(--color-brand)] mx-auto mb-2" />
                   <h3 className="text-xs font-bold text-[var(--color-ink)]">No Analysis Generated Yet</h3>
                   <p className="text-xs text-[var(--color-faint)] mt-1 max-w-md mx-auto">
@@ -441,7 +441,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               ) : (
                 <div className="space-y-6 text-xs">
                   {/* Score Summary Banner */}
-                  <div className="p-4 rounded-lg border bg-[#FAFAFF] border-[var(--color-hairline)] flex items-center justify-between">
+                  <div className="p-4 rounded-lg border bg-[#FAFAF9] border-[var(--color-hairline)] flex items-center justify-between">
                     <div>
                       <span className="text-[var(--color-faint)] uppercase font-bold text-[10px] block">Overall ATS Match Score</span>
                       <span className="text-2xl font-black text-[var(--color-ink)]">{gap.matchScore}%</span>
@@ -453,7 +453,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   </div>
 
                   {/* Summary */}
-                  <div className="p-4 bg-[#FAFAFF] rounded-lg border border-[var(--color-hairline)]">
+                  <div className="p-4 bg-[#FAFAF9] rounded-lg border border-[var(--color-hairline)]">
                     <h4 className="font-bold text-[var(--color-ink)] mb-1">Executive Alignment Summary</h4>
                     <p className="text-[var(--color-muted)]">{gap.summary}</p>
                   </div>
@@ -493,7 +493,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
                   {/* Strategic Action Items */}
                   {gap.strategicAdjustments && gap.strategicAdjustments.length > 0 && (
-                    <div className="p-4 bg-[#FAFAFF] rounded-lg border border-[var(--color-hairline)] space-y-2">
+                    <div className="p-4 bg-[#FAFAF9] rounded-lg border border-[var(--color-hairline)] space-y-2">
                       <h4 className="font-bold text-[var(--color-ink)]">Recommended Adjustments</h4>
                       <ul className="list-disc list-inside space-y-1 text-[var(--color-muted)]">
                         {gap.strategicAdjustments.map((adj, i) => (
@@ -511,7 +511,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           {activeTab === 'tailored' && (
             <div className="space-y-6">
               {!tailored ? (
-                <div className="text-center py-10 bg-[#FAFAFF] rounded-lg border border-[var(--color-hairline)]">
+                <div className="text-center py-10 bg-[#FAFAF9] rounded-lg border border-[var(--color-hairline)]">
                   <Sparkles className="w-8 h-8 text-[var(--color-cta)] mx-auto mb-2" />
                   <h3 className="text-xs font-bold text-[var(--color-ink)]">No Tailored CV Created</h3>
                   <p className="text-xs text-[var(--color-faint)] mt-1 max-w-md mx-auto">
@@ -621,7 +621,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                           </div>
                           <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700 flex">
                             <div
-                              className="bg-[#FAFAFF]0 h-full rounded-l-full transition-all duration-500"
+                              className="bg-[#FAFAF9]0 h-full rounded-l-full transition-all duration-500"
                               style={{ width: `${beforeScore}%` }}
                               title={`Before Tailoring: ${beforeScore}%`}
                             />
@@ -779,7 +779,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   })()}
 
                   {/* Export Toolbar */}
-                  <div className="flex items-center justify-between bg-[#FAFAFF] p-3 rounded-lg border border-[var(--color-hairline)]">
+                  <div className="flex items-center justify-between bg-[#FAFAF9] p-3 rounded-lg border border-[var(--color-hairline)]">
                     <span className="font-semibold text-[var(--color-muted)]">Tailored CV Document Ready</span>
                     <div className="flex flex-wrap items-center gap-2">
                       <button
@@ -815,7 +815,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="px-6 py-3 border-t border-[var(--color-hairline)] bg-[#FAFAFF] flex items-center justify-between text-xs">
+        <div className="px-6 py-3 border-t border-[var(--color-hairline)] bg-[#FAFAF9] flex items-center justify-between text-xs">
           <div className="flex items-center space-x-2">
             <span className="text-[var(--color-faint)] font-semibold">Status:</span>
             <select
@@ -834,7 +834,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             <button
               onClick={() => onMatchJob(job.id)}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded bg-[#F1F0FA] hover:bg-slate-200 border border-[var(--color-hairline)] text-[var(--color-ink)] font-medium transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded bg-[#F1F5F9] hover:bg-slate-200 border border-[var(--color-hairline)] text-[var(--color-ink)] font-medium transition-colors cursor-pointer"
             >
               Re-Analyze
             </button>

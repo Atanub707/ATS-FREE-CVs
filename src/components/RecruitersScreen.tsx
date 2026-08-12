@@ -493,7 +493,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
       <style>{`
         .rc-screen {
-          --bg: #FAFAFF; --card: #FFFFFF; --border: var(--color-hairline); --text: var(--color-ink);
+          --bg: #FAFAF9; --card: #FFFFFF; --border: var(--color-hairline); --text: var(--color-ink);
           --muted: var(--color-muted); --faint: var(--color-faint); --blue: var(--color-brand); --blue-soft: var(--color-brand-soft);
           --blue-border: var(--color-brand-line); --linkedin: #0A66C2; --green: #059669; --green-soft: var(--color-cta-soft); --green-border: var(--color-cta-line);
           --amber: #D97706; --amber-soft: #FFFBEB; --amber-border: #FDE68A; --red: var(--color-danger);
@@ -559,7 +559,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
-        .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAFF; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
+        .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }

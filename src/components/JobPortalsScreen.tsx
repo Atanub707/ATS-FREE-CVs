@@ -126,12 +126,12 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
             className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
               isBookmarked
                 ? 'bg-[var(--color-amber-soft,#FFF7ED)] border-[var(--color-amber-line,#FED7AA)] text-[var(--color-amber,#C2410C)]'
-                : 'bg-[#FAFAFF] border-[var(--color-hairline)] text-slate-300 hover:bg-[var(--color-amber-soft,#FFF7ED)] hover:text-amber-400 hover:border-[var(--color-amber-line,#FED7AA)]'
+                : 'bg-[#FAFAF9] border-[var(--color-hairline)] text-slate-300 hover:bg-[var(--color-amber-soft,#FFF7ED)] hover:text-amber-400 hover:border-[var(--color-amber-line,#FED7AA)]'
             }`}
           >
             <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-amber-400' : ''}`} />
           </button>
-          <span className="w-7 h-7 rounded-lg bg-[#FAFAFF] border border-[var(--color-hairline)] flex items-center justify-center text-slate-300 group-hover:bg-[var(--color-brand-soft)] group-hover:text-[var(--color-brand)] group-hover:border-blue-100 transition-colors">
+          <span className="w-7 h-7 rounded-lg bg-[#FAFAF9] border border-[var(--color-hairline)] flex items-center justify-center text-slate-300 group-hover:bg-[var(--color-brand-soft)] group-hover:text-[var(--color-brand)] group-hover:border-blue-100 transition-colors">
             <ExternalLink className="w-3.5 h-3.5" />
           </span>
         </span>
@@ -146,7 +146,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAFF] border border-[var(--color-hairline)] transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAF9] border border-[var(--color-hairline)] transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
@@ -166,7 +166,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
           <p className="text-[10.5px] text-[var(--color-faint)] font-medium mt-0.5">Search by name or browse by region — click any portal to apply directly</p>
         </div>
 
-        <span className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] font-bold text-[var(--color-faint)] bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-full px-3 py-1">
+        <span className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] font-bold text-[var(--color-faint)] bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-full px-3 py-1">
           <TrendingUp className="w-3 h-3 text-[var(--color-cta)]" />
           {total} portals · {PORTAL_CATEGORIES.length} regions
         </span>
@@ -201,7 +201,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
               className={`shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${
                 category === 'all'
                   ? 'bg-[var(--color-ink)] text-white border-slate-900 shadow-md'
-                  : 'bg-white text-[var(--color-muted)] border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAFF]'
+                  : 'bg-white text-[var(--color-muted)] border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAF9]'
               }`}
             >
               All regions · {total}
@@ -216,7 +216,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${
                     active
                       ? 'bg-[var(--color-brand)] text-white border-blue-600 shadow-md shadow-blue-600/25'
-                      : 'bg-white text-[var(--color-muted)] border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAFF]'
+                      : 'bg-white text-[var(--color-muted)] border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAF9]'
                   }`}
                 >
                   {c.label.split(' ')[0]} <span className={active ? 'text-blue-100' : 'text-[var(--color-faint)] font-semibold'}>{count}</span>
@@ -271,7 +271,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
               </div>
               {filtered.length === 0 ? (
                 <div className="text-center py-14">
-                  <div className="w-14 h-14 rounded-2xl bg-[#F1F0FA] border border-[var(--color-hairline)] flex items-center justify-center mx-auto mb-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center mx-auto mb-3.5">
                     <Globe className="w-6 h-6 text-slate-300" />
                   </div>
                   <p className="text-sm font-bold text-[var(--color-muted)]">No portals found</p>
@@ -298,7 +298,7 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
               <div key={g.id}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[12px] font-extrabold text-[var(--color-ink)] uppercase tracking-wider">{meta?.label}</span>
-                  <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] border border-[var(--color-hairline)] rounded-full px-2 py-0.5">{g.portals.length}</span>
+                  <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] border border-[var(--color-hairline)] rounded-full px-2 py-0.5">{g.portals.length}</span>
                   <span className="flex-1 h-px bg-slate-200" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">

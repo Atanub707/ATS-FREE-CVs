@@ -177,10 +177,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
           </p>
 
           <div className="login-feats">
-            <div className="feature-item"><Search size={15} /> Live jobs from 19 sources, scored against your CV</div>
-            <div className="feature-item"><Sparkles size={15} /> One-click tailored CVs with verified keywords</div>
-            <div className="feature-item"><Inbox size={15} /> Recruiters found &amp; cold-emailed from your own mailbox</div>
-            <div className="feature-item"><ShieldCheck size={15} /> Your data stays on your machine — bring your own keys</div>
+            <div className="feature-item"><span className="feat-ico blue"><Search size={15} /></span> Live jobs from 19 sources, scored against your CV</div>
+            <div className="feature-item"><span className="feat-ico violet"><Sparkles size={15} /></span> One-click tailored CVs with verified keywords</div>
+            <div className="feature-item"><span className="feat-ico emerald"><Inbox size={15} /></span> Recruiters found &amp; cold-emailed from your own mailbox</div>
+            <div className="feature-item"><span className="feat-ico amber"><ShieldCheck size={15} /></span> Your data stays on your machine — bring your own keys</div>
           </div>
         </div>
 
@@ -386,7 +386,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .description { font-size: 14px; color: #64748B; margin-top: 14px; max-width: 420px; line-height: 1.65; }
   .login-feats { margin-top: 30px; display: flex; flex-direction: column; gap: 13px; }
   .feature-item { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 600; color: #475569; }
-  .feature-item svg { width: 15px; height: 15px; color: #2563EB; flex-shrink: 0; }
+  .feature-item .feat-ico { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .feature-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .feat-ico.blue { background: #EFF6FF; color: #2563EB; }
+  .feat-ico.violet { background: #F5F3FF; color: #7C3AED; }
+  .feat-ico.emerald { background: #ECFDF5; color: #059669; }
+  .feat-ico.amber { background: #FFFBEB; color: #D97706; }
   .brand-footer { margin-top: auto; font-size: 11px; color: #94A3B8; }
   .form-panel { display: flex; align-items: center; justify-content: center; padding: 48px; background: #F8FAFC; position: relative; }
   .form-container { width: 100%; max-width: 380px; }

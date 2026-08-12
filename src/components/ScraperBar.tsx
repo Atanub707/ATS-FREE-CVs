@@ -151,7 +151,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
 
       <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* ── Row 1: Hero Search ── */}
-        <div className="flex items-center gap-3 bg-[#FAFAFF] border-[1.5px] border-[var(--color-hairline2)] rounded-[12px] pl-5 pr-2 py-2 transition-colors focus-within:border-[var(--color-brand)] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[var(--color-brand)]/12">
+        <div className="flex items-center gap-3 bg-[#FAFAF9] border-[1.5px] border-[var(--color-hairline2)] rounded-[12px] pl-5 pr-2 py-2 transition-colors focus-within:border-[var(--color-brand)] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[var(--color-brand)]/12">
           <MagnifyingGlass size={18} style={{ color: 'var(--color-faint)' }} weight="bold" />
           <input
             type="text"
@@ -215,7 +215,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                   type="button"
                   aria-label="Job type may not be accurate"
                   onClick={() => setJobTypeInfoOpen((v) => !v)}
-                  className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full border border-[var(--color-hairline2)] bg-[#F1F0FA] text-[var(--color-faint)] cursor-pointer transition-colors hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-brand)]"
+                  className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full border border-[var(--color-hairline2)] bg-[#F1F5F9] text-[var(--color-faint)] cursor-pointer transition-colors hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-brand)]"
                 >
                   <Info size={9} weight="bold" />
                 </button>

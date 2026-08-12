@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const ddItemCls =
     'flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg border-none bg-transparent cursor-pointer font-inherit text-[13px] font-semibold text-slate-700 text-left transition-colors duration-150 hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-brand)]';
   const ddIconCls =
-    'w-8 h-8 rounded-lg bg-[#F1F0FA] border border-[var(--color-hairline)] flex items-center justify-center text-[var(--color-faint)] shrink-0';
+    'w-8 h-8 rounded-lg bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center text-[var(--color-faint)] shrink-0';
 
   return (
     <header className="sticky top-0 z-30 bg-white" style={{ borderBottom: '1px solid var(--color-hairline)' }}>

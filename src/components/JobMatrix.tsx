@@ -100,12 +100,18 @@ const JobCard = React.memo(function JobCard({
             title={`Open ${job.source} job post in new tab`}
             className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer hover:underline ${
               job.source === 'LinkedIn'
-                ? 'bg-[var(--color-brand-soft)] hover:bg-[#E3E6FD] text-[var(--color-brand)] border border-[var(--color-brand-line)]'
+                ? 'bg-[var(--color-tint-blue)] hover:bg-[#DBEAFE] text-[var(--color-brand)] border border-[var(--color-brand-line)]'
                 : job.source === 'Glassdoor'
-                ? 'bg-[var(--color-cta-soft)] hover:bg-[#D9F5E8] text-[var(--color-cta)] border border-[var(--color-cta-line)]'
+                ? 'bg-[var(--color-tint-emerald)] hover:bg-[#D1FAE5] text-[#047857] border border-[var(--color-cta-line)]'
+                : job.source === 'Indeed'
+                ? 'bg-[var(--color-tint-sky)] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD]'
+                : job.source === 'Naukri'
+                ? 'bg-[var(--color-tint-amber)] hover:bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]'
+                : job.source === 'Upwork'
+                ? 'bg-[var(--color-tint-teal)] hover:bg-[#CCFBF1] text-[#0F766E] border border-[#99F6E4]'
                 : job.source === 'Arbeitnow'
-                ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                ? 'bg-[var(--color-tint-orange)] hover:bg-[#FFEDD5] text-[#C2410C] border border-[#FED7AA]'
+                : 'bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[var(--color-muted)] border border-[var(--color-hairline)]'
             }`}
           >
             <span>{job.source}</span>
@@ -529,7 +535,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search role, company, location..."
-              className="w-full bg-[#FAFAFF] border-[1.5px] border-[var(--color-hairline2)] rounded-[9px] pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:outline-none focus:border-[var(--color-brand)]"
+              className="w-full bg-[#FAFAF9] border-[1.5px] border-[var(--color-hairline2)] rounded-[9px] pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:outline-none focus:border-[var(--color-brand)]"
             />
           </div>
 

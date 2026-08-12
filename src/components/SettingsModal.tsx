@@ -388,7 +388,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="st-igroup" role="tabpanel">
                   <div className="st-card">
                     <div className="st-card-head">
-                      <div className="st-card-ico indigo"><Brain size={17} weight="duotone" /></div>
+                      <div className="st-card-ico violet"><Brain size={17} weight="duotone" /></div>
                       <div className="st-t"><b>LLM &amp; AI</b><span className="st-d">Your key powers scoring, analysis and tailoring.</span></div>
                       <div className="st-spacer" />
                       <span className="st-tag green">{testState === 'ok' ? <><CheckCircle size={12} weight="bold" /> Connected</> : <><Warning size={12} weight="bold" /> {testState === 'error' ? 'Failed' : 'Idle'}</>}</span>
@@ -461,7 +461,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="st-igroup" role="tabpanel">
                   <div className="st-card">
                     <div className="st-card-head">
-                      <div className="st-card-ico indigo"><RocketLaunch size={17} weight="duotone" /></div>
+                      <div className="st-card-ico violet"><RocketLaunch size={17} weight="duotone" /></div>
                       <div className="st-t"><b>Apify</b><span className="st-d">LinkedIn, Indeed, Naukri, Glassdoor &amp; Upwork scraping.</span></div>
                       <div className="st-spacer" />
                       <span className="st-tag green"><CheckCircle size={12} weight="bold" /> {formData.apify.enabled && formData.apify.token ? 'Configured' : 'Off'}</span>
@@ -617,7 +617,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-layout{flex:1; display:flex; min-height:0; padding:24px 28px; gap:22px;}
         .st-side{width:252px; background:var(--st-surface); border:1px solid var(--st-line); border-radius:14px; padding:12px; flex-shrink:0; display:flex; flex-direction:column; gap:2px;}
         .st-side-item{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border-radius:10px; font-size:13px; font-weight:600; color:var(--st-muted); cursor:pointer; background:transparent; border:1px solid transparent; text-align:left; font-family:inherit; transition:background .15s ease,color .15s ease,border-color .15s ease;}
-        .st-side-item:hover{background:#FAFAFF; color:var(--st-ink);}
+        .st-side-item:hover{background:#FAFAF9; color:var(--st-ink);}
         .st-side-item.on{background:var(--st-primary-soft); color:var(--st-primary); border-color:var(--st-primary-line);}
         .st-side-ic{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:#F5F3FF; color:var(--st-muted); flex-shrink:0; transition:background .15s ease,color .15s ease;}
         .st-side-item.on .st-side-ic{background:var(--st-surface); color:var(--st-primary); border:1px solid var(--st-primary-line);}
@@ -634,7 +634,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-card{background:var(--st-surface); border:1px solid var(--st-line); border-radius:14px; margin-bottom:16px;}
         .st-card-head{display:flex; align-items:center; gap:13px; padding:16px 20px; border-bottom:1px solid var(--st-line);}
         .st-card-ico{width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
-        .st-card-ico.indigo{background:var(--st-primary-soft); color:var(--st-primary);}
+        .st-card-ico.indigo{background:#EEF2FF; color:#4F46E5;}
+        .st-card-ico.violet{background:#F5F3FF; color:#7C3AED;}
+        .st-card-ico.teal{background:#F0FDFA; color:#0F766E;}
         .st-card-ico.green{background:var(--st-cta-soft); color:var(--st-cta);}
         .st-card-ico.red{background:var(--st-danger-soft); color:var(--st-danger);}
         .st-card-ico.pink{background:#FDF2F8; color:#DB2777;}
@@ -656,7 +658,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-inp{width:240px; border:1.5px solid var(--st-line2); border-radius:10px; padding:10px 13px; font-size:13px; color:var(--st-ink); background:var(--st-surface); outline:none; font-family:inherit; transition:border-color .15s ease,box-shadow .15s ease;}
         .st-inp:hover{border-color:var(--st-primary-line);}
         .st-inp:focus{border-color:var(--st-primary); box-shadow:0 0 0 3px rgba(99,102,241,.12);}
-        .st-inp[disabled]{background:#FAFAFF; color:var(--st-faint); cursor:not-allowed;}
+        .st-inp[disabled]{background:#FAFAF9; color:var(--st-faint); cursor:not-allowed;}
         .st-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;}
         .st-sm{width:84px; text-align:center;}
         .st-sw{width:40px; height:23px; border-radius:999px; background:#C9C7E2; position:relative; cursor:pointer; transition:background .18s ease; flex-shrink:0; border:none; padding:0;}
@@ -666,13 +668,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-sw-label{font-size:11.5px; color:var(--st-muted); font-weight:600;}
         .st-providers{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
         .st-provider{border:1.5px solid var(--st-line); border-radius:11px; padding:11px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; background:var(--st-surface); transition:border-color .15s ease,background .15s ease; text-align:left; font-family:inherit;}
-        .st-provider:hover{border-color:var(--st-primary-line); background:#FAFAFF;}
+        .st-provider:hover{border-color:var(--st-primary-line); background:#FAFAF9;}
         .st-provider.on{border-color:var(--st-primary); background:var(--st-primary-soft);}
         .st-plogo{width:27px; height:27px; border-radius:8px; color:#fff; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
         .st-provider b{font-size:12px; display:block; line-height:1.25; font-weight:700;}
         .st-provider span:not(.st-plogo){font-size:9.5px; color:var(--st-faint); display:block; margin-top:1px;}
         .st-btn{display:inline-flex; align-items:center; gap:8px; padding:10px 17px; border-radius:10px; font-size:12.5px; font-weight:700; border:1.5px solid var(--st-line); background:var(--st-surface); color:var(--st-muted); cursor:pointer; transition:background .15s ease,color .15s ease,border-color .15s ease; font-family:inherit;}
-        .st-btn:hover{background:#FAFAFF; border-color:var(--st-primary-line); color:var(--st-ink);}
+        .st-btn:hover{background:#FAFAF9; border-color:var(--st-primary-line); color:var(--st-ink);}
         .st-btn:disabled{opacity:.5; cursor:not-allowed;}
         .st-btn.primary{background:var(--st-primary); border-color:var(--st-primary); color:#fff;}
         .st-btn.primary:hover{background:var(--st-primary-strong); border-color:var(--st-primary-strong); color:#fff;}
@@ -686,7 +688,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-test-row{display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;}
         .st-itabs{display:flex; gap:6px; margin-bottom:18px; background:var(--st-surface); border:1px solid var(--st-line); border-radius:12px; padding:6px; width:fit-content;}
         .st-itab{padding:9px 16px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--st-muted); cursor:pointer; transition:background .15s ease,color .15s ease; display:flex; align-items:center; gap:8px; background:transparent; border:none; font-family:inherit;}
-        .st-itab:hover{color:var(--st-ink); background:#FAFAFF;}
+        .st-itab:hover{color:var(--st-ink); background:#FAFAF9;}
         .st-itab.on{background:var(--st-ink); color:#fff;}
         .st-igroup{animation:st-rise .22s ease;}
         .st-chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;}
@@ -697,7 +699,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-referral span{font-size:11px; color:#86198F; display:block; margin-top:2px;}
         .st-referral a{white-space:nowrap; font-size:11.5px; font-weight:700; color:#A21CAF; background:#FAE8FF; border:1px solid #F0ABFC; border-radius:9px; padding:8px 13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:background .15s ease;}
         .st-referral a:hover{background:#F5D0FE;}
-        .st-details{margin-top:14px; border:1px solid var(--st-line); border-radius:11px; background:#FAFAFF;}
+        .st-details{margin-top:14px; border:1px solid var(--st-line); border-radius:11px; background:#FAFAF9;}
         .st-details summary{cursor:pointer; font-size:12px; font-weight:700; color:var(--st-primary); padding:11px 14px; user-select:none; list-style:none; display:flex; align-items:center; gap:8px;}
         .st-details summary::-webkit-details-marker{display:none;}
         .st-details summary svg{transition:transform .18s ease;}

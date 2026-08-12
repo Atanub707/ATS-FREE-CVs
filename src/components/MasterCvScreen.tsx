@@ -596,7 +596,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={onClose}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAFF] border border-[var(--color-hairline)] transition-colors cursor-pointer"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAF9] border border-[var(--color-hairline)] transition-colors cursor-pointer"
               title="Back to dashboard"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -805,7 +805,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </datalist>
 
           {/* Contact Details Section */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
               <User className="w-3.5 h-3.5 text-[var(--color-muted)]" />
               <span>Contact Information</span>
@@ -861,7 +861,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                       type="button"
                       key={loc}
                       onClick={() => setFormData({ ...formData, location: loc })}
-                      className="text-[10px] bg-[#F1F0FA] hover:bg-slate-200 text-[var(--color-muted)] px-1.5 py-0.5 rounded cursor-pointer border border-[var(--color-hairline)]"
+                      className="text-[10px] bg-[#F1F5F9] hover:bg-slate-200 text-[var(--color-muted)] px-1.5 py-0.5 rounded cursor-pointer border border-[var(--color-hairline)]"
                     >
                       {loc}
                     </button>
@@ -914,7 +914,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Master Professional Summary */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px]">
                 Master Professional Summary
@@ -976,7 +976,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Work Experience History */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-4">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
                 <Briefcase className="w-3.5 h-3.5 text-[var(--color-muted)]" />
@@ -1115,7 +1115,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Education History */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
                 <GraduationCap className="w-3.5 h-3.5 text-[var(--color-muted)]" />
@@ -1206,7 +1206,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Technical Skills */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
                 <Code className="w-3.5 h-3.5 text-[var(--color-muted)]" />
@@ -1259,7 +1259,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Projects Section */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
                 <FolderGit2 className="w-3.5 h-3.5 text-[var(--color-muted)]" />
@@ -1387,7 +1387,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Certifications & Credentials */}
-          <div className="bg-[#FAFAFF] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+          <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
                 <Award className="w-3.5 h-3.5 text-[var(--color-muted)]" />
@@ -1485,7 +1485,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
           </div>
 
           {/* Skill Gaps Section */}
-          <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-lg overflow-hidden">
+          <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-lg overflow-hidden">
             <button
               type="button"
               onClick={() => {
@@ -1565,7 +1565,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
       </div>
 
       {/* RIGHT: LIVE PDF PREVIEW */}
-      <div className="flex-1 bg-[#F1F0FA] flex flex-col overflow-hidden">
+      <div className="flex-1 bg-[#F1F5F9] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-hairline)] bg-white/80 backdrop-blur-sm shrink-0 gap-3">
           <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-faint)] whitespace-nowrap">
             <span className="relative flex h-2 w-2">
@@ -1697,13 +1697,13 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <button
                 type="button"
                 onClick={() => { setAiState('idle'); setCompressResult(null); }}
-                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAFF] border border-[var(--color-hairline)] transition-colors cursor-pointer"
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--color-faint)] bg-white hover:bg-[#FAFAF9] border border-[var(--color-hairline)] transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
               </button>
               <span className="text-sm font-extrabold text-[var(--color-ink)] whitespace-nowrap">AI Compression Result</span>
-              <span className="inline-flex items-center gap-1.5 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-full px-3 py-1">
+              <span className="inline-flex items-center gap-1.5 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-full px-3 py-1">
                 <span className="text-xs font-extrabold text-[var(--color-faint)] line-through">{pagesBefore > 0 ? `${pagesBefore} pages` : '…'}</span>
                 <span className="text-slate-300">→</span>
                 <span className="text-sm font-extrabold text-[var(--color-cta)]">{pagesAfter > 0 ? pagesAfter : '…'}</span>
@@ -1809,7 +1809,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     <button
                       type="button"
                       onClick={handleDownloadPdf}
-                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAFF] transition-colors cursor-pointer"
+                      className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:border-[var(--color-brand-line)] hover:bg-[#FAFAF9] transition-colors cursor-pointer"
                     >
                       <FileDown className="w-3.5 h-3.5" />
                       <span>Download new CV</span>
@@ -1837,20 +1837,20 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <p className="text-sm font-extrabold text-[var(--color-ink)]">Apply AI-compressed CV?</p>
             <p className="text-[11px] text-[var(--color-faint)] mt-1">The original will be saved automatically — you can restore it anytime.</p>
             <div className="grid grid-cols-3 gap-2.5 my-4">
-              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+              <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
                 <div className="text-base font-extrabold text-[var(--color-brand)]">{pagesBefore > 0 ? `${pagesBefore} → ${pagesAfter}` : '…'}</div>
                 <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">pages before → after</div>
               </div>
-              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+              <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
                 <div className="text-base font-extrabold text-[var(--color-cta)]">100%</div>
                 <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">metrics preserved</div>
               </div>
-              <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
+              <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl p-3 text-center">
                 <div className="text-base font-extrabold text-[var(--color-cta)]">+{compressResult.marketSummary?.topKeywords?.length ?? 0}</div>
                 <div className="text-[9px] text-[var(--color-faint)] font-semibold mt-0.5">market keywords added</div>
               </div>
             </div>
-            <div className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl p-3 text-[10.5px] text-[var(--color-muted)] leading-relaxed">
+            <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl p-3 text-[10.5px] text-[var(--color-muted)] leading-relaxed">
               <b className="text-[var(--color-ink)]">What changes:</b>{' '}
               {(() => {
                 const counts: Record<string, number> = { tighten: 0, merge: 0, keep: 0 };
@@ -1887,7 +1887,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {versions.length === 0 && <p className="text-xs text-[var(--color-faint)] text-center py-8">No backups yet. AI compression creates them automatically.</p>}
               {versions.map((v) => (
-                <div key={v.id} className="border border-[var(--color-hairline)] rounded-xl p-3.5 bg-[#FAFAFF]">
+                <div key={v.id} className="border border-[var(--color-hairline)] rounded-xl p-3.5 bg-[#FAFAF9]">
                   <p className="text-xs font-bold text-[var(--color-ink)]">{v.note || 'CV version'}</p>
                   <p className="text-[10px] text-[var(--color-faint)] mt-0.5">{v.pages > 0 ? `${v.pages} pages · ` : ''}{new Date(v.createdAt).toLocaleString()}</p>
                   <button type="button" onClick={() => restoreVersion(v.id)}

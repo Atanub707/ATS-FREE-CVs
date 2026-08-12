@@ -319,7 +319,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const btnBase = 'w-full min-h-[48px] rounded-[10px] font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-40';
 
   const stepBadge = (n: number) => (
-    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[13px] font-bold shrink-0 ${step >= n ? 'bg-[var(--color-ink)] text-white' : 'bg-[#F1F0FA] text-[var(--color-faint)]'}`}>{n}</span>
+    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[13px] font-bold shrink-0 ${step >= n ? 'bg-[var(--color-ink)] text-white' : 'bg-[#F1F5F9] text-[var(--color-faint)]'}`}>{n}</span>
   );
 
   const loadingOverlay = (text: string) => (
@@ -347,11 +347,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#FAFAFF] text-[var(--color-muted)] flex flex-col font-sans">
+    <div className="fixed inset-0 z-40 bg-[#FAFAF9] text-[var(--color-muted)] flex flex-col font-sans">
       {/* Page header */}
       <header className="px-5 sm:px-8 py-4 border-b border-[var(--color-hairline)] bg-white flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAFF] transition-colors cursor-pointer shrink-0">
+          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer shrink-0">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="min-w-0">
@@ -360,7 +360,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAFF] transition-colors cursor-pointer">
+          <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer">
             <History className="w-4 h-4" /> History
           </button>
           <button onClick={onClose} aria-label="Close" className="w-10 h-10 inline-flex items-center justify-center rounded-lg text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer">
@@ -390,7 +390,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   s.on ? 'bg-[var(--color-ink)] border-slate-900 text-white' : isCurrent ? 'bg-[var(--color-brand)] border-blue-600 text-white' : 'bg-white border-[var(--color-hairline)] text-[var(--color-faint)]'
                 } ${canClick ? 'cursor-pointer hover:opacity-85' : 'cursor-default'}`}
               >
-                <span className={`w-4.5 h-4.5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${s.on || isCurrent ? 'bg-white/25' : 'bg-[#F1F0FA] text-[var(--color-faint)]'}`}>{s.on ? '✓' : s.n}</span>
+                <span className={`w-4.5 h-4.5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${s.on || isCurrent ? 'bg-white/25' : 'bg-[#F1F5F9] text-[var(--color-faint)]'}`}>{s.on ? '✓' : s.n}</span>
                 {s.label}
               </button>
             </React.Fragment>
@@ -404,7 +404,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       <div className="flex-1 min-h-0 p-4 sm:p-5 flex gap-0">
         {/* LEFT · Workspace */}
         <section className="flex-1 min-w-0 bg-white border border-[var(--color-hairline)] rounded-l-[14px] overflow-hidden flex flex-col">
-          <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAFF]/80 flex items-center justify-between shrink-0">
+          <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAF9]/80 flex items-center justify-between shrink-0">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
             </span>
@@ -452,7 +452,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 {!result ? (
                   <div className="flex-1 flex items-center justify-center text-center">
                     <div>
-                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F0FA] border border-[var(--color-hairline)] flex items-center justify-center">
+                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
                         <FileText className="w-6 h-6 text-[var(--color-faint)]" />
                       </div>
                       <p className="text-sm font-semibold text-[var(--color-faint)]">Click Analyze Match to begin</p>
@@ -461,7 +461,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 ) : (
                   <>
                     <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
-                      <div className="flex items-center gap-4 p-4 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl">
+                      <div className="flex items-center gap-4 p-4 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
                         <div className="text-[40px] font-bold text-[var(--color-brand)] leading-none shrink-0">{displayScore}%</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[var(--color-ink)]">
@@ -471,7 +471,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         </div>
                       </div>
 
-                      <div className="border border-[var(--color-hairline)] rounded-xl p-3.5 bg-[#FAFAFF]/70">
+                      <div className="border border-[var(--color-hairline)] rounded-xl p-3.5 bg-[#FAFAF9]/70">
                         <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2">Tailoring changes</h3>
                         <div className="space-y-1.5 text-[12px] leading-relaxed">
                           <p className="text-[var(--color-muted)]">
@@ -491,7 +491,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         <div>
                           <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
                             Already matched
-                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] rounded-lg px-1.5 py-0.5">{matchedSkills.length}</span>
+                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{matchedSkills.length}</span>
                             {matchedSkills.length > CHIP_CAP && (
                               <button onClick={() => setShowAllMatched((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
                                 {showAllMatched ? 'Show less' : `+${matchedSkills.length - CHIP_CAP} more`}
@@ -512,7 +512,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       <div>
                         <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
                           Recommended additions
-                          <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] rounded-lg px-1.5 py-0.5">{additions.length}</span>
+                          <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{additions.length}</span>
                           {additions.length > CHIP_CAP && (
                             <button onClick={() => setShowAllAdditions((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
                               {showAllAdditions ? 'Show less' : `+${additions.length - CHIP_CAP} more`}
@@ -575,7 +575,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 {!diff ? (
                   <div className="flex-1 flex items-center justify-center text-center">
                     <div>
-                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F0FA] border border-[var(--color-hairline)] flex items-center justify-center">
+                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
                         <Sparkles className="w-6 h-6 text-[var(--color-faint)]" />
                       </div>
                       <p className="text-sm font-semibold text-[var(--color-faint)]">Tailor your CV to see updates</p>
@@ -584,7 +584,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 ) : (
                   <>
                     <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
-                      <div className="flex items-center gap-4 p-4 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl">
+                      <div className="flex items-center gap-4 p-4 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
                         <div className="text-[36px] font-bold text-[var(--color-cta)] leading-none shrink-0">{diff.afterScore}%</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[var(--color-ink)]">
@@ -598,7 +598,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="flex items-center gap-2.5 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2.5 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
                           <div className="w-8 h-8 rounded-lg bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] flex items-center justify-center shrink-0">
                             <Plus className="w-4 h-4 text-[var(--color-cta)]" />
                           </div>
@@ -607,7 +607,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                             <div className="text-[9.5px] text-[var(--color-faint)] mt-1 leading-tight">Skills added</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2.5 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2.5 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
                           <div className="w-8 h-8 rounded-lg bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] flex items-center justify-center shrink-0">
                             <PenLine className="w-4 h-4 text-[var(--color-cta)]" />
                           </div>
@@ -616,8 +616,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                             <div className="text-[9.5px] text-[var(--color-faint)] mt-1 leading-tight">Bullets rewritten</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2.5 bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-[#F1F0FA] border border-[var(--color-hairline)] flex items-center justify-center shrink-0">
+                        <div className="flex items-center gap-2.5 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center shrink-0">
                             <Ban className="w-4 h-4 text-[var(--color-faint)]" />
                           </div>
                           <div className="min-w-0">
@@ -631,7 +631,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         <div>
                           <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
                             What's been added
-                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
+                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
                             {reviewSkills.length > ADDED_CAP && (
                               <button onClick={() => setShowAllAddedSkills((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
                                 {showAllAddedSkills ? 'Show less' : `+${reviewSkills.length - ADDED_CAP} more`}
@@ -653,7 +653,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         <div>
                           <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
                             What's been rewritten
-                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
+                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
                             {reviewBullets.length > REWRITE_CAP && (
                               <button onClick={() => setShowAllRewrites((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
                                 {showAllRewrites ? 'Show less' : `+${reviewBullets.length - REWRITE_CAP} more`}
@@ -662,7 +662,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           </h3>
                           <div className="space-y-1.5">
                             {visibleRewrites.map((br, bi) => (
-                              <div key={`rw:${bi}`} className="bg-[#FAFAFF] border border-[var(--color-hairline)] rounded-lg px-2.5 py-2">
+                              <div key={`rw:${bi}`} className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-lg px-2.5 py-2">
                                 <div className="flex items-start gap-2">
                                   <PenLine className="w-3.5 h-3.5 text-[var(--color-cta)] mt-0.5 shrink-0" />
                                   <div className="flex-1 min-w-0">
@@ -678,7 +678,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         </div>
                       )}
 
-                      <div className="border border-[var(--color-hairline)] rounded-xl px-3.5 py-2.5 bg-[#FAFAFF]/70">
+                      <div className="border border-[var(--color-hairline)] rounded-xl px-3.5 py-2.5 bg-[#FAFAF9]/70">
                         <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-1.5">What's preserved</h3>
                         <div className="flex flex-wrap gap-x-4 gap-y-1">
                           {['Job titles', 'Employers', 'Employment dates'].map((x) => (
@@ -692,7 +692,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       <div>
                         <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
                           Review changes — remove what you don't like
-                          <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F0FA] rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
+                          <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
                         </h3>
                         <div className="divide-y divide-slate-100">
                           {visibleReview.map((item) => {
@@ -742,7 +742,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
         {/* RIGHT · CV Preview — original + tailored with sliding comparison */}
         <section className="flex-1 min-w-0 bg-white border border-[var(--color-hairline)] border-l-0 rounded-r-[14px] overflow-hidden flex flex-col">
-          <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAFF]/80 flex items-center justify-between gap-2 shrink-0">
+          <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAF9]/80 flex items-center justify-between gap-2 shrink-0">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-soft)]0" /> CV Preview
             </span>
@@ -781,7 +781,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             </div>
           </div>
 
-          <div className="relative flex-1 min-h-0 bg-[#F1F0FA]" ref={wrapRef}>
+          <div className="relative flex-1 min-h-0 bg-[#F1F5F9]" ref={wrapRef}>
             {!tailoredCv ? (
               originalCv ? (
                 <div className="absolute inset-0 overflow-y-auto">
@@ -800,7 +800,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 <div
                   ref={oldScrollRef}
                   onScroll={(e) => syncScroll(e.currentTarget, newScrollRef.current)}
-                  className="absolute inset-0 overflow-y-auto bg-[#F1F0FA]"
+                  className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
                 >
                   {originalCv && <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />}
                 </div>
@@ -809,7 +809,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   <div
                     ref={newScrollRef}
                     onScroll={(e) => syncScroll(e.currentTarget, oldScrollRef.current)}
-                    className="absolute inset-0 overflow-y-auto bg-[#F1F0FA]"
+                    className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
                     style={{ clipPath: `inset(0 0 0 ${cut}%)` }}
                   >
                     <CvPdfPreview cv={newCv} template={previewTemplate} fitToWidth />
@@ -864,7 +864,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
               {historyLoading && <p className="text-[12px] text-[var(--color-faint)]">Loading…</p>}
               {!historyLoading && history.length === 0 && <p className="text-[12px] text-[var(--color-faint)] text-center py-10">No analyses yet.</p>}
               {history.map((h) => (
-                <div key={h.id} onClick={() => restoreAnalysis(h.id)} className={`border rounded-xl p-3 cursor-pointer transition-colors ${historyId === h.id ? 'border-[var(--color-brand)] bg-[var(--color-brand-soft)]/60' : 'border-[var(--color-hairline)] hover:border-[var(--color-brand)] hover:bg-[#FAFAFF]'}`}>
+                <div key={h.id} onClick={() => restoreAnalysis(h.id)} className={`border rounded-xl p-3 cursor-pointer transition-colors ${historyId === h.id ? 'border-[var(--color-brand)] bg-[var(--color-brand-soft)]/60' : 'border-[var(--color-hairline)] hover:border-[var(--color-brand)] hover:bg-[#FAFAF9]'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-[var(--color-ink)] truncate">{h.role || 'Untitled role'}</p>
