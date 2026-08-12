@@ -465,7 +465,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       (!company || c.company === company) &&
       (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
-  const typeCountsMap = typeCounts(visibleRaw);
+  const typeCountsMap = typeCounts(contacts);
   const visible = sortContacts<Contact>(visibleRaw.filter((c: Contact) => filterByType(c, typeFilter)), sortBy);
   const shown = visible.slice(0, shownCount);
   const canLoadMore = shownCount < visible.length;
@@ -1026,7 +1026,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-batchcheck input { accent-color: var(--blue); cursor: pointer; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
-        .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
+        .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
         .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
         .rc-idcard.rc-focus { box-shadow: 0 0 0 2px var(--blue), 0 6px 18px -6px rgba(37,99,235,.25); }
@@ -1036,10 +1036,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-nm b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
         .rc-co-line { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
         .rc-notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
-        .rc-fields { display: flex; flex-direction: column; }
-        .rc-frow { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px dashed #EDF0F5; }
-        .rc-frow:last-child { border-bottom: 0; }
-        .rc-fl { width: 54px; flex-shrink: 0; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
+        .rc-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 0; padding: 2px 0; }
+        .rc-frow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 5px 14px 5px 0; border-bottom: 0; }
+        .rc-frow + .rc-frow { border-left: 1px dashed #EDF0F5; padding-left: 14px; }
+        .rc-fl { width: auto; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
         .rc-fv { font-size: 12px; font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; }
         .rc-fv a { color: var(--linkedin); text-decoration: none; }
         .rc-fv a:hover { text-decoration: underline; }
