@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare, BadgeCheck } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare, BadgeCheck, Plus, Users, Building2, MessageCircle } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 import { followupDue, followupDaysLeft } from '../lib/recruiters/followupUtils';
 
@@ -65,6 +65,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [company, setCompany] = useState('');
   const [stats, setStats] = useState<{ total: number; withEmail: number; withPhone: number; sent: number; companies: number } | null>(null);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [pipelineFilter, setPipelineFilter] = useState('');
   const [sortBy, setSortBy] = useState('last_seen');
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -463,6 +464,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const visibleRaw = contacts.filter(
     (c) =>
       (!company || c.company === company) &&
+      (!pipelineFilter || c.pipelineStatus === pipelineFilter) &&
       (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
   const typeCountsMap = typeCounts(contacts);
@@ -470,7 +472,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const shown = visible.slice(0, shownCount);
   const canLoadMore = shownCount < visible.length;
 
-  useEffect(() => setShownCount(24), [typeFilter, company, q]);
+  useEffect(() => setShownCount(24), [typeFilter, company, q, pipelineFilter]);
 
   useEffect(() => {
     if (focusedId) {
@@ -498,21 +500,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       <div className="rc-wrap">
         {stats && (
           <div className="rc-stats">
-            <span className="rc-stat"><b>{stats.total}</b> contacts</span>
-            <span className="rc-stat"><b>{stats.withEmail}</b> with email</span>
-            <span className="rc-stat"><b>{stats.withPhone}</b> with phone</span>
-            <span className="rc-stat sent"><b>{stats.sent}</b> sent</span>
-            <span className="rc-stat"><b>{stats.companies}</b> companies</span>
+            <span className="rc-stat brand"><Users size={13} /><b>{stats.total}</b> contacts</span>
+            <span className="rc-stat brand"><Mail size={13} /><b>{stats.withEmail}</b> with email</span>
+            <span className="rc-stat violet"><Phone size={13} /><b>{stats.withPhone}</b> with phone</span>
+            <span className="rc-stat cta"><Send size={13} /><b>{stats.sent}</b> sent</span>
+            <span className="rc-stat amber"><Building2 size={13} /><b>{stats.companies}</b> companies</span>
           </div>
         )}
-        <div className="rc-types">
-          {['all', 'recruit', 'hr', 'careers', 'company'].map((t) => (
-            <button key={t} className={`rc-typechip ${typeFilter === t ? 'on' : ''}`} onClick={() => setTypeFilter(t)}>
-              {t === 'all' ? 'All' : TYPE_LABELS[t]}
-              <span className="rc-typecount">{t === 'all' ? contacts.length : typeCountsMap[t] || 0}</span>
-            </button>
-          ))}
-        </div>
         <div className="rc-toolbar">
           <div className="rc-search">
             <Search size={14} />
@@ -529,6 +523,27 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             <option value="job_count">Sort: most jobs</option>
             <option value="last_email_sent">Sort: recently emailed</option>
           </select>
+        </div>
+        <div className="rc-toolbar2">
+          <div className="rc-typeseg">
+            {['all', 'recruit', 'hr', 'careers', 'company'].map((t) => (
+              <button key={t} className={`rc-tseg ${typeFilter === t ? 'on' : ''}`} onClick={() => setTypeFilter(t)}>
+                {t === 'all' ? 'All' : TYPE_LABELS[t]}
+                <span className="rc-tseg-n">{t === 'all' ? contacts.length : typeCountsMap[t] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <select className="rc-select rc-pipefilter" value={pipelineFilter} onChange={(e) => setPipelineFilter(e.target.value)}>
+            <option value="">Pipeline: Any</option>
+            {PIPELINE.filter((p) => p.value).map((p) => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+          {batchMode && (
+            <span className="rc-batchtip">
+              <CheckSquare size={12} /> {selected.size} selected — Send · Dismiss · or exit batch mode
+            </span>
+          )}
         </div>
 
         <div className="rc-note">
@@ -553,112 +568,110 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               const displayName = c.name || c.recruiterName || '';
               const hasPhoto = !!displayName;
               return (
-                <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''}`}>
+                <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''} ${batchMode ? 'batching' : ''} ${selected.has(c.id) ? 'rc-selected' : ''}`}>
                   {batchMode && (
                     <label className="rc-batchcheck" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
-                      <span>Select</span>
                     </label>
                   )}
-                  <div className="rc-namerow">
+                  <div className="rc-row1">
                     <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
-                      {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={20} />}
+                      {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={18} />}
                     </div>
-                    <div className="rc-namefield">
+                    <div className="rc-idn">
                       <div className="rc-nm">
                         {displayName ? <b>{displayName}</b> : <span className="rc-notscraped">Not scraped</span>}
                         <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                       </div>
-                      <div className="rc-co-line">{c.company}</div>
+                      <div className="rc-co-line">
+                        {c.company}
+                        {c.jobRole && <><span className="rc-sep">·</span>{c.jobRole}</>}
+                        {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
+                        {c.sourceJobUrl && (
+                          <a className="rc-srcjob" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink size={10} /> Job
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="rc-right">
+                      <select className={`rc-pipe rc-pipe-${c.pipelineStatus || 'none'}`} value={c.pipelineStatus || ''} onChange={(e) => setPipeline(c, e.target.value || null)}>
+                        {PIPELINE.map((p) => (
+                          <option key={p.value || 'none'} value={p.value || ''}>{p.label}</option>
+                        ))}
+                      </select>
+                      <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
-                  <div className="rc-fields">
-                    <div className="rc-frow">
-                      <span className="rc-fl">Phone</span>
-                      <span className="rc-fv">
-                        {c.phone ? (
-                          <>
-                            <button className="rc-copyi" title="Copy phone" onClick={() => copyValue(c.phone!)}><Phone size={11} /></button>
-                            <code>{c.phone}</code>
-                            {c.whatsapp && <span className="rc-wabadge">WhatsApp</span>}
-                            {c.whatsapp && c.phone && (
-                              <a className="rc-walink" href={waLink(c.phone)} target="_blank" rel="noreferrer" title="Chat on WhatsApp">
-                                Message
-                              </a>
-                            )}
-                          </>
-                        ) : (
-                          <span className="rc-notscraped">Not scraped</span>
-                        )}
+
+                  <div className="rc-chips">
+                    {c.email ? (
+                      <span className="rc-chip email" title="Copy email" onClick={() => copyValue(c.email!)}>
+                        <Mail size={11} /> <span className="rc-chip-txt">{c.email}</span>
                       </span>
-                    </div>
-                    <div className="rc-frow">
-                      <span className="rc-fl">Email</span>
-                      <span className="rc-fv">
-                        {c.email ? (
-                          <>
-                            <button className="rc-copyi" title="Copy email" onClick={() => copyValue(c.email!)}><Mail size={11} /></button>
-                            <code>{c.email}</code>
-                            <button className="rc-verify" title="Check email validity (format + domain MX)" onClick={() => verifyEmail(c)}>
-                              <BadgeCheck size={11} />
-                            </button>
-                            {verifyMap[c.id] && (
-                              <span className={`rc-verifystate ${verifyMap[c.id] === 'valid' ? 'ok' : verifyMap[c.id] === 'invalid-format' ? 'bad' : 'warn'}`}>
-                                {verifyMap[c.id] === 'valid' ? 'Valid' : verifyMap[c.id] === 'invalid-format' ? 'Invalid' : verifyMap[c.id] === 'no-mx' ? 'No MX' : 'Unknown'}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="rc-notscraped">Not scraped</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="rc-frow">
-                      <span className="rc-fl">Social</span>
-                      <span className="rc-fv">
-                        {c.recruiterUrl ? (
-                          <>
-                            <Linkedin size={11} />
-                            <a href={c.recruiterUrl} target="_blank" rel="noreferrer">LinkedIn profile ↗</a>
-                          </>
-                        ) : (
-                          <span className="rc-notscraped">Not scraped</span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="rc-idmeta">
-                    <span className="rc-co">{c.company}</span>
-                    <span className="rc-sep">·</span>
-                    <span className="rc-role">{c.jobRole}</span>
-                    {c.sourceJobUrl && (
-                      <a className="rc-srcjob" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
-                        <ExternalLink size={10} /> Job
-                      </a>
+                    ) : (
+                      <span className="rc-chip none">Email not scraped</span>
                     )}
-                    {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
+                    {c.phone ? (
+                      <>
+                        <span className="rc-chip phone" title="Copy phone" onClick={() => copyValue(c.phone!)}>
+                          <Phone size={11} /> <span className="rc-chip-txt">{c.phone}</span>
+                        </span>
+                        {c.whatsapp && (
+                          <a className="rc-chip wa" href={waLink(c.phone)} target="_blank" rel="noreferrer" title="Chat on WhatsApp">
+                            <MessageCircle size={11} /> WhatsApp
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <span className="rc-chip none">Phone not scraped</span>
+                    )}
+                    {c.recruiterUrl ? (
+                      <a className="rc-chip li" href={c.recruiterUrl} target="_blank" rel="noreferrer">
+                        <Linkedin size={11} /> LinkedIn
+                      </a>
+                    ) : (
+                      <span className="rc-chip none">No LinkedIn</span>
+                    )}
                   </div>
-                  {(c.followUpAt || c.emailStatus === 'sent') && (
+
+                  {c.context && <div className="rc-ctx">"{c.context}"</div>}
+
+                  {(c.followUpAt || c.emailStatus === 'sent' || c.emailStatus === 'failed') && (
                     <div className="rc-furow">
                       {c.followUpAt && !c.followedUp && followupDue(c.followUpAt, false) && (
-                        <span className="rc-fuchip overdue"><AlertTriangle size={10} /> Follow up</span>
+                        <span className="rc-fuchip overdue"><AlertTriangle size={10} /> Follow up <span className="rc-fu-mini">due</span></span>
                       )}
                       {c.followUpAt && !c.followedUp && !followupDue(c.followUpAt, false) && (
-                        <span className="rc-fuchip"><Clock size={10} /> {followupDaysLeft(c.followUpAt)}d</span>
+                        <span className="rc-fuchip"><Clock size={10} /> Follow up <span className="rc-fu-mini">{followupDaysLeft(c.followUpAt)}d</span></span>
                       )}
                       {c.followedUp && <span className="rc-fuchip done"><CheckCircle2 size={10} /> Followed up</span>}
-                      <span className="rc-fu-spacer" />
                       {c.followUpAt && !c.followedUp && (
                         <button className="rc-fubtn" onClick={() => markFollowedUp(c)}>Mark done</button>
                       )}
-                      <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 0)}>Clear</button>
+                      {c.followUpAt && (
+                        <button className="rc-fubtn" onClick={() => setFollowUp(c, 0)}>Clear</button>
+                      )}
+                      <span className="rc-fu-spacer" />
+                      {c.emailStatus === 'sent' && c.lastEmailSent && (
+                        <button className="rc-emailchip sent clickable" onClick={() => openHistory(c)}>
+                          <CheckCircle2 size={11} /> Sent {new Date(c.lastEmailSent).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </button>
+                      )}
+                      {c.emailStatus === 'failed' && (
+                        <button className="rc-emailchip failed clickable" onClick={() => openHistory(c)}>
+                          <AlertTriangle size={11} /> Failed — resend
+                        </button>
+                      )}
                     </div>
                   )}
                   <div className="rc-furow quick">
                     <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 3)}>+3d</button>
                     <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 7)}>+7d</button>
                   </div>
-                  {c.context && <div className="rc-ctx">"{c.context}"</div>}
+
                   {editingNoteId === c.id ? (
                     <div className="rc-note-edit">
                       <textarea
@@ -673,23 +686,19 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         <button className="rc-note-btn" onClick={() => setEditingNoteId(null)}>Cancel</button>
                       </div>
                     </div>
-                  ) : c.notes ? (
-                    <div className="rc-note-pill">
-                      <span className="rc-note-txt">{c.notes}</span>
-                      <button className="rc-note-editbtn" onClick={() => setEditingNoteId(c.id)} title="Edit note"><PencilLine size={11} /></button>
-                    </div>
                   ) : (
-                    <button className="rc-note-add" onClick={() => setEditingNoteId(c.id)}>+ Add note</button>
+                    <div className="rc-noterow">
+                      {c.notes ? (
+                        <span className="rc-note-pill">
+                          <span className="rc-note-txt">{c.notes}</span>
+                          <button className="rc-note-editbtn" onClick={() => setEditingNoteId(c.id)} title="Edit note"><PencilLine size={11} /></button>
+                        </span>
+                      ) : null}
+                      <button className="rc-note-add" onClick={() => setEditingNoteId(c.id)}><Plus size={11} /> Note</button>
+                    </div>
                   )}
+
                   <div className="rc-cact">
-                    <select className={`rc-pipe rc-pipe-${c.pipelineStatus || 'none'}`} value={c.pipelineStatus || ''} onChange={(e) => setPipeline(c, e.target.value || null)}>
-                      {PIPELINE.map((p) => (
-                        <option key={p.value || 'none'} value={p.value || ''}>{p.label}</option>
-                      ))}
-                    </select>
-                    <button className="rc-ghost" title="Email history" onClick={() => openHistory(c)}>
-                      <Clock size={14} />
-                    </button>
                     <button className="rc-btn" title="AI-enrich missing details from LinkedIn + job context"
                       onClick={() => enrichContact(c)} disabled={busyId === c.id}>
                       {busyId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Enrich
@@ -702,20 +711,21 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         <Mail size={14} />
                       </button>
                     )}
-                    <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
-                      <Trash2 size={14} />
+                    <button className="rc-ghost" title="Email history" onClick={() => openHistory(c)}>
+                      <Clock size={14} />
                     </button>
+                    <span className="rc-fu-spacer" />
+                    {verifyMap[c.id] && (
+                      <span className={`rc-verifystate ${verifyMap[c.id] === 'valid' ? 'ok' : verifyMap[c.id] === 'invalid-format' ? 'bad' : 'warn'}`}>
+                        {verifyMap[c.id] === 'valid' ? 'Valid' : verifyMap[c.id] === 'invalid-format' ? 'Invalid' : verifyMap[c.id] === 'no-mx' ? 'No MX' : 'Unknown'}
+                      </span>
+                    )}
+                    {!verifyMap[c.id] && c.email && (
+                      <button className="rc-verify" title="Check email validity (format + domain MX)" onClick={() => verifyEmail(c)}>
+                        <BadgeCheck size={13} /> Verify
+                      </button>
+                    )}
                   </div>
-                  {c.emailStatus === 'sent' && c.lastEmailSent && (
-                    <button className="rc-emailchip sent clickable" onClick={() => openHistory(c)}>
-                      <CheckCircle2 size={11} /> Sent {new Date(c.lastEmailSent).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </button>
-                  )}
-                  {c.emailStatus === 'failed' && (
-                    <button className="rc-emailchip failed clickable" onClick={() => openHistory(c)}>
-                      <AlertTriangle size={11} /> Failed — resend
-                    </button>
-                  )}
                 </div>
               );
             })}
@@ -961,16 +971,24 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-spacer { flex: 1; }
         .rc-count { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-border); padding: 6px 13px; border-radius: 20px; flex-shrink: 0; }
         .rc-wrap { max-width: 920px; width: 100%; margin: 0 auto; padding: 26px 28px 40px; flex: 1; overflow-y: auto; }
-        .rc-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+        .rc-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 9px; }
         .rc-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-        .rc-stat { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
-        .rc-stat b { color: var(--blue); }
-        .rc-stat.sent b { color: var(--green); }
-        .rc-types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-        .rc-typechip { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-family: inherit; transition: all .15s ease; }
-        .rc-typechip:hover { border-color: var(--blue-border); color: var(--blue); }
-        .rc-typechip.on { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
-        .rc-typecount { margin-left: 5px; opacity: .65; }
+        .rc-stat { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; }
+        .rc-stat svg { width: 13px; height: 13px; opacity: .85; }
+        .rc-stat b { color: var(--ink); font-size: 13px; }
+        .rc-stat.brand svg { color: var(--blue); }
+        .rc-stat.cta svg { color: var(--green); }
+        .rc-stat.amber svg { color: var(--amber); }
+        .rc-stat.violet svg { color: #7C3AED; }
+        .rc-toolbar2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .rc-typeseg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; }
+        .rc-tseg { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--muted); border: 0; background: none; border-radius: 7px; padding: 5px 11px; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+        .rc-tseg:hover { color: var(--blue); }
+        .rc-tseg.on { background: var(--blue); color: #fff; }
+        .rc-tseg-n { font-size: 10px; font-weight: 800; background: rgba(15,23,42,.08); color: inherit; border-radius: 20px; padding: 1px 6px; }
+        .rc-tseg.on .rc-tseg-n { background: rgba(255,255,255,.22); color: #fff; }
+        .rc-pipefilter { height: 34px; }
+        .rc-batchtip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border: 1px dashed var(--blue-border); border-radius: 8px; padding: 6px 11px; margin-left: auto; }
         .rc-search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 13px; color: var(--faint); }
         .rc-search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
         .rc-search input { flex: 1; border: 0; outline: none; background: none; font-size: 13px; font-family: inherit; color: var(--text); }
@@ -1022,69 +1040,55 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.active { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
         .rc-btn2.danger { border-color: #FECACA; color: var(--color-danger); background: var(--color-danger-soft); }
         .rc-btn2.danger:hover { filter: brightness(.97); }
-        .rc-batchcheck { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--faint); cursor: pointer; }
-        .rc-batchcheck input { accent-color: var(--blue); cursor: pointer; }
+        .rc-batchcheck { position: absolute; top: 10px; left: 10px; display: none; cursor: pointer; z-index: 2; }
+        .rc-batchcheck input { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+        .rc-idcard.batching .rc-batchcheck { display: block; }
+        .rc-idcard.batching .rc-row1 { padding-left: 20px; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
-        .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; align-content: start; }
-        .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s ease, transform .15s ease; }
+        .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; align-content: start; }
+        .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; transition: box-shadow .15s ease, transform .15s ease; position: relative; }
         .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
         .rc-idcard.rc-focus { box-shadow: 0 0 0 2px var(--blue), 0 6px 18px -6px rgba(37,99,235,.25); }
-        .rc-namerow { display: flex; align-items: center; gap: 12px; }
-        .rc-namefield { flex: 1; min-width: 0; }
+        .rc-idcard.rc-selected { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,.25); }
+        .rc-row1 { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .rc-idn { flex: 1; min-width: 0; }
+        .rc-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .rc-nm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
         .rc-nm b { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
-        .rc-co-line { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
+        .rc-co-line { font-size: 10.5px; color: var(--faint); margin-top: 2px; display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
         .rc-notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
-        .rc-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 0; padding: 2px 0; }
-        .rc-frow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 5px 14px 5px 0; border-bottom: 0; }
-        .rc-frow + .rc-frow { border-left: 1px dashed #EDF0F5; padding-left: 14px; }
-        .rc-fl { width: auto; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
-        .rc-fv { font-size: 12px; font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; }
-        .rc-fv a { color: var(--linkedin); text-decoration: none; }
-        .rc-fv a:hover { text-decoration: underline; }
-        .rc-fv svg { width: 11px; height: 11px; flex-shrink: 0; }
-        .rc-fv code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
-        .rc-wabadge { font-size: 9px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 6px; }
-        .rc-fv .rc-walink { font-size: 9.5px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 7px; text-decoration: none; }
-        .rc-fv .rc-walink:hover { filter: brightness(.95); text-decoration: none; }
-        .rc-copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
-        .rc-copyi:hover { color: var(--blue); }
-        .rc-verify { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 2px; display: inline-flex; }
-        .rc-verify:hover { color: var(--green); }
-        .rc-verifystate { font-size: 9px; font-weight: 700; border-radius: 20px; padding: 1px 6px; }
+        .rc-chips { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
+        .rc-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; border-radius: 7px; padding: 3px 8px; border: 1px solid var(--border); color: var(--muted); background: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; text-decoration: none; transition: all .15s ease; }
+        .rc-chip svg { width: 11px; height: 11px; flex-shrink: 0; opacity: .8; }
+        .rc-chip:hover { filter: brightness(.97); }
+        .rc-chip-txt { overflow: hidden; text-overflow: ellipsis; }
+        .rc-chip.email { border-color: #CBD5E1; background: #F8FAFC; }
+        .rc-chip.phone { border-color: #E9D5FF; color: #7C3AED; background: #FAF5FF; }
+        .rc-chip.li { border-color: var(--linkedin-line); color: var(--linkedin); background: var(--linkedin-soft); }
+        .rc-chip.wa { border-color: var(--wa-line); color: var(--wa); background: var(--wa-soft); }
+        .rc-chip.none { font-style: italic; color: var(--faint); font-weight: 500; border-style: dashed; background: none; cursor: default; }
+        .rc-verify { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--faint); cursor: pointer; padding: 3px 8px; border-radius: 7px; }
+        .rc-verify:hover { color: var(--green); border-color: var(--green-border); }
+        .rc-verifystate { font-size: 9px; font-weight: 800; border-radius: 20px; padding: 2px 8px; }
         .rc-verifystate.ok { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
         .rc-verifystate.bad { color: var(--color-danger); background: var(--color-danger-soft); border: 1px solid #FECACA; }
         .rc-verifystate.warn { color: var(--amber); background: var(--amber-soft); border: 1px solid var(--amber-border); }
-        .rc-idrow { display: flex; align-items: center; gap: 12px; }
-        .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, var(--color-hairline), var(--color-faint)); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--color-muted); flex-shrink: 0; overflow: hidden; }
-        .rc-photo svg { width: 20px; height: 20px; opacity: .55; }
-        .rc-photo.has { background: linear-gradient(135deg, var(--color-brand), #7C3AED); color: #fff; font-weight: 800; font-size: 22px; border: 0; }
+        .rc-photo { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, var(--color-hairline), var(--color-faint)); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--color-muted); flex-shrink: 0; overflow: hidden; }
+        .rc-photo svg { width: 16px; height: 16px; opacity: .55; }
+        .rc-photo.has { background: linear-gradient(135deg, var(--color-brand), #7C3AED); color: #fff; font-weight: 800; font-size: 15px; border: 0; }
         .rc-photo.has.alt1 { background: linear-gradient(135deg, #F59E0B, #EF4444); }
         .rc-photo.has.alt2 { background: linear-gradient(135deg, var(--color-cta), #0EA5E9); }
-        .rc-idmain { min-width: 0; flex: 1; }
-        .rc-idnm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-        .rc-idnm b { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
-        .rc-idmail { font-size: 11.5px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; min-width: 0; }
-        .rc-idmail code { font-family: ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; font-size: 10.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-        .rc-none { color: var(--faint); font-size: 10.5px; font-style: italic; }
-        .rc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .rc-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; border-radius: 7px; padding: 3px 8px; border: 1px solid var(--border); color: var(--muted); background: #fff; cursor: pointer; text-decoration: none; transition: all .15s ease; }
-        .rc-chip:hover { border-color: var(--blue-border); color: var(--blue); }
-        .rc-chip-phone { color: #7C3AED; border-color: #E9D5FF; background: #FAF5FF; }
-        .rc-chip-wa { color: #15803D; border-color: #BBF7D0; background: #F0FDF4; }
-        .rc-chip-li { color: #0A66C2; border-color: #B9D0EF; background: #F0F6FD; }
-        .rc-idmeta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); min-width: 0; flex-wrap: wrap; }
-        .rc-co { font-weight: 600; color: var(--muted); }
-        .rc-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
         .rc-srcjob { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; color: var(--blue); text-decoration: none; padding: 2px 7px; border-radius: 6px; background: var(--blue-soft); border: 1px solid var(--blue-border); }
         .rc-srcjob:hover { filter: brightness(.96); }
-        .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
-        .rc-note-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 9px; }
-        .rc-note-txt { flex: 1; line-height: 1.45; }
-        .rc-note-editbtn { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 2px; display: inline-flex; }
-        .rc-note-editbtn:hover { color: var(--amber); }
-        .rc-note-add { border: 1px dashed var(--border); background: none; color: var(--faint); font-size: 10.5px; font-weight: 700; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-family: inherit; }
+        .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rc-noterow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .rc-note-pill { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: var(--amber); background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 7px; padding: 3px 8px; max-width: 100%; }
+        .rc-note-txt { flex: 1; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rc-note-editbtn { border: 0; background: none; color: var(--amber); cursor: pointer; padding: 1px; display: inline-flex; flex-shrink: 0; }
+        .rc-note-editbtn:hover { color: var(--rose); }
+        .rc-note-add { display: inline-flex; align-items: center; gap: 4px; border: 1px dashed var(--border); background: none; color: var(--faint); font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 7px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+        .rc-note-add svg { width: 10px; height: 10px; }
         .rc-note-add:hover { color: var(--blue); border-color: var(--blue-border); }
         .rc-note-edit { display: flex; flex-direction: column; gap: 6px; }
         .rc-note-ta { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 11.5px; font-family: inherit; color: var(--text); outline: none; resize: vertical; }
@@ -1092,23 +1096,22 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-note-acts { display: flex; gap: 6px; }
         .rc-note-btn { font-size: 10.5px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 7px; padding: 4px 10px; cursor: pointer; font-family: inherit; }
         .rc-note-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-        .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
-        .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
-        .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+        .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--border); }
+        .rc-cact .rc-btn { height: 28px; padding: 0 10px; font-size: 11px; }
+        .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; }
         .rc-emailchip.sent { background: var(--color-cta-soft); color: #059669; border: 1px solid var(--color-cta-line); }
         .rc-emailchip.failed { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
         .rc-emailchip.clickable { cursor: pointer; }
         .rc-emailchip.clickable:hover { filter: brightness(.97); }
-        .rc-cact .rc-ghost { margin-left: auto; }
         .rc-morewrap { text-align: center; padding: 18px 0 4px; }
         .rc-more { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--blue-border); background: var(--blue-soft); color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .rc-more:hover { filter: brightness(.97); }
         .rc-furow { display: flex; align-items: center; gap: 6px; }
         .rc-furow.quick { justify-content: flex-end; margin-top: -4px; }
-        .rc-fuchip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .rc-fuchip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
         .rc-fuchip.overdue { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
-        .rc-fuchip { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
         .rc-fuchip.done { background: var(--color-cta-soft); color: var(--green); border: 1px solid var(--color-cta-line); }
+        .rc-fu-mini { background: rgba(15,23,42,.06); border-radius: 20px; padding: 0 5px; font-weight: 800; }
         .rc-fu-spacer { flex: 1; }
         .rc-fubtn { font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
         .rc-fubtn:hover { border-color: var(--blue-border); color: var(--blue); }
