@@ -495,6 +495,8 @@ export default function App() {
               onClose={() => setIsSettingsOpen(false)}
               config={config}
               onSaveConfig={handleSaveConfig}
+              user={currentUser}
+              onOpenMasterCv={() => setIsMasterCvOpen(true)}
             />
           )}
 

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — Professional Redesign (v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  :root{
+    --bg:#F5F3FF; --surface:#FFFFFF; --line:#E4E2F5; --line-strong:#D8D5F0;
+    --ink:#1E1B4B; --muted:#475569; --faint:#6B7280;
+    --primary:#6366F1; --primary-strong:#4F46E5; --primary-soft:#EEF0FE; --primary-line:#C7CBFB;
+    --cta:#10B981; --cta-soft:#ECFDF5; --cta-line:#A7F3D0; --danger:#DC2626; --danger-soft:#FEF2F2;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--ink); display:flex; flex-direction:column; height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;}
+
+  /* ── Header ── */
+  header{display:flex; align-items:center; gap:16px; padding:16px 28px; background:var(--surface); border-bottom:1px solid var(--line); flex-shrink:0;}
+  .hbtn{display:inline-flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; font-size:13px; font-weight:600; color:var(--muted); background:var(--surface); border:1px solid var(--line); cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease;}
+  .hbtn:hover{background:var(--primary-soft); color:var(--primary); border-color:var(--primary-line);}
+  .hbtn:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+  .title{font-size:15px; font-weight:800; letter-spacing:-.01em;}
+  .title small{font-size:11px; color:var(--faint); font-weight:500; margin-left:6px;}
+  .spacer{flex:1;}
+  .status-chip{display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; padding:6px 13px; border-radius:999px; background:var(--primary-soft); color:var(--primary); border:1px solid var(--primary-line);}
+  .status-chip i{font-size:13px;}
+
+  /* ── Layout ── */
+  .layout{flex:1; display:flex; min-height:0; padding:24px 28px; gap:22px;}
+  .sidebar{width:252px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; flex-shrink:0; display:flex; flex-direction:column;}
+  .side-item{display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border-radius:10px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; background:transparent; border:1px solid transparent; text-align:left; transition:background .15s ease, color .15s ease, border-color .15s ease;}
+  .side-item:hover{background:#FAFAFF; color:var(--ink);}
+  .side-item:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+  .side-item[aria-current="page"]{background:var(--primary-soft); color:var(--primary); border-color:var(--primary-line);}
+  .side-item .ic{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:#F5F3FF; color:var(--muted); flex-shrink:0; font-size:16px; transition:background .15s ease, color .15s ease;}
+  .side-item[aria-current="page"] .ic{background:var(--surface); color:var(--primary); border:1px solid var(--primary-line);}
+  .side-item .cnt{margin-left:auto; font-size:10px; font-weight:800; background:#F5F3FF; color:var(--faint); border-radius:999px; padding:2px 8px;}
+  .side-item[aria-current="page"] .cnt{background:var(--surface); color:var(--primary);}
+  .side-note{margin-top:auto; padding:13px 14px 4px; font-size:10.5px; color:var(--faint); line-height:1.65; border-top:1px solid var(--line);}
+  .side-note b{color:var(--muted); font-weight:700;}
+
+  /* ── Content ── */
+  .content{flex:1; min-width:0; overflow-y:auto; padding-right:6px;}
+  .panel{display:none;}
+  .panel.on{display:block; animation:rise .22s ease;}
+  @keyframes rise{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
+  .phead{margin-bottom:18px;}
+  .phead h2{font-size:18px; font-weight:800; letter-spacing:-.02em;}
+  .phead p{font-size:12.5px; color:var(--muted); margin-top:3px;}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:16px;}
+  .card-head{display:flex; align-items:center; gap:13px; padding:16px 20px; border-bottom:1px solid var(--line);}
+  .card-ico{width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:17px;}
+  .card-head .t b{font-size:14px; font-weight:700; letter-spacing:-.01em;}
+  .card-head .t .d{display:block; font-size:11.5px; color:var(--faint); font-weight:500; margin-top:1px;}
+  .tag{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:999px;}
+  .tag.green{background:var(--cta-soft); color:var(--cta); border:1px solid var(--cta-line);}
+  .tag.indigo{background:var(--primary-soft); color:var(--primary); border:1px solid var(--primary-line);}
+  .tag.amber{background:#FFF7ED; color:#C2410C; border:1px solid #FED7AA;}
+  .card-body{padding:6px 20px 18px;}
+
+  .field-label{font-size:10.5px; font-weight:800; color:var(--faint); margin:18px 0 8px; text-transform:uppercase; letter-spacing:.09em;}
+  .field-label .hint{text-transform:none; font-weight:500; letter-spacing:0;}
+
+  .row{display:flex; align-items:center; gap:16px; padding:13px 0; border-bottom:1px solid #F2F1FB;}
+  .row:last-child{border-bottom:none;}
+  .row .lbl{flex:1; min-width:0;}
+  .row .lbl b{display:block; font-size:13px; font-weight:600; letter-spacing:-.01em;}
+  .row .lbl span{display:block; font-size:11.5px; color:var(--faint); margin-top:2px;}
+  .row label[for]{display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:5px;}
+
+  .inp{width:240px; border:1.5px solid var(--line-strong); border-radius:10px; padding:10px 13px; font-size:13px; color:var(--ink); background:var(--surface); outline:none; font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease;}
+  .inp:hover{border-color:var(--primary-line);}
+  .inp:focus{border-color:var(--primary); box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+  .inp.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;}
+  .inp[disabled]{background:#FAFAFF; color:var(--faint); cursor:not-allowed;}
+  .inp.sm{width:84px; text-align:center;}
+
+  /* Toggle */
+  .sw{width:40px; height:23px; border-radius:999px; background:#C9C7E2; position:relative; cursor:pointer; transition:background .18s ease; flex-shrink:0; border:none; padding:0;}
+  .sw::after{content:''; position:absolute; top:2.5px; left:2.5px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left .18s ease; box-shadow:0 1px 2px rgba(30,27,75,.18);}
+  .sw.on{background:var(--primary);}
+  .sw.on::after{left:19.5px;}
+  .sw:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+
+  /* Providers */
+  .providers{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
+  .provider{border:1.5px solid var(--line); border-radius:11px; padding:11px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; background:var(--surface); transition:border-color .15s ease, background .15s ease; text-align:left;}
+  .provider:hover{border-color:var(--primary-line); background:#FAFAFF;}
+  .provider:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+  .provider[aria-pressed="true"]{border-color:var(--primary); background:var(--primary-soft);}
+  .provider .logo{width:27px; height:27px; border-radius:8px; color:#fff; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:.02em;}
+  .provider b{font-size:12px; display:block; line-height:1.25; font-weight:700;}
+  .provider span{font-size:9.5px; color:var(--faint); display:block; margin-top:1px;}
+
+  /* Buttons */
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 17px; border-radius:10px; font-size:12.5px; font-weight:700; border:1.5px solid var(--line); background:var(--surface); color:var(--muted); cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease;}
+  .btn:hover{background:#FAFAFF; border-color:var(--primary-line); color:var(--ink);}
+  .btn:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+  .btn.primary{background:var(--primary); border-color:var(--primary); color:#fff;}
+  .btn.primary:hover{background:var(--primary-strong); border-color:var(--primary-strong); color:#fff;}
+  .btn.sm{padding:7px 13px; font-size:12px; border-radius:9px;}
+  .btn .spin{width:12px; height:12px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:rot .8s linear infinite;}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .test-ok{font-size:12px; font-weight:700; color:var(--cta); display:inline-flex; align-items:center; gap:6px;}
+  .test-err{font-size:12px; font-weight:700; color:var(--danger); display:inline-flex; align-items:center; gap:6px;}
+  .test-row{display:flex; align-items:center; gap:12px; margin-top:16px;}
+
+  /* Integration sub-tabs */
+  .itabs{display:flex; gap:6px; margin-bottom:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:6px; width:fit-content;}
+  .itab{padding:9px 16px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; transition:background .15s ease, color .15s ease; display:flex; align-items:center; gap:8px; background:transparent; border:none;}
+  .itab:hover{color:var(--ink); background:#FAFAFF;}
+  .itab:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+  .itab[aria-selected="true"]{background:var(--ink); color:#fff;}
+  .igroup{display:none;}
+  .igroup.on{display:block; animation:rise .22s ease;}
+
+  /* Chips */
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;}
+  .chip{font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--primary-soft); color:var(--primary); border:1px solid var(--primary-line);}
+  .chip .p{font-weight:500; color:var(--faint);}
+
+  /* Referral */
+  .referral{display:flex; align-items:center; gap:14px; background:#FDF4FF; border:1px solid #F5D0FE; border-radius:12px; padding:13px 15px; margin-top:16px;}
+  .referral b{font-size:12.5px; display:block; font-weight:700;}
+  .referral span{font-size:11px; color:#86198F; display:block; margin-top:2px;}
+  .referral a{white-space:nowrap; font-size:11.5px; font-weight:700; color:#A21CAF; background:#FAE8FF; border:1px solid #F0ABFC; border-radius:9px; padding:8px 13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:background .15s ease;}
+  .referral a:hover{background:#F5D0FE;}
+
+  /* SMTP guide */
+  details{margin-top:14px; border:1px solid var(--line); border-radius:11px; background:#FAFAFF;}
+  summary{cursor:pointer; font-size:12px; font-weight:700; color:var(--primary); padding:11px 14px; user-select:none; list-style:none; display:flex; align-items:center; gap:8px;}
+  summary::-webkit-details-marker{display:none;}
+  summary i{font-size:14px; transition:transform .18s ease;}
+  details[open] summary i{transform:rotate(90deg);}
+  .guide{padding:2px 15px 14px; font-size:11.5px; color:var(--muted); line-height:1.75;}
+  .guide b{color:var(--ink);}
+  .guide .gh{font-size:10px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.08em; margin:9px 0 3px;}
+  .guide ol{margin-left:17px;}
+
+  /* Avatar */
+  .avatar{width:58px; height:58px; border-radius:14px; background:var(--primary); color:#fff; font-size:21px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; letter-spacing:.02em;}
+
+  /* Save bar + about */
+  .savebar{display:flex; align-items:center; gap:10px; padding:16px 0 6px; position:sticky; bottom:0; background:linear-gradient(transparent, var(--bg) 35%);}
+  .about{font-size:10.5px; color:var(--faint); text-align:center; padding:4px 0 2px; line-height:1.7;}
+  .about b{color:var(--muted);}
+
+  /* Toast */
+  .toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--ink); color:#fff; font-size:12.5px; font-weight:700; padding:12px 22px; border-radius:12px; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50; display:flex; align-items:center; gap:8px;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast i{color:#34D399; font-size:15px;}
+</style>
+</head>
+<body>
+
+<a href="#main" style="position:absolute;left:-9999px" class="skip-link">Skip to content</a>
+
+<!-- ══ Header ══ -->
+<header>
+  <button class="hbtn" id="btn-back"><i class="ph ph-arrow-left" style="font-size:15px"></i> Back</button>
+  <div class="title">Settings <small>Tailor CV workspace</small></div>
+  <div class="spacer"></div>
+  <span class="status-chip" id="status-chip"><i class="ph ph-check-circle"></i> All saved</span>
+</header>
+
+<!-- ══ Layout ══ -->
+<div class="layout" id="main">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" aria-label="Settings sections">
+    <button class="side-item" aria-current="page" data-panel="account">
+      <span class="ic"><i class="ph ph-user"></i></span> Account
+    </button>
+    <button class="side-item" data-panel="security">
+      <span class="ic"><i class="ph ph-lock-key"></i></span> Security
+    </button>
+    <button class="side-item" data-panel="integration">
+      <span class="ic"><i class="ph ph-plugs-connected"></i></span> Integrations
+      <span class="cnt">3</span>
+    </button>
+    <div class="side-note">Tailor CV v1.2.0 — created by <b>Atanu Biswas</b><br/>© 2026 Atanu Biswas · All rights reserved.</div>
+  </aside>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- ═══ ACCOUNT ═══ -->
+    <section class="panel on" id="panel-account" aria-label="Account settings">
+      <div class="phead">
+        <h2>Account</h2>
+        <p>Your profile, contact details and matching preferences.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="avatar">AT</div>
+          <div class="t">
+            <b>Atanu Biswas</b>
+            <span class="d">atanub707@gmail.com · Member since Aug 2026</span>
+          </div>
+          <div style="margin-left:auto"><span class="tag green"><i class="ph ph-user-check" style="font-size:12px"></i> Registered account</span></div>
+        </div>
+        <div class="card-body">
+          <label class="field-label" for="f-name">Profile</label>
+          <div class="row">
+            <div class="lbl"><label for="f-name"><b>Full name</b><span>Used in tailored CVs and email signatures.</span></label></div>
+            <input class="inp" id="f-name" type="text" value="Atanu Biswas" />
+          </div>
+          <div class="row">
+            <div class="lbl"><label for="f-email"><b>Email address</b><span>Login identifier — cannot be changed.</span></label></div>
+            <input class="inp" id="f-email" type="text" value="atanub707@gmail.com" disabled />
+          </div>
+          <label class="field-label" for="f-loc">Contact</label>
+          <div class="row">
+            <div class="lbl"><label for="f-loc"><b>Location</b><span>Shown on your CV and outreach emails.</span></label></div>
+            <input class="inp" id="f-loc" type="text" value="Kolkata, India" />
+          </div>
+          <div class="row">
+            <div class="lbl"><label for="f-phone"><b>Phone</b><span>Appended to your email signature.</span></label></div>
+            <input class="inp" id="f-phone" type="text" value="+91 8420205661" />
+          </div>
+          <div class="row">
+            <div class="lbl"><label for="f-port"><b>Portfolio URL</b><span>Shown as a clickable link in signatures.</span></label></div>
+            <input class="inp mono" id="f-port" type="text" value="atanubiswas.in" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-ico" style="background:#FFF7ED;color:#C2410C"><i class="ph ph-sliders-horizontal"></i></div>
+          <div class="t"><b>Matching preferences</b><span class="d">Controls for AI scoring and tailoring.</span></div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="lbl"><label for="f-min"><b>Auto-tailor minimum</b><span>Minimum match % to tailor automatically.</span></label></div>
+            <input class="inp sm" id="f-min" type="text" value="40" />
+          </div>
+          <div class="row">
+            <div class="lbl"><label for="f-block"><b>Early block</b><span>Scores below this are blocked from tailoring.</span></label></div>
+            <input class="inp sm" id="f-block" type="text" value="30" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECURITY ═══ -->
+    <section class="panel" id="panel-security" aria-label="Security settings">
+      <div class="phead">
+        <h2>Security</h2>
+        <p>Recovery options and privacy for your local account.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-ico" style="background:var(--cta-soft);color:var(--cta)"><i class="ph ph-key"></i></div>
+          <div class="t"><b>Recovery questions</b><span class="d">Used to reset your password if you forget it.</span></div>
+          <div style="margin-left:auto"><span class="tag green"><i class="ph ph-check" style="font-size:12px"></i> Set</span></div>
+        </div>
+        <div class="card-body">
+          <label class="field-label" for="f-q1">Question 1</label>
+          <div class="row">
+            <div class="lbl"><label for="f-q1"><b>What was your first school?</b><span>Your answer is stored locally, hashed.</span></label></div>
+            <input class="inp mono" id="f-q1" type="password" value="St. Xaviers" />
+          </div>
+          <label class="field-label" for="f-q2">Question 2</label>
+          <div class="row">
+            <div class="lbl"><label for="f-q2"><b>What is your pet's name?</b><span>Pick questions only you know.</span></label></div>
+            <input class="inp mono" id="f-q2" type="password" value="Tommy" />
+          </div>
+          <div class="row">
+            <div class="lbl"><b>Sign out</b><span>Available from the account menu in the header — not here.</span></div>
+            <span class="tag indigo"><i class="ph ph-caret-right" style="font-size:12px"></i> In navbar</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-ico" style="background:var(--danger-soft);color:var(--danger)"><i class="ph ph-shield-check"></i></div>
+          <div class="t"><b>Data &amp; privacy</b><span class="d">Everything stays on this machine.</span></div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="lbl"><b>Local SQLite database</b><span>Jobs, CVs and contacts never leave your device.</span></div>
+            <span class="tag green"><i class="ph ph-database" style="font-size:12px"></i> Local only</span>
+          </div>
+          <div class="row">
+            <div class="lbl"><b>API keys</b><span>Stored only in your local config.ini — never committed or logged.</span></div>
+            <span class="tag green"><i class="ph ph-lock-simple" style="font-size:12px"></i> Local only</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ INTEGRATIONS ═══ -->
+    <section class="panel" id="panel-integration" aria-label="Integrations settings">
+      <div class="phead">
+        <h2>Integrations</h2>
+        <p>Bring-your-own keys — powers scoring, scraping and outreach.</p>
+      </div>
+
+      <div class="itabs" role="tablist" aria-label="Integration types">
+        <button class="itab" role="tab" aria-selected="true" data-itab="llm"><i class="ph ph-brain" style="font-size:15px"></i> LLM &amp; AI</button>
+        <button class="itab" role="tab" aria-selected="false" data-itab="apify"><i class="ph ph-rocket-launch" style="font-size:15px"></i> Apify</button>
+        <button class="itab" role="tab" aria-selected="false" data-itab="email"><i class="ph ph-envelope-simple" style="font-size:15px"></i> Email (SMTP)</button>
+      </div>
+
+      <!-- LLM -->
+      <div class="igroup on" id="itab-llm" role="tabpanel">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ico" style="background:var(--primary-soft);color:var(--primary)"><i class="ph ph-brain"></i></div>
+            <div class="t"><b>LLM &amp; AI</b><span class="d">Your key powers scoring, analysis and tailoring.</span></div>
+            <div style="margin-left:auto"><span class="tag green" id="llm-status"><i class="ph ph-check-circle" style="font-size:12px"></i> Connected</span></div>
+          </div>
+          <div class="card-body">
+            <span class="field-label">Provider</span>
+            <div class="providers">
+              <button class="provider" aria-pressed="true" data-provider="opencode-go"><span class="logo" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">OG</span><span style="min-width:0"><b>OpenCode Zen</b><span>Fast &amp; cheap</span></span></button>
+              <button class="provider" aria-pressed="false" data-provider="openrouter"><span class="logo" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">OR</span><span style="min-width:0"><b>OpenRouter</b><span>Many models</span></span></button>
+              <button class="provider" aria-pressed="false" data-provider="openai"><span class="logo" style="background:linear-gradient(135deg,#38BDF8,#0EA5E9)">OA</span><span style="min-width:0"><b>OpenAI</b><span>GPT models</span></span></button>
+              <button class="provider" aria-pressed="false" data-provider="gemini"><span class="logo" style="background:linear-gradient(135deg,#FBBF24,#F59E0B)">G</span><span style="min-width:0"><b>Gemini</b><span>Google AI</span></span></button>
+              <button class="provider" aria-pressed="false" data-provider="anthropic"><span class="logo" style="background:linear-gradient(135deg,#F97316,#EA580C)">AN</span><span style="min-width:0"><b>Anthropic</b><span>Claude</span></span></button>
+              <button class="provider" aria-pressed="false" data-provider="nvidia"><span class="logo" style="background:linear-gradient(135deg,#22C55E,#16A34A)">NV</span><span style="min-width:0"><b>NVIDIA</b><span>GPU models</span></span></button>
+            </div>
+            <span class="field-label" for="f-key">API key</span>
+            <div class="row">
+              <div class="lbl"><label for="f-key"><b>Key</b><span>Stored locally in config.ini — never committed.</span></label></div>
+              <input class="inp mono" id="f-key" type="password" value="sk-••••••••••••••••••••••••" />
+            </div>
+            <span class="field-label" for="f-model">Model</span>
+            <div class="row">
+              <div class="lbl"><label for="f-model"><b>Model name</b><span>Pick from the provider or type a custom one.</span></label></div>
+              <select class="inp" id="f-model">
+                <option>deepseek-v4-flash</option>
+                <option>deepseek-v4-pro</option>
+                <option>Custom (type below)</option>
+              </select>
+            </div>
+            <span class="field-label">Base URL <span class="hint">— auto-filled per provider</span></span>
+            <div class="row">
+              <div class="lbl"><label for="f-base"><b>Base URL</b><span id="llm-base-note">Auto-filled from the provider preset — change only for custom gateways.</span></label></div>
+              <input class="inp mono" id="f-base" type="text" value="https://opencode.ai/zen/go/v1" />
+            </div>
+            <div class="test-row">
+              <button class="btn primary sm" id="btn-test-llm"><i class="ph ph-pulse" style="font-size:14px"></i> Test connection</button>
+              <span class="test-ok" id="llm-test-ok" style="display:none"><i class="ph ph-check-circle" style="font-size:14px"></i> Connected · 320ms</span>
+              <span class="test-err" id="llm-test-err" style="display:none"><i class="ph ph-warning-circle" style="font-size:14px"></i> Check the key</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APIFY -->
+      <div class="igroup" id="itab-apify" role="tabpanel">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ico" style="background:var(--primary-soft);color:var(--primary)"><i class="ph ph-rocket-launch"></i></div>
+            <div class="t"><b>Apify</b><span class="d">LinkedIn, Indeed, Naukri, Glassdoor &amp; Upwork scraping.</span></div>
+            <div style="margin-left:auto"><span class="tag green"><i class="ph ph-check-circle" style="font-size:12px"></i> Configured</span></div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="lbl"><b>Use Apify sources</b><span>No more "No results found" blocks — falls back automatically.</span></div>
+              <button class="sw on" id="sw-apify" role="switch" aria-checked="true" aria-label="Toggle Apify sources"></button>
+            </div>
+            <span class="field-label" for="f-apify">API token</span>
+            <div class="row">
+              <div class="lbl"><label for="f-apify"><b>Token</b><span>console.apify.com → Settings → Integrations.</span></label></div>
+              <input class="inp mono" id="f-apify" type="password" value="apify_api_••••••••••••••••••••••" />
+            </div>
+            <span class="field-label">Powered by your Apify key</span>
+            <div class="chips">
+              <span class="chip">LinkedIn <span class="p">· $0.40/1K</span></span>
+              <span class="chip">Indeed <span class="p">· $0.10/1K</span></span>
+              <span class="chip">Naukri <span class="p">· $0.40/1K</span></span>
+              <span class="chip">Glassdoor <span class="p">· $0.40/1K</span></span>
+              <span class="chip">Upwork <span class="p">· $0.20/1K</span></span>
+            </div>
+            <div class="referral">
+              <div style="flex:1">
+                <b>New to Apify?</b>
+                <span>Start with the free $5 monthly trial. This referral link supports development — same price for you.</span>
+              </div>
+              <a href="#" onclick="return false"><i class="ph ph-arrow-square-out" style="font-size:13px"></i> Open Apify</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMAIL -->
+      <div class="igroup" id="itab-email" role="tabpanel">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ico" style="background:#FDF2F8;color:#DB2777"><i class="ph ph-envelope-simple"></i></div>
+            <div class="t"><b>Email (SMTP)</b><span class="d">Send cold emails to recruiters from your own mailbox.</span></div>
+            <div style="margin-left:auto"><span class="tag amber"><i class="ph ph-warning" style="font-size:12px"></i> Not configured</span></div>
+          </div>
+          <div class="card-body">
+            <span class="field-label" for="f-host">Server</span>
+            <div class="row">
+              <div class="lbl"><label for="f-host"><b>SMTP host</b></label></div>
+              <input class="inp mono" id="f-host" type="text" value="smtp.gmail.com" />
+            </div>
+            <div class="row">
+              <div class="lbl"><label for="f-port"><b>Port</b><span>465 = SSL · 587 = STARTTLS — the toggle sets itself.</span></label></div>
+              <input class="inp sm" id="f-port" type="text" value="587" />
+              <button class="sw" id="sw-ssl" role="switch" aria-checked="false" aria-label="SSL/TLS"></button>
+              <span style="font-size:11.5px;color:var(--muted);font-weight:600">SSL/TLS</span>
+            </div>
+            <span class="field-label">Credentials</span>
+            <div class="row">
+              <div class="lbl"><label for="f-user"><b>Username</b><span>Your full email address.</span></label></div>
+              <input class="inp" id="f-user" type="text" value="atanub707@gmail.com" />
+            </div>
+            <div class="row">
+              <div class="lbl"><label for="f-pass"><b>App password</b><span>Gmail needs an App Password, not your normal password.</span></label></div>
+              <input class="inp mono" id="f-pass" type="password" value="•••• •••• •••• ••••" />
+            </div>
+            <div class="row">
+              <div class="lbl"><label for="f-from"><b>From name</b><span>Shown as the sender.</span></label></div>
+              <input class="inp" id="f-from" type="text" value="Atanu Biswas" />
+            </div>
+            <div class="test-row">
+              <button class="btn primary sm" id="btn-test-email"><i class="ph ph-pulse" style="font-size:14px"></i> Test connection</button>
+              <span class="test-ok" id="email-test-ok" style="display:none"><i class="ph ph-check-circle" style="font-size:14px"></i> Connected</span>
+              <span class="test-err" id="email-test-err" style="display:none"><i class="ph ph-warning-circle" style="font-size:14px"></i> Check host / app password</span>
+            </div>
+            <details>
+              <summary><i class="ph ph-caret-right"></i> How to set up SMTP — step by step</summary>
+              <div class="guide">
+                <div class="gh">Gmail (free, recommended)</div>
+                <ol>
+                  <li>Turn on <b>2-Step Verification</b>: myaccount.google.com → Security.</li>
+                  <li>Search "Google App passwords" → create one for <b>Mail</b>.</li>
+                  <li>Host <b>smtp.gmail.com</b> · Port <b>587</b> · SSL off (auto) · username = your Gmail.</li>
+                </ol>
+                <div class="gh">Outlook / Microsoft 365</div>
+                <ol><li>Host <b>smtp.office365.com</b> · Port <b>587</b> · SSL off (auto) · app password if 2FA.</li></ol>
+                <div class="gh">Any provider</div>
+                <ol><li>Port <b>465</b> = SSL on · <b>587</b> = SSL off (STARTTLS) — the toggle follows the port; Test auto-corrects.</li></ol>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Save bar -->
+    <div class="savebar">
+      <button class="btn sm"><i class="ph ph-play" style="font-size:13px"></i> Replay tutorial</button>
+      <div class="spacer"></div>
+      <button class="btn sm">Reset</button>
+      <button class="btn primary" id="btn-save"><i class="ph ph-check" style="font-size:14px"></i> Save changes</button>
+    </div>
+    <div class="about">Tailor CV v1.2.0 — created by <b>Atanu Biswas</b> · © 2026 Atanu Biswas. All rights reserved. Personal use only — redistribution or white-labeling is prohibited (see LICENSE).</div>
+  </main>
+</div>
+
+<div class="toast" id="toast"><i class="ph ph-check-circle"></i> Changes saved</div>
+
+<script>
+  // Sidebar navigation
+  document.querySelectorAll('.side-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.side-item').forEach(i => {
+        const on = i === item;
+        i.classList.toggle('on', on);
+        i.setAttribute('aria-current', on ? 'page' : 'false');
+      });
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + item.dataset.panel));
+    });
+  });
+
+  // Integration sub-tabs
+  document.querySelectorAll('.itab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.itab').forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+      document.querySelectorAll('.igroup').forEach(g => g.classList.toggle('on', g.id === 'itab-' + tab.dataset.itab));
+    });
+  });
+
+  // Provider → auto base URL
+  const BASE_URLS = {
+    'opencode-go': 'https://opencode.ai/zen/go/v1',
+    'openrouter': 'https://openrouter.ai/api/v1',
+    'openai': 'https://api.openai.com/v1',
+    'gemini': '',
+    'anthropic': '',
+    'nvidia': 'https://integrate.api.nvidia.com/v1',
+  };
+  document.querySelectorAll('.provider').forEach(p => {
+    p.addEventListener('click', () => {
+      document.querySelectorAll('.provider').forEach(x => x.setAttribute('aria-pressed', String(x === p)));
+      const url = BASE_URLS[p.dataset.provider];
+      document.getElementById('f-base').value = url || '';
+      document.getElementById('llm-base-note').textContent = url ? 'Auto-filled from the provider preset.' : 'Not required — the SDK connects automatically.';
+      document.getElementById('status-chip').innerHTML = '<i class="ph ph-info"></i> Unsaved changes';
+    });
+  });
+
+  // Toggles
+  document.getElementById('sw-apify').addEventListener('click', function(){ this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on')); });
+  document.getElementById('sw-ssl').addEventListener('click', function(){ this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on')); });
+
+  // Simulated tests
+  const simulate = (btn, okEl, errEl, ms) => {
+    btn.innerHTML = '<span class="spin"></span> Testing…';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="ph ph-pulse" style="font-size:14px"></i> Test connection';
+      okEl.style.display = 'inline-flex'; errEl.style.display = 'none';
+    }, ms);
+  };
+  document.getElementById('btn-test-llm').addEventListener('click', function(){ simulate(this, document.getElementById('llm-test-ok'), document.getElementById('llm-test-err'), 900); });
+  document.getElementById('btn-test-email').addEventListener('click', function(){ simulate(this, document.getElementById('email-test-ok'), document.getElementById('email-test-err'), 1100); });
+
+  // Save → toast
+  document.getElementById('btn-save').addEventListener('click', () => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    document.getElementById('status-chip').innerHTML = '<i class="ph ph-check-circle"></i> All saved';
+    setTimeout(() => t.classList.remove('show'), 2200);
+  });
+
+  document.getElementById('btn-back').addEventListener('click', () => alert('Back to workspace — mockup'));
+</script>
+</body>
+</html>
