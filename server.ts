@@ -1277,8 +1277,7 @@ Return valid JSON only — NO markdown, NO code fences:
         .join('\n');
       const projectsText = (masterCv?.projects || [])
         .filter((p) => p.name)
-        .slice(0, 4)
-        .map((p) => `${p.name}${p.dates ? ` (${p.dates})` : ''} — ${(p.description || '').slice(0, 160)}${(p.technologies || []).length ? ` [${p.technologies.slice(0, 5).join(', ')}]` : ''}`)
+        .map((p) => `${p.name}${p.dates ? ` (${p.dates})` : ''} — ${(p.description || '').slice(0, 140)}${(p.technologies || []).length ? ` [${p.technologies.slice(0, 5).join(', ')}]` : ''}`)
         .join('\n');
       const certsText = (masterCv?.certifications || []).slice(0, 3).map((c) => c.name).filter(Boolean).join(', ');
 
@@ -1299,9 +1298,11 @@ Candidate certifications: ${certsText}
 Rules — this must feel human, not AI:
 - FIRST LINE: a greeting — literally "${greetingName ? 'Hi ' + greetingName + ',' : 'Hi there,'}" followed by a newline, then continue with the email. Nothing may appear before the greeting.
 - Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
-- 80-110 words total (excluding the greeting and signature). Three short paragraphs maximum.
+- 120-160 words total (excluding the greeting and signature). Three short paragraphs maximum.
 - Use ONLY the candidate's REAL data above — never invent facts, companies, projects, numbers, or credentials.
-- Tell the candidate's REAL career journey, not just a project: state their years of experience, the actual progression of roles and companies from "Candidate career journey" (e.g. "I started as a DevOps Engineer at PearlThoughts and now work as a Senior DevSecOps Engineer at Human Managed, where I ..."), and what they actually do day-to-day (their responsibilities). THEN weave in ONE short clause naming a real project from "Candidate projects" that fits the role being hired for — one clause, so the recruiter sees substance without opening the CV. The journey and companies must be the backbone; the project is seasoning, not the whole dish.
+- The candidate IS interested in this role — say so directly and naturally early on ("I'm interested in the ${role} role at ${company}" or similar, in your own words). Do not be coy or generic.
+- Establish the candidate's experience LEVEL from the WHOLE career: state their total years of experience and the progression of roles and companies from "Candidate career journey" (e.g. "I've spent over four years in DevOps and DevSecOps, starting as a DevOps Engineer at PearlThoughts and now working as a Senior DevSecOps Engineer at Human Managed"), plus what they actually do day-to-day.
+- Include ALL of the candidate's projects from "Candidate projects" — every single one, each as ONE short clause (name + what it does, e.g. "I also built Tailor CV, an AI job-search platform, and OS-Admin, a multi-tenant restaurant SaaS"). Do not drop any project.
 - Use ONE concrete number or measurable outcome from the journey/summary when it fits naturally (e.g. an 80% reduction, a migration, a pipeline cut) — specificity is what makes it human.
 - No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", "excited", "thrilled", exclamation marks, bullet points, or listicles.
 - Vary the sentence rhythm — some sentences short, some longer. Read like a person typing quickly, not like a brochure.
