@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
 import { llmErrorMessage } from '../lib/llmError';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
+import { DateRangePicker } from './DateRangePicker';
+import { TagInput } from './TagInput';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
 import {
   X,
@@ -1065,16 +1067,14 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                   <div>
                     <label className="block text-slate-500 text-[11px]">Dates / Period</label>
-                    <input
-                      type="text"
+                    <DateRangePicker
                       value={exp.dates || ''}
-                      onChange={(e) => {
+                      onChange={(v) => {
                         const updated = { ...formData };
-                        updated.experiences[expIdx].dates = e.target.value;
+                        updated.experiences[expIdx].dates = v;
                         setFormData(updated);
                       }}
                       placeholder="e.g. Jan 2021 - Present"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
                     />
                   </div>
                 </div>
@@ -1176,15 +1176,14 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                   <div>
                     <label className="block text-slate-500 text-[11px]">Dates / Graduation Year</label>
-                    <input
-                      type="text"
+                    <DateRangePicker
                       value={edu.dates || ''}
-                      onChange={(e) => {
+                      onChange={(v) => {
                         const updated = { ...formData };
-                        updated.education[eduIdx].dates = e.target.value;
+                        updated.education[eduIdx].dates = v;
                         setFormData(updated);
                       }}
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
+                      placeholder="Pick start & end date"
                     />
                   </div>
 
@@ -1238,17 +1237,14 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                     placeholder="Category Name"
                     className="w-1/3 border border-slate-200 rounded px-2 py-1 font-bold text-slate-900"
                   />
-                  <input
-                    type="text"
-                    list="mastercv-keywords"
-                    value={sk.items.join(', ')}
-                    onChange={(e) => {
+                  <TagInput
+                    value={sk.items}
+                    onChange={(items) => {
                       const updated = { ...formData };
-                      updated.skills[skIdx].items = e.target.value.split(',').map((s) => s.trim());
+                      updated.skills[skIdx].items = items;
                       setFormData(updated);
                     }}
-                    placeholder="Comma separated skills (e.g. React, TypeScript, Node.js)"
-                    className="flex-1 border border-slate-200 rounded px-2 py-1 text-slate-800"
+                    placeholder="Type a skill and press comma (,) or Enter…"
                   />
                   <button
                     type="button"
@@ -1326,17 +1322,15 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
                   <div>
                     <label className="block text-slate-500 text-[11px]">Dates / Period</label>
-                    <input
-                      type="text"
+                    <DateRangePicker
                       value={proj.dates || ''}
-                      onChange={(e) => {
+                      onChange={(v) => {
                         const updated = { ...formData };
                         if (!updated.projects) updated.projects = [];
-                        updated.projects[pIdx].dates = e.target.value;
+                        updated.projects[pIdx].dates = v;
                         setFormData(updated);
                       }}
                       placeholder="e.g. 2023 - Present"
-                      className="w-full border border-slate-200 rounded px-2 py-1 text-slate-900"
                     />
                   </div>
 

@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { MasterCv, TemplateId } from '../types';
 import { CV_PAGE, CV_TEMPLATE_GEOMETRY, cvContentHeight, cvContentWidth } from '../constants/cvTemplateConfig';
+import { displayUrl } from '../lib/displayUrl';
 
 // Normalized shape mirroring server-side TailoredCv (as produced by generatePdfBuffer)
 export interface PdfCvShape {
@@ -636,7 +637,7 @@ function buildHarvardBlocks(cv: PdfCvShape): CvBlock[] {
             )}
             {p.link && (
               <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(10.5, zoom)}px`, color: '#111111', textDecoration: 'none' }}>
-                {p.link}
+                {displayUrl(p.link)}
               </a>
             )}
           </div>
@@ -888,7 +889,7 @@ function buildAtanuBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
             )}
             {p.link && (
               <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9.5, zoom)}px`, color: '#0F766E', textDecoration: 'none' }}>
-                {p.link}
+                {displayUrl(p.link)}
               </a>
             )}
           </div>
@@ -1126,7 +1127,7 @@ function buildAtanuProBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
             )}
             {p.link && (
               <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(s.bodySize, zoom)}px`, color: s.accent, textDecoration: 'none' }}>
-                {p.link}
+                {displayUrl(p.link)}
               </a>
             )}
           </div>
@@ -1293,7 +1294,7 @@ function buildJakeBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
             )}
             {p.link && (
               <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(9, zoom)}px`, color: '#111111', textDecoration: 'none', borderBottom: '1px solid #BBBBBB' }}>
-                {p.link}
+                {displayUrl(p.link)}
               </a>
             )}
           </div>

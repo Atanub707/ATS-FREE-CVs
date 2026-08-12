@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { TailoredCv } from '../../src/types.js';
 import { CV_TEMPLATE_GEOMETRY, cvSkillsColumnWidth } from '../../src/constants/cvTemplateConfig.js';
+import { displayUrl } from '../../src/lib/displayUrl.js';
 
 interface ContactLink {
   type: 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
@@ -910,7 +911,7 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         }
         if (normLink) {
           ensurePageSpace(12);
-          doc.font('Helvetica').fontSize(9.5).fillColor(ACCENT).text(normLink, leftMargin, doc.y, {
+          doc.font('Helvetica').fontSize(9.5).fillColor(ACCENT).text(displayUrl(proj.link), leftMargin, doc.y, {
             width: contentWidth,
           });
           doc.x = leftMargin;
@@ -1191,8 +1192,8 @@ function generateAtanuProPdf(cv: TailoredCv): Promise<Buffer> {
           ensurePageSpace(12);
           const lx = leftMargin;
           const ly = doc.y;
-          doc.font('Helvetica').fontSize(geo.bodySize).fillColor(ACCENT).text(sanitizeText(p.link), lx, ly, { width: contentWidth });
-          const lw = doc.widthOfString(sanitizeText(p.link));
+          doc.font('Helvetica').fontSize(geo.bodySize).fillColor(ACCENT).text(sanitizeText(displayUrl(p.link)), lx, ly, { width: contentWidth });
+          const lw = doc.widthOfString(sanitizeText(displayUrl(p.link)));
           const lh = doc.heightOfString(sanitizeText(p.link), { width: contentWidth });
           doc.link(lx, ly, Math.min(lw, contentWidth), Math.max(lh, 10), link);
           doc.x = leftMargin;
