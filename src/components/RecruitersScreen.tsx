@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare, BadgeCheck } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 import { followupDue, followupDaysLeft } from '../lib/recruiters/followupUtils';
 
@@ -94,6 +94,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [batchQueue, setBatchQueue] = useState<Contact[]>([]);
   const [batchIndex, setBatchIndex] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [verifyMap, setVerifyMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -312,6 +313,17 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       setTimeout(() => setCopiedId(null), 1400);
       showToast(`${value} copied`);
     } catch { showToast('Could not copy — select manually'); }
+  };
+
+  const verifyEmail = async (c: Contact) => {
+    if (!c.email) return;
+    try {
+      const res = await fetch('/api/contacts/verify-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: c.email }),
+      });
+      const d = await res.json();
+      setVerifyMap((m) => ({ ...m, [c.id]: d.detail }));
+    } catch { setVerifyMap((m) => ({ ...m, [c.id]: 'unknown' })); }
   };
 
   const enrichContact = async (c: Contact) => {
@@ -556,6 +568,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                           <>
                             <button className="rc-copyi" title="Copy email" onClick={() => copyValue(c.email!)}><Mail size={11} /></button>
                             <code>{c.email}</code>
+                            <button className="rc-verify" title="Check email validity (format + domain MX)" onClick={() => verifyEmail(c)}>
+                              <BadgeCheck size={11} />
+                            </button>
+                            {verifyMap[c.id] && (
+                              <span className={`rc-verifystate ${verifyMap[c.id] === 'valid' ? 'ok' : verifyMap[c.id] === 'invalid-format' ? 'bad' : 'warn'}`}>
+                                {verifyMap[c.id] === 'valid' ? 'Valid' : verifyMap[c.id] === 'invalid-format' ? 'Invalid' : verifyMap[c.id] === 'no-mx' ? 'No MX' : 'Unknown'}
+                              </span>
+                            )}
                           </>
                         ) : (
                           <span className="rc-notscraped">Not scraped</span>
@@ -993,6 +1013,12 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-fv .rc-walink:hover { filter: brightness(.95); text-decoration: none; }
         .rc-copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
         .rc-copyi:hover { color: var(--blue); }
+        .rc-verify { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 2px; display: inline-flex; }
+        .rc-verify:hover { color: var(--green); }
+        .rc-verifystate { font-size: 9px; font-weight: 700; border-radius: 20px; padding: 1px 6px; }
+        .rc-verifystate.ok { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
+        .rc-verifystate.bad { color: var(--color-danger); background: var(--color-danger-soft); border: 1px solid #FECACA; }
+        .rc-verifystate.warn { color: var(--amber); background: var(--amber-soft); border: 1px solid var(--amber-border); }
         .rc-idrow { display: flex; align-items: center; gap: 12px; }
         .rc-photo { width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg, var(--color-hairline), var(--color-faint)); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--color-muted); flex-shrink: 0; overflow: hidden; }
         .rc-photo svg { width: 20px; height: 20px; opacity: .55; }

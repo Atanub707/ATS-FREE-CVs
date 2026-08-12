@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import multer from 'multer';
 import * as pdfParseModule from 'pdf-parse';
 import mammoth from 'mammoth';
+import { promises as dns } from 'node:dns';
 
 async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
   try {
@@ -113,6 +114,7 @@ import { LlmCvTailor } from './server/builder/llmCvTailor.js';
 import { generatePdfBuffer, generatePlainTextCv } from './server/builder/docxGenerator.js';
 import { JobFilterQueryParams, Job, MasterCv } from './src/types.js';
 import { SOURCES } from './src/constants/sources.js';
+import { isEmailFormatValid } from './src/lib/recruiters/emailUtils.js';
 import { compressCv } from './server/ai/cvCompressor.js';
 import { getMarketData } from './server/ai/marketData.js';
 
@@ -1366,6 +1368,26 @@ Rules: if the name looks like a company/department ("Talent Acquisition", "Compa
     } catch (err: any) {
       console.error('Contact enrich error:', err);
       res.status(500).json({ error: 'Failed to enrich contact.' });
+    }
+  });
+
+  // Check an email's format + domain MX records (validity hint for the UI).
+  app.post('/api/contacts/verify-email', async (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+      const valid = isEmailFormatValid(email);
+      let mx: boolean | null = null;
+      if (valid) {
+        try {
+          const records = await dns.resolveMx(email.split('@')[1]);
+          mx = records.length > 0;
+        } catch {
+          mx = false;
+        }
+      }
+      res.json({ format: valid, mx, detail: !valid ? 'invalid-format' : mx === null ? 'unknown' : mx ? 'valid' : 'no-mx' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
