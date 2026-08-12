@@ -1,17 +1,17 @@
 @import "tailwindcss";
 @theme {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --color-brand: #6366F1;
-  --color-brand-strong: #4F46E5;
-  --color-brand-soft: #EEF0FE;
-  --color-brand-line: #C7CBFB;
-  --color-ink: #1E1B4B;
+  --color-brand: #2563EB;
+  --color-brand-strong: #1D4ED8;
+  --color-brand-soft: #EFF6FF;
+  --color-brand-line: #BFDBFE;
+  --color-ink: #0F172A;
   --color-muted: #475569;
-  --color-faint: #6B7280;
-  --color-canvas: #F5F3FF;
-  --color-hairline: #E4E2F5;
-  --color-hairline2: #D8D5F0;
-  --color-cta: #10B981;
+  --color-faint: #64748B;
+  --color-canvas: #F8FAFC;
+  --color-hairline: #E2E8F0;
+  --color-hairline2: #CBD5E1;
+  --color-cta: #059669;
   --color-cta-soft: #ECFDF5;
   --color-cta-line: #A7F3D0;
   --color-danger: #DC2626;

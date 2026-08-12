@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login — Whitish Redesign (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  :root{
+    --bg:#F8FAFC; --surface:#FFFFFF; --line:#E2E8F0; --line2:#CBD5E1;
+    --ink:#0F172A; --muted:#475569; --faint:#64748B; --soft:#94A3B8;
+    --brand:#2563EB; --brand-strong:#1D4ED8; --brand-soft:#EFF6FF; --brand-line:#BFDBFE;
+    --cta:#059669; --cta-soft:#ECFDF5; --cta-line:#A7F3D0; --danger:#DC2626; --danger-soft:#FEF2F2;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;}
+  button{font-family:inherit; cursor:pointer;}
+
+  .login{min-height:100vh; display:grid; grid-template-columns:1.05fr 1fr;}
+  /* ══ LEFT — WHITE BRAND PANEL ══ */
+  .brand{background:var(--surface); border-right:1px solid var(--line); padding:48px 56px; display:flex; flex-direction:column;}
+  .badge{display:inline-flex; align-items:center; gap:8px; font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; background:var(--brand-soft); color:var(--brand); border:1px solid var(--brand-line); border-radius:999px; padding:7px 14px; width:fit-content;}
+  .badge .dot{width:7px; height:7px; border-radius:50%; background:var(--brand);}
+  .logo{display:flex; align-items:center; gap:13px; margin-top:34px;}
+  .logo .tile{width:46px; height:46px; border-radius:13px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px;}
+  .logo b{font-size:17px; font-weight:800; letter-spacing:-.01em; display:block;}
+  .logo .by{display:flex; align-items:baseline; gap:7px; font-size:9.5px; font-weight:700; letter-spacing:.16em; color:var(--soft); text-transform:uppercase; margin-top:2px;}
+  .logo .by .sig{font-size:21px; font-weight:600; color:var(--ink); text-transform:none; letter-spacing:0; font-family:"Snell Roundhand","Brush Script MT","Apple Chancery",cursive;}
+  .headline{font-size:32px; font-weight:800; letter-spacing:-.03em; line-height:1.15; margin-top:56px;}
+  .headline span{display:block;}
+  .desc{font-size:14px; color:var(--faint); margin-top:14px; max-width:420px; line-height:1.65;}
+  .feats{margin-top:32px; display:flex; flex-direction:column; gap:13px;}
+  .feat{display:flex; align-items:center; gap:11px; font-size:13px; font-weight:600; color:var(--muted);}
+  .feat i{width:30px; height:30px; border-radius:9px; background:var(--brand-soft); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;}
+  .brand-foot{margin-top:auto; font-size:11px; color:var(--soft);}
+
+  /* ══ RIGHT — FORM ══ */
+  .form-side{display:flex; align-items:center; justify-content:center; padding:48px; background:var(--bg); position:relative;}
+  .box{width:100%; max-width:380px;}
+  .box h1{font-size:22px; font-weight:800; letter-spacing:-.02em;}
+  .box .sub{font-size:13px; color:var(--faint); margin:6px 0 24px; line-height:1.5;}
+  .fld{margin-bottom:15px;}
+  .lbl{display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:7px;}
+  .wrap{position:relative;}
+  .wrap .lead{position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--soft); display:flex; pointer-events:none;}
+  .inp{width:100%; border:1.5px solid var(--line2); border-radius:10px; padding:11px 14px; font-size:13px; color:var(--ink); background:var(--surface); outline:none; transition:border-color .15s ease, box-shadow .15s ease;}
+  .inp:hover{border-color:#93C5FD;}
+  .inp:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .inp.lead-in{padding-left:38px;}
+  .inp.pass-in{padding-right:40px;}
+  .eye{position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--soft); display:flex; padding:4px;}
+  .eye:hover{color:var(--brand);}
+  .opts{display:flex; justify-content:flex-end; margin:2px 0 16px;}
+  .link{font-size:12px; font-weight:700; color:var(--brand); background:none; border:none; padding:0;}
+  .link:hover{text-decoration:underline;}
+  .btn{width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; font-size:13.5px; font-weight:800; color:#fff; border:none; background:var(--brand); transition:background .15s ease;}
+  .btn:hover{background:var(--brand-strong);}
+  .btn:disabled{opacity:.6; cursor:not-allowed;}
+  .btn .arr{font-size:14px;}
+  .divider{display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--soft); font-size:11px; font-weight:700;}
+  .divider::before,.divider::after{content:''; flex:1; height:1px; background:var(--line);}
+  .btn-ghost{width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; font-size:13px; font-weight:700; color:var(--muted); border:1.5px solid var(--line); background:var(--surface); transition:all .15s ease;}
+  .btn-ghost:hover{border-color:var(--brand-line); color:var(--brand); background:var(--brand-soft);}
+  .back{display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12px; font-weight:700; color:var(--faint); background:none; border:none;}
+  .back:hover{color:var(--brand);}
+  .err{font-size:12px; font-weight:700; color:var(--danger); background:var(--danger-soft); border:1px solid #FECACA; border-radius:10px; padding:10px 14px; margin:4px 0 12px;}
+  .ok{font-size:12px; font-weight:700; color:var(--cta); background:var(--cta-soft); border:1px solid var(--cta-line); border-radius:10px; padding:10px 14px; margin:4px 0 12px;}
+  .guests{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px;}
+  .guests .t{display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--faint); margin-bottom:9px;}
+  .guest-chips{display:flex; flex-wrap:wrap; gap:7px;}
+  .gchip{padding:7px 13px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); font-size:12px; font-weight:600; color:var(--muted); transition:all .15s ease;}
+  .gchip:hover{border-color:var(--brand-line); color:var(--brand); background:var(--brand-soft);}
+  .register{text-align:center; margin-top:18px; font-size:12.5px; color:var(--faint);}
+  .foot{position:absolute; bottom:20px; font-size:11px; color:var(--soft);}
+
+  .tabbar{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:50; display:flex; gap:4px; background:rgba(255,255,255,.95); border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 8px 28px rgba(15,23,42,.12);}
+  .tabbar button{display:inline-flex; align-items:center; gap:6px; padding:8px 13px; border-radius:8px; font-size:11.5px; font-weight:700; color:var(--muted); background:transparent; border:none;}
+  .tabbar button:hover{color:var(--ink); background:#F8FAFC;}
+  .tabbar button.on{background:var(--ink); color:#fff;}
+  .view{display:none;}
+  .view.on{display:block; animation:rise .2s ease;}
+  @keyframes rise{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
+  @media (max-width:1000px){ .login{grid-template-columns:1fr;} .brand{display:none;} }
+</style>
+</head>
+<body>
+<div class="login">
+  <!-- ══ LEFT ══ -->
+  <section class="brand">
+    <div class="badge"><span class="dot"></span> AI-POWERED CV TAILORING</div>
+    <div class="logo">
+      <div class="tile">T</div>
+      <div><b>Tailor CV</b><div class="by">CREATED BY <span class="sig">Atanu</span></div></div>
+    </div>
+    <h1 class="headline">Build a stronger CV.<span>Get noticed faster.</span></h1>
+    <p class="desc">AI-powered CV tailoring designed to align your experience with the roles you want — helping you present your strongest professional story.</p>
+    <div class="feats">
+      <div class="feat"><i class="ph ph-magnifying-glass"></i> Live jobs from 19 sources, scored against your CV</div>
+      <div class="feat"><i class="ph ph-magic-wand"></i> One-click tailored CVs with verified keywords</div>
+      <div class="feat"><i class="ph ph-tray"></i> Recruiters found &amp; cold-emailed from your own mailbox</div>
+      <div class="feat"><i class="ph ph-shield-check"></i> Your data stays on your machine — bring your own keys</div>
+    </div>
+    <div class="brand-foot">© 2026 Tailor CV · Created by Atanu</div>
+  </section>
+
+  <!-- ══ RIGHT ══ -->
+  <section class="form-side">
+    <div class="box">
+      <!-- LOGIN -->
+      <div class="view on" id="v-login">
+        <h1>Welcome back</h1>
+        <p class="sub">Sign in to continue to your Tailor CV workspace.</p>
+        <div class="fld"><label class="lbl" for="email">Email address</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-at" style="font-size:14px"></i></span>
+          <input class="inp lead-in" id="email" type="email" placeholder="you@example.com" /></div>
+        </div>
+        <div class="fld"><label class="lbl" for="pass">Password</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-lock" style="font-size:14px"></i></span>
+          <input class="inp lead-in pass-in" id="pass" type="password" placeholder="Enter your password" />
+          <button class="eye" onclick="this.querySelector('i').classList.toggle('ph-eye-slash');this.querySelector('i').classList.toggle('ph-eye')"><i class="ph ph-eye" style="font-size:15px"></i></button></div>
+        </div>
+        <div class="opts"><button class="link" onclick="go('forgot1')">Forgot password?</button></div>
+        <button class="btn" onclick="simulate()">Sign In <span class="arr">→</span></button>
+        <div class="divider">or</div>
+        <button class="btn-ghost" onclick="go('guest')"><i class="ph ph-user" style="font-size:14px"></i> Continue as guest</button>
+        <p class="register">Don't have an account? <button class="link" onclick="go('register')">Create an account</button></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="view" id="v-register">
+        <h1>Create your account</h1>
+        <p class="sub">Everything is stored locally on your machine.</p>
+        <div class="fld"><label class="lbl" for="r-name">Your name</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-user" style="font-size:14px"></i></span>
+          <input class="inp lead-in" id="r-name" type="text" placeholder="Your full name" /></div>
+        </div>
+        <div class="fld"><label class="lbl" for="r-email">Email address</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-at" style="font-size:14px"></i></span>
+          <input class="inp lead-in" id="r-email" type="email" placeholder="you@example.com" /></div>
+        </div>
+        <div class="fld"><label class="lbl" for="r-pass">Password</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-lock" style="font-size:14px"></i></span>
+          <input class="inp lead-in pass-in" id="r-pass" type="password" placeholder="Min 6 characters" />
+          <button class="eye"><i class="ph ph-eye" style="font-size:15px"></i></button></div>
+        </div>
+        <div class="fld"><label class="lbl" for="q1">Security question 1</label>
+          <select class="inp" id="q1"><option>What was your first school?</option><option>What is your pet's name?</option><option>What city were you born in?</option></select>
+        </div>
+        <div class="fld"><label class="lbl" for="a1">Answer 1 (min 3 characters)</label><input class="inp" id="a1" type="text" /></div>
+        <div class="fld"><label class="lbl" for="q2">Security question 2</label>
+          <select class="inp" id="q2"><option>What is your pet's name?</option><option>What was your first school?</option><option>What city were you born in?</option></select>
+        </div>
+        <div class="fld"><label class="lbl" for="a2">Answer 2 (min 3 characters)</label><input class="inp" id="a2" type="text" /></div>
+        <button class="btn" onclick="simulate()">Create Account <span class="arr">→</span></button>
+        <p class="register">Already have an account? <button class="link" onclick="go('login')">Sign in</button></p>
+      </div>
+
+      <!-- FORGOT · STEP 1 -->
+      <div class="view" id="v-forgot1">
+        <h1>Reset your password</h1>
+        <p class="sub">Enter your account email — we'll verify your identity with your security questions (everything stays local).</p>
+        <div class="fld"><label class="lbl" for="fe">Account email</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-at" style="font-size:14px"></i></span>
+          <input class="inp lead-in" id="fe" type="email" placeholder="you@example.com" /></div>
+        </div>
+        <button class="btn" onclick="go('forgot2')">Continue <span class="arr">→</span></button>
+        <button class="back" onclick="go('login')"><i class="ph ph-arrow-left" style="font-size:13px"></i> Back to Sign In</button>
+      </div>
+
+      <!-- FORGOT · STEP 2 -->
+      <div class="view" id="v-forgot2">
+        <h1>Verify your identity</h1>
+        <p class="sub">Answer your recovery questions and choose a new password.</p>
+        <div class="fld"><label class="lbl" for="fa1">What was your first school?</label><input class="inp" id="fa1" type="text" placeholder="Your answer" /></div>
+        <div class="fld"><label class="lbl" for="fa2">What is your pet's name?</label><input class="inp" id="fa2" type="text" placeholder="Your answer" /></div>
+        <div class="fld"><label class="lbl" for="np">New password</label>
+          <div class="wrap"><input class="inp pass-in" id="np" type="password" placeholder="Min 6 characters" />
+          <button class="eye"><i class="ph ph-eye" style="font-size:15px"></i></button></div>
+        </div>
+        <button class="btn" onclick="showOk()">Reset Password <span class="arr">→</span></button>
+        <button class="back" onclick="go('forgot1')"><i class="ph ph-arrow-left" style="font-size:13px"></i> Back</button>
+        <div class="err" id="forgot-err" style="display:none">Answers don't match — try again.</div>
+      </div>
+
+      <!-- GUEST -->
+      <div class="view" id="v-guest">
+        <h1>Continue as guest</h1>
+        <p class="sub">Pick an existing guest session or start a new one.</p>
+        <div class="guests"><div class="t"><i class="ph ph-users" style="font-size:12px"></i> Existing guests — click to sign in</div>
+          <div class="guest-chips">
+            <button class="gchip" onclick="simulate()">Admin</button>
+            <button class="gchip" onclick="simulate()">Guest 2</button>
+            <button class="gchip" onclick="simulate()">Guest 3</button>
+          </div>
+        </div>
+        <div class="fld"><label class="lbl" for="gname">Guest name</label>
+          <div class="wrap"><span class="lead"><i class="ph ph-user" style="font-size:14px"></i></span>
+          <input class="inp lead-in" id="gname" type="text" placeholder="e.g. Guest 1" /></div>
+        </div>
+        <button class="btn" onclick="simulate()">Continue as Guest <span class="arr">→</span></button>
+        <p class="register">Want a full account? <button class="link" onclick="go('login')">Sign in</button></p>
+      </div>
+    </div>
+    <div class="foot">© 2026 Tailor CV · Created by Atanu</div>
+  </section>
+</div>
+
+<div class="tabbar">
+  <button class="on" onclick="go('login')"><i class="ph ph-sign-in" style="font-size:13px"></i> Login</button>
+  <button onclick="go('register')"><i class="ph ph-user-plus" style="font-size:13px"></i> Register</button>
+  <button onclick="go('forgot1')"><i class="ph ph-key" style="font-size:13px"></i> Forgot · Step 1</button>
+  <button onclick="go('forgot2')"><i class="ph ph-shield-check" style="font-size:13px"></i> Forgot · Step 2</button>
+  <button onclick="go('guest')"><i class="ph ph-user" style="font-size:13px"></i> Guest</button>
+</div>
+
+<script>
+  function go(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + id));
+    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.textContent.includes(id === 'forgot1' ? 'Forgot · Step 1' : id === 'forgot2' ? 'Forgot · Step 2' : {login:'Login',register:'Register',guest:'Guest'}[id])));
+    document.querySelectorAll('.err').forEach(e => e.style.display = 'none');
+  }
+  function simulate(){
+    const btn = event.target.closest('.btn');
+    const label = btn.textContent.trim();
+    btn.innerHTML = '<span class="spin" style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block"></span> Working…';
+    setTimeout(() => { btn.innerHTML = label + ' <span class="arr">→</span>'; go('login'); }, 900);
+  }
+  function showOk(){
+    const box = document.querySelector('.box');
+    const err = document.getElementById('forgot-err');
+    err.style.display = 'none';
+    box.insertAdjacentHTML('afterbegin', '<div class="ok"><i class="ph ph-check-circle" style="font-size:13px;vertical-align:-2px"></i> Password reset successfully — sign in with your new password.</div>');
+    setTimeout(() => go('login'), 1200);
+  }
+  const spinKey = document.createElement('style');
+  spinKey.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(spinKey);
+</script>
+</body>
+</html>
