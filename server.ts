@@ -366,6 +366,12 @@ ${rawText || 'No readable text extracted.'}`;
   }
 }
 
+// Convert a plain-text email body (which may contain the candidate's phone
+// and portfolio from the Master CV) into safe HTML with clickable tel: and
+// https: links — recipients can tap-to-call or open the portfolio directly
+// from the email instead of seeing plain text.
+import { textBodyToHtmlWithLinks } from './server/emailHtml.js';
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -1294,6 +1300,22 @@ Return valid JSON only — NO markdown, NO code fences:
         contact.type !== 'careers';
       const greetingName = looksLikeName ? firstName : '';
 
+      const skillsText = (masterCv?.skills || [])
+        .map((s) => `${s.category}: ${(s.items || []).join(', ')}`)
+        .filter(Boolean)
+        .join(' | ');
+      const expText = (masterCv?.experiences || [])
+        .slice(0, 3)
+        .map((x) => `${x.title} @ ${x.company} (${x.dates}) — ${(x.responsibilities || []).slice(0, 2).join('; ')}`)
+        .filter(Boolean)
+        .join('\n');
+      const projectsText = (masterCv?.projects || [])
+        .filter((p) => p.name)
+        .slice(0, 4)
+        .map((p) => `${p.name}${p.dates ? ` (${p.dates})` : ''} — ${(p.description || '').slice(0, 160)}${(p.technologies || []).length ? ` [${p.technologies.slice(0, 5).join(', ')}]` : ''}`)
+        .join('\n');
+      const certsText = (masterCv?.certifications || []).slice(0, 3).map((c) => c.name).filter(Boolean).join(', ');
+
       const prompt = `You are a senior career coach writing a cold outreach email that reads like a real human wrote it.
 
 Recruiter name: ${name}
@@ -1303,14 +1325,18 @@ Job description (if available): ${(job?.description || '').slice(0, 1200)}
 Candidate: ${masterCv?.fullName || 'the candidate'}
 Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate location: ${masterCv?.location || ''}
+Candidate skills: ${skillsText}
+Candidate recent experience: ${expText}
+Candidate projects: ${projectsText}
+Candidate certifications: ${certsText}
 
 Rules — this must feel human, not AI:
 - FIRST LINE: a greeting — literally "${greetingName ? 'Hi ' + greetingName + ',' : 'Hi there,'}" followed by a newline, then continue with the email. Nothing may appear before the greeting.
 - Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
 - 55-80 words total (excluding the greeting and signature). Three short paragraphs maximum, ideally two.
+- Use ONLY the candidate's REAL data above — never invent facts, companies, projects, or credentials.
+- Middle: ONE concrete link between the candidate's real experience and their opening. Weave in ONE short clause that names a real project or responsibility from "Candidate projects" / "Candidate recent experience" relevant to this role (e.g. "I built CI/CD pipelines for a Kubernetes platform" or "I automated Terraform-based infrastructure at ScaleUp"). One clause — enough for the recruiter to see project substance without opening the CV, not a project dump.
 - No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", exclamation marks.
-- Open with a direct, specific line tied to their role or company (one sentence).
-- Middle: ONE concrete link between the candidate's experience and their opening. No buzzword lists.
 - Close with a soft, natural ask (e.g. "Happy to chat briefly this week if it's useful.") — not a formal request.
 - Do NOT include any signature, name, phone, or sign-off in the body — the system adds it.
 - Sign nothing. No "Best regards". No name at the end.
@@ -1415,6 +1441,7 @@ Return valid JSON only, no markdown:
         to: String(to).trim(),
         subject: String(subject),
         text: String(body),
+        html: textBodyToHtmlWithLinks(String(body)),
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
