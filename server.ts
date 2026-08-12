@@ -1158,7 +1158,8 @@ Return valid JSON only — NO markdown, NO code fences:
       const company = contact.company || job?.company || 'your company';
       const role = job?.title || contact.jobRole || 'the role';
 
-      const prompt = `You are a career coach writing a short, professional cold email.
+      const prompt = `You are a senior career coach writing a cold outreach email that reads like a real human wrote it.
+
 Recruiter name: ${name}
 Company: ${company}
 Role they are hiring for: ${role}
@@ -1167,24 +1168,32 @@ Candidate: ${masterCv?.fullName || 'the candidate'}
 Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate location: ${masterCv?.location || ''}
 
-Rules:
-- 80-120 words, warm but professional, no hype words.
-- First line: reference the role and company naturally.
-- Middle: 2-3 lines connecting the candidate's strongest relevant experience.
-- End with a soft ask (15-minute call).
-- Sign off with the candidate's name only.
+Rules — this must feel human, not AI:
+- 55-80 words total. Three short paragraphs maximum, ideally two.
+- No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", exclamation marks.
+- Open with a direct, specific line tied to their role or company (one sentence).
+- Middle: ONE concrete link between the candidate's experience and their opening. No buzzword lists.
+- Close with a soft, natural ask (e.g. "Happy to chat briefly this week if it's useful.") — not a formal request.
+- Do NOT include any signature, name, phone, or sign-off in the body — the system adds it.
+- Sign nothing. No "Best regards". No name at the end.
 
 Return valid JSON only, no markdown:
-{ "subject": string (max 10 words), "body": string }`;
+{ "subject": string (max 8 words, no fluff), "body": string }`;
 
       const raw = await ask(prompt, 0.5);
       const parsed = JSON.parse(raw);
+      const body = String(parsed.body || '').trim();
+      // Deterministic signature: candidate name, plus their saved phone
+      // (from the Master CV) only when one exists.
+      const nameLine = masterCv?.fullName ? masterCv.fullName.trim() : '';
+      const phoneLine = masterCv?.phone ? masterCv.phone.trim() : '';
+      const signature = phoneLine ? `${nameLine}\n${phoneLine}` : nameLine;
       res.json({
         success: true,
         draft: {
           to: contact.email || '',
-          subject: String(parsed.subject || '').slice(0, 200),
-          body: String(parsed.body || ''),
+          subject: String(parsed.subject || '').slice(0, 160),
+          body: body ? `${body}\n\n${signature}` : '',
         },
       });
     } catch (err: any) {
