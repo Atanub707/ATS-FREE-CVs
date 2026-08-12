@@ -404,7 +404,7 @@ export default function App() {
   };
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      <OnboardingTour />
+      <OnboardingTour ready={!!currentUser && !authLoading} />
       {authLoading ? (
         <div className="min-h-screen flex items-center justify-center text-slate-500">Loading…</div>
       ) : !currentUser ? (

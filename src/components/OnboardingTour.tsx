@@ -71,19 +71,19 @@ export function shouldShowTour(): boolean {
 }
 
 // Auto-run once after the app shell is ready (post-login).
-export const OnboardingTour: React.FC = () => {
+export const OnboardingTour: React.FC<{ ready?: boolean }> = ({ ready = false }) => {
   const started = useRef(false);
   useEffect(() => {
+    if (!ready) return; // wait for the logged-in UI (search bar) to exist
     if (started.current) return;
     if (!shouldShowTour()) return;
     started.current = true;
     const t = setTimeout(() => {
-      // Wait for the main UI (search bar) to exist before spotlighting it.
       if (document.getElementById('input-scrape-keywords')) {
         startTour();
       }
     }, 900);
     return () => clearTimeout(t);
-  }, []);
+  }, [ready]);
   return null;
 };
