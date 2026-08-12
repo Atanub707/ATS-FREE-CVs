@@ -49,7 +49,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [composeTo, setComposeTo] = useState('');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
-  const [composeBusy, setComposeBusy] = useState(false);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [sendBusy, setSendBusy] = useState(false);
   const [composeMsg, setComposeMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const openCompose = (c: Contact) => {
@@ -62,7 +63,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
   const draftEmail = async () => {
     if (!composeContact) return;
-    setComposeBusy(true); setComposeMsg(null);
+    setDraftBusy(true); setComposeMsg(null);
     try {
       const res = await fetch('/api/emails/draft', {
         method: 'POST',
@@ -76,13 +77,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     } catch (e: any) {
       setComposeMsg({ ok: false, text: e.message || 'Draft failed.' });
     } finally {
-      setComposeBusy(false);
+      setDraftBusy(false);
     }
   };
 
   const sendEmail = async () => {
     if (!composeContact) return;
-    setComposeBusy(true); setComposeMsg(null);
+    setSendBusy(true); setComposeMsg(null);
     try {
       const res = await fetch('/api/emails/send', {
         method: 'POST',
@@ -100,7 +101,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     } catch (e: any) {
       setComposeMsg({ ok: false, text: e.message || 'Send failed.' });
     } finally {
-      setComposeBusy(false);
+      setSendBusy(false);
     }
   };
 
@@ -344,7 +345,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
       {/* Compose cold email modal */}
       {composeContact && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !composeBusy && setComposeContact(null)}>
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !draftBusy && !sendBusy && setComposeContact(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
@@ -375,18 +376,18 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               )}
             </div>
             <div className="flex items-center gap-2 px-5 py-3.5 border-t border-slate-200">
-              <button onClick={draftEmail} disabled={composeBusy}
+              <button onClick={draftEmail} disabled={draftBusy || sendBusy}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12.5px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 cursor-pointer transition-colors">
-                {composeBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
+                {draftBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
               </button>
               <div className="flex-1" />
-              <button onClick={() => setComposeContact(null)} disabled={composeBusy}
+              <button onClick={() => setComposeContact(null)} disabled={draftBusy || sendBusy}
                 className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50 cursor-pointer">
                 Cancel
               </button>
-              <button onClick={sendEmail} disabled={composeBusy || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
+              <button onClick={sendEmail} disabled={sendBusy || draftBusy || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors">
-                {composeBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
+                {sendBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
               </button>
             </div>
           </div>
