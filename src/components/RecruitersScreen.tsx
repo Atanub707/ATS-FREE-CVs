@@ -402,11 +402,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followedUp: !x.followedUp } : x)));
   };
 
-  const setPipeline = async (c: Contact, status: string | null) => {
-    await fetch(`/api/contacts/${c.id}/pipeline`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, pipelineStatus: status || undefined } : x)));
-  };
-
   const saveNote = async (c: Contact) => {
     const note = (noteDrafts[c.id] ?? c.notes ?? '').trim();
     await fetch(`/api/contacts/${c.id}/notes`, {
@@ -595,11 +590,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                       </div>
                     </div>
                     <div className="rc-right">
-                      <select className={`rc-pipe rc-pipe-${c.pipelineStatus || 'none'}`} value={c.pipelineStatus || ''} onChange={(e) => setPipeline(c, e.target.value || null)}>
-                        {PIPELINE.map((p) => (
-                          <option key={p.value || 'none'} value={p.value || ''}>{p.label}</option>
-                        ))}
-                      </select>
                       <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
                         <Trash2 size={13} />
                       </button>
@@ -1116,11 +1106,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-fubtn { font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
         .rc-fubtn:hover { border-color: var(--blue-border); color: var(--blue); }
         .rc-fubtn.ghost { border: 0; background: none; color: var(--faint); }
-        .rc-pipe { font-size: 10.5px; font-weight: 700; border: 1px solid var(--border); border-radius: 7px; padding: 4px 6px; background: var(--card); color: var(--muted); font-family: inherit; cursor: pointer; outline: none; }
-        .rc-pipe-replied { color: #0A66C2; border-color: #B9D0EF; background: #F0F6FD; }
-        .rc-pipe-interview { color: var(--green); border-color: var(--color-cta-line); background: var(--color-cta-soft); }
-        .rc-pipe-offer { color: var(--amber); border-color: var(--amber-border); background: var(--amber-soft); }
-        .rc-pipe-rejected { color: var(--color-danger); border-color: #FECACA; background: var(--color-danger-soft); }
       `}</style>
     </div>
   );
