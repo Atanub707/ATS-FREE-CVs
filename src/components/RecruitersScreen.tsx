@@ -196,6 +196,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     }
   };
 
+  const closeCompose = () => {
+    setComposeContact(null);
+    setBatchQueue([]);
+    setBatchIndex(0);
+    setBatchMode(false);
+    setSelected(new Set());
+  };
+
   const sendEmail = async () => {
     if (!composeContact) return;
     setSendBusy(true); setComposeMsg(null);
@@ -219,7 +227,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       setContacts((prev) => prev.map((x) => x.id === composeContact.id
         ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
         : x));
-      if (batchQueue.length) {
+      if (batchQueue.length && batchIndex < batchQueue.length) {
         const next = batchIndex + 1;
         if (next < batchQueue.length) {
           setTimeout(() => {
@@ -232,10 +240,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
           }, 900);
           return;
         }
-        setBatchQueue([]);
-        setBatchMode(false);
-        setSelected(new Set());
-        setComposeContact(null);
+        closeCompose();
         showToast(`Batch complete — ${batchQueue.length} sent`);
         return;
       }
@@ -658,7 +663,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
       {/* Compose cold email modal */}
       {composeContact && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !draftBusy && !sendBusy && setComposeContact(null)}>
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !draftBusy && !sendBusy && closeCompose()}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
@@ -669,7 +674,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                   </span>
                 )}
               </h3>
-              <button onClick={() => setComposeContact(null)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
+              <button onClick={closeCompose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
                 <X size={16} />
               </button>
             </div>
@@ -788,7 +793,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                 {draftBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
               </button>
               <div className="flex-1" />
-              <button onClick={() => setComposeContact(null)} disabled={draftBusy || sendBusy}
+              <button onClick={closeCompose} disabled={draftBusy || sendBusy}
                 className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50 cursor-pointer">
                 Cancel
               </button>
