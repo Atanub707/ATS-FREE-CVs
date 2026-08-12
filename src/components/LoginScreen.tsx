@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, KeyRound, ShieldQuestion, User, Users, Lock, Search, Sparkles, Inbox, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, KeyRound, ShieldQuestion, User, Users, Lock, Search, Sparkles, Inbox, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface LoginScreenProps {
@@ -148,6 +148,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
     <main className="login-page">
       {/* ═══════════ LEFT — BRANDING ═══════════ */}
       <section className="brand-panel">
+        <div className="blob b1"></div><div className="blob b2"></div><div className="blob b3"></div>
 
         <div className="brand-content">
           <div className="brand-badge">
@@ -175,6 +176,44 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
             AI-powered CV tailoring designed to align your experience with the roles you want —
             helping you present your strongest professional story.
           </p>
+
+          {/* ═══════════ ANIMATED SCENE ═══════════ */}
+          <div className="login-scene">
+            <div className="scene-bg">
+              <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&q=80" alt="Team working together in a modern office" />
+              <div className="scene-veil"></div>
+            </div>
+
+            <span className="chip-float c1"><CheckCircle2 size={12} /> 97% ATS fit</span>
+            <span className="chip-float c2"><Zap size={12} /> +41 boost</span>
+            <span className="chip-float c3"><Sparkles size={12} /> Tailored in 1 click</span>
+            <span className="chip-float c4"><Inbox size={12} /> 5 recruiters found</span>
+
+            <div className="cv-card">
+              <div className="cv-row1">
+                <div><div className="cv-name">Atanu Biswas</div><div className="cv-role">Senior DevSecOps Engineer</div></div>
+                <div className="cv-ring">
+                  <svg width="44" height="44" viewBox="0 0 44 44">
+                    <circle className="ring-track" cx="22" cy="22" r="20"></circle>
+                    <circle className="ring-bar" cx="22" cy="22" r="20"></circle>
+                  </svg>
+                  <div className="ring-num">97%</div>
+                </div>
+              </div>
+              <div><span className="skill-ok">Kubernetes</span><span className="skill-ok">Terraform</span><span className="skill-ok">CI/CD</span><span className="skill-add">Helm</span><span className="skill-add">ArgoCD</span></div>
+            </div>
+
+            <div className="chat-card">
+              <div className="chat-peeps">
+                <span className="chat-av">NA</span>
+                <div><b>Nicole Ávila</b><span>Recruiter · IOON</span></div>
+              </div>
+              <div className="chat-bubble left">Hi Atanu — your profile is a strong fit for our Kubernetes Platform role. 🎯</div>
+              <div className="chat-bubble right b2">Wow — <b>97% ATS match</b> already. When can you start?</div>
+              <div className="chat-bubble left b3">Let's talk this week. 👋</div>
+              <div className="chat-typing"><i></i><i></i><i></i></div>
+            </div>
+          </div>
 
           <div className="login-feats">
             <div className="feature-item"><span className="feat-ico blue"><Search size={15} /></span> Live jobs from 19 sources, scored against your CV</div>
@@ -372,8 +411,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
 
       <style>{`
   .login-page { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; background: #F8FAFC; }
-  .brand-panel { background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 48px 56px; display: flex; flex-direction: column; }
-  .brand-content { display: flex; flex-direction: column; }
+  .brand-panel { background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 48px 56px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .brand-content { display: flex; flex-direction: column; position: relative; z-index: 1; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; pointer-events: none; z-index: 0; }
+  .blob.b1 { width: 320px; height: 320px; right: -90px; top: 8%; background: rgba(37,99,235,.12); }
+  .blob.b2 { width: 280px; height: 280px; left: -110px; bottom: 12%; background: rgba(5,150,105,.10); }
+  .blob.b3 { width: 240px; height: 240px; left: 38%; top: -90px; background: rgba(124,58,237,.08); }
   .brand-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; border-radius: 999px; padding: 7px 14px; width: fit-content; }
   .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #2563EB; }
   .logo-row { display: flex; align-items: center; gap: 13px; margin-top: 34px; }
@@ -384,6 +427,48 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .headline { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; color: #0F172A; margin-top: 56px; }
   .headline span { display: block; }
   .description { font-size: 14px; color: #64748B; margin-top: 14px; max-width: 420px; line-height: 1.65; }
+  .login-scene { position: relative; flex: 1; min-height: 300px; margin: 26px 0 10px; }
+  .scene-bg { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; border: 1px solid #E2E8F0; }
+  .scene-bg img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.08); animation: kenburns 22s ease-in-out infinite alternate; }
+  @keyframes kenburns { from { transform: scale(1.06) translateX(-1.5%); } to { transform: scale(1.14) translateX(1.5%); } }
+  .scene-veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(249,250,251,.28) 55%, rgba(249,250,251,.92)); }
+  .cv-card { position: absolute; left: 26px; top: 34px; width: 218px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 15px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.22); animation: float 5.5s ease-in-out infinite; z-index: 3; }
+  .cv-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .cv-name { font-size: 12.5px; font-weight: 800; color: #0F172A; }
+  .cv-role { font-size: 9px; color: #64748B; font-weight: 600; }
+  .cv-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+  .cv-ring svg { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: #BFDBFE; stroke-width: 5; }
+  .ring-bar { fill: none; stroke: #2563EB; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 126; animation: fillring 2.4s .5s ease-out forwards; }
+  @keyframes fillring { to { stroke-dashoffset: 4; } }
+  .ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; color: #2563EB; }
+  .cv-card .skill-ok, .cv-card .skill-add { display: inline-flex; align-items: center; gap: 4px; font-size: 8.5px; font-weight: 700; padding: 3px 7px; border-radius: 999px; margin: 0 3px 4px 0; }
+  .cv-card .skill-ok { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+  .cv-card .skill-add { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  .chat-card { position: absolute; right: 22px; bottom: 26px; width: 236px; background: rgba(255,255,255,.97); border: 1px solid #E2E8F0; border-radius: 14px; padding: 13px 14px; box-shadow: 0 18px 40px -12px rgba(15,23,42,.20); animation: float 6s .6s ease-in-out infinite; z-index: 3; }
+  .chat-peeps { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .chat-av { width: 28px; height: 28px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2563EB, #7C3AED); }
+  .chat-peeps b { font-size: 10.5px; font-weight: 700; color: #0F172A; display: block; }
+  .chat-peeps span { font-size: 9px; color: #94A3B8; }
+  .chat-bubble { font-size: 10.5px; line-height: 1.45; padding: 8px 11px; border-radius: 12px; margin-bottom: 7px; max-width: 85%; animation: bubbleIn .5s ease-out both; }
+  .chat-bubble.left { background: #F1F5F9; color: #475569; border-bottom-left-radius: 4px; }
+  .chat-bubble.right { margin-left: auto; background: #EFF6FF; color: #0F172A; border-bottom-right-radius: 4px; font-weight: 600; }
+  .chat-bubble.right b { color: #2563EB; }
+  .chat-bubble.b2 { animation-delay: 1.1s; }
+  .chat-bubble.b3 { animation-delay: 2s; }
+  @keyframes bubbleIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .chat-typing { display: inline-flex; gap: 3px; padding: 9px 12px; background: #F1F5F9; border-radius: 12px; border-bottom-left-radius: 4px; }
+  .chat-typing i { width: 5px; height: 5px; border-radius: 50%; background: #94A3B8; animation: typing 1.2s ease-in-out infinite; }
+  .chat-typing i:nth-child(2) { animation-delay: .18s; }
+  .chat-typing i:nth-child(3) { animation-delay: .36s; }
+  @keyframes typing { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+  .chip-float { position: absolute; display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 6px 11px; border-radius: 999px; background: rgba(255,255,255,.96); border: 1px solid #E2E8F0; box-shadow: 0 8px 20px -8px rgba(15,23,42,.16); z-index: 4; }
+  .chip-float svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .chip-float.c1 { left: 44%; top: 14px; color: #059669; animation: float 4.2s .2s ease-in-out infinite; }
+  .chip-float.c2 { right: 34%; top: 56px; color: #D97706; animation: float 4.8s .9s ease-in-out infinite; }
+  .chip-float.c3 { left: 8%; bottom: 40px; color: #7C3AED; animation: float 5.2s .4s ease-in-out infinite; }
+  .chip-float.c4 { right: 8%; top: 40%; color: #2563EB; animation: float 4.6s 1.2s ease-in-out infinite; }
   .login-feats { margin-top: 30px; display: flex; flex-direction: column; gap: 13px; }
   .feature-item { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 600; color: #475569; }
   .feature-item .feat-ico { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -392,7 +477,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .feat-ico.violet { background: #F5F3FF; color: #7C3AED; }
   .feat-ico.emerald { background: #ECFDF5; color: #059669; }
   .feat-ico.amber { background: #FFFBEB; color: #D97706; }
-  .brand-footer { margin-top: auto; font-size: 11px; color: #94A3B8; }
+  .brand-footer { margin-top: auto; font-size: 11px; color: #94A3B8; position: relative; z-index: 1; }
   .form-panel { display: flex; align-items: center; justify-content: center; padding: 48px; background: #F8FAFC; position: relative; }
   .form-container { width: 100%; max-width: 380px; }
   .form-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #0F172A; }
@@ -429,6 +514,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   @keyframes lgn-spin { to { transform: rotate(360deg); } }
   .form-footer { position: absolute; bottom: 20px; font-size: 11px; color: #94A3B8; }
   @media (max-width: 1000px) { .login-page { grid-template-columns: 1fr; } .brand-panel { display: none; } .form-panel { padding: 32px 20px; } }
+  @media (prefers-reduced-motion: reduce) { .scene-bg img, .cv-card, .chat-card, .chip-float, .badge-dot, .chat-typing i { animation: none; } .ring-bar { stroke-dashoffset: 4; } }
 `}</style>
     </main>
   );
