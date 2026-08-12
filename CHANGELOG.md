@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.4.0 (2026-08-12)
+
+### 🎨 Professional UI redesign — whitish multi-tint theme
+- The whole app now speaks one design language: **whitish canvas + soft pastel multi-tint accents** (blue/sky/indigo/violet/emerald/teal/amber/orange/rose), with brand blue `#2563EB` as the primary. The old flat-indigo look is gone everywhere.
+- Design tokens centralized in `@theme` (neutral `#F9FAFB`, warm whites `#FAFAF9`/`#F1F5F9`); **Plus Jakarta Sans** type and **Phosphor icons** kept from the previous iteration.
+- Converted screens: Dashboard, Login, Manual JD, Master CV, Recruiters, Job Portals, Job Detail, Settings, Navbar, ScraperBar — functionality untouched.
+- **KPI cards** now have real white cards with soft pastel tints (blue/violet/emerald/amber/sky) — fixed the blank-card bug.
+- **Per-source job tag colors** (LinkedIn blue, Indeed sky, Glassdoor emerald, Naukri amber, Upwork teal, Arbeitnow orange, others slate).
+
+### 🔐 Login screen
+- Whitish brand panel with the 4 feature highlights (19 live sources, one-click tailoring, recruiters + cold email, local-first data).
+- **Animated left panel**: office photo with slow Ken-Burns zoom, floating CV card with an ATS score ring animating to 97%, a recruiter chat (bubbles fade in + typing dots), and drifting stat chips — all over soft pastel blobs.
+- Everything fits **on one screen** — no scrolling on any laptop size (features in a 2-column grid, scene flexes, `max-height: 700px` fallback, `prefers-reduced-motion` respected).
+
+### ⚙️ Settings & fixes
+- Settings redesign shipped with sidebar (Account / Security / Integrations) and LLM·Apify·Email sub-tabs; scoped `--st-*` palette.
+- **Open Master CV** from Settings now closes the modal first (was hidden behind the overlay).
+- **Replay tutorial** button removed from Settings (the tour stays in the account menu).
+
 ## v1.3.0 (2026-08-09)
 
 ### 🎨 Manual JD polish (carried in this release)
