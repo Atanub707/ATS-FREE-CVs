@@ -395,7 +395,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Total Jobs</span>
             <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><Briefcase className="w-3.5 h-3.5" /></span>
@@ -403,7 +403,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{stats.total}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Scraped across sources</p>
         </div>
-        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Avg Match</span>
             <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5" /></span>
@@ -411,7 +411,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{avgScore}%</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>{scoredJobsCount} scored with AI</p>
         </div>
-        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Tailored CVs</span>
             <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
@@ -419,7 +419,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{tailoredCount}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Ready to download as PDF</p>
         </div>
-        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Pending</span>
             <span className="w-7 h-7 rounded-lg bg-[#F1F0FA] text-[var(--color-faint)] flex items-center justify-center"><Clock className="w-3.5 h-3.5" /></span>
@@ -427,7 +427,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{pendingCount}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Awaiting batch analysis</p>
         </div>
-        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Applied</span>
             <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
