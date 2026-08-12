@@ -1169,6 +1169,7 @@ Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate location: ${masterCv?.location || ''}
 
 Rules — this must feel human, not AI:
+- Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
 - 55-80 words total. Three short paragraphs maximum, ideally two.
 - No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", exclamation marks.
 - Open with a direct, specific line tied to their role or company (one sentence).
