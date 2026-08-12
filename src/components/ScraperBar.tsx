@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Search,
-  MapPin,
-  Play,
-  Loader2,
-  CheckCircle2,
-  ChevronDown,
-} from 'lucide-react';
+import { MagnifyingGlass, MapPin, Play, CaretDown, CheckCircle, Info } from '@phosphor-icons/react';
 import { JobSource } from '../types';
 import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
 import { getSourceFlag, getSourceCountry, getSourceMeta } from '../constants/sourceMeta';
@@ -100,7 +93,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
   };
 
   const selectClass =
-    'w-full appearance-none bg-white border-[1.5px] border-slate-200 rounded-lg border border-slate-200 pl-3 pr-9 py-2.5 text-[13px] font-medium text-slate-900 cursor-pointer transition-colors hover:border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10';
+    'w-full appearance-none bg-white border-[1.5px] border-[var(--color-hairline2)] rounded-[10px] pl-3 pr-9 py-2.5 text-[12.5px] font-semibold text-[var(--color-ink)] cursor-pointer transition-colors hover:border-[var(--color-brand-line)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-[3px] focus:ring-[var(--color-brand)]/12';
+  const fieldLabelCls = 'text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--color-faint)]';
 
   const renderSourceChip = (src: JobSource) => {
     const isComingSoon = COMING_SOON.includes(src);
@@ -120,28 +114,28 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
         onClick={() => toggleSource(src)}
         disabled={disabled}
         title={title}
-        className={`inline-flex items-center gap-[7px] pl-2 pr-3 py-[7px] rounded-lg text-[12px] font-medium border transition-colors whitespace-nowrap ${
+        className={`inline-flex items-center gap-2 pl-2.5 pr-3 py-[7px] rounded-full text-[11.5px] font-semibold border-[1.5px] transition-all whitespace-nowrap cursor-pointer ${
           disabled
-            ? 'opacity-45 cursor-not-allowed bg-white border-slate-200 text-slate-500'
+            ? 'opacity-45 cursor-not-allowed bg-white border-[var(--color-hairline)] text-[var(--color-faint)]'
             : isSelected
-            ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold cursor-pointer'
-            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+            ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand)] text-[var(--color-brand)] font-bold'
+            : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)] hover:border-[var(--color-brand-line)] hover:text-[var(--color-ink)]'
         }`}
       >
         <span className="text-[13px] leading-none">{getSourceFlag(src)}</span>
         <span>{src}</span>
         {meta?.apifyActorId && !gated && (
-          <span className="text-[9px] font-bold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 rounded px-1 py-[1px]">Apify</span>
+          <span className="text-[8.5px] font-extrabold uppercase tracking-[0.06em] text-white bg-[var(--color-brand)] rounded-full px-[7px] py-[2px]">Apify</span>
         )}
         {isComingSoon && (
-          <span className="text-[9px] font-bold uppercase text-slate-400">Soon</span>
+          <span className="text-[8.5px] font-extrabold uppercase text-[var(--color-faint)]">Soon</span>
         )}
       </button>
     );
   };
 
   return (
-    <div className="bg-white border-b border-slate-200 py-5 text-slate-900">
+    <div className="bg-white border-b border-[var(--color-hairline)] py-5">
       {/* Datalists for Native Auto-completion */}
       <datalist id="datalist-roles-keywords">
         {Array.from(new Set([...roleSuggestions, ...keywordSuggestions])).map((s) => (
@@ -157,8 +151,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
 
       <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* ── Row 1: Hero Search ── */}
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg pl-4 pr-1.5 py-2 transition-colors focus-within:border-blue-500 focus-within:bg-white focus-within:ring-[3px] focus-within:ring-blue-500/10">
-          <Search className="w-[18px] h-[18px] text-slate-400 shrink-0" />
+        <div className="flex items-center gap-3 bg-[#FAFAFF] border-[1.5px] border-[var(--color-hairline2)] rounded-[12px] pl-5 pr-2 py-2 transition-colors focus-within:border-[var(--color-brand)] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[var(--color-brand)]/12">
+          <MagnifyingGlass size={18} style={{ color: 'var(--color-faint)' }} weight="bold" />
           <input
             type="text"
             id="input-scrape-keywords"
@@ -168,23 +162,23 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
             placeholder="Search role, skills, or job title — e.g. 'DevOps Engineer'"
             autoComplete="off"
             name="ats-search-keywords"
-            className="flex-1 border-none outline-none bg-transparent text-[15px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal py-2"
+            className="flex-1 border-none outline-none bg-transparent text-[15px] font-semibold text-[var(--color-ink)] placeholder:text-[var(--color-faint)] placeholder:font-normal py-2"
             required
           />
           <button
             type="submit"
             disabled={isLoading}
             id="btn-scrape-submit"
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-lg px-6 py-3 text-[13.5px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] disabled:bg-[#A5A3D9] text-white rounded-[10px] px-6 py-3 text-[13.5px] font-bold transition-colors cursor-pointer whitespace-nowrap"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 <span>Searching jobs...</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-current" />
+                <Play size={13} weight="fill" />
                 <span>Search Jobs</span>
               </>
             )}
@@ -195,9 +189,9 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Location */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Location</label>
+            <label className={fieldLabelCls}>Location</label>
             <div className="relative">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <MapPin size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
               <input
                 type="text"
                 id="input-scrape-location"
@@ -207,26 +201,26 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 placeholder="Worldwide"
                 autoComplete="off"
                 name="ats-search-location"
-                className="w-full bg-white border-[1.5px] border-slate-200 rounded-lg border border-slate-200 pl-8 pr-3 py-2.5 text-[13px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal transition-colors hover:border-slate-300 focus:outline-none focus:border-blue-500 focus:ring-[3px] focus:ring-blue-500/10"
+                className="w-full bg-white border-[1.5px] border-[var(--color-hairline2)] rounded-[10px] pl-8 pr-3 py-2.5 text-[12.5px] font-semibold text-[var(--color-ink)] placeholder:text-[var(--color-faint)] placeholder:font-normal transition-colors hover:border-[var(--color-brand-line)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-[3px] focus:ring-[var(--color-brand)]/12"
               />
             </div>
           </div>
 
           {/* Job Type */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+            <label className={`${fieldLabelCls} flex items-center gap-1`}>
               Job Type
               <span className="relative inline-flex group">
                 <button
                   type="button"
                   aria-label="Job type may not be accurate"
                   onClick={() => setJobTypeInfoOpen((v) => !v)}
-                  className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full border border-slate-300 bg-slate-100 text-slate-500 text-[9.5px] font-bold leading-none cursor-pointer transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600"
+                  className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full border border-[var(--color-hairline2)] bg-[#F1F0FA] text-[var(--color-faint)] cursor-pointer transition-colors hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-brand)]"
                 >
-                  i
+                  <Info size={9} weight="bold" />
                 </button>
                 <span
-                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-slate-900 text-white text-[10.5px] font-medium leading-relaxed rounded-lg px-2.5 py-2 shadow-lg z-20 pointer-events-none transition-opacity duration-150 ${jobTypeInfoOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-[var(--color-ink)] text-white text-[10.5px] font-medium leading-relaxed rounded-[10px] px-2.5 py-2 shadow-lg z-20 pointer-events-none transition-opacity duration-150 ${jobTypeInfoOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 >
                   Job-type labels are detected from descriptions and may not always be accurate.
                 </span>
@@ -243,13 +237,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <option value="onsite">On-site</option>
                 <option value="all">All</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CaretDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
             </div>
           </div>
 
           {/* Posted */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Posted</label>
+            <label className={fieldLabelCls}>Posted</label>
             <div className="relative">
               <select
                 value={datePostedFilter}
@@ -261,13 +255,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <option value="30d">Last 30 days</option>
                 <option value="all">Anytime</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CaretDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
             </div>
           </div>
 
           {/* Level */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Level</label>
+            <label className={fieldLabelCls}>Level</label>
             <div className="relative">
               <select
                 value={experienceLevel}
@@ -282,13 +276,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <option value="5">Director</option>
                 <option value="6">Executive</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CaretDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
             </div>
           </div>
 
           {/* Contract type */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Contract</label>
+            <label className={fieldLabelCls}>Contract</label>
             <div className="relative">
               <select
                 value={contractType}
@@ -302,13 +296,13 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <option value="T">Temporary</option>
                 <option value="I">Internship</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CaretDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
             </div>
           </div>
 
           {/* Limit */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Limit</label>
+            <label className={fieldLabelCls}>Limit</label>
             <div className="relative">
               <select
                 id="select-scrape-limit"
@@ -322,29 +316,29 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CaretDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-faint)' }} />
             </div>
           </div>
 
           {/* Under 10 applicants */}
           <div className="flex flex-col gap-[6px]">
-            <label className="text-[11px] font-semibold text-slate-500">Competition</label>
-            <label className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2.5 cursor-pointer transition-colors hover:border-slate-300" title="Only show jobs with 10 or fewer applicants — low-competition roles (LinkedIn only; other sources are skipped when enabled)">
+            <label className={fieldLabelCls}>Competition</label>
+            <label className="flex items-center gap-2 bg-white border border-[var(--color-hairline)] rounded-[10px] px-3 py-2.5 cursor-pointer transition-colors hover:border-[var(--color-brand-line)]" title="Only show jobs with 10 or fewer applicants — low-competition roles (LinkedIn only; other sources are skipped when enabled)">
               <input
                 type="checkbox"
                 checked={under10Applicants}
                 onChange={(e) => setUnder10Applicants(e.target.checked)}
-                className="accent-blue-600 w-[15px] h-[15px] cursor-pointer"
+                className="accent-[var(--color-brand)] w-[15px] h-[15px] cursor-pointer"
               />
-              <span className="text-[12px] font-medium text-slate-600 truncate">Under 10 applicants</span>
+              <span className="text-[12px] font-semibold text-[var(--color-muted)] truncate">Under 10 applicants</span>
             </label>
           </div>
         </div>
 
         {/* ── Row 3: Source Pills with Flags ── */}
-        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-4 pt-4 border-t border-[var(--color-hairline)]">
           <div className="flex items-start gap-3 min-w-0 flex-1">
-            <span className="text-[11px] font-semibold text-slate-500 pt-[7px] whitespace-nowrap">Sources</span>
+            <span className={`${fieldLabelCls} pt-[9px] whitespace-nowrap`}>Sources</span>
             <div className="flex items-center gap-2 flex-nowrap min-w-0">
               {APIFY_SOURCES_VISIBLE.map((src) => renderSourceChip(src))}
 
@@ -352,15 +346,15 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
               <div className="relative group shrink-0">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 pl-2 pr-2.5 py-[7px] rounded-lg text-[12px] font-semibold text-slate-600 border border-slate-200 bg-white hover:border-slate-300 transition-colors cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-1 pl-2 pr-2.5 py-[7px] rounded-full text-[11.5px] font-semibold text-[var(--color-muted)] border border-[var(--color-hairline)] bg-white hover:border-[var(--color-brand-line)] transition-colors cursor-pointer whitespace-nowrap"
                   title="Built-in sources this search can capture"
                 >
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <CaretDown size={12} style={{ color: 'var(--color-faint)' }} />
                   <span>More</span>
-                  <span className="text-[10px] font-bold text-slate-400">({MORE_SOURCES.length})</span>
+                  <span className="text-[10px] font-bold text-[var(--color-faint)]">({MORE_SOURCES.length})</span>
                 </button>
-                <div className="absolute right-0 top-full mt-1.5 z-30 w-[330px] bg-white border border-slate-200 rounded-xl shadow-lg p-3 opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto transition-all">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
+                <div className="absolute right-0 top-full mt-1.5 z-30 w-[330px] bg-white border border-[var(--color-hairline)] rounded-xl p-3 opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto transition-all" style={{ boxShadow: '0 12px 32px rgba(30,27,75,0.12)' }}>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[var(--color-faint)] mb-2">
                     Built-in sources this search can capture
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -374,8 +368,8 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
 
         {/* ── Scrape result banner (own row — never overlaps the source chips) ── */}
         {scrapeSuccessMsg && (
-          <div className="flex items-start gap-2 w-full bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-[12px] font-medium text-emerald-700">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-[1px]" />
+          <div className="flex items-start gap-2 w-full bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] rounded-[12px] px-3.5 py-2.5 text-[12.5px] font-semibold text-[#065F46]">
+            <CheckCircle size={16} className="shrink-0 mt-[1px]" style={{ color: 'var(--color-cta)' }} weight="fill" />
             <div className="min-w-0">
               <span>{scrapeSuccessMsg}</span>
               {scrapeNewContacts.length > 0 && (
@@ -383,7 +377,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                   <span className="font-bold whitespace-nowrap">
                     +{scrapeNewContacts.length} recruiter{scrapeNewContacts.length > 1 ? 's' : ''}:
                   </span>
-                  <span className="text-emerald-800">
+                  <span className="text-[#047857]">
                     {scrapeNewContacts.slice(0, 6).map((c) => {
                       const value = c.email || c.phone || c.recruiterUrl || '';
                       const label = value.replace(/^https?:\/\//, '');

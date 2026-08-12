@@ -100,9 +100,9 @@ const JobCard = React.memo(function JobCard({
             title={`Open ${job.source} job post in new tab`}
             className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer hover:underline ${
               job.source === 'LinkedIn'
-                ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                ? 'bg-[var(--color-brand-soft)] hover:bg-[#E3E6FD] text-[var(--color-brand)] border border-[var(--color-brand-line)]'
                 : job.source === 'Glassdoor'
-                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                ? 'bg-[var(--color-cta-soft)] hover:bg-[#D9F5E8] text-[var(--color-cta)] border border-[var(--color-cta-line)]'
                 : job.source === 'Arbeitnow'
                 ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
                 : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
@@ -148,7 +148,7 @@ const JobCard = React.memo(function JobCard({
         <div>
           <h3
             onClick={() => onSelectJob(job)}
-            className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer flex items-center space-x-1.5"
+            className="text-sm font-bold text-slate-900 group-hover:text-[var(--color-brand)] transition-colors cursor-pointer flex items-center space-x-1.5"
           >
             <span className="truncate">{job.title}</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -168,7 +168,7 @@ const JobCard = React.memo(function JobCard({
             {(job.recruiterName || job.recruiterUrl) && onOpenRecruiter && (
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenRecruiter(job); }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold hover:bg-blue-100 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)] border border-[var(--color-brand-line)] text-[10px] font-bold hover:bg-[#E3E6FD] transition-colors cursor-pointer"
                 title="View recruiter details"
               >
                 <User className="w-2.5 h-2.5" /> Recruiter
@@ -259,12 +259,12 @@ const JobCard = React.memo(function JobCard({
           <div className="relative group">
             <button
               onClick={() => onMatchJob(job.id)}
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors flex items-center space-x-1 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-[var(--color-brand-soft)] hover:border-[var(--color-brand-line)] text-[var(--color-muted)] border-[1.5px] border-[var(--color-hairline)] transition-colors flex items-center space-x-1 cursor-pointer"
             >
               {isScoreLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
               ) : (
-                <Zap className="w-3.5 h-3.5 text-blue-600" />
+                <Zap className="w-3.5 h-3.5" style={{ color: "var(--color-brand)" }} />
               )}
               <span>{score !== undefined ? 'Re-Score' : 'Score'}</span>
             </button>
@@ -286,7 +286,7 @@ const JobCard = React.memo(function JobCard({
           <div className="relative group">
             <button
               onClick={() => onTailorJob(job.id)}
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors flex items-center space-x-1 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-white hover:bg-[var(--color-brand-soft)] hover:border-[var(--color-brand-line)] text-[var(--color-muted)] border-[1.5px] border-[var(--color-hairline)] transition-colors flex items-center space-x-1 cursor-pointer"
             >
               {isTailorLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -324,7 +324,7 @@ const JobCard = React.memo(function JobCard({
             }`}
             title={job.state === 'applied' ? 'Mark as not applied' : 'Mark as applied'}
           >
-            <span>{job.state === 'applied' ? '✅' : '○'}</span>
+            <span>{job.state === 'applied' ? <CheckCircle2 className="w-3.5 h-3.5" /> : '○'}</span>
             <span>{job.state === 'applied' ? 'Applied' : 'Mark Applied'}</span>
           </button>
 
@@ -333,7 +333,7 @@ const JobCard = React.memo(function JobCard({
             href={getValidJobUrl(job)}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[var(--color-cta)] hover:bg-[#059669] transition-colors cursor-pointer"
             title="Open original job posting to apply"
           >
             Apply
@@ -393,56 +393,52 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-      {/* Metrics Row - Minimal & Clean */}
+      {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-blue-50/40 border border-blue-100 rounded-xl p-4">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Total Jobs</span>
-            <span className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><Briefcase className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><Briefcase className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-[26px] font-bold text-slate-900 mt-2">{stats.total}</div>
-          <p className="text-[12px] text-slate-500 mt-0.5">Scraped across sources</p>
+          <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{stats.total}</div>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Scraped across sources</p>
         </div>
-
-        <div className="bg-violet-50/40 border border-violet-100 rounded-xl p-4">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Avg Match</span>
-            <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-[26px] font-bold text-slate-900 mt-2">{avgScore}%</div>
-          <p className="text-[12px] text-slate-500 mt-0.5">{scoredJobsCount} scored with AI</p>
+          <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{avgScore}%</div>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>{scoredJobsCount} scored with AI</p>
         </div>
-
-        <div className="bg-green-50/40 border border-green-100 rounded-xl p-4">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Tailored CVs</span>
-            <span className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-[26px] font-bold text-slate-900 mt-2">{tailoredCount}</div>
-          <p className="text-[12px] text-slate-500 mt-0.5">Ready to download as PDF</p>
+          <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{tailoredCount}</div>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Ready to download as PDF</p>
         </div>
-
-        <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-4">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Pending</span>
-            <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center"><Clock className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-[#F1F0FA] text-[var(--color-faint)] flex items-center justify-center"><Clock className="w-3.5 h-3.5" /></span>
           </div>
-          <div className="text-[26px] font-bold text-slate-900 mt-2">{pendingCount}</div>
-          <p className="text-[12px] text-slate-500 mt-0.5">Awaiting batch analysis</p>
+          <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{pendingCount}</div>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Awaiting batch analysis</p>
         </div>
-
-          <div className="bg-green-50/40 border border-green-100 rounded-xl p-4">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-              <span>Applied</span>
-              <span className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
-            </div>
-            <div className="text-[26px] font-bold text-slate-900 mt-2">{appliedCount}</div>
-            <p className="text-[12px] text-slate-500 mt-0.5">Jobs you applied to</p>
+        <div className="card !border-[var(--color-hairline)] rounded-[14px] p-4">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
+            <span>Applied</span>
+            <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
           </div>
+          <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{appliedCount}</div>
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Jobs you applied to</p>
         </div>
+      </div>
 
       {/* Tabs & Batch Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-lg shadow-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white border border-[var(--color-hairline)] p-2.5 rounded-[12px]">
         {/* State Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1">
           {(['all', 'pending', 'tailored', 'ready', 'applied'] as const).map((tab) => {
@@ -461,8 +457,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                 onClick={() => onStateTabChange(tab)}
                 className={`px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1.5 ${
                   activeStateTab === tab
-                    ? 'bg-slate-900 text-white font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-[var(--color-ink)] text-white font-semibold'
+                    : 'text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]'
                 }`}
               >
                 <span>{labels[tab]}</span>
@@ -485,7 +481,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value as any)}
-              className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+              className="bg-white border-[1.5px] border-[var(--color-hairline2)] rounded-[9px] px-2.5 py-1.5 font-semibold cursor-pointer focus:outline-none focus:border-[var(--color-brand)]"
             >
               <option value="all">All Sources</option>
               <option value="LinkedIn">LinkedIn</option>
@@ -533,7 +529,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search role, company, location..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+              className="w-full bg-[#FAFAFF] border-[1.5px] border-[var(--color-hairline2)] rounded-[9px] pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:outline-none focus:border-[var(--color-brand)]"
             />
           </div>
 
@@ -549,8 +545,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
               onClick={() => setSearchTerm(searchTerm === chip ? '' : chip)}
               className={`px-2 py-0.5 rounded border transition-all cursor-pointer ${
                 searchTerm === chip
-                  ? 'bg-blue-600 text-white border-blue-600 font-semibold'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                  ? 'bg-[var(--color-brand)] text-white border-[var(--color-brand)] font-semibold'
+                  : 'bg-white hover:bg-[var(--color-brand-soft)] text-[var(--color-muted)] border-[var(--color-hairline)]'
               }`}
             >
               {chip}
@@ -572,7 +568,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
 
       {/* Job Card List */}
       {paginatedJobs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-200">
+        <div className="text-center py-12 bg-white rounded-[14px] border border-dashed border-[var(--color-hairline2)]">
           <Briefcase className="w-8 h-8 text-slate-400 mx-auto mb-2" />
           <p className="text-xs font-semibold text-slate-700">No postings match your filter</p>
           <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
@@ -631,7 +627,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <button
               onClick={() => setPage(safePage - 1)}
               disabled={safePage <= 1}
-              className="px-2.5 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 rounded border border-[var(--color-hairline)] text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -653,8 +649,8 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
                     onClick={() => setPage(p)}
                     className={`px-2.5 py-1.5 rounded border text-xs font-medium transition-colors cursor-pointer ${
                       p === safePage
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                        ? 'bg-[var(--color-ink)] text-white border-[var(--color-ink)]'
+                        : 'border-[var(--color-hairline)] text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)]'
                     }`}
                   >
                     {p}
@@ -668,7 +664,7 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
             <button
               onClick={() => setPage(safePage + 1)}
               disabled={safePage >= totalPages}
-              className="px-2.5 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 rounded border border-[var(--color-hairline)] text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
