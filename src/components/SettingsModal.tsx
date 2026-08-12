@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { ArrowLeft, User, LockKey, PlugsConnected, Brain, RocketLaunch, EnvelopeSimple, ShieldCheck, SlidersHorizontal, Key, Database, CheckCircle, CaretRight, Warning, Pulse, Play, Check, Eye, EyeSlash, ArrowSquareOut, Info } from '@phosphor-icons/react';
+import { ArrowLeft, User, LockKey, PlugsConnected, Brain, RocketLaunch, EnvelopeSimple, ShieldCheck, SlidersHorizontal, Key, Database, CheckCircle, CaretRight, Warning, Pulse, Check, Eye, EyeSlash, ArrowSquareOut, Info } from '@phosphor-icons/react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
-import { startTour } from './OnboardingTour';
 import pkg from '../../package.json';
 
 interface SettingsModalProps {
@@ -587,7 +586,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Save bar */}
           <div className="st-savebar">
-            <button className="st-btn sm" onClick={startTour}><Play size={13} weight="fill" /> Replay tutorial</button>
             <div className="st-spacer" />
             <button className="st-btn sm">Reset</button>
             <button className="st-btn primary" onClick={handleSave} disabled={isSaving}>
