@@ -179,7 +179,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       });
       const data = await res.json();
       if (data.ok) {
-        setEmailTestState('ok'); setEmailTestMsg('SMTP connected');
+        setEmailTestState('ok');
+        setEmailTestMsg(data.note || 'SMTP connected');
       } else {
         setEmailTestState('error'); setEmailTestMsg(data.error || 'Connection failed.');
       }
@@ -389,7 +390,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="set-row">
               <label>Port</label>
               <input type="text" className="set-mono" style={{ maxWidth: 90 }} value={formData.email.port}
-                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, port: Number(e.target.value) || 0 } })}
+                onChange={(e) => {
+                  const port = Number(e.target.value) || 0;
+                  // Port 465 = implicit SSL; 587/25 = STARTTLS (no SSL toggle).
+                  // Auto-set the toggle so a mismatch can't happen by accident.
+                  const secure = port === 465 ? true : port === 587 || port === 25 ? false : formData.email.secure;
+                  setFormData({ ...formData, email: { ...formData.email, port, secure } });
+                }}
                 placeholder="587" />
               <div className={`set-switch ${formData.email.secure ? 'on' : ''}`}
                 onClick={() => setFormData({ ...formData, email: { ...formData.email, secure: !formData.email.secure } })}

@@ -1285,6 +1285,9 @@ Return valid JSON only, no markdown:
   });
 
   // Verify the configured SMTP credentials (Settings → Email → Test connection).
+  // If the connection fails with a TLS/plaintext mismatch (e.g. SSL on a
+  // STARTTLS port or vice versa), retry once with the secure flag flipped
+  // and report which mode worked.
   app.post('/api/emails/test', async (req, res) => {
     try {
       const { host, port, secure, user, password } = req.body || {};
@@ -1292,15 +1295,34 @@ Return valid JSON only, no markdown:
         res.status(400).json({ ok: false, error: 'Host, username and password are required.' });
         return;
       }
-      const transport = nodemailer.createTransport({
-        host: String(host),
-        port: Number(port) || 587,
-        secure: secure === true,
-        auth: { user: String(user), pass: String(password) },
-        tls: { rejectUnauthorized: false },
-      });
-      await transport.verify();
-      res.json({ ok: true });
+      const attempt = async (useSecure: boolean) => {
+        const transport = nodemailer.createTransport({
+          host: String(host),
+          port: Number(port) || 587,
+          secure: useSecure,
+          auth: { user: String(user), pass: String(password) },
+          tls: { rejectUnauthorized: false },
+        });
+        await transport.verify();
+        return useSecure;
+      };
+      try {
+        await attempt(secure === true);
+        res.json({ ok: true });
+      } catch (firstErr: any) {
+        const msg = String(firstErr?.message || '');
+        const tlsMismatch = /SSL|TLS|wrong version|handshake|ECONNRESET|socket hang up/i.test(msg);
+        if (tlsMismatch) {
+          try {
+            const worked = await attempt(secure !== true);
+            res.json({ ok: true, autoCorrected: true, secureUsed: worked, note: `Connected with ${worked ? 'SSL' : 'STARTTLS'} — the SSL/TLS toggle was adjusted automatically.` });
+            return;
+          } catch { /* fall through to the original error */ }
+        }
+        res.status(400).json({ ok: false, error: msg.includes('Invalid login') || msg.includes('535') || msg.includes('authentication')
+          ? 'Authentication failed — check username and password (Gmail needs an App Password).'
+          : `${msg}${tlsMismatch ? ' — check the SSL/TLS toggle: port 465 uses SSL, port 587 uses STARTTLS.' : ''}` });
+      }
     } catch (err: any) {
       res.status(400).json({ ok: false, error: err?.message || 'Connection failed.' });
     }
