@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, KeyRound, ShieldQuestion, User, Users, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, KeyRound, ShieldQuestion, User, Users, Lock, Search, Sparkles, Inbox, ShieldCheck } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface LoginScreenProps {
@@ -175,6 +175,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
             AI-powered CV tailoring designed to align your experience with the roles you want —
             helping you present your strongest professional story.
           </p>
+
+          <div className="login-feats">
+            <div className="feature-item"><Search size={15} /> Live jobs from 19 sources, scored against your CV</div>
+            <div className="feature-item"><Sparkles size={15} /> One-click tailored CVs with verified keywords</div>
+            <div className="feature-item"><Inbox size={15} /> Recruiters found &amp; cold-emailed from your own mailbox</div>
+            <div className="feature-item"><ShieldCheck size={15} /> Your data stays on your machine — bring your own keys</div>
+          </div>
         </div>
 
         <div className="brand-footer">© 2026 Tailor CV · Created by Atanu</div>
@@ -377,6 +384,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onRegister, o
   .headline { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; color: #0F172A; margin-top: 56px; }
   .headline span { display: block; }
   .description { font-size: 14px; color: #64748B; margin-top: 14px; max-width: 420px; line-height: 1.65; }
+  .login-feats { margin-top: 30px; display: flex; flex-direction: column; gap: 13px; }
+  .feature-item { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 600; color: #475569; }
+  .feature-item svg { width: 15px; height: 15px; color: #2563EB; flex-shrink: 0; }
   .brand-footer { margin-top: auto; font-size: 11px; color: #94A3B8; }
   .form-panel { display: flex; align-items: center; justify-content: center; padding: 48px; background: #F8FAFC; position: relative; }
   .form-container { width: 100%; max-width: 380px; }
