@@ -308,8 +308,9 @@ export default function App() {
     }
   };
 
-  // Save Master CV Handler
-  const handleSaveMasterCv = async (updatedCv: MasterCv) => {
+  // Save Master CV Handler — returns true on success so the editor can show
+  // an honest "Saved!" vs an error (never a fake success on a failed request).
+  const handleSaveMasterCv = async (updatedCv: MasterCv): Promise<boolean> => {
     try {
       const res = await fetch('/api/cv/master', {
         method: 'POST',
@@ -320,9 +321,13 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setMasterCv(data.cv);
+        return true;
       }
+      console.error('Save master CV failed:', res.status);
+      return false;
     } catch (err) {
       console.error('Save master CV error:', err);
+      return false;
     }
   };
 

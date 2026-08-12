@@ -39,7 +39,7 @@ interface MasterCvScreenProps {
   isOpen: boolean;
   onClose: () => void;
   masterCv: MasterCv;
-  onSaveMasterCv: (updated: MasterCv) => Promise<void>;
+  onSaveMasterCv: (updated: MasterCv) => Promise<boolean>;
 }
 
 export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
@@ -51,6 +51,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [formData, setFormData] = useState<MasterCv>(masterCv);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState<number>(75);
   const [template, setTemplate] = useState<TemplateId>(masterCv.templateId || 'harvard');
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
@@ -77,14 +78,33 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
   const wasOpenRef = useRef(false);
 
-  // Reset formData only when the drawer transitions closed → open
+  // Reset formData only when the drawer transitions closed → open.
+  // Fetch the CV fresh from the server so a stale prop (e.g. another tab
+  // saved after this one loaded) can never overwrite newer data on Save.
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
-      setFormData(masterCv);
-      setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
       setSavedSuccess(false);
       setSummarySuggestions([]);
       setSummaryError(null);
+      setSaveError(null);
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await fetch('/api/cv/master');
+          if (cancelled) return;
+          if (res.ok) {
+            const fresh = await res.json();
+            setFormData(fresh);
+            setDownloadFilename(fresh.downloadFilename || fresh.fullName.replace(/ /g, '_') + '_CV');
+            if (fresh.templateId) setTemplate(fresh.templateId as TemplateId);
+            return;
+          }
+        } catch { /* fall back to the prop below */ }
+        if (!cancelled) {
+          setFormData(masterCv);
+          setDownloadFilename(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
+        }
+      })();
     }
     wasOpenRef.current = isOpen;
   }, [isOpen, masterCv]);
@@ -256,10 +276,15 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsSaving(true);
-    await onSaveMasterCv({ ...formData, downloadFilename, templateId: template });
+    const ok = await onSaveMasterCv({ ...formData, downloadFilename, templateId: template });
     setIsSaving(false);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    if (ok) {
+      setSavedSuccess(true);
+      setSaveError(null);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } else {
+      setSaveError('Could not save your CV — check your connection and try again. Your edits are still on screen.');
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -614,6 +639,12 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
               <span className="text-xs text-[var(--color-cta)] font-semibold flex items-center space-x-1">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Saved!</span>
+              </span>
+            )}
+            {saveError && (
+              <span className="text-xs text-[var(--color-danger)] font-semibold flex items-center space-x-1">
+                <AlertTriangle className="w-4 h-4" />
+                <span>{saveError}</span>
               </span>
             )}
 
