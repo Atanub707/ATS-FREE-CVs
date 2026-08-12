@@ -167,12 +167,13 @@ export interface MasterCv {
   templateId?: TemplateId;
 }
 
-export type TemplateId = 'harvard' | 'jake' | 'atanu';
+export type TemplateId = 'harvard' | 'jake' | 'atanu' | 'atanu-pro';
 
 export const CV_TEMPLATES: { id: TemplateId; label: string; description: string }[] = [
   { id: 'harvard', label: 'Harvard', description: 'Official Harvard College bullet-point resume — centered, Calibri' },
   { id: 'jake', label: 'Jake', description: 'Jake Ryan one-pager — black minimal, developer classic' },
   { id: 'atanu', label: 'Atanu', description: 'Custom design — teal single-column with role subtitle' },
+  { id: 'atanu-pro', label: 'Atanu Pro', description: 'Premium navy/blue layout — accent rules, hanging bullets, optional project links' },
 ];
 
 export interface ScraperParams {

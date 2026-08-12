@@ -116,7 +116,7 @@ function sanitizeText(str: any): string {
  * `template` mirrors the frontend CV_TEMPLATE_STYLES so the downloaded PDF matches the preview.
  */
 export function generatePdfBuffer(cv: TailoredCv, template: string = 'harvard'): Promise<Buffer> {
-  if (template !== 'harvard' && template !== 'jake' && template !== 'atanu') {
+  if (template !== 'harvard' && template !== 'jake' && template !== 'atanu' && template !== 'atanu-pro') {
     template = 'harvard';
   }
   if (template === 'harvard') {
@@ -127,6 +127,9 @@ export function generatePdfBuffer(cv: TailoredCv, template: string = 'harvard'):
   }
   if (template === 'atanu') {
     return generateAtanuPdf(cv);
+  }
+  if (template === 'atanu-pro') {
+    return generateAtanuProPdf(cv);
   }
 
   // ── Template styles (must match src/components/CvPdfPreview.tsx CV_TEMPLATE_STYLES) ──
@@ -967,6 +970,268 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         doc.y = certY + Math.max(certH, 12);
         doc.x = leftMargin;
         doc.moveDown(0.25);
+      }
+    }
+
+    doc.end();
+  });
+}
+
+/**
+ * Atanu Pro — premium navy/blue layout (mirrors buildAtanuProBlocks):
+ * navy name + gray title + contact with a 2px accent rule under the header,
+ * uppercase navy section headings with a 2px accent bottom border, bullets
+ * with a 0.25in hanging indent, italic meta lines, 2-column skills grid,
+ * project links only when a public URL exists. US Letter, 0.625in sides,
+ * 0.5in top/bottom — all geometry from the shared cvTemplateConfig.
+ */
+function generateAtanuProPdf(cv: TailoredCv): Promise<Buffer> {
+  const geo = CV_TEMPLATE_GEOMETRY['atanu-pro'];
+  const NAVY = '#1F2937';
+  const ACCENT = '#2563EB';
+  const GRAY = '#4B5563';
+  const FAINT = '#9CA3AF';
+  const MARGIN_X = geo.marginLeft;  // 45 pt (0.625in, shared)
+  const MARGIN_Y = geo.marginTop;   // 36 pt (0.5in, shared)
+  const LINE_GAP = geo.pdfLineGap;  // 1.2 pt (shared)
+  const RULE_H = geo.ruleWidth;     // 2 pt accent border
+  const HANGING = 18;               // 0.25in hanging indent
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const leftMargin = MARGIN_X;
+  const rightMargin = PAGE_W - MARGIN_X;
+  const contentWidth = rightMargin - leftMargin;
+  const pageBottom = PAGE_H - MARGIN_Y;
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'LETTER', margins: { top: MARGIN_Y, bottom: MARGIN_Y, left: MARGIN_X, right: MARGIN_X } });
+    const buffers: Buffer[] = [];
+    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(buffers)));
+    doc.on('error', (err) => reject(err));
+
+    const ensurePageSpace = (neededHeight: number) => {
+      if (doc.y + neededHeight > pageBottom) {
+        doc.addPage();
+        doc.y = MARGIN_Y;
+      }
+    };
+
+    // ── Section heading: uppercase navy + 2px accent bottom border ──
+    const renderSectionHeading = (title: string) => {
+      ensurePageSpace(30);
+      const y0 = doc.y;
+      doc.font('Helvetica-Bold').fontSize(geo.headingSize).fillColor(NAVY).text(title.toUpperCase(), leftMargin, y0, { width: contentWidth });
+      const ruleY = doc.y + 2;
+      doc.fillColor(ACCENT).rect(leftMargin, ruleY, contentWidth, RULE_H).fill();
+      doc.y = ruleY + RULE_H + 4;
+      doc.x = leftMargin;
+    };
+
+    // ── Bullet: accent • with 0.25in hanging indent, atomic ──
+    const renderBullet = (text: string) => {
+      const clean = sanitizeText(String(text || '').replace(/^[*•\-]\s*/, '').trim());
+      if (!clean) return;
+      const tWidth = contentWidth - HANGING;
+      const bulletH = doc.heightOfString(clean, { width: tWidth, lineGap: LINE_GAP });
+      ensurePageSpace((isFinite(bulletH) && bulletH > 0 ? bulletH : 12) + 2);
+      const y0 = doc.y;
+      doc.font('Helvetica').fontSize(geo.bulletSize).fillColor(ACCENT).text('\u2022', leftMargin, y0, { lineBreak: false });
+      doc.fillColor(NAVY).text(clean, leftMargin + HANGING, y0, { width: tWidth, lineGap: LINE_GAP, align: 'justify' });
+      doc.x = leftMargin;
+      doc.moveDown(0.18);
+    };
+
+    // ── Header: name + title + contact + accent rule ──
+    const name = sanitizeText(cv.candidateName).toUpperCase() || 'CANDIDATE NAME';
+    ensurePageSpace(60);
+    doc.font('Helvetica-Bold').fontSize(geo.nameSize).fillColor(NAVY).text(name, leftMargin, doc.y, { width: contentWidth });
+    if (cv.targetRole) {
+      doc.font('Helvetica-Bold').fontSize(geo.roleSize).fillColor(GRAY).text(sanitizeText(cv.targetRole), leftMargin, doc.y, { width: contentWidth });
+    }
+    const contacts = getContactLinks(cv);
+    if (contacts.length > 0) {
+      ensurePageSpace(14);
+      doc.font('Helvetica').fontSize(9).fillColor(GRAY);
+      contacts.forEach((c, i) => {
+        if (i > 0) doc.fillColor(FAINT).text(' | ', leftMargin, doc.y, { continued: true, lineBreak: false });
+        doc.fillColor(c.url ? ACCENT : GRAY);
+        const tx = doc.x;
+        const ty = doc.y;
+        doc.text(c.label, tx, ty, { continued: true, lineBreak: false });
+        if (c.url) {
+          const lw = doc.widthOfString(c.label);
+          const lh = doc.heightOfString(c.label, { width: lw });
+          doc.link(tx, ty, lw, Math.max(lh, 10), normalizeUrl(c.url));
+        }
+      });
+      doc.text('', { lineBreak: true });
+      doc.x = leftMargin;
+    }
+    doc.fillColor(ACCENT).rect(leftMargin, doc.y + 6, contentWidth, RULE_H).fill();
+    doc.y = doc.y + 6 + RULE_H + 8;
+    doc.x = leftMargin;
+
+    // ── Summary ──
+    if (cv.professionalSummary) {
+      const s = sanitizeText(cv.professionalSummary);
+      if (s) {
+        renderSectionHeading('Summary');
+        ensurePageSpace(18);
+        doc.font('Helvetica').fontSize(geo.bodySize).fillColor(NAVY).text(s, leftMargin, doc.y, { width: contentWidth, align: 'justify', lineGap: LINE_GAP });
+        doc.x = leftMargin;
+        doc.moveDown(0.2);
+      }
+    }
+
+    // ── Skills — 2-column row-wise grid (shared column width) ──
+    const skillCats = Array.isArray(cv.technicalSkills)
+      ? cv.technicalSkills
+          .map((cat) => ({ name: sanitizeText(cat.category), list: Array.isArray(cat.skills) ? cat.skills.map((s) => sanitizeText(s)).filter(Boolean).join(', ') : '' }))
+          .filter((c) => c.name || c.list)
+      : [];
+    const useCompetencies = skillCats.length === 0 && Array.isArray(cv.coreCompetencies) && cv.coreCompetencies.length > 0;
+    if (skillCats.length > 0 || useCompetencies) {
+      renderSectionHeading('Skills');
+      if (useCompetencies) {
+        ensurePageSpace(15);
+        doc.font('Helvetica').fontSize(geo.bodySize).fillColor(NAVY).text(
+          cv.coreCompetencies.map((c) => sanitizeText(c)).filter(Boolean).join(', '),
+          leftMargin, doc.y, { width: contentWidth, lineGap: LINE_GAP }
+        );
+        doc.x = leftMargin;
+        doc.moveDown(0.2);
+      } else {
+        const colGap = geo.skillsColumnGap; // 18 pt (shared)
+        const colW = cvSkillsColumnWidth('atanu-pro'); // (contentWidth - colGap) / 2
+        const leftX = leftMargin;
+        const rightX = leftMargin + colW + colGap;
+        const cellText = (cat: { name: string; list: string }) => (cat.name ? `${cat.name}: ${cat.list}` : cat.list);
+        const cellHeight = (cat: { name: string; list: string }) => Math.max(0, doc.heightOfString(cellText(cat), { width: colW, lineGap: LINE_GAP }));
+        const rowGap = 2.5;
+
+        for (let i = 0; i < skillCats.length; i += 2) {
+          const left = skillCats[i];
+          const right = skillCats[i + 1];
+          const rowH = Math.max(left ? cellHeight(left) : 0, right ? cellHeight(right) : 0) + rowGap;
+          ensurePageSpace(rowH + 4);
+          const rowY = doc.y;
+          if (left) {
+            doc.font('Helvetica-Bold').fontSize(geo.skillCategorySize).fillColor(NAVY);
+            doc.text(left.name ? left.name + ': ' : '', leftX, rowY, { continued: true, width: colW });
+            doc.font('Helvetica').fillColor(GRAY).text(left.list, { width: colW, lineGap: LINE_GAP });
+          }
+          if (right) {
+            doc.font('Helvetica-Bold').fontSize(geo.skillCategorySize).fillColor(NAVY);
+            doc.text(right.name ? right.name + ': ' : '', rightX, rowY, { continued: true, width: colW });
+            doc.font('Helvetica').fillColor(GRAY).text(right.list, { width: colW, lineGap: LINE_GAP });
+          }
+          doc.y = rowY + rowH;
+          doc.x = leftMargin;
+        }
+        doc.moveDown(0.2);
+      }
+    }
+
+    // ── Experience ──
+    if (cv.workExperience && cv.workExperience.length > 0) {
+      renderSectionHeading('Experience');
+      for (const exp of cv.workExperience) {
+        if (!exp) continue;
+        ensurePageSpace(24);
+        const title = sanitizeText(exp.title);
+        const company = sanitizeText(exp.company);
+        const period = sanitizeText(exp.dates);
+        const loc = sanitizeText(exp.location);
+        const y0 = doc.y;
+        const leftText = title + (company ? '  \u2014  ' + company : '');
+        const leftW = contentWidth - 140;
+        doc.font('Helvetica-Bold').fontSize(geo.expTitleSize).fillColor(NAVY);
+        const leftH = doc.heightOfString(leftText, { width: leftW });
+        doc.text(title, leftMargin, y0, { continued: true });
+        doc.font('Helvetica').fillColor(GRAY).text(company ? '  \u2014  ' + company : '', { width: leftW });
+        doc.x = leftMargin;
+        const meta = [period, loc].filter(Boolean).join('  |  ');
+        if (meta) {
+          doc.font('Helvetica-Oblique').fontSize(8.5).fillColor(GRAY).text(meta, leftMargin + leftW, y0 + Math.max(0, leftH - 12), { width: 140 - 6, align: 'right' });
+          doc.x = leftMargin;
+        }
+        doc.y = y0 + Math.max(leftH, 12);
+        for (const hl of exp.highlights || []) {
+          renderBullet(hl);
+        }
+        doc.moveDown(0.1);
+      }
+    }
+
+    // ── Projects — link only when a public URL exists ──
+    if (cv.projects && cv.projects.length > 0) {
+      renderSectionHeading('Projects');
+      for (const p of cv.projects) {
+        if (!p) continue;
+        ensurePageSpace(20);
+        const pName = sanitizeText(p.name);
+        const pDates = sanitizeText(p.dates);
+        const pDesc = sanitizeText(p.description);
+        const y0 = doc.y;
+        doc.font('Helvetica-Bold').fontSize(geo.expTitleSize).fillColor(NAVY).text(pName, leftMargin, y0, { continued: true });
+        doc.x = leftMargin;
+        if (pDates) {
+          doc.font('Helvetica-Oblique').fontSize(8.5).fillColor(GRAY).text('  [' + pDates + ']', { continued: true });
+          doc.x = leftMargin;
+        }
+        doc.text('', { lineBreak: true });
+        if (pDesc) {
+          ensurePageSpace(12);
+          doc.font('Helvetica').fontSize(geo.bodySize).fillColor(NAVY).text(pDesc, leftMargin, doc.y, { width: contentWidth, lineGap: LINE_GAP, align: 'justify' });
+          doc.x = leftMargin;
+        }
+        if (p.link) {
+          const link = normalizeUrl(p.link);
+          ensurePageSpace(12);
+          const lx = leftMargin;
+          const ly = doc.y;
+          doc.font('Helvetica').fontSize(geo.bodySize).fillColor(ACCENT).text(sanitizeText(p.link), lx, ly, { width: contentWidth });
+          const lw = doc.widthOfString(sanitizeText(p.link));
+          const lh = doc.heightOfString(sanitizeText(p.link), { width: contentWidth });
+          doc.link(lx, ly, Math.min(lw, contentWidth), Math.max(lh, 10), link);
+          doc.x = leftMargin;
+        }
+        doc.moveDown(0.15);
+      }
+    }
+
+    // ── Education ──
+    if (cv.education && cv.education.length > 0) {
+      renderSectionHeading('Education');
+      for (const e of cv.education) {
+        if (!e) continue;
+        ensurePageSpace(14);
+        const inst = sanitizeText(e.institution);
+        const deg = sanitizeText(e.degree);
+        const dates = sanitizeText(e.dates);
+        doc.font('Helvetica-Bold').fontSize(geo.bodySize).fillColor(NAVY).text(inst, leftMargin, doc.y, { continued: true });
+        doc.font('Helvetica').fillColor(NAVY).text(deg ? '  \u2014  ' + deg : '', { continued: true });
+        doc.font('Helvetica-Oblique').fillColor(GRAY).text(dates ? '   ' + dates : '', { continued: true });
+        doc.text('', { lineBreak: true });
+        doc.x = leftMargin;
+        doc.moveDown(0.05);
+      }
+    }
+
+    // ── Certifications ──
+    if (cv.certifications && cv.certifications.length > 0) {
+      renderSectionHeading('Certifications');
+      for (const cert of cv.certifications) {
+        let nameT = '';
+        let issuer = '';
+        if (typeof cert === 'string') nameT = cert;
+        else { nameT = cert.name || ''; issuer = cert.issuer || ''; }
+        ensurePageSpace(12);
+        doc.font('Helvetica-Bold').fontSize(geo.bodySize).fillColor(NAVY).text(issuer ? issuer + '  \u2014  ' : '', leftMargin, doc.y, { continued: true });
+        doc.font('Helvetica').fillColor(NAVY).text(nameT, { width: contentWidth });
+        doc.x = leftMargin;
+        doc.moveDown(0.05);
       }
     }
 

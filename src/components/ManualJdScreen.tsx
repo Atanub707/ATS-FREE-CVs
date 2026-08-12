@@ -157,7 +157,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // Template selector for the preview + PDF download (defaults to the
   // Master CV's template). Declared here — BEFORE the isOpen guard — so
   // the hook count never changes between renders.
-  const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu'>(masterCv?.templateId || 'harvard');
+  const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu' | 'atanu-pro'>(masterCv?.templateId || 'harvard');
 
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
@@ -751,7 +751,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 {([
                   { id: 'harvard', label: 'Harvard' },
                   { id: 'jake', label: 'Jake' },
-                  { id: 'atanu', label: 'Atanu' },
+                  { id: 'atanu', label: 'Atanu' }, { id: 'atanu-pro', label: 'Atanu Pro' },
                 ] as const).map((t) => (
                   <button
                     key={t.id}

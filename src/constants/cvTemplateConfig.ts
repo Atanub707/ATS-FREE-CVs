@@ -77,6 +77,16 @@ export const CV_TEMPLATE_GEOMETRY: Record<TemplateId, CvTemplateGeometry> = {
     sectionSpacing: 10, skillRowSpacing: 2.5,
     accent: '#111111', roleColor: '#111111', ruleWidth: 0, nameWeight: 700,
   },
+  'atanu-pro': {
+    // 0.5in top/bottom, 0.625in left/right — US Letter box from the spec.
+    marginLeft: 45, marginRight: 45, marginTop: 36, marginBottom: 36,
+    skillsColumnGap: 18,
+    nameSize: 22, roleSize: 11, headingSize: 11, expTitleSize: 10.5,
+    bodySize: 9.5, bulletSize: 9.5, skillCategorySize: 9.5,
+    bodyLineHeight: 1.42, pdfLineGap: 1.2,
+    sectionSpacing: 10, skillRowSpacing: 4,
+    accent: '#2563EB', roleColor: '#4B5563', ruleWidth: 2, nameWeight: 800,
+  },
 };
 
 export function cvTemplateGeometry(template: TemplateId): CvTemplateGeometry {

@@ -705,7 +705,7 @@ async function startServer() {
 
       const safeName = m.fullName.replace(/ /g, '_');
       const filename = `${safeName}_Master_CV`;
-      const template = (req.query.template as string) || (['harvard', 'jake', 'atanu'].includes(m.templateId || '') ? m.templateId : 'harvard');
+      const template = (req.query.template as string) || (['harvard', 'jake', 'atanu', 'atanu-pro'].includes(m.templateId || '') ? m.templateId : 'harvard');
 
       if (format === 'pdf') {
         const pdfBuffer = await generatePdfBuffer(masterAsTailored, template);
@@ -1593,8 +1593,8 @@ Return valid JSON only — NO markdown, NO code fences:
       // Template: explicit ?template= wins (Manual JD selector); otherwise
       // the Master CV's template is the default.
       const requestedTemplate = req.query.template as string | undefined;
-      const masterTemplate = ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
-      const effectiveTemplate = requestedTemplate && ['harvard', 'jake', 'atanu'].includes(requestedTemplate) ? requestedTemplate : masterTemplate;
+      const masterTemplate = ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard';
+      const effectiveTemplate = requestedTemplate && ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(requestedTemplate) ? requestedTemplate : masterTemplate;
 
       if (format === 'pdf') {
         const pdfBuffer = await generatePdfBuffer(data.tailoredCv, effectiveTemplate);
@@ -1736,7 +1736,7 @@ Return valid JSON only — NO markdown, NO code fences:
         return;
       }
 
-      const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
+      const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
 
       const safeName = job.tailoredCv.candidateName.replace(/ /g, '_');
       const safeCompany = job.company.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1766,7 +1766,7 @@ Return valid JSON only — NO markdown, NO code fences:
       const baseName = `${safeName}_${safeCompany}`;
 
       if (format === 'pdf') {
-        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);
@@ -1776,7 +1776,7 @@ Return valid JSON only — NO markdown, NO code fences:
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.txt"`);
         res.send(textCv);
       } else {
-        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
+        const pdfBuffer = await generatePdfBuffer(job.tailoredCv, ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(getMasterCv()?.templateId || '') ? getMasterCv()?.templateId : 'harvard');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
         res.send(pdfBuffer);

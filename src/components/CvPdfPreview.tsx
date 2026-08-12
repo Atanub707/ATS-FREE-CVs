@@ -108,28 +108,36 @@ const pt = (v: number, zoom: number) => Math.round(v * (zoom / 100));
 export interface CvTemplateStyle {
   accent: string;           // section headers / rules
   nameSize: number;
+  roleSize: number;
+  headingSize: number;
+  expTitleSize: number;
+  skillCategorySize: number;
   roleColor: string;
   ruleWidth: number;        // section rule thickness
   bodySize: number;
   bulletSize: number;
-  sectionGap: number;       // spacing before a section title
-  expTitleSize: number;
+  sectionSpacing: number;   // spacing before a section title
+  sectionGap: number;       // legacy alias of sectionSpacing
   lineHeight: number;
   nameWeight: number;
   skillsColumnGap: number;  // 0 = single column
 }
 
 // Derived from the shared geometry config — never defined twice.
-function toTemplateStyle(g: (typeof CV_TEMPLATE_GEOMETRY)['harvard']): CvTemplateStyle {
+function toTemplateStyle(g: (typeof CV_TEMPLATE_GEOMETRY)[TemplateId]): CvTemplateStyle {
   return {
     accent: g.accent,
     nameSize: g.nameSize,
+    roleSize: g.roleSize,
+    headingSize: g.headingSize,
+    expTitleSize: g.expTitleSize,
+    skillCategorySize: g.skillCategorySize,
     roleColor: g.roleColor,
     ruleWidth: g.ruleWidth,
     bodySize: g.bodySize,
     bulletSize: g.bulletSize,
+    sectionSpacing: g.sectionSpacing,
     sectionGap: g.sectionSpacing,
-    expTitleSize: g.expTitleSize,
     lineHeight: g.bodyLineHeight,
     nameWeight: g.nameWeight,
     skillsColumnGap: g.skillsColumnGap,
@@ -140,6 +148,7 @@ export const CV_TEMPLATE_STYLES: Record<TemplateId, CvTemplateStyle> = {
   'harvard': toTemplateStyle(CV_TEMPLATE_GEOMETRY.harvard),
   'jake': toTemplateStyle(CV_TEMPLATE_GEOMETRY.jake),
   'atanu': toTemplateStyle(CV_TEMPLATE_GEOMETRY.atanu),
+  'atanu-pro': toTemplateStyle(CV_TEMPLATE_GEOMETRY['atanu-pro']),
 };
 // A single atomic layout unit. `keepAfter` mirrors pdfkit's ensurePageSpace:
 // the block requires at least that many pt to remain below it, otherwise it
@@ -167,7 +176,7 @@ interface CvPdfPreviewProps {
  * experience headers keep with their content; bullets are atomic).
  */
 export const CvPdfPreview: React.FC<CvPdfPreviewProps> = ({ cv, zoom = 100, template = 'harvard', onPageCount, fitToWidth = false }) => {
-  const safeTemplate: TemplateId = template === 'jake' || template === 'atanu' || template === 'harvard' ? template : 'harvard';
+  const safeTemplate: TemplateId = template === 'jake' || template === 'atanu' || template === 'harvard' || template === 'atanu-pro' ? template : 'harvard';
   const style = CV_TEMPLATE_STYLES[safeTemplate] || CV_TEMPLATE_STYLES.harvard;
   // Margins/content from the SHARED geometry (identical to the PDF).
   const marginX = CV_TEMPLATE_GEOMETRY[safeTemplate].marginLeft;
@@ -298,6 +307,9 @@ function buildBlocks(cv: PdfCvShape, s: CvTemplateStyle, template: TemplateId = 
   }
   if (template === 'atanu') {
     return buildAtanuBlocks(cv, s);
+  }
+  if (template === 'atanu-pro') {
+    return buildAtanuProBlocks(cv, s);
   }
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
@@ -950,6 +962,221 @@ const HarvardBullet: React.FC<{ zoom: number; text: string }> = ({ zoom, text })
 // ── Jake — Jake Ryan one-page developer resume ──
 // black ink, uppercase name left, '—' bullets, black rules under
 // headings, 2-column skills grid, tight 9px type.
+// ── Atanu Pro — premium navy/blue layout ──
+// navy name + gray title + contact, 2px accent rule under the header,
+// uppercase section headings with a 2px accent bottom border, bullets with
+// a 0.25in hanging indent, italic meta lines, 2-column skills grid,
+// projects with links shown only when a public URL exists.
+function buildAtanuProBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
+  const blocks: CvBlock[] = [];
+  const NAVY = '#1F2937';
+  const GRAY = '#4B5563';
+  const contacts = getContactItems(cv);
+  const HANGING = 18; // 0.25in
+
+  const section = (title: string): CvBlock => ({
+    key: `sec-${title}`,
+    keepAfter: 36,
+    render: (zoom) => (
+      <div style={{ margin: `${pt(s.sectionSpacing, zoom)}px 0 ${pt(6, zoom)}px` }}>
+        <div
+          style={{
+            fontSize: `${pt(s.headingSize, zoom)}px`,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '1.2px',
+            color: NAVY,
+            paddingBottom: pt(4, zoom),
+            borderBottom: `${Math.max(1, Math.round(pt(s.ruleWidth, zoom)))}px solid ${s.accent}`,
+          }}
+        >
+          {title}
+        </div>
+      </div>
+    ),
+  });
+
+  // 1. Header: name + title + contact + accent rule
+  blocks.push({
+    key: 'header',
+    render: (zoom) => (
+      <div style={{ marginBottom: pt(8, zoom) }}>
+        <div style={{ fontSize: `${pt(s.nameSize, zoom)}px`, fontWeight: 800, color: NAVY, letterSpacing: '0.5px' }}>
+          {cv.candidateName || 'CANDIDATE NAME'}
+        </div>
+        {cv.targetRole && (
+          <div style={{ fontSize: `${pt(s.roleSize, zoom)}px`, fontWeight: 600, color: s.roleColor, marginTop: pt(2, zoom) }}>
+            {cv.targetRole}
+          </div>
+        )}
+        {contacts.length > 0 && (
+          <div style={{ fontSize: `${pt(9, zoom)}px`, color: GRAY, marginTop: pt(4, zoom) }}>
+            {contacts.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span style={{ color: '#9CA3AF', padding: `0 ${pt(5, zoom)}px` }}>|</span>}
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: s.accent, textDecoration: 'none' }}>{c.label}</a>
+                ) : (
+                  <span>{c.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+        <div style={{ height: Math.max(1, Math.round(pt(s.ruleWidth, zoom))), background: s.accent, marginTop: pt(10, zoom) }} />
+      </div>
+    ),
+  });
+
+  // 2. Summary
+  if (cv.professionalSummary) {
+    blocks.push(section('Summary'));
+    blocks.push({
+      key: 'summary',
+      render: (zoom) => (
+        <div style={{ color: NAVY, fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, textAlign: 'justify', paddingBottom: pt(4, zoom) }}>
+          {cv.professionalSummary}
+        </div>
+      ),
+    });
+  }
+
+  // 3. Skills — 2-column grid (shared column gap)
+  const skillCats = cv.technicalSkills || [];
+  const hasCore = (cv.coreCompetencies || []).length > 0;
+  if (skillCats.length > 0 || hasCore) {
+    blocks.push(section('Skills'));
+    if (skillCats.length > 0) {
+      blocks.push({
+        key: 'skills-grid',
+        render: (zoom) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: pt(s.skillsColumnGap, zoom), paddingBottom: pt(4, zoom) }}>
+            {skillCats.map((cat, i) => (
+              <div key={i} style={{ fontSize: `${pt(s.skillCategorySize, zoom)}px`, lineHeight: s.lineHeight, marginBottom: pt(2.5, zoom), color: NAVY }}>
+                <span style={{ fontWeight: 700, color: NAVY }}>{cat.category}: </span>
+                <span style={{ color: GRAY }}>{cat.skills.join(', ')}</span>
+              </div>
+            ))}
+          </div>
+        ),
+      });
+    } else {
+      blocks.push({
+        key: 'skill-competencies',
+        render: (zoom) => (
+          <div style={{ color: NAVY, fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(4, zoom) }}>
+            {cv.coreCompetencies.join(', ')}
+          </div>
+        ),
+      });
+    }
+  }
+
+  // 4. Experience — title/company left, italic dates right, hanging bullets
+  if (cv.workExperience.length > 0) {
+    blocks.push(section('Experience'));
+    cv.workExperience.forEach((exp, i) => {
+      blocks.push({
+        key: `exp-${i}-head`,
+        keepAfter: 28,
+        render: (zoom) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, paddingBottom: pt(2, zoom) }}>
+            <span style={{ fontWeight: 700, fontSize: `${pt(s.expTitleSize, zoom)}px`, color: NAVY }}>
+              {exp.title}
+              {exp.company && <span style={{ color: GRAY }}>{'  —  '}{exp.company}</span>}
+            </span>
+            <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: GRAY, whiteSpace: 'nowrap' }}>
+              {[exp.dates, exp.location].filter(Boolean).join('  |  ')}
+            </span>
+          </div>
+        ),
+      });
+      exp.highlights.forEach((hl, j) => {
+        blocks.push({
+          key: `exp-${i}-b${j}`,
+          render: (zoom) => (
+            <div style={{ display: 'flex', fontSize: `${pt(s.bulletSize, zoom)}px`, lineHeight: s.lineHeight, paddingBottom: pt(2, zoom), paddingLeft: pt(HANGING, zoom) }}>
+              <span style={{ color: s.accent, fontWeight: 700, flexShrink: 0, marginLeft: pt(-HANGING, zoom), width: pt(HANGING, zoom) }}>•</span>
+              <span style={{ color: NAVY, textAlign: 'justify' }}>{String(hl || '').replace(/^[*•\-]\s*/, '').trim()}</span>
+            </div>
+          ),
+        });
+      });
+      blocks.push({ key: `exp-${i}-gap`, render: (zoom) => <div style={{ height: pt(5.5, zoom) }} /> });
+    });
+  }
+
+  // 5. Projects — link line only when a public URL exists
+  if (cv.projects && cv.projects.length > 0) {
+    blocks.push(section('Projects'));
+    cv.projects.forEach((p, i) => {
+      blocks.push({
+        key: `proj-${i}`,
+        keepAfter: 20,
+        render: (zoom) => (
+          <div style={{ marginBottom: pt(4, zoom) }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: `${pt(s.expTitleSize, zoom)}px`, color: NAVY }}>{p.name}</span>
+              {p.dates && <span style={{ fontStyle: 'italic', fontSize: `${pt(8.5, zoom)}px`, color: GRAY }}>[{p.dates}]</span>}
+            </div>
+            {p.description && (
+              <div style={{ fontSize: `${pt(s.bodySize, zoom)}px`, color: NAVY, lineHeight: s.lineHeight, textAlign: 'justify', marginTop: pt(2, zoom) }}>
+                {p.description}
+              </div>
+            )}
+            {p.link && (
+              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: `${pt(s.bodySize, zoom)}px`, color: s.accent, textDecoration: 'none' }}>
+                {p.link}
+              </a>
+            )}
+          </div>
+        ),
+      });
+    });
+  }
+
+  // 6. Education — italic dates
+  if (cv.education.length > 0) {
+    blocks.push(section('Education'));
+    cv.education.forEach((e, i) => {
+      blocks.push({
+        key: `edu-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, marginBottom: pt(2, zoom) }}>
+            <span style={{ fontWeight: 700, color: NAVY }}>{e.institution}</span>
+            <span style={{ color: NAVY }}>
+              {(e.degree ? '  —  ' + e.degree : '')}
+              {e.dates ? <span style={{ fontStyle: 'italic', color: GRAY }}>{'   ' + e.dates}</span> : null}
+            </span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  // 7. Certifications
+  if (cv.certifications && cv.certifications.length > 0) {
+    blocks.push(section('Certifications'));
+    cv.certifications.forEach((cert, i) => {
+      let nameT = '';
+      let issuer = '';
+      if (typeof cert === 'string') nameT = cert;
+      else { nameT = cert.name || ''; issuer = cert.issuer || ''; }
+      blocks.push({
+        key: `cert-${i}`,
+        render: (zoom) => (
+          <div style={{ fontSize: `${pt(s.bodySize, zoom)}px`, lineHeight: s.lineHeight, marginBottom: pt(2, zoom) }}>
+            {issuer && <span style={{ fontWeight: 700, color: NAVY }}>{issuer}</span>}
+            <span style={{ color: NAVY }}>{(issuer ? '  —  ' : '') + nameT}</span>
+          </div>
+        ),
+      });
+    });
+  }
+
+  return blocks;
+}
+
 function buildJakeBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
   const blocks: CvBlock[] = [];
   const contacts = getContactItems(cv);
