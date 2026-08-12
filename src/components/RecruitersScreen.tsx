@@ -258,9 +258,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const setFollowUp = async (c: Contact, days: number) => {
-    const date = new Date(Date.now() + days * 86400000).toISOString();
+    const date = days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString();
     await fetch(`/api/contacts/${c.id}/followup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date }) });
-    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followUpAt: date, followedUp: false } : x)));
+    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followUpAt: date || undefined, followedUp: false } : x)));
     showToast(days === 0 ? 'Follow-up cleared' : `Follow-up in ${days} day${days === 1 ? '' : 's'}`);
   };
 
