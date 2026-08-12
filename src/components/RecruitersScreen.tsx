@@ -54,7 +54,21 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [composeMsg, setComposeMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [attachMode, setAttachMode] = useState<'none' | 'master' | 'file'>('none');
   const [attachFile, setAttachFile] = useState<{ name: string; data: string } | null>(null);
+  const [masterCvName, setMasterCvName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load the saved Master CV's filename so the attachment chip shows the
+  // real CV name (validated on the Master CV screen), not a generic label.
+  const loadMasterCvName = async () => {
+    try {
+      const res = await fetch('/api/cv/master');
+      if (!res.ok) return;
+      const mc = await res.json();
+      if (mc?.fullName) {
+        setMasterCvName(`${mc.downloadFilename || mc.fullName.replace(/\s+/g, '_') + '_CV'}.pdf`);
+      }
+    } catch { /* ignore */ }
+  };
 
   const pickAttachmentFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,6 +92,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setComposeMsg(null);
     setAttachMode('none');
     setAttachFile(null);
+    loadMasterCvName();
   };
 
   const draftEmail = async () => {
@@ -420,9 +435,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                   </button>
                   <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg" className="hidden" onChange={pickAttachmentFile} />
                   {attachMode === 'master' && (
-                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold">
-                      <FileText size={12} /> Your Master CV (auto-generated PDF)
-                      <button type="button" onClick={() => setAttachMode('none')} className="text-blue-400 hover:text-red-600 cursor-pointer" aria-label="Remove attachment">
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
+                      <FileText size={12} /> <span className="truncate max-w-[180px]">{masterCvName || 'Master CV'}</span>
+                      <button type="button" onClick={() => setAttachMode('none')} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
                         <X size={12} />
                       </button>
                     </span>

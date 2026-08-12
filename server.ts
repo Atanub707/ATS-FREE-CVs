@@ -1232,7 +1232,8 @@ Return valid JSON only, no markdown:
         if (m && m.fullName) {
           const masterTemplate = ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(m.templateId || '') ? m.templateId : 'harvard';
           const pdf = await generatePdfBuffer(masterCvToTailoredCv(m), masterTemplate);
-          attachments.push({ filename: `${m.fullName.replace(/\s+/g, '_')}_CV.pdf`, content: pdf });
+          const cvName = m.downloadFilename || `${m.fullName.replace(/\s+/g, '_')}_CV`;
+          attachments.push({ filename: `${cvName}.pdf`, content: pdf });
         }
       }
       if (attachment && typeof attachment.filename === 'string' && typeof attachment.data === 'string') {
