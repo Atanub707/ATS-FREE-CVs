@@ -31,6 +31,8 @@ interface Contact {
 
 interface SentEmail { id: string; recipient: string; subject: string; body: string; attachmentName: string | null; status: string; sentAt: string; }
 
+interface EmailTemplate { id: string; name: string; subject: string; body: string; createdAt: string; }
+
 interface RecruitersScreenProps {
   isOpen: boolean;
   onClose: () => void;
@@ -79,6 +81,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [emailHistory, setEmailHistory] = useState<Record<string, SentEmail[]>>({});
   const [historyFor, setHistoryFor] = useState<Contact | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -128,6 +133,38 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         setEmailHistory((h) => ({ ...h, [c.id]: d.emails || [] }));
       } catch { /* ignore */ }
     }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const res = await fetch('/api/emails/templates');
+      const d = await res.json();
+      setTemplates(d.templates || []);
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => { if (composeContact) loadTemplates(); }, [composeContact]);
+
+  const applyTemplate = (t: EmailTemplate) => {
+    setComposeSubject(t.subject);
+    setComposeBody(t.body);
+    setComposeMsg(null);
+  };
+
+  const saveTemplate = async () => {
+    if (!templateName.trim() || !composeSubject.trim() || !composeBody.trim()) return;
+    const res = await fetch('/api/emails/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: templateName, subject: composeSubject, body: composeBody }),
+    });
+    if (res.ok) { setTemplateName(''); setSaveTemplateOpen(false); loadTemplates(); showToast('Template saved'); }
+  };
+
+  const deleteTemplate = async (id: string) => {
+    await fetch(`/api/emails/templates/${id}`, { method: 'DELETE' });
+    setTemplates((t) => t.filter((x) => x.id !== id));
+    showToast('Template deleted');
   };
 
   const draftEmail = async () => {
@@ -582,6 +619,55 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                 <input type="text" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400" />
               </div>
+              <div className="flex items-center gap-2">
+                <label className="block text-[11px] font-semibold text-slate-500">Template</label>
+                <select
+                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-700 outline-none focus:border-blue-400"
+                  value=""
+                  onChange={(e) => {
+                    const t = templates.find((x) => x.id === e.target.value);
+                    if (t) applyTemplate(t);
+                    e.target.value = '';
+                  }}
+                >
+                  <option value="" disabled>Apply a saved template…</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setSaveTemplateOpen((v) => !v)}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:border-blue-300 cursor-pointer"
+                >
+                  Save as template
+                </button>
+              </div>
+              {saveTemplateOpen && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Template name (e.g. Intro — DevOps)"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] text-slate-800 outline-none focus:border-blue-400"
+                  />
+                  <button onClick={saveTemplate} disabled={!templateName.trim()}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-slate-900 disabled:opacity-40 cursor-pointer">
+                    Save
+                  </button>
+                </div>
+              )}
+              {templates.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {templates.map((t) => (
+                    <span key={t.id} className="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5 text-[10.5px] font-semibold text-slate-600">
+                      {t.name}
+                      <button onClick={() => deleteTemplate(t.id)} className="text-slate-400 hover:text-red-600 cursor-pointer" title="Delete template">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-1">Body</label>
                 <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9}
