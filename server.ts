@@ -89,9 +89,20 @@ import {
   listContacts,
   getContactById,
   recordContactEmail,
+  recordContactEmailDetail,
   listContactCompanies,
   listContactsForJob,
   setContactHidden,
+  setContactFollowUp,
+  setContactFollowedUp,
+  setContactPipeline,
+  addContactNote,
+  listContactEmails,
+  listEmailTemplates,
+  saveEmailTemplate,
+  deleteEmailTemplate,
+  getContactStats,
+  listContactsCsv,
   backfillContacts,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
@@ -1140,6 +1151,114 @@ Return valid JSON only — NO markdown, NO code fences:
     }
   });
 
+  app.get('/api/contacts/stats', (req, res) => {
+    try {
+      res.json({ stats: getContactStats() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/notes', (req, res) => {
+    try {
+      const note = typeof req.body?.note === 'string' ? req.body.note : '';
+      res.json({ success: addContactNote(req.params.id, note) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/followup', (req, res) => {
+    try {
+      const date = typeof req.body?.date === 'string' && req.body.date ? req.body.date : null;
+      res.json({ success: setContactFollowUp(req.params.id, date) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/followedup', (req, res) => {
+    try {
+      res.json({ success: setContactFollowedUp(req.params.id, !!req.body?.value) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/:id/pipeline', (req, res) => {
+    try {
+      const status = typeof req.body?.status === 'string' ? req.body.status : null;
+      res.json({ success: setContactPipeline(req.params.id, status) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/contacts/:id/emails', (req, res) => {
+    try {
+      res.json({ emails: listContactEmails(req.params.id) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/emails/templates', (req, res) => {
+    try {
+      res.json({ templates: listEmailTemplates() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/emails/templates', (req, res) => {
+    try {
+      const { name, subject, body } = req.body || {};
+      if (!name?.trim() || !subject?.trim() || !body?.trim()) {
+        return res.status(400).json({ error: 'Name, subject and body are required.' });
+      }
+      res.json({ template: saveEmailTemplate({ name, subject, body }) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/emails/templates/:id', (req, res) => {
+    try {
+      res.json({ success: deleteEmailTemplate(req.params.id) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/contacts/export', (req, res) => {
+    try {
+      const rows = listContactsCsv();
+      const esc = (v: string | null): string => {
+        const s = v ?? '';
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [
+        'Email,Name,Company,Job Role,Phone,WhatsApp,LinkedIn,Type,Context,Last Seen',
+        ...rows.map((r) => [r.email, r.name, r.company, r.jobRole, r.phone, r.whatsapp ? 'yes' : '', r.recruiterUrl, r.typeLabel, r.context, r.lastSeen].map(esc).join(',')),
+      ];
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="recruiters.csv"');
+      res.send('\uFEFF' + lines.join('\r\n'));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/contacts/bulk-hide', (req, res) => {
+    try {
+      const ids: string[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+      const count = ids.filter((id) => setContactHidden(id, true)).length;
+      res.json({ success: count > 0, count });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ── Cold email (L2 SMTP) ────────────────────────────────────────────────
 
   // AI-draft a cold email for a recruiter contact (personalized from their
@@ -1275,10 +1394,25 @@ Return valid JSON only, no markdown:
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
-      if (contactId) recordContactEmail(contactId, 'sent', info.messageId);
+      if (contactId) {
+        recordContactEmail(contactId, 'sent', info.messageId);
+        recordContactEmailDetail(contactId, {
+          recipient: to, subject, body,
+          attachmentName: attachMaster ? 'Master CV' : (attachment?.filename || null),
+          status: 'sent',
+        });
+      }
       res.json({ success: true, messageId: info.messageId });
     } catch (err: any) {
-      if (req.body?.contactId) recordContactEmail(req.body.contactId, 'failed');
+      if (req.body?.contactId) {
+        recordContactEmail(req.body.contactId, 'failed');
+        recordContactEmailDetail(req.body.contactId, {
+          recipient: req.body.to,
+          subject: req.body.subject,
+          body: req.body.body,
+          status: 'failed',
+        });
+      }
       console.error('Email send error:', err);
       res.status(500).json({ error: err?.message || 'Failed to send email.' });
     }
