@@ -8,7 +8,15 @@
   --color-ink: #0F172A;
   --color-muted: #475569;
   --color-faint: #64748B;
-  --color-canvas: #F8FAFC;
+  --color-canvas: #F9FAFB;
+  --color-tint-blue: #EFF6FF;
+  --color-tint-sky: #F0F9FF;
+  --color-tint-violet: #F5F3FF;
+  --color-tint-emerald: #ECFDF5;
+  --color-tint-teal: #F0FDFA;
+  --color-tint-amber: #FFFBEB;
+  --color-tint-orange: #FFF7ED;
+  --color-tint-rose: #FFF1F2;
   --color-hairline: #E2E8F0;
   --color-hairline2: #CBD5E1;
   --color-cta: #059669;

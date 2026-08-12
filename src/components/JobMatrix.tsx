@@ -395,42 +395,42 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-[var(--color-tint-blue)] border border-[var(--color-brand-line)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Total Jobs</span>
-            <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><Briefcase className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-white text-[var(--color-brand)] flex items-center justify-center border border-[var(--color-brand-line)]"><Briefcase className="w-3.5 h-3.5" /></span>
           </div>
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{stats.total}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Scraped across sources</p>
         </div>
-        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-[var(--color-tint-violet)] border border-[#E4E0F5] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Avg Match</span>
-            <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center"><TrendingUp className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-white text-[#7C3AED] flex items-center justify-center border border-[#E4E0F5]"><TrendingUp className="w-3.5 h-3.5" /></span>
           </div>
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{avgScore}%</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>{scoredJobsCount} scored with AI</p>
         </div>
-        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-[var(--color-tint-emerald)] border border-[var(--color-cta-line)] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Tailored CVs</span>
-            <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><Sparkles className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-white text-[var(--color-cta)] flex items-center justify-center border border-[var(--color-cta-line)]"><Sparkles className="w-3.5 h-3.5" /></span>
           </div>
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{tailoredCount}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Ready to download as PDF</p>
         </div>
-        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-[var(--color-tint-amber)] border border-[#FDE68A] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Pending</span>
-            <span className="w-7 h-7 rounded-lg bg-[#F1F0FA] text-[var(--color-faint)] flex items-center justify-center"><Clock className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-white text-[#D97706] flex items-center justify-center border border-[#FDE68A]"><Clock className="w-3.5 h-3.5" /></span>
           </div>
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{pendingCount}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Awaiting batch analysis</p>
         </div>
-        <div className="bg-white border border-[var(--color-hairline)] rounded-[14px] p-4">
+        <div className="bg-[var(--color-tint-sky)] border border-[#BAE6FD] rounded-[14px] p-4">
           <div className="flex items-center justify-between text-xs font-medium" style={{ color: 'var(--color-faint)' }}>
             <span>Applied</span>
-            <span className="w-7 h-7 rounded-lg bg-[var(--color-cta-soft)] text-[var(--color-cta)] flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></span>
+            <span className="w-7 h-7 rounded-lg bg-white text-[#0284C7] flex items-center justify-center border border-[#BAE6FD]"><CheckCircle2 className="w-3.5 h-3.5" /></span>
           </div>
           <div className="text-[26px] font-extrabold mt-2" style={{ color: 'var(--color-ink)' }}>{appliedCount}</div>
           <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-faint)' }}>Jobs you applied to</p>
