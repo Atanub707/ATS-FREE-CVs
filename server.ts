@@ -87,6 +87,8 @@ import {
   addPortalBookmark,
   removePortalBookmark,
   listContacts,
+  getContactById,
+  recordContactEmail,
   listContactCompanies,
   listContactsForJob,
   setContactHidden,
@@ -205,6 +207,47 @@ function fallbackParseCvFromText(rawText: string) {
 }
 
 import { ask } from './server/llm/llmAdapter.js';
+import nodemailer from 'nodemailer';
+
+// Convert the stored Master CV into the TailoredCv shape the PDF generator
+// consumes (same conversion the master-download route uses).
+function masterCvToTailoredCv(m: ReturnType<typeof getMasterCv>): any {
+  return {
+    candidateName: m.fullName,
+    contactInfo: {
+      email: m.email,
+      phone: m.phone,
+      location: m.location,
+      linkedin: m.linkedin,
+      github: m.github,
+      website: m.website,
+    },
+    targetRole: m.experiences[0]?.title || '',
+    professionalSummary: m.summary,
+    coreCompetencies: m.skills.flatMap((s) => s.items),
+    workExperience: m.experiences.map((e) => ({
+      title: e.title,
+      company: e.company,
+      location: e.location,
+      dates: e.dates,
+      highlights: e.responsibilities,
+    })),
+    education: m.education.map((e) => ({
+      degree: e.degree,
+      institution: e.institution,
+      dates: e.dates,
+      details: e.details || '',
+    })),
+    technicalSkills: m.skills.map((s) => ({
+      category: s.category,
+      skills: s.items,
+    })),
+    projects: m.projects || [],
+    certifications: (m.certifications || []).map((c) =>
+      typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
+    ),
+  };
+}
 
 async function parseCvWithLLM(
   input: string | { buffer: Buffer; mimeType: string; originalName: string }
@@ -667,41 +710,7 @@ async function startServer() {
       const m = getMasterCv();
       const format = ((req.query.format as string) || 'pdf').toLowerCase();
 
-      const masterAsTailored = {
-        candidateName: m.fullName,
-        contactInfo: {
-          email: m.email,
-          phone: m.phone,
-          location: m.location,
-          linkedin: m.linkedin,
-          github: m.github,
-          website: m.website,
-        },
-        targetRole: m.experiences[0]?.title || '',
-        professionalSummary: m.summary,
-        coreCompetencies: m.skills.flatMap((s) => s.items),
-        workExperience: m.experiences.map((e) => ({
-          title: e.title,
-          company: e.company,
-          location: e.location,
-          dates: e.dates,
-          highlights: e.responsibilities,
-        })),
-        education: m.education.map((e) => ({
-          degree: e.degree,
-          institution: e.institution,
-          dates: e.dates,
-          details: e.details || '',
-        })),
-        technicalSkills: m.skills.map((s) => ({
-          category: s.category,
-          skills: s.items,
-        })),
-        projects: m.projects || [],
-        certifications: (m.certifications || []).map((c) =>
-          typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
-        ),
-      };
+      const masterAsTailored = masterCvToTailoredCv(m);
 
       const safeName = m.fullName.replace(/ /g, '_');
       const filename = `${safeName}_Master_CV`;
@@ -1128,6 +1137,144 @@ Return valid JSON only — NO markdown, NO code fences:
       res.json({ success: setContactHidden(req.params.id, false) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Cold email (L2 SMTP) ────────────────────────────────────────────────
+
+  // AI-draft a cold email for a recruiter contact (personalized from their
+  // job posting + the candidate's own Master CV). Nothing is sent here.
+  app.post('/api/emails/draft', async (req, res) => {
+    try {
+      const { contactId } = req.body || {};
+      const contact = getContactById(contactId);
+      if (!contact) {
+        res.status(404).json({ error: 'Contact not found.' });
+        return;
+      }
+      const masterCv = getMasterCv();
+      const job = contact.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
+      const name = contact.name || contact.recruiterName || 'there';
+      const company = contact.company || job?.company || 'your company';
+      const role = job?.title || contact.jobRole || 'the role';
+
+      const prompt = `You are a career coach writing a short, professional cold email.
+Recruiter name: ${name}
+Company: ${company}
+Role they are hiring for: ${role}
+Job description (if available): ${(job?.description || '').slice(0, 1200)}
+Candidate: ${masterCv?.fullName || 'the candidate'}
+Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
+Candidate location: ${masterCv?.location || ''}
+
+Rules:
+- 80-120 words, warm but professional, no hype words.
+- First line: reference the role and company naturally.
+- Middle: 2-3 lines connecting the candidate's strongest relevant experience.
+- End with a soft ask (15-minute call).
+- Sign off with the candidate's name only.
+
+Return valid JSON only, no markdown:
+{ "subject": string (max 10 words), "body": string }`;
+
+      const raw = await ask(prompt, 0.5);
+      const parsed = JSON.parse(raw);
+      res.json({
+        success: true,
+        draft: {
+          to: contact.email || '',
+          subject: String(parsed.subject || '').slice(0, 200),
+          body: String(parsed.body || ''),
+        },
+      });
+    } catch (err: any) {
+      console.error('Email draft error:', err);
+      res.status(500).json({ error: 'Failed to draft email.' });
+    }
+  });
+
+  // Send a cold email through the user's own SMTP (from Settings → Email).
+  // Optional attachment: attachMaster generates the Master CV PDF on the
+  // fly; attachment { filename, data(base64) } attaches an uploaded file.
+  app.post('/api/emails/send', async (req, res) => {
+    try {
+      const { contactId, to, subject, body, attachMaster, attachment } = req.body || {};
+      const emailCfg = loadConfig().email;
+      if (!emailCfg.host || !emailCfg.user || !emailCfg.password) {
+        res.status(400).json({ error: 'SMTP is not configured — add it in Settings → Email.' });
+        return;
+      }
+      if (!to || !String(to).includes('@')) {
+        res.status(400).json({ error: 'A valid recipient email is required.' });
+        return;
+      }
+      if (!subject || !body) {
+        res.status(400).json({ error: 'Subject and body are required.' });
+        return;
+      }
+
+      const transport = nodemailer.createTransport({
+        host: emailCfg.host,
+        port: Number(emailCfg.port) || 587,
+        secure: emailCfg.secure === true,
+        auth: { user: emailCfg.user, pass: emailCfg.password },
+        tls: { rejectUnauthorized: false },
+      });
+
+      const fromLabel = (emailCfg.fromName || '').trim();
+      const from = fromLabel ? `"${fromLabel}" <${emailCfg.user}>` : emailCfg.user;
+
+      // Build attachments: Master CV PDF and/or an uploaded file (one of
+      // each max — the UI offers both options, user picks one).
+      const attachments: any[] = [];
+      if (attachMaster) {
+        const m = getMasterCv();
+        if (m && m.fullName) {
+          const masterTemplate = ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(m.templateId || '') ? m.templateId : 'harvard';
+          const pdf = await generatePdfBuffer(masterCvToTailoredCv(m), masterTemplate);
+          attachments.push({ filename: `${m.fullName.replace(/\s+/g, '_')}_CV.pdf`, content: pdf });
+        }
+      }
+      if (attachment && typeof attachment.filename === 'string' && typeof attachment.data === 'string') {
+        attachments.push({ filename: attachment.filename, content: Buffer.from(attachment.data, 'base64') });
+      }
+
+      const info = await transport.sendMail({
+        from,
+        to: String(to).trim(),
+        subject: String(subject),
+        text: String(body),
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+
+      if (contactId) recordContactEmail(contactId, 'sent', info.messageId);
+      res.json({ success: true, messageId: info.messageId });
+    } catch (err: any) {
+      if (req.body?.contactId) recordContactEmail(req.body.contactId, 'failed');
+      console.error('Email send error:', err);
+      res.status(500).json({ error: err?.message || 'Failed to send email.' });
+    }
+  });
+
+  // Verify the configured SMTP credentials (Settings → Email → Test connection).
+  app.post('/api/emails/test', async (req, res) => {
+    try {
+      const { host, port, secure, user, password } = req.body || {};
+      if (!host || !user || !password) {
+        res.status(400).json({ ok: false, error: 'Host, username and password are required.' });
+        return;
+      }
+      const transport = nodemailer.createTransport({
+        host: String(host),
+        port: Number(port) || 587,
+        secure: secure === true,
+        auth: { user: String(user), pass: String(password) },
+        tls: { rejectUnauthorized: false },
+      });
+      await transport.verify();
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err?.message || 'Connection failed.' });
     }
   });
 

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -52,6 +52,23 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [draftBusy, setDraftBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [composeMsg, setComposeMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [attachMode, setAttachMode] = useState<'none' | 'master' | 'file'>('none');
+  const [attachFile, setAttachFile] = useState<{ name: string; data: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pickAttachmentFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = String(reader.result || '').split(',')[1] || '';
+      setAttachFile({ name: file.name, data });
+      setAttachMode('file');
+      setComposeMsg(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const openCompose = (c: Contact) => {
     setComposeContact(c);
@@ -59,6 +76,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setComposeSubject('');
     setComposeBody('');
     setComposeMsg(null);
+    setAttachMode('none');
+    setAttachFile(null);
   };
 
   const draftEmail = async () => {
@@ -88,7 +107,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       const res = await fetch('/api/emails/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: composeContact.id, to: composeTo, subject: composeSubject, body: composeBody }),
+        body: JSON.stringify({
+          contactId: composeContact.id,
+          to: composeTo,
+          subject: composeSubject,
+          body: composeBody,
+          attachMaster: attachMode === 'master',
+          attachment: attachMode === 'file' && attachFile ? { filename: attachFile.name, data: attachFile.data } : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setComposeMsg({ ok: false, text: data.error || 'Send failed.' }); return; }
@@ -370,6 +396,46 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                 <label className="block text-[11px] font-semibold text-slate-500 mb-1">Body</label>
                 <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400 resize-none leading-relaxed" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Attach CV</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => { setAttachMode(attachMode === 'master' ? 'none' : 'master'); setAttachFile(null); setComposeMsg(null); }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
+                      attachMode === 'master' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                    }`}
+                  >
+                    <FileText size={13} /> Master CV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
+                      attachMode === 'file' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                    }`}
+                  >
+                    <Upload size={13} /> From file manager
+                  </button>
+                  <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg" className="hidden" onChange={pickAttachmentFile} />
+                  {attachMode === 'master' && (
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold">
+                      <FileText size={12} /> Your Master CV (auto-generated PDF)
+                      <button type="button" onClick={() => setAttachMode('none')} className="text-blue-400 hover:text-red-600 cursor-pointer" aria-label="Remove attachment">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  )}
+                  {attachMode === 'file' && attachFile && (
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
+                      <FileText size={12} /> <span className="truncate max-w-[180px]">{attachFile.name}</span>
+                      <button type="button" onClick={() => { setAttachFile(null); setAttachMode('none'); }} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  )}
+                </div>
               </div>
               {composeMsg && (
                 <p className={`text-[12px] font-semibold ${composeMsg.ok ? 'text-emerald-600' : 'text-red-600'}`}>{composeMsg.text}</p>
