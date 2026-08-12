@@ -103,13 +103,15 @@ chip (past date, not yet followed up) and a **days-left** chip (future date).
 
 ### Pipeline status
 
-A select on each card sets the hiring stage. Valid values: `replied` |
-`interview` | `offer` | `rejected` — **any other string is stored as `null`**
-(clears the stage). The stored value round-trips as `pipelineStatus` on the
-contact.
+A **pipeline quick-filter** in the toolbar filters the grid by hiring stage
+(`replied` | `interview` | `offer` | `rejected`). Statuses are stored per
+contact — **any other string is stored as `null`** (clears the stage). The
+stored value round-trips as `pipelineStatus` on the contact. The per-card
+status selector was removed from the UI (data is preserved and still
+filterable).
 
 - **API:** `POST /api/contacts/:id/pipeline` body `{ status: string | null }` → `{ success }`.
-- **Where:** `setContactPipeline` (server/storage/fileStorage.ts:1017, whitelist enforced server-side); UI select in `RecruitersScreen.tsx`.
+- **Where:** `setContactPipeline` (server/storage/fileStorage.ts:1017, whitelist enforced server-side); toolbar filter in `RecruitersScreen.tsx`.
 - **Tested:** `tests/recruiters/storage.test.ts` — "validates pipeline status" (invalid values → null).
 
 ---
@@ -161,18 +163,6 @@ same modal.
 
 ## Enrichment
 
-### AI profile enrichment
-
-**Enrich** button on each card: the LLM infers a missing real **name** and
-**job title** from the LinkedIn URL, company, role/context, and source job
-posting. Rules: names that look like companies/departments ("Talent
-Acquisition") return `null`; emails/phones are never invented; and **scraped
-data is never overwritten with null** — `undefined` is passed through
-`updateContactIdentity` so only confident, non-empty values land in the DB.
-
-- **API:** `POST /api/contacts/:id/enrich` → `{ success: true, contact }` (404 if the contact doesn't exist). Requires the LLM key.
-- **Where:** server.ts:1346 (prompt at 1351); `updateContactIdentity(id, { name?, jobRole? })` (server/storage/fileStorage.ts:1025); button in `RecruitersScreen.tsx`.
-
 ### Email validity hint
 
 **Verify** chip on each card checks format + domain MX records (no email is
@@ -212,7 +202,6 @@ In batch mode, **Dismiss (N)** hides all selected contacts in one call
 | POST | `/api/contacts/:id/pipeline` | `{ status: string \| null }` | `{ success }` (invalid status → stores null) |
 | GET | `/api/contacts/:id/emails` | – | `{ emails: ContactEmail[] }` |
 | GET | `/api/contacts/export` | – | BOM CSV, `Content-Disposition: attachment; filename="recruiters.csv"` |
-| POST | `/api/contacts/:id/enrich` | – | `{ success, contact }` (LLM infers name/title) |
 | POST | `/api/contacts/verify-email` | `{ email }` | `{ format, mx, detail }` |
 | GET | `/api/emails/templates` | – | `{ templates: EmailTemplate[] }` |
 | POST | `/api/emails/templates` | `{ name, subject, body }` | `{ template }` (400 if blank) |

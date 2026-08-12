@@ -104,7 +104,6 @@ import {
   deleteEmailTemplate,
   getContactStats,
   listContactsCsv,
-  updateContactIdentity,
   backfillContacts,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
@@ -1341,35 +1340,6 @@ Return valid JSON only, no markdown:
     } catch (err: any) {
       console.error('Email draft error:', err);
       res.status(500).json({ error: 'Failed to draft email.' });
-    }
-  });
-
-  // AI-enrich a contact's identity (name / job role) from LinkedIn + job context.
-  app.post('/api/contacts/:id/enrich', async (req, res) => {
-    try {
-      const contact = getContactById(req.params.id);
-      if (!contact) { res.status(404).json({ error: 'Contact not found.' }); return; }
-      const job = contact.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
-      const prompt = `You are a recruiting-database curator. Given the following clues about an HR/recruiter contact, infer the person's real name (or null), job title (or null), and LinkedIn headline (or null). Respond ONLY with JSON: {"name": string|null, "title": string|null, "headline": string|null}.
-
-Contact:
-- current name: ${contact.name || contact.recruiterName || 'unknown'}
-- company: ${contact.company || 'unknown'}
-- role/context: ${contact.jobRole || 'unknown'}
-- context quote: ${contact.context || 'none'}
-- LinkedIn URL: ${contact.recruiterUrl || 'none'}
-- job posting: ${job?.title || 'none'} at ${job?.company || 'unknown'}
-
-Rules: if the name looks like a company/department ("Talent Acquisition", "Company Mob"), return null for name. Never invent an email or phone.`;
-      const raw = await ask(prompt, 0.1);
-      const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```\s*$/, ''));
-      const name = typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : null;
-      const title = typeof parsed.title === 'string' && parsed.title.trim() ? parsed.title.trim() : null;
-      updateContactIdentity(contact.id, { name: name ?? undefined, jobRole: title ?? undefined });
-      res.json({ success: true, contact: { ...contact, name: name ?? contact.name, jobRole: title ?? contact.jobRole } });
-    } catch (err: any) {
-      console.error('Contact enrich error:', err);
-      res.status(500).json({ error: 'Failed to enrich contact.' });
     }
   });
 

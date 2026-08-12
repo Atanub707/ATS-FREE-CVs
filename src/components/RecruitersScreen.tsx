@@ -94,7 +94,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchQueue, setBatchQueue] = useState<Contact[]>([]);
   const [batchIndex, setBatchIndex] = useState(0);
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [verifyMap, setVerifyMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -331,21 +330,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       if (!res.ok) { setVerifyMap((m) => ({ ...m, [c.id]: 'unknown' })); return; }
       setVerifyMap((m) => ({ ...m, [c.id]: d.detail }));
     } catch { setVerifyMap((m) => ({ ...m, [c.id]: 'unknown' })); }
-  };
-
-  const enrichContact = async (c: Contact) => {
-    setBusyId(c.id);
-    try {
-      const res = await fetch(`/api/contacts/${c.id}/enrich`, { method: 'POST' });
-      const d = await res.json();
-      if (!res.ok) { showToast(d.error || 'Enrichment failed'); return; }
-      setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...d.contact } : x)));
-      showToast('Profile enriched');
-    } catch {
-      showToast('Enrichment failed');
-    } finally {
-      setBusyId(null);
-    }
   };
 
   const copyAll = async () => {
@@ -691,10 +675,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                   )}
 
                   <div className="rc-cact">
-                    <button className="rc-btn" title="AI-enrich missing details from LinkedIn + job context"
-                      onClick={() => enrichContact(c)} disabled={busyId === c.id}>
-                      {busyId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Enrich
-                    </button>
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
                     </button>
