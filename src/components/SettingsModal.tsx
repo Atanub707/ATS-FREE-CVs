@@ -277,7 +277,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="st-row">
                     <div className="st-lbl"><b>Profile details</b><span>Location, phone, portfolio URL and your full CV live in the Master CV screen.</span></div>
                     {onOpenMasterCv && (
-                      <button className="st-btn sm" onClick={onOpenMasterCv}><ArrowSquareOut size={14} weight="bold" /> Open Master CV</button>
+                      <button className="st-btn sm" onClick={() => { onClose(); onOpenMasterCv?.(); }}><ArrowSquareOut size={14} weight="bold" /> Open Master CV</button>
                     )}
                   </div>
                   <label className="st-flabel" htmlFor="st-fmin">Matching preferences</label>
