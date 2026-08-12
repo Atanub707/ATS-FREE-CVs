@@ -29,6 +29,8 @@ interface Contact {
   followedUp: boolean;
 }
 
+interface SentEmail { id: string; recipient: string; subject: string; body: string; attachmentName: string | null; status: string; sentAt: string; }
+
 interface RecruitersScreenProps {
   isOpen: boolean;
   onClose: () => void;
@@ -75,6 +77,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [shownCount, setShownCount] = useState(24);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [emailHistory, setEmailHistory] = useState<Record<string, SentEmail[]>>({});
+  const [historyFor, setHistoryFor] = useState<Contact | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -113,6 +117,17 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setAttachMode('none');
     setAttachFile(null);
     loadMasterCvName();
+  };
+
+  const openHistory = async (c: Contact) => {
+    setHistoryFor(c);
+    if (!emailHistory[c.id]) {
+      try {
+        const res = await fetch(`/api/contacts/${c.id}/emails`);
+        const d = await res.json();
+        setEmailHistory((h) => ({ ...h, [c.id]: d.emails || [] }));
+      } catch { /* ignore */ }
+    }
   };
 
   const draftEmail = async () => {
@@ -503,6 +518,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         <option key={p.value || 'none'} value={p.value || ''}>{p.label}</option>
                       ))}
                     </select>
+                    <button className="rc-ghost" title="Email history" onClick={() => openHistory(c)}>
+                      <Clock size={14} />
+                    </button>
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
                     </button>
@@ -516,15 +534,16 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     </button>
                   </div>
                   {c.emailStatus === 'sent' && c.lastEmailSent && (
-                    <div className="rc-emailchip sent">
+                    <button className="rc-emailchip sent clickable" onClick={() => openHistory(c)}>
                       <CheckCircle2 size={11} /> Sent {new Date(c.lastEmailSent).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </div>
+                    </button>
                   )}
                   {c.emailStatus === 'failed' && (
-                    <div className="rc-emailchip failed">
+                    <button className="rc-emailchip failed clickable" onClick={() => openHistory(c)}>
                       <AlertTriangle size={11} /> Failed — resend
-                    </div>
+                    </button>
                   )}
+                  {c.emailStatus !== 'failed' && (emailHistory[c.id]?.length || 0) === 0 && c.emailStatus === 'sent' && null}
                 </div>
               );
             })}
@@ -626,6 +645,35 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors">
                 {sendBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email history modal */}
+      {historyFor && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setHistoryFor(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
+              <h3 className="text-sm font-extrabold text-slate-900">Email history — {historyFor.name || historyFor.email}</h3>
+              <button onClick={() => setHistoryFor(null)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"><X size={16} /></button>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto">
+              {(emailHistory[historyFor.id] || []).length === 0 ? (
+                <p className="text-[12px] text-slate-500">No emails sent to this contact yet.</p>
+              ) : (
+                (emailHistory[historyFor.id] || []).map((e) => (
+                  <div key={e.id} className="border border-slate-200 rounded-xl p-3">
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700">
+                      <span className={`px-2 py-0.5 rounded-full ${e.status === 'sent' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{e.status}</span>
+                      <span className="truncate">{new Date(e.sentAt).toLocaleString()}</span>
+                    </div>
+                    <p className="text-[12.5px] font-bold text-slate-800 mt-1.5">{e.subject}</p>
+                    <p className="text-[11.5px] text-slate-500 whitespace-pre-wrap leading-relaxed mt-1 line-clamp-4">{e.body}</p>
+                    {e.attachmentName && <p className="text-[10.5px] text-blue-600 mt-1">📎 {e.attachmentName}</p>}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -792,6 +840,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
         .rc-emailchip.sent { background: var(--color-cta-soft); color: #059669; border: 1px solid var(--color-cta-line); }
         .rc-emailchip.failed { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
+        .rc-emailchip.clickable { cursor: pointer; }
+        .rc-emailchip.clickable:hover { filter: brightness(.97); }
         .rc-cact .rc-ghost { margin-left: auto; }
         .rc-morewrap { text-align: center; padding: 18px 0 4px; }
         .rc-more { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--blue-border); background: var(--blue-soft); color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
