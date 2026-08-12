@@ -118,18 +118,6 @@ filterable).
 
 ## Sending
 
-### Email templates
-
-Saved reusable subject/body pairs, shared across all contacts (per user).
-
-- **API:**
-  - `GET /api/emails/templates` → `{ templates: EmailTemplate[] }` — `{ id, name, subject, body, createdAt }`.
-  - `POST /api/emails/templates` body `{ name, subject, body }` → `{ template }` (400 if any field is blank).
-  - `DELETE /api/emails/templates/:id` → `{ success }`.
-- **Where:** server.ts:1208–1234; `saveEmailTemplate` / `listEmailTemplates` / `deleteEmailTemplate` (server/storage/fileStorage.ts:1059–1082, table `email_templates`).
-- **UI:** apply-select + "Save as template" + template chips in the compose modal (`RecruitersScreen.tsx`).
-- **Tested:** `tests/recruiters/storage.test.ts` — "saves, lists and deletes templates".
-
 ### WhatsApp deep link
 
 Contacts with a phone number flagged as WhatsApp show a **"Message"** button —

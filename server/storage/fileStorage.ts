@@ -35,7 +35,6 @@ export interface HrContact {
 }
 
 export interface ContactEmail { id: string; recipient: string; subject: string; body: string; attachmentName: string | null; status: string; sentAt: string; }
-export interface EmailTemplate { id: string; name: string; subject: string; body: string; createdAt: string; }
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
@@ -411,7 +410,6 @@ export function getDb(): Database.Database {
   ensureEmailColumns(db);
   ensureRecruitersFeatureColumns(db);
   ensureContactEmailsTable(db);
-  ensureEmailTemplatesTable(db);
   ensureContactIndexes(db);
   return db;
 }
@@ -464,19 +462,6 @@ function ensureContactEmailsTable(db: Database.Database): void {
       sent_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_contact_emails_contact ON contact_emails(contact_id);
-  `);
-}
-
-function ensureEmailTemplatesTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS email_templates (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      subject TEXT NOT NULL,
-      body TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
   `);
 }
 
@@ -1041,32 +1026,6 @@ export function listContactEmails(contactId: string): ContactEmail[] {
     id: r.id, recipient: r.recipient, subject: r.subject, body: r.body,
     attachmentName: r.attachment_name || null, status: r.status, sentAt: r.sent_at,
   }));
-}
-
-export function listEmailTemplates(): EmailTemplate[] {
-  const userId = getCurrentUserId();
-  if (!userId) return [];
-  const rows = getDb().prepare(
-    'SELECT * FROM email_templates WHERE user_id = ? ORDER BY created_at DESC'
-  ).all(userId) as any[];
-  return rows.map((r) => ({ id: r.id, name: r.name, subject: r.subject, body: r.body, createdAt: r.created_at }));
-}
-
-export function saveEmailTemplate(tpl: { name: string; subject: string; body: string }): EmailTemplate | null {
-  const userId = getCurrentUserId();
-  if (!userId) return null;
-  const id = crypto.randomUUID();
-  const t = { id, name: tpl.name.trim(), subject: tpl.subject.trim(), body: tpl.body.trim(), createdAt: new Date().toISOString() };
-  getDb().prepare(
-    'INSERT INTO email_templates (id, user_id, name, subject, body, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(id, userId, t.name, t.subject, t.body, t.createdAt);
-  return t;
-}
-
-export function deleteEmailTemplate(id: string): boolean {
-  const userId = getCurrentUserId();
-  if (!userId || !id) return false;
-  return getDb().prepare('DELETE FROM email_templates WHERE id = ? AND user_id = ?').run(id, userId).changes > 0;
 }
 
 export function getContactStats(): { total: number; withEmail: number; withPhone: number; sent: number; companies: number } {

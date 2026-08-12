@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb, teardownTestDb } from './initDb';
-import { runWithUser, addContactNote, setContactFollowUp, setContactFollowedUp, setContactPipeline, recordContactEmailDetail, listContactEmails, saveEmailTemplate, listEmailTemplates, deleteEmailTemplate, getContactStats, listContactsCsv, getDb } from '../../server/storage/fileStorage';
+import { runWithUser, addContactNote, setContactFollowUp, setContactFollowedUp, setContactPipeline, recordContactEmailDetail, listContactEmails, getContactStats, listContactsCsv, getDb } from '../../server/storage/fileStorage';
 
 describe('recruiter storage', () => {
   beforeEach(() => { setupTestDb(); runWithUser('u1', () => {
@@ -43,16 +43,6 @@ describe('recruiter storage', () => {
       expect(list).toHaveLength(1);
       expect(list[0].subject).toBe('Hi');
       expect(list[0].status).toBe('sent');
-    });
-  });
-
-  it('saves, lists and deletes templates', () => {
-    runWithUser('u1', () => {
-      const t = saveEmailTemplate({ name: 'Intro', subject: 'Hello', body: 'World' });
-      expect(t).not.toBeNull();
-      expect(listEmailTemplates()).toHaveLength(1);
-      expect(deleteEmailTemplate(t!.id)).toBe(true);
-      expect(listEmailTemplates()).toHaveLength(0);
     });
   });
 

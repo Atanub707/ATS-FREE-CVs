@@ -99,9 +99,6 @@ import {
   setContactPipeline,
   addContactNote,
   listContactEmails,
-  listEmailTemplates,
-  saveEmailTemplate,
-  deleteEmailTemplate,
   getContactStats,
   listContactsCsv,
   backfillContacts,
@@ -1210,36 +1207,6 @@ Return valid JSON only — NO markdown, NO code fences:
     }
   });
 
-  app.get('/api/emails/templates', (req, res) => {
-    try {
-      res.json({ templates: listEmailTemplates() });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.post('/api/emails/templates', (req, res) => {
-    try {
-      const { name, subject, body } = req.body || {};
-      if (!name?.trim() || !subject?.trim() || !body?.trim()) {
-        return res.status(400).json({ error: 'Name, subject and body are required.' });
-      }
-      const tpl = saveEmailTemplate({ name, subject, body });
-      if (!tpl) return res.status(401).json({ error: 'Unauthorized.' });
-      res.json({ template: tpl });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.delete('/api/emails/templates/:id', (req, res) => {
-    try {
-      res.json({ success: deleteEmailTemplate(req.params.id) });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
   app.get('/api/contacts/export', (req, res) => {
     try {
       const rows = listContactsCsv();
@@ -1305,8 +1272,7 @@ Return valid JSON only — NO markdown, NO code fences:
         .filter(Boolean)
         .join(' | ');
       const expText = (masterCv?.experiences || [])
-        .slice(0, 3)
-        .map((x) => `${x.title} @ ${x.company} (${x.dates}) — ${(x.responsibilities || []).slice(0, 2).join('; ')}`)
+        .map((x) => `${x.title} @ ${x.company} (${x.dates}) — ${(x.responsibilities || []).slice(0, 3).map((r) => r.slice(0, 110)).join('; ')}`)
         .filter(Boolean)
         .join('\n');
       const projectsText = (masterCv?.projects || [])
@@ -1323,20 +1289,22 @@ Company: ${company}
 Role they are hiring for: ${role}
 Job description (if available): ${(job?.description || '').slice(0, 1200)}
 Candidate: ${masterCv?.fullName || 'the candidate'}
-Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate location: ${masterCv?.location || ''}
+Candidate summary: ${(masterCv?.summary || '').slice(0, 600)}
 Candidate skills: ${skillsText}
-Candidate recent experience: ${expText}
+Candidate career journey (roles in order, oldest → newest, with what they actually did): ${expText}
 Candidate projects: ${projectsText}
 Candidate certifications: ${certsText}
 
 Rules — this must feel human, not AI:
 - FIRST LINE: a greeting — literally "${greetingName ? 'Hi ' + greetingName + ',' : 'Hi there,'}" followed by a newline, then continue with the email. Nothing may appear before the greeting.
 - Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
-- 55-80 words total (excluding the greeting and signature). Three short paragraphs maximum, ideally two.
-- Use ONLY the candidate's REAL data above — never invent facts, companies, projects, or credentials.
-- Middle: ONE concrete link between the candidate's real experience and their opening. Weave in ONE short clause that names a real project or responsibility from "Candidate projects" / "Candidate recent experience" relevant to this role (e.g. "I built CI/CD pipelines for a Kubernetes platform" or "I automated Terraform-based infrastructure at ScaleUp"). One clause — enough for the recruiter to see project substance without opening the CV, not a project dump.
-- No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", exclamation marks.
+- 80-110 words total (excluding the greeting and signature). Three short paragraphs maximum.
+- Use ONLY the candidate's REAL data above — never invent facts, companies, projects, numbers, or credentials.
+- Tell the candidate's REAL career journey, not just a project: state their years of experience, the actual progression of roles and companies from "Candidate career journey" (e.g. "I started as a DevOps Engineer at PearlThoughts and now work as a Senior DevSecOps Engineer at Human Managed, where I ..."), and what they actually do day-to-day (their responsibilities). THEN weave in ONE short clause naming a real project from "Candidate projects" that fits the role being hired for — one clause, so the recruiter sees substance without opening the CV. The journey and companies must be the backbone; the project is seasoning, not the whole dish.
+- Use ONE concrete number or measurable outcome from the journey/summary when it fits naturally (e.g. an 80% reduction, a migration, a pipeline cut) — specificity is what makes it human.
+- No AI-sounding phrases. NEVER use: "I'm writing to express", "I hope this email finds you well", "I would be glad", "Would you be open to", "leverage", "passionate", "delve", "I trust this", "excited", "thrilled", exclamation marks, bullet points, or listicles.
+- Vary the sentence rhythm — some sentences short, some longer. Read like a person typing quickly, not like a brochure.
 - Close with a soft, natural ask (e.g. "Happy to chat briefly this week if it's useful.") — not a formal request.
 - Do NOT include any signature, name, phone, or sign-off in the body — the system adds it.
 - Sign nothing. No "Best regards". No name at the end.
