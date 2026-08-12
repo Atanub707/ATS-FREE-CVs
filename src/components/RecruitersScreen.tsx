@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
+import { followupDue, followupDaysLeft } from '../lib/recruiters/followupUtils';
 
 interface Contact {
   id: string;
@@ -23,6 +24,8 @@ interface Contact {
   lastSeen: string;
   lastEmailSent?: string;
   emailStatus?: string;
+  followUpAt?: string;
+  followedUp: boolean;
 }
 
 interface RecruitersScreenProps {
@@ -254,6 +257,18 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     }
   };
 
+  const setFollowUp = async (c: Contact, days: number) => {
+    const date = new Date(Date.now() + days * 86400000).toISOString();
+    await fetch(`/api/contacts/${c.id}/followup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date }) });
+    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followUpAt: date, followedUp: false } : x)));
+    showToast(days === 0 ? 'Follow-up cleared' : `Follow-up in ${days} day${days === 1 ? '' : 's'}`);
+  };
+
+  const markFollowedUp = async (c: Contact) => {
+    await fetch(`/api/contacts/${c.id}/followedup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: !c.followedUp }) });
+    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followedUp: !x.followedUp } : x)));
+  };
+
   const saveNote = async (c: Contact) => {
     const note = (noteDrafts[c.id] ?? c.notes ?? '').trim();
     await fetch(`/api/contacts/${c.id}/notes`, {
@@ -424,6 +439,26 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                       </a>
                     )}
                     {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
+                  </div>
+                  {(c.followUpAt || c.emailStatus === 'sent') && (
+                    <div className="rc-furow">
+                      {c.followUpAt && !c.followedUp && followupDue(c.followUpAt, false) && (
+                        <span className="rc-fuchip overdue"><AlertTriangle size={10} /> Follow up</span>
+                      )}
+                      {c.followUpAt && !c.followedUp && !followupDue(c.followUpAt, false) && (
+                        <span className="rc-fuchip"><Clock size={10} /> {followupDaysLeft(c.followUpAt)}d</span>
+                      )}
+                      {c.followedUp && <span className="rc-fuchip done"><CheckCircle2 size={10} /> Followed up</span>}
+                      <span className="rc-fu-spacer" />
+                      {c.followUpAt && !c.followedUp && (
+                        <button className="rc-fubtn" onClick={() => markFollowedUp(c)}>Mark done</button>
+                      )}
+                      <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 0)}>Clear</button>
+                    </div>
+                  )}
+                  <div className="rc-furow quick">
+                    <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 3)}>+3d</button>
+                    <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 7)}>+7d</button>
                   </div>
                   {c.context && <div className="rc-ctx">"{c.context}"</div>}
                   {editingNoteId === c.id ? (
@@ -742,6 +777,16 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-morewrap { text-align: center; padding: 18px 0 4px; }
         .rc-more { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--blue-border); background: var(--blue-soft); color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .rc-more:hover { filter: brightness(.97); }
+        .rc-furow { display: flex; align-items: center; gap: 6px; }
+        .rc-furow.quick { justify-content: flex-end; margin-top: -4px; }
+        .rc-fuchip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .rc-fuchip.overdue { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
+        .rc-fuchip { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+        .rc-fuchip.done { background: var(--color-cta-soft); color: var(--green); border: 1px solid var(--color-cta-line); }
+        .rc-fu-spacer { flex: 1; }
+        .rc-fubtn { font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
+        .rc-fubtn:hover { border-color: var(--blue-border); color: var(--blue); }
+        .rc-fubtn.ghost { border: 0; background: none; color: var(--faint); }
       `}</style>
     </div>
   );
