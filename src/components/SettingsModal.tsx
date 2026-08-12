@@ -354,6 +354,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
             )}
+            {formData.apify.referralUrl && (
+              <div className="set-trow" style={{ background: '#FDF4FF', border: '1px solid #F5D0FE', borderRadius: 10, marginTop: 10, padding: '10px 12px' }}>
+                <div className="set-t">
+                  <b>New to Apify?</b>
+                  <span>Start with the free $5 monthly trial. This referral link supports development — same price for you, no extra cost.</span>
+                </div>
+                <a href={formData.apify.referralUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ whiteSpace: 'nowrap', fontSize: 12, fontWeight: 700, color: '#A21CAF', background: '#FAE8FF', border: '1px solid #F0ABFC', borderRadius: 8, padding: '7px 12px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  Open Apify ↗
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -422,6 +434,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
             <div className="set-hint" style={{ marginTop: 8 }}>Gmail: enable 2FA, then create an App Password in your Google account — your normal password won't work.</div>
+            <details className="set-details">
+              <summary className="set-details-sum">How to set up SMTP — step by step</summary>
+              <div className="set-details-body">
+                <p className="set-details-head">Gmail (free, recommended)</p>
+                <ol className="set-details-list">
+                  <li>Turn on <b>2-Step Verification</b>: myaccount.google.com → Security → 2-Step Verification.</li>
+                  <li>Search "Google App passwords" → create one for <b>Mail</b>.</li>
+                  <li>Copy the 16-character password into <b>Password / app password</b> above.</li>
+                  <li>Host: <b>smtp.gmail.com</b> · Port: <b>587</b> · SSL/TLS: ON · Username: your Gmail address.</li>
+                </ol>
+                <p className="set-details-head">Outlook / Microsoft 365</p>
+                <ol className="set-details-list">
+                  <li>Host: <b>smtp.office365.com</b> · Port: <b>587</b> · SSL/TLS: ON · Username: your full email.</li>
+                  <li>If 2FA is on, create an app password: myaccount.microsoft.com → Security → App passwords.</li>
+                </ol>
+                <p className="set-details-head">Any other provider</p>
+                <ol className="set-details-list">
+                  <li>Look up your provider's SMTP settings (search "<i>your provider</i> SMTP settings").</li>
+                  <li>Fill Host, Port and the SSL/TLS toggle exactly as documented, then click <b>Test connection</b>.</li>
+                </ol>
+                <p className="set-details-note">The app never sees your password after you save it — it is stored only in your local config.ini, never committed or logged.</p>
+              </div>
+            </details>
           </div>
 
           {/* Appearance */}
@@ -549,6 +584,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-row + .set-row { border-top: 1px solid var(--divider); }
         .set-row label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 8px; }
         .set-hint { font-size: 11px; color: var(--faint); margin-top: 8px; line-height: 1.55; }
+        .set-details { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; background: #FAFBFC; }
+        .set-details-sum { cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--accent); padding: 9px 12px; user-select: none; list-style: none; }
+        .set-details-sum::-webkit-details-marker { display: none; }
+        .set-details-sum::before { content: '▸ '; }
+        .set-details[open] .set-details-sum::before { content: '▾ '; }
+        .set-details-body { padding: 2px 12px 12px; }
+        .set-details-head { font-size: 11px; font-weight: 800; color: var(--muted); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: .3px; }
+        .set-details-list { margin: 0 0 4px 16px; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+        .set-details-note { font-size: 10.5px; color: var(--faint); margin-top: 6px; line-height: 1.55; }
+
         .set-hint b { color: var(--muted); font-weight: 600; }
         .set-row input[type="text"], .set-row input[type="password"], .set-row select, .set-inline {
           width: 100%; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px;

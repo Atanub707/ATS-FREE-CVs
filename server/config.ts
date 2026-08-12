@@ -30,6 +30,7 @@ const DEFAULT_CONFIG: AppConfig = {
   apify: {
     token: '',
     enabled: false,
+    referralUrl: '',
   },
   email: {
     host: '',
@@ -79,6 +80,9 @@ export function loadConfig(): AppConfig {
       apify: {
         token: parsed.apify?.token || '',
         enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
+        // ini keeps surrounding quotes when a value contains '=' (URLs) —
+        // strip them so the referral link stays clean.
+        referralUrl: String(parsed.apify?.referralUrl || '').replace(/^"|"$/g, ''),
       },
       email: {
         host: parsed.email?.host ?? DEFAULT_CONFIG.email.host,

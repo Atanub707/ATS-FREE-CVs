@@ -218,6 +218,7 @@ export interface AppConfig {
   apify: {
     token: string;
     enabled: boolean;
+    referralUrl?: string;
   };
   email: {
     host: string;
