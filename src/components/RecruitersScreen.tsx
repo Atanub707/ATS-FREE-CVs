@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 import { followupDue, followupDaysLeft } from '../lib/recruiters/followupUtils';
 
@@ -89,6 +89,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchQueue, setBatchQueue] = useState<Contact[]>([]);
+  const [batchIndex, setBatchIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -215,6 +219,26 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       setContacts((prev) => prev.map((x) => x.id === composeContact.id
         ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
         : x));
+      if (batchQueue.length) {
+        const next = batchIndex + 1;
+        if (next < batchQueue.length) {
+          setTimeout(() => {
+            setBatchIndex(next);
+            const c = batchQueue[next];
+            setComposeContact(c);
+            setComposeTo(c.email || '');
+            setComposeSubject(''); setComposeBody('');
+            setComposeMsg({ ok: true, text: `Sent ✓ — ${next + 1}/${batchQueue.length}` });
+          }, 900);
+          return;
+        }
+        setBatchQueue([]);
+        setBatchMode(false);
+        setSelected(new Set());
+        setComposeContact(null);
+        showToast(`Batch complete — ${batchQueue.length} sent`);
+        return;
+      }
       setTimeout(() => setComposeContact(null), 1200);
     } catch (e: any) {
       setComposeMsg({ ok: false, text: e.message || 'Send failed.' });
@@ -351,6 +375,26 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setEditingNoteId(null);
   };
 
+  const toggleBatchMode = () => { setBatchMode((v) => !v); setSelected(new Set()); };
+  const toggleSelect = (id: string) => {
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const selectAllVisible = () => setSelected(new Set(visible.map((c) => c.id)));
+  const startBatch = () => {
+    const q = contacts.filter((c) => selected.has(c.id) && c.email);
+    if (!q.length) return;
+    setBatchQueue(q);
+    setBatchIndex(0);
+    setComposeContact(q[0]);
+    setComposeTo(q[0].email || '');
+    setComposeSubject(''); setComposeBody('');
+    setComposeMsg(null); setAttachMode('none'); setAttachFile(null);
+  };
+
   const ql = q.trim().toLowerCase();
   const visibleRaw = contacts.filter(
     (c) =>
@@ -446,6 +490,12 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               const hasPhoto = !!displayName;
               return (
                 <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''}`}>
+                  {batchMode && (
+                    <label className="rc-batchcheck" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
+                      <span>Select</span>
+                    </label>
+                  )}
                   <div className="rc-namerow">
                     <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
                       {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={20} />}
@@ -613,6 +663,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                 <Mail size={15} className="text-pink-500" /> Compose cold email
+                {batchQueue.length > 0 && (
+                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5">
+                    {batchIndex + 1} / {batchQueue.length}
+                  </span>
+                )}
               </h3>
               <button onClick={() => setComposeContact(null)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
                 <X size={16} />
@@ -783,6 +838,19 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         <button className="rc-btn2" onClick={exportCsv} disabled={!contacts.length}>
           <FileText size={14} /> Export CSV
         </button>
+        <button className={`rc-btn2 ${batchMode ? 'active' : ''}`} onClick={toggleBatchMode}>
+          <CheckSquare size={14} /> {batchMode ? 'Done selecting' : 'Batch'}
+        </button>
+        {batchMode && (
+          <button className="rc-btn2" onClick={selectAllVisible}>
+            <CheckSquare size={14} /> Select all ({visible.length})
+          </button>
+        )}
+        {batchMode && (
+          <button className="rc-btn2 primary" onClick={startBatch} disabled={!contacts.some((c) => selected.has(c.id) && c.email)}>
+            <Send size={14} /> Send {selected.size}
+          </button>
+        )}
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
@@ -871,6 +939,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
+        .rc-btn2.active { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
+        .rc-batchcheck { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--faint); cursor: pointer; }
+        .rc-batchcheck input { accent-color: var(--blue); cursor: pointer; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
