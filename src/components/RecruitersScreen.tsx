@@ -24,6 +24,7 @@ interface Contact {
   lastSeen: string;
   lastEmailSent?: string;
   emailStatus?: string;
+  pipelineStatus?: string;
   followUpAt?: string;
   followedUp: boolean;
 }
@@ -38,6 +39,14 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,var(--color-brand),#7C3AED)',
   'linear-gradient(135deg,#F59E0B,#EF4444)',
   'linear-gradient(135deg,var(--color-cta),#0EA5E9)',
+];
+
+const PIPELINE: Array<{ value: string | null; label: string }> = [
+  { value: null, label: 'No status' },
+  { value: 'replied', label: 'Replied' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'offer', label: 'Offer' },
+  { value: 'rejected', label: 'Rejected' },
 ];
 
 export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onClose, focusRecruiter }) => {
@@ -269,6 +278,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, followedUp: !x.followedUp } : x)));
   };
 
+  const setPipeline = async (c: Contact, status: string | null) => {
+    await fetch(`/api/contacts/${c.id}/pipeline`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, pipelineStatus: status || undefined } : x)));
+  };
+
   const saveNote = async (c: Contact) => {
     const note = (noteDrafts[c.id] ?? c.notes ?? '').trim();
     await fetch(`/api/contacts/${c.id}/notes`, {
@@ -484,6 +498,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     <button className="rc-note-add" onClick={() => setEditingNoteId(c.id)}>+ Add note</button>
                   )}
                   <div className="rc-cact">
+                    <select className={`rc-pipe rc-pipe-${c.pipelineStatus || 'none'}`} value={c.pipelineStatus || ''} onChange={(e) => setPipeline(c, e.target.value || null)}>
+                      {PIPELINE.map((p) => (
+                        <option key={p.value || 'none'} value={p.value || ''}>{p.label}</option>
+                      ))}
+                    </select>
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
                     </button>
@@ -787,6 +806,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-fubtn { font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
         .rc-fubtn:hover { border-color: var(--blue-border); color: var(--blue); }
         .rc-fubtn.ghost { border: 0; background: none; color: var(--faint); }
+        .rc-pipe { font-size: 10.5px; font-weight: 700; border: 1px solid var(--border); border-radius: 7px; padding: 4px 6px; background: var(--card); color: var(--muted); font-family: inherit; cursor: pointer; outline: none; }
+        .rc-pipe-replied { color: #0A66C2; border-color: #B9D0EF; background: #F0F6FD; }
+        .rc-pipe-interview { color: var(--green); border-color: var(--color-cta-line); background: var(--color-cta-soft); }
+        .rc-pipe-offer { color: var(--amber); border-color: var(--amber-border); background: var(--amber-soft); }
+        .rc-pipe-rejected { color: var(--color-danger); border-color: #FECACA; background: var(--color-danger-soft); }
       `}</style>
     </div>
   );
