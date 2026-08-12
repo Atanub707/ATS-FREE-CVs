@@ -1219,7 +1219,9 @@ Return valid JSON only — NO markdown, NO code fences:
       if (!name?.trim() || !subject?.trim() || !body?.trim()) {
         return res.status(400).json({ error: 'Name, subject and body are required.' });
       }
-      res.json({ template: saveEmailTemplate({ name, subject, body }) });
+      const tpl = saveEmailTemplate({ name, subject, body });
+      if (!tpl) return res.status(401).json({ error: 'Unauthorized.' });
+      res.json({ template: tpl });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

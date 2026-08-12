@@ -96,6 +96,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [busyId, setBusyId] = useState<string | null>(null);
   const [verifyMap, setVerifyMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
   // real CV name (validated on the Master CV screen), not a generic label.
@@ -199,6 +200,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const closeCompose = () => {
+    if (batchTimer.current) { clearTimeout(batchTimer.current); batchTimer.current = null; }
     setComposeContact(null);
     setBatchQueue([]);
     setBatchIndex(0);
@@ -229,10 +231,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       setContacts((prev) => prev.map((x) => x.id === composeContact.id
         ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
         : x));
+      setEmailHistory((h) => { const n = { ...h }; delete n[composeContact.id]; return n; });
       if (batchQueue.length && batchIndex < batchQueue.length) {
         const next = batchIndex + 1;
         if (next < batchQueue.length) {
-          setTimeout(() => {
+          batchTimer.current = setTimeout(() => {
             setBatchIndex(next);
             const c = batchQueue[next];
             setComposeContact(c);
@@ -263,12 +266,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         setContacts(data.contacts || []);
         setCompanies(data.companies || []);
       }
-      fetch('/api/contacts/stats').then((r) => r.json()).then((d) => setStats(d.stats));
+      fetch('/api/contacts/stats').then((r) => r.json()).then((d) => setStats(d.stats)).catch(() => {});
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => () => { if (batchTimer.current) clearTimeout(batchTimer.current); }, []);
 
   // Refetch every time the screen opens — contacts scraped since the app
   // loaded (or since the last visit) must appear immediately.
@@ -356,13 +361,16 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const exportCsv = async () => {
     try {
       const res = await fetch('/api/contacts/export');
+      if (!res.ok) { showToast('Export failed'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = 'recruiters.csv';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       showToast('CSV downloaded');
     } catch {
       showToast('Could not export');
@@ -421,15 +429,22 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const bulkDismiss = async () => {
     const ids = [...selected];
     if (!ids.length) return;
-    const res = await fetch('/api/contacts/bulk-hide', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
-    });
-    const d = await res.json();
-    if (d.success) {
-      setContacts((prev) => prev.filter((x) => !selected.has(x.id)));
-      setSelected(new Set());
-      showToast(`${d.count} contact${d.count === 1 ? '' : 's'} dismissed`);
-    } else {
+    const prev = contacts;
+    setContacts((c) => c.filter((x) => !selected.has(x.id)));
+    try {
+      const res = await fetch('/api/contacts/bulk-hide', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setSelected(new Set());
+        showToast(`${d.count} contact${d.count === 1 ? '' : 's'} dismissed`);
+      } else {
+        setContacts(prev);
+        showToast('Could not dismiss');
+      }
+    } catch {
+      setContacts(prev);
       showToast('Could not dismiss');
     }
   };
@@ -450,8 +465,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       (!company || c.company === company) &&
       (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
-  const typeCountsMap = typeCounts(visibleRaw as any);
-  const visible = sortContacts<Contact>(visibleRaw.filter((c: Contact) => filterByType(c as any, typeFilter)), sortBy);
+  const typeCountsMap = typeCounts(visibleRaw);
+  const visible = sortContacts<Contact>(visibleRaw.filter((c: Contact) => filterByType(c, typeFilter)), sortBy);
   const shown = visible.slice(0, shownCount);
   const canLoadMore = shownCount < visible.length;
 
@@ -701,7 +716,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                       <AlertTriangle size={11} /> Failed — resend
                     </button>
                   )}
-                  {c.emailStatus !== 'failed' && (emailHistory[c.id]?.length || 0) === 0 && c.emailStatus === 'sent' && null}
                 </div>
               );
             })}

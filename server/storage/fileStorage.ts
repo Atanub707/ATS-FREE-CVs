@@ -1065,8 +1065,9 @@ export function listEmailTemplates(): EmailTemplate[] {
   return rows.map((r) => ({ id: r.id, name: r.name, subject: r.subject, body: r.body, createdAt: r.created_at }));
 }
 
-export function saveEmailTemplate(tpl: { name: string; subject: string; body: string }): EmailTemplate {
+export function saveEmailTemplate(tpl: { name: string; subject: string; body: string }): EmailTemplate | null {
   const userId = getCurrentUserId();
+  if (!userId) return null;
   const id = crypto.randomUUID();
   const t = { id, name: tpl.name.trim(), subject: tpl.subject.trim(), body: tpl.body.trim(), createdAt: new Date().toISOString() };
   getDb().prepare(

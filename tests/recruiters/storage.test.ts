@@ -49,8 +49,9 @@ describe('recruiter storage', () => {
   it('saves, lists and deletes templates', () => {
     runWithUser('u1', () => {
       const t = saveEmailTemplate({ name: 'Intro', subject: 'Hello', body: 'World' });
+      expect(t).not.toBeNull();
       expect(listEmailTemplates()).toHaveLength(1);
-      expect(deleteEmailTemplate(t.id)).toBe(true);
+      expect(deleteEmailTemplate(t!.id)).toBe(true);
       expect(listEmailTemplates()).toHaveLength(0);
     });
   });
