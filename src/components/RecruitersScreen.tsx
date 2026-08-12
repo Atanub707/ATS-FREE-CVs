@@ -53,6 +53,11 @@ const PIPELINE: Array<{ value: string | null; label: string }> = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
+const waLink = (phone: string): string => {
+  const digits = phone.replace(/[^\d]/g, '').replace(/^0+/, '');
+  return `https://wa.me/${digits}`;
+};
+
 export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onClose, focusRecruiter }) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
@@ -462,6 +467,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                             <button className="rc-copyi" title="Copy phone" onClick={() => copyValue(c.phone!)}><Phone size={11} /></button>
                             <code>{c.phone}</code>
                             {c.whatsapp && <span className="rc-wabadge">WhatsApp</span>}
+                            {c.whatsapp && c.phone && (
+                              <a className="rc-walink" href={waLink(c.phone)} target="_blank" rel="noreferrer" title="Chat on WhatsApp">
+                                Message
+                              </a>
+                            )}
                           </>
                         ) : (
                           <span className="rc-notscraped">Not scraped</span>
@@ -883,6 +893,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-fv svg { width: 11px; height: 11px; flex-shrink: 0; }
         .rc-fv code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
         .rc-wabadge { font-size: 9px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 6px; }
+        .rc-fv .rc-walink { font-size: 9.5px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 20px; padding: 1px 7px; text-decoration: none; }
+        .rc-fv .rc-walink:hover { filter: brightness(.95); text-decoration: none; }
         .rc-copyi { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 0; display: inline-flex; }
         .rc-copyi:hover { color: var(--blue); }
         .rc-idrow { display: flex; align-items: center; gap: 12px; }
