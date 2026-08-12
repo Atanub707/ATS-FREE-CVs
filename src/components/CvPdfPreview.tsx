@@ -1001,7 +1001,7 @@ function buildAtanuProBlocks(cv: PdfCvShape, s: CvTemplateStyle): CvBlock[] {
     key: 'header',
     render: (zoom) => (
       <div style={{ marginBottom: pt(8, zoom) }}>
-        <div style={{ fontSize: `${pt(s.nameSize, zoom)}px`, fontWeight: 800, color: NAVY, letterSpacing: '0.5px' }}>
+        <div style={{ fontSize: `${pt(s.nameSize, zoom)}px`, fontWeight: 800, color: NAVY, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
           {cv.candidateName || 'CANDIDATE NAME'}
         </div>
         {cv.targetRole && (
