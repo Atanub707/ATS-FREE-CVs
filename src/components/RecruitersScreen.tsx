@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload } from 'lucide-react';
+import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 
 interface Contact {
   id: string;
@@ -40,6 +41,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [companies, setCompanies] = useState<string[]>([]);
   const [q, setQ] = useState('');
   const [company, setCompany] = useState('');
+  const [stats, setStats] = useState<{ total: number; withEmail: number; withPhone: number; sent: number; companies: number } | null>(null);
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('last_seen');
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
@@ -155,6 +159,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         setContacts(data.contacts || []);
         setCompanies(data.companies || []);
       }
+      fetch('/api/contacts/stats').then((r) => r.json()).then((d) => setStats(d.stats));
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
@@ -230,11 +235,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const ql = q.trim().toLowerCase();
-  const visible = contacts.filter(
+  const visibleRaw = contacts.filter(
     (c) =>
       (!company || c.company === company) &&
       (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
   );
+  const typeCountsMap = typeCounts(visibleRaw as any);
+  const visible = sortContacts<Contact>(visibleRaw.filter((c: Contact) => filterByType(c as any, typeFilter)), sortBy);
 
   useEffect(() => {
     if (focusedId) {
@@ -260,6 +267,23 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
 
       {/* Content */}
       <div className="rc-wrap">
+        {stats && (
+          <div className="rc-stats">
+            <span className="rc-stat"><b>{stats.total}</b> contacts</span>
+            <span className="rc-stat"><b>{stats.withEmail}</b> with email</span>
+            <span className="rc-stat"><b>{stats.withPhone}</b> with phone</span>
+            <span className="rc-stat sent"><b>{stats.sent}</b> sent</span>
+            <span className="rc-stat"><b>{stats.companies}</b> companies</span>
+          </div>
+        )}
+        <div className="rc-types">
+          {['all', 'recruit', 'hr', 'careers', 'company'].map((t) => (
+            <button key={t} className={`rc-typechip ${typeFilter === t ? 'on' : ''}`} onClick={() => setTypeFilter(t)}>
+              {t === 'all' ? 'All' : TYPE_LABELS[t]}
+              <span className="rc-typecount">{t === 'all' ? contacts.length : typeCountsMap[t] || 0}</span>
+            </button>
+          ))}
+        </div>
         <div className="rc-toolbar">
           <div className="rc-search">
             <Search size={14} />
@@ -268,6 +292,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
           <select className="rc-select" value={company} onChange={(e) => setCompany(e.target.value)}>
             <option value="">All companies</option>
             {companies.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="rc-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="last_seen">Sort: newest</option>
+            <option value="name">Sort: name</option>
+            <option value="company">Sort: company</option>
+            <option value="job_count">Sort: most jobs</option>
+            <option value="last_email_sent">Sort: recently emailed</option>
           </select>
         </div>
 
@@ -511,6 +542,15 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-count { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-border); padding: 6px 13px; border-radius: 20px; flex-shrink: 0; }
         .rc-wrap { max-width: 920px; width: 100%; margin: 0 auto; padding: 26px 28px 40px; flex: 1; overflow-y: auto; }
         .rc-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+        .rc-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .rc-stat { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+        .rc-stat b { color: var(--blue); }
+        .rc-stat.sent b { color: var(--green); }
+        .rc-types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .rc-typechip { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+        .rc-typechip:hover { border-color: var(--blue-border); color: var(--blue); }
+        .rc-typechip.on { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
+        .rc-typecount { margin-left: 5px; opacity: .65; }
         .rc-search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 13px; color: var(--faint); }
         .rc-search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
         .rc-search input { flex: 1; border: 0; outline: none; background: none; font-size: 13px; font-family: inherit; color: var(--text); }
