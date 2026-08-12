@@ -219,6 +219,14 @@ export interface AppConfig {
     token: string;
     enabled: boolean;
   };
+  email: {
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    password: string;
+    fromName: string;
+  };
   appearance: {
     theme: 'light' | 'dark' | 'system';
   };

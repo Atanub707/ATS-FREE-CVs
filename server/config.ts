@@ -31,6 +31,14 @@ const DEFAULT_CONFIG: AppConfig = {
     token: '',
     enabled: false,
   },
+  email: {
+    host: '',
+    port: 587,
+    secure: false,
+    user: '',
+    password: '',
+    fromName: '',
+  },
   appearance: {
     theme: 'system',
   },
@@ -72,6 +80,14 @@ export function loadConfig(): AppConfig {
         token: parsed.apify?.token || '',
         enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
       },
+      email: {
+        host: parsed.email?.host ?? DEFAULT_CONFIG.email.host,
+        port: Number(parsed.email?.port ?? DEFAULT_CONFIG.email.port),
+        secure: String(parsed.email?.secure ?? 'false').toLowerCase() === 'true',
+        user: parsed.email?.user ?? DEFAULT_CONFIG.email.user,
+        password: parsed.email?.password ?? DEFAULT_CONFIG.email.password,
+        fromName: parsed.email?.fromName ?? DEFAULT_CONFIG.email.fromName,
+      },
       appearance: {
         theme: (['light', 'dark', 'system'].includes(parsed.appearance?.theme) ? parsed.appearance.theme : DEFAULT_CONFIG.appearance.theme) as any,
       },
@@ -96,7 +112,7 @@ export function saveConfig(config: AppConfig): void {
     } catch { /* ignore — start from scratch */ }
     const valid = (v: any) => v !== undefined && v !== null && typeof v === 'object' && Object.keys(v).length > 0;
     const out: Record<string, any> = {};
-    for (const sec of ['thresholds', 'llm', 'storage', 'scraper', 'apify', 'appearance'] as const) {
+    for (const sec of ['thresholds', 'llm', 'storage', 'scraper', 'apify', 'email', 'appearance'] as const) {
       const incoming = (config as any)[sec];
       if (valid(incoming)) out[sec] = incoming;
       else if (valid(existing[sec])) out[sec] = existing[sec];

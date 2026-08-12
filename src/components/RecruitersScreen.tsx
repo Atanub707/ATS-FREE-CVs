@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -19,6 +19,8 @@ interface Contact {
   context: string;
   firstSeen: string;
   lastSeen: string;
+  lastEmailSent?: string;
+  emailStatus?: string;
 }
 
 interface RecruitersScreenProps {
@@ -43,6 +45,64 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [copiedAll, setCopiedAll] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [composeContact, setComposeContact] = useState<Contact | null>(null);
+  const [composeTo, setComposeTo] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [composeBusy, setComposeBusy] = useState(false);
+  const [composeMsg, setComposeMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const openCompose = (c: Contact) => {
+    setComposeContact(c);
+    setComposeTo(c.email || '');
+    setComposeSubject('');
+    setComposeBody('');
+    setComposeMsg(null);
+  };
+
+  const draftEmail = async () => {
+    if (!composeContact) return;
+    setComposeBusy(true); setComposeMsg(null);
+    try {
+      const res = await fetch('/api/emails/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: composeContact.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setComposeMsg({ ok: false, text: data.error || 'Draft failed.' }); return; }
+      setComposeSubject(data.draft.subject);
+      setComposeBody(data.draft.body);
+    } catch (e: any) {
+      setComposeMsg({ ok: false, text: e.message || 'Draft failed.' });
+    } finally {
+      setComposeBusy(false);
+    }
+  };
+
+  const sendEmail = async () => {
+    if (!composeContact) return;
+    setComposeBusy(true); setComposeMsg(null);
+    try {
+      const res = await fetch('/api/emails/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: composeContact.id, to: composeTo, subject: composeSubject, body: composeBody }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setComposeMsg({ ok: false, text: data.error || 'Send failed.' }); return; }
+      setComposeMsg({ ok: true, text: 'Sent ✓' });
+      // Update the card status immediately.
+      setContacts((prev) => prev.map((x) => x.id === composeContact.id
+        ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
+        : x));
+      setTimeout(() => setComposeContact(null), 1200);
+    } catch (e: any) {
+      setComposeMsg({ ok: false, text: e.message || 'Send failed.' });
+    } finally {
+      setComposeBusy(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -256,16 +316,82 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
                     </button>
+                    {c.email && (
+                      <button className="rc-ghost" title="Compose cold email" onClick={() => openCompose(c)}>
+                        <Mail size={14} />
+                      </button>
+                    )}
                     <button className="rc-ghost" title="Dismiss" onClick={() => hideContact(c.id)}>
                       <Trash2 size={14} />
                     </button>
                   </div>
+                  {c.emailStatus === 'sent' && c.lastEmailSent && (
+                    <div className="rc-emailchip sent">
+                      <CheckCircle2 size={11} /> Sent {new Date(c.lastEmailSent).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </div>
+                  )}
+                  {c.emailStatus === 'failed' && (
+                    <div className="rc-emailchip failed">
+                      <AlertTriangle size={11} /> Failed — resend
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Compose cold email modal */}
+      {composeContact && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !composeBusy && setComposeContact(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
+              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Mail size={15} className="text-pink-500" /> Compose cold email
+              </h3>
+              <button onClick={() => setComposeContact(null)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-5 space-y-3 overflow-y-auto">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">To</label>
+                <input type="text" value={composeTo} onChange={(e) => setComposeTo(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Subject</label>
+                <input type="text" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Body</label>
+                <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400 resize-none leading-relaxed" />
+              </div>
+              {composeMsg && (
+                <p className={`text-[12px] font-semibold ${composeMsg.ok ? 'text-emerald-600' : 'text-red-600'}`}>{composeMsg.text}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 px-5 py-3.5 border-t border-slate-200">
+              <button onClick={draftEmail} disabled={composeBusy}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12.5px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 cursor-pointer transition-colors">
+                {composeBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
+              </button>
+              <div className="flex-1" />
+              <button onClick={() => setComposeContact(null)} disabled={composeBusy}
+                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50 cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={sendEmail} disabled={composeBusy || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors">
+                {composeBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sticky action bar */}
       <div className="rc-actbar">
@@ -399,6 +525,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
         .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
         .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
+        .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+        .rc-emailchip.sent { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+        .rc-emailchip.failed { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
         .rc-cact .rc-ghost { margin-left: auto; }
       `}</style>
     </div>

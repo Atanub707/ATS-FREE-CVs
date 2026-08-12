@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppConfig, LlmProvider } from '../types';
-import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, X, Cpu, Globe, Rocket, Palette, ShieldQuestion, CheckCircle2, AlertTriangle, Loader2, Eye, EyeOff, Mail } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
@@ -165,6 +165,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const provider = formData.llm.provider || 'opencode-go';
   const models = PROVIDER_MODELS[provider] || PROVIDER_MODELS['opencode-go'];
   const showCustomModel = !models.includes(formData.llm.model);
+
+  const [emailTestState, setEmailTestState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
+  const [emailTestMsg, setEmailTestMsg] = useState('');
+
+  const testEmailConnection = async () => {
+    setEmailTestState('testing'); setEmailTestMsg('');
+    try {
+      const res = await fetch('/api/emails/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData.email),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setEmailTestState('ok'); setEmailTestMsg('SMTP connected');
+      } else {
+        setEmailTestState('error'); setEmailTestMsg(data.error || 'Connection failed.');
+      }
+    } catch (e: any) {
+      setEmailTestState('error'); setEmailTestMsg(e.message || 'Connection failed.');
+    }
+  };
 
   return (
     <div className="set-screen">
@@ -337,6 +359,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="set-sec-label"><span>Preferences</span></div>
         <div className="set-grid">
+          {/* Email (cold outreach via the user's own SMTP) */}
+          <div className="set-card">
+            <div className="set-card-head">
+              <div className="set-ico" style={{ background: 'linear-gradient(135deg,#FDF2F8,#FCE7F3)', color: '#DB2777' }}>
+                <Mail size={17} />
+              </div>
+              <div><b>Email</b><span className="set-d">Send cold emails to recruiters from your own mailbox.</span></div>
+              {formData.email.host && <span className="set-tag"><span className="set-dot" />Configured</span>}
+            </div>
+            <div className="set-row">
+              <label>SMTP host</label>
+              <input type="text" className="set-mono" value={formData.email.host}
+                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, host: e.target.value } })}
+                placeholder="smtp.gmail.com" />
+            </div>
+            <div className="set-row">
+              <label>Port</label>
+              <input type="text" className="set-mono" style={{ maxWidth: 90 }} value={formData.email.port}
+                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, port: Number(e.target.value) || 0 } })}
+                placeholder="587" />
+              <div className={`set-switch ${formData.email.secure ? 'on' : ''}`}
+                onClick={() => setFormData({ ...formData, email: { ...formData.email, secure: !formData.email.secure } })}
+                style={{ marginLeft: 10 }} />
+              <span className="set-d" style={{ marginLeft: 8 }}>SSL/TLS</span>
+            </div>
+            <div className="set-row">
+              <label>Username</label>
+              <input type="text" className="set-mono" value={formData.email.user}
+                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, user: e.target.value } })}
+                placeholder="you@gmail.com" />
+            </div>
+            <div className="set-row">
+              <label>Password / app password</label>
+              <input type="password" className="set-mono" value={formData.email.password}
+                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, password: e.target.value } })}
+                placeholder="••••••••" />
+            </div>
+            <div className="set-row">
+              <label>From name</label>
+              <input type="text" className="set-mono" value={formData.email.fromName}
+                onChange={(e) => setFormData({ ...formData, email: { ...formData.email, fromName: e.target.value } })}
+                placeholder="Atanu Biswas" />
+            </div>
+            <div className="set-row">
+              <label>&nbsp;</label>
+              <div className="set-test-row">
+                <button type="button" className={`set-btn set-btn-sm ${emailTestState === 'ok' ? 'ok' : ''}`}
+                  onClick={testEmailConnection} disabled={emailTestState === 'testing'}>
+                  {emailTestState === 'testing' ? (
+                    <><Loader2 size={12} className="set-spin" /> Testing…</>
+                  ) : emailTestState === 'ok' ? (
+                    <><CheckCircle2 size={12} /> Connected</>
+                  ) : (
+                    <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> Test connection</>
+                  )}
+                </button>
+                {emailTestState === 'error' && (
+                  <span className="set-test-err"><AlertTriangle size={12} /> {emailTestMsg}</span>
+                )}
+                {emailTestState === 'ok' && <span className="set-test-ok"><CheckCircle2 size={12} /> {emailTestMsg}</span>}
+              </div>
+            </div>
+            <div className="set-hint" style={{ marginTop: 8 }}>Gmail: enable 2FA, then create an App Password in your Google account — your normal password won't work.</div>
+          </div>
+
           {/* Appearance */}
           <div className="set-card">
             <div className="set-card-head">

@@ -25,6 +25,9 @@ export interface HrContact {
   context: string;
   firstSeen: string;
   lastSeen: string;
+  lastEmailSent?: string;
+  emailStatus?: string;
+  emailMessageId?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -386,8 +389,28 @@ export function getDb(): Database.Database {
   migrateRecoveryColumns(db);
   migrateContactsTable(db);
   ensureWhatsappColumn(db);
+  ensureEmailColumns(db);
   ensureContactIndexes(db);
   return db;
+}
+
+// Cold-email tracking on contacts (L2 SMTP): when the last email was sent,
+// its status, and the provider message id. Nullable — safe to add.
+function ensureEmailColumns(d: Database.Database): void {
+  try {
+    const cols = new Set((d.pragma('table_info(hr_contacts)') as any[]).map((c) => c.name));
+    if (!cols.has('last_email_sent')) {
+      d.exec(`ALTER TABLE hr_contacts ADD COLUMN last_email_sent TEXT`);
+    }
+    if (!cols.has('email_status')) {
+      d.exec(`ALTER TABLE hr_contacts ADD COLUMN email_status TEXT`);
+    }
+    if (!cols.has('email_message_id')) {
+      d.exec(`ALTER TABLE hr_contacts ADD COLUMN email_message_id TEXT`);
+    }
+  } catch (err) {
+    console.error('email column migration failed:', err);
+  }
 }
 
 // Light migration: whatsapp flag column (default 0). A simple ALTER is
@@ -802,7 +825,31 @@ function mapContactRow(r: any): HrContact {
     context: r.context || '',
     firstSeen: r.first_seen || '',
     lastSeen: r.last_seen || '',
+    lastEmailSent: r.last_email_sent || undefined,
+    emailStatus: r.email_status || undefined,
+    emailMessageId: r.email_message_id || undefined,
   };
+}
+
+// Record a cold-email send result on a contact (L2 SMTP pipeline).
+export function recordContactEmail(id: string, status: 'sent' | 'failed', messageId?: string): void {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return;
+  getDb().prepare(
+    `UPDATE hr_contacts SET last_email_sent = ?, email_status = ?, email_message_id = ? WHERE id = ? AND user_id = ?`
+  ).run(new Date().toISOString(), status, messageId || null, id, userId);
+}
+
+export function getContactById(id: string): HrContact | undefined {
+  const userId = getCurrentUserId();
+  if (!userId || !id) return undefined;
+  try {
+    const row = getDb().prepare('SELECT * FROM hr_contacts WHERE id = ? AND user_id = ?').get(id, userId) as any;
+    return row ? mapContactRow(row) : undefined;
+  } catch (err) {
+    console.error('Error loading contact:', err);
+    return undefined;
+  }
 }
 
 export function listContactsForJob(jobId: string, recruiterUrl?: string | null): HrContact[] {
