@@ -1158,10 +1158,18 @@ Return valid JSON only — NO markdown, NO code fences:
       const company = contact.company || job?.company || 'your company';
       const role = job?.title || contact.jobRole || 'the role';
       const firstName = (contact.name || contact.recruiterName || '').trim().split(/\s+/)[0] || '';
-      // Heuristic guard: some extracted "names" are actually the company
-      // ("Company Mob") — never greet with a company name, fall back.
+      // Heuristic: only greet with a first name when it actually looks like
+      // a personal name. Extracted "names" are often companies or
+      // departments ("Company Mob", "Talent Acquisition", "O CLRS").
+      const NON_NAME_TOKENS = ['talent', 'acquisition', 'delivery', 'consulting', 'recruiting', 'recruitment', 'careers', 'company', 'mob', 'hr', 'team', 'sourcing', 'staffing', 'people', 'support', 'operations', 'engineering', 'hiring'];
       const companyFirst = company.trim().split(/\s+/)[0]?.toLowerCase() || '';
-      const greetingName = firstName && firstName.toLowerCase() !== companyFirst ? firstName : '';
+      const firstLower = firstName.toLowerCase();
+      const looksLikeName =
+        firstName.length >= 4 &&
+        !NON_NAME_TOKENS.includes(firstLower) &&
+        firstLower !== companyFirst &&
+        contact.type !== 'careers';
+      const greetingName = looksLikeName ? firstName : '';
 
       const prompt = `You are a senior career coach writing a cold outreach email that reads like a real human wrote it.
 
