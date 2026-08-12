@@ -227,7 +227,7 @@ Add fields to the `HrContact` mapping (returned by `mapContactRow`):
     pipelineStatus: r.pipeline_status || undefined,
 ```
 
-Update the `HrContact` interface in `server.ts` types accordingly (search for `interface HrContact` — add the 4 fields as optional).
+Update the `HrContact` interface in `server/storage/fileStorage.ts` (line ~10) accordingly — add the 4 fields as optional.
 
 - [ ] **Step 4: Write the storage functions**
 
@@ -721,19 +721,19 @@ Expected: all pass
 In `RecruitersScreen.tsx`:
 1. New state: `const [stats, setStats] = useState<{ total: number; withEmail: number; withPhone: number; sent: number; companies: number } | null>(null);`, `const [typeFilter, setTypeFilter] = useState('all');`, `const [sortBy, setSortBy] = useState('last_seen');`
 2. In `load()`: also `fetch('/api/contacts/stats').then((r) => r.json()).then((d) => setStats(d.stats))`
-3. Compute visible with filter/sort:
+3. Compute visible with filter/sort (declare `visibleRaw` BEFORE `typeCountsMap`):
 
 ```ts
-const typeCountsMap = typeCounts(visibleRaw as any);
 const visibleRaw = contacts.filter(
   (c) =>
     (!company || c.company === company) &&
     (!ql || (c.name || '').toLowerCase().includes(ql) || (c.recruiterName || '').toLowerCase().includes(ql) || (c.email || '').toLowerCase().includes(ql) || (c.phone || '').includes(ql) || c.company.toLowerCase().includes(ql))
 );
+const typeCountsMap = typeCounts(visibleRaw as any);
 const visible = sortContacts(visibleRaw.filter((c) => filterByType(c as any, typeFilter)), sortBy);
 ```
 
-(Keep the existing search predicate identical; add type filter + sort on top.)
+(Keep the existing search predicate identical — the snippet above IS the existing predicate — then add type filter + sort on top.)
 
 4. Render the stats header row + toolbar additions (replace the existing `.rc-toolbar` block):
 
