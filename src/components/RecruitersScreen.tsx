@@ -388,6 +388,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     <span className="rc-co">{c.company}</span>
                     <span className="rc-sep">·</span>
                     <span className="rc-role">{c.jobRole}</span>
+                    {c.sourceJobUrl && (
+                      <a className="rc-srcjob" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink size={10} /> Job
+                      </a>
+                    )}
                     {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
                   </div>
                   {c.context && <div className="rc-ctx">"{c.context}"</div>}
@@ -658,6 +663,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-idmeta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); min-width: 0; flex-wrap: wrap; }
         .rc-co { font-weight: 600; color: var(--muted); }
         .rc-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+        .rc-srcjob { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; color: var(--blue); text-decoration: none; padding: 2px 7px; border-radius: 6px; background: var(--blue-soft); border: 1px solid var(--blue-border); }
+        .rc-srcjob:hover { filter: brightness(.96); }
         .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
         .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
         .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
