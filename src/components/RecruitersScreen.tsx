@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 
 interface Contact {
@@ -17,6 +17,7 @@ interface Contact {
   sourceJobId: string;
   sourceJobUrl: string;
   jobCount: number;
+  notes: string;
   context: string;
   firstSeen: string;
   lastSeen: string;
@@ -60,6 +61,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [attachFile, setAttachFile] = useState<{ name: string; data: string } | null>(null);
   const [masterCvName, setMasterCvName] = useState<string | null>(null);
   const [shownCount, setShownCount] = useState(24);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -251,6 +254,17 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     }
   };
 
+  const saveNote = async (c: Contact) => {
+    const note = (noteDrafts[c.id] ?? c.notes ?? '').trim();
+    await fetch(`/api/contacts/${c.id}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, notes: note } : x)));
+    setEditingNoteId(null);
+  };
+
   const ql = q.trim().toLowerCase();
   const visibleRaw = contacts.filter(
     (c) =>
@@ -412,6 +426,28 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                     {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
                   </div>
                   {c.context && <div className="rc-ctx">"{c.context}"</div>}
+                  {editingNoteId === c.id ? (
+                    <div className="rc-note-edit">
+                      <textarea
+                        className="rc-note-ta"
+                        rows={2}
+                        placeholder="Add a note…"
+                        value={noteDrafts[c.id] ?? c.notes ?? ''}
+                        onChange={(e) => setNoteDrafts((d) => ({ ...d, [c.id]: e.target.value }))}
+                      />
+                      <div className="rc-note-acts">
+                        <button className="rc-note-btn primary" onClick={() => saveNote(c)}>Save</button>
+                        <button className="rc-note-btn" onClick={() => setEditingNoteId(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : c.notes ? (
+                    <div className="rc-note">
+                      <span className="rc-note-txt">{c.notes}</span>
+                      <button className="rc-note-editbtn" onClick={() => setEditingNoteId(c.id)} title="Edit note"><PencilLine size={11} /></button>
+                    </div>
+                  ) : (
+                    <button className="rc-note-add" onClick={() => setEditingNoteId(c.id)}>+ Add note</button>
+                  )}
                   <div className="rc-cact">
                     <button className={`rc-btn ${copiedId === c.id ? 'copied' : ''}`} onClick={() => copyEmail(c)}>
                       {copiedId === c.id ? <><CheckCircle2 size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
@@ -685,6 +721,18 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-srcjob { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; color: var(--blue); text-decoration: none; padding: 2px 7px; border-radius: 6px; background: var(--blue-soft); border: 1px solid var(--blue-border); }
         .rc-srcjob:hover { filter: brightness(.96); }
         .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
+        .rc-note { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 9px; }
+        .rc-note-txt { flex: 1; line-height: 1.45; }
+        .rc-note-editbtn { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 2px; display: inline-flex; }
+        .rc-note-editbtn:hover { color: var(--amber); }
+        .rc-note-add { border: 1px dashed var(--border); background: none; color: var(--faint); font-size: 10.5px; font-weight: 700; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-family: inherit; }
+        .rc-note-add:hover { color: var(--blue); border-color: var(--blue-border); }
+        .rc-note-edit { display: flex; flex-direction: column; gap: 6px; }
+        .rc-note-ta { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 11.5px; font-family: inherit; color: var(--text); outline: none; resize: vertical; }
+        .rc-note-ta:focus { border-color: var(--blue); }
+        .rc-note-acts { display: flex; gap: 6px; }
+        .rc-note-btn { font-size: 10.5px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 7px; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+        .rc-note-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
         .rc-cact { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 9px; border-top: 1px dashed var(--border); }
         .rc-cact .rc-btn { height: 30px; padding: 0 11px; font-size: 11px; }
         .rc-emailchip { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
