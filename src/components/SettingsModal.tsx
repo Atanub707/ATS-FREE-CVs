@@ -444,22 +444,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <details className="set-details">
               <summary className="set-details-sum">How to set up SMTP — step by step</summary>
               <div className="set-details-body">
+                <p className="set-details-note">Tip: the SSL/TLS toggle sets itself — port <b>465</b> turns SSL ON, port <b>587</b> or <b>25</b> turns it OFF (STARTTLS). Test connection also auto-corrects it.</p>
                 <p className="set-details-head">Gmail (free, recommended)</p>
                 <ol className="set-details-list">
                   <li>Turn on <b>2-Step Verification</b>: myaccount.google.com → Security → 2-Step Verification.</li>
                   <li>Search "Google App passwords" → create one for <b>Mail</b>.</li>
                   <li>Copy the 16-character password into <b>Password / app password</b> above.</li>
-                  <li>Host: <b>smtp.gmail.com</b> · Port: <b>587</b> · SSL/TLS: ON · Username: your Gmail address.</li>
+                  <li>Host: <b>smtp.gmail.com</b> · Port: <b>587</b> · SSL/TLS: OFF (auto) · Username: your Gmail address.</li>
                 </ol>
                 <p className="set-details-head">Outlook / Microsoft 365</p>
                 <ol className="set-details-list">
-                  <li>Host: <b>smtp.office365.com</b> · Port: <b>587</b> · SSL/TLS: ON · Username: your full email.</li>
+                  <li>Host: <b>smtp.office365.com</b> · Port: <b>587</b> · SSL/TLS: OFF (auto) · Username: your full email.</li>
                   <li>If 2FA is on, create an app password: myaccount.microsoft.com → Security → App passwords.</li>
                 </ol>
                 <p className="set-details-head">Any other provider</p>
                 <ol className="set-details-list">
                   <li>Look up your provider's SMTP settings (search "<i>your provider</i> SMTP settings").</li>
-                  <li>Fill Host, Port and the SSL/TLS toggle exactly as documented, then click <b>Test connection</b>.</li>
+                  <li>Fill Host and Port exactly as documented. Port <b>465</b> = SSL ON, port <b>587</b> = SSL OFF — the toggle follows the port automatically.</li>
+                  <li>Click <b>Test connection</b> — if a TLS mismatch is detected it retries with the right mode automatically.</li>
                 </ol>
                 <p className="set-details-note">The app never sees your password after you save it — it is stored only in your local config.ini, never committed or logged.</p>
               </div>
