@@ -32,7 +32,7 @@ Tailor scrapes job listings from **17 sources** — 5 Apify-powered (LinkedIn, I
 | **AI ATS Scoring** | Score jobs against your CV. Get match %, skill gaps, missing keywords, recommendations |
 | **CV Tailoring** | Generate ATS-optimized CVs tailored to specific job descriptions |
 | **Master CV & AI Compression** | Full-screen editor with live page-wise PDF preview, PDF/DOCX/TXT import, and **AI Compress** — analyzes your CV against live market keywords and compresses it to 1–2 pages (analyze → rewrite → verify) |
-| **Recruiters & Cold Email** | Recruiter contacts extracted from job descriptions, AI-drafted emails, sent via your own SMTP — with sent/failed status on every card |
+| **Recruiters & Cold Email** | Recruiter contacts extracted from job descriptions, AI-drafted emails sent via your own SMTP, follow-up reminders, pipeline tracking (replied/interview/offer), email history, templates, batch send, AI enrichment, WhatsApp links, and CSV export — with sent/failed status on every card |
 | **Job Portals Browser** | 190+ job boards worldwide, organized into 13 categories with country flags |
 | **Manual JD Analysis** | Paste any job description, get scored and get a tailored CV — no scraping needed; every analysis is saved and restorable |
 | **Applicant Counts** | See how many people applied to each LinkedIn job — right in the listing |
@@ -266,10 +266,14 @@ Paste any job description manually and get a scored, tailored CV without searchi
 
 ### Step 6: Recruiters & Cold Email
 
-1. Click **Recruiters** in the navbar — contacts (name, email, phone, LinkedIn) are extracted from your job descriptions
+1. Click **Recruiters** in the navbar — contacts (name, email, phone, LinkedIn) are extracted from your job descriptions, with type chips (Recruiter / HR / Careers / Company), sorting, and a stats header
 2. Click a contact to **draft an email** — the AI writes a tailored intro based on the job and your CV
-3. Review it, then **Send** — the email goes out through **your own SMTP server** (configured in Settings → Integrations → Email)
-4. Every card shows its status: **sent / failed**, with the timestamp
+3. Review it, then **Send** — the email goes out through **your own SMTP server** (configured in Settings → Integrations → Email). Every card shows its status: **sent / failed**, with the timestamp
+4. **Set a follow-up** (+3d / +7d or a custom date) — overdue contacts get flagged so nothing slips; **Mark done** when they reply
+5. **Track the pipeline** per contact: Replied · Interview · Offer · Rejected
+6. Check the **history** (Clock button) to see every past email with subject, body, attachment, and timestamp — or save reusable **templates** from the compose modal
+7. **Batch mode**: tick contacts (or "Select all visible") and **Send N** — emails go out one by one with a progress chip, and closing the modal cancels the queue; **Dismiss (N)** hides the selected contacts
+8. **Enrich** a contact to have the AI fill in a missing name/title from their LinkedIn profile, **verify** an email's format + domain MX, message WhatsApp contacts via the **Message** link, and export the whole list as **CSV**
 
 > 📬 **Privacy:** nothing is sent through third-party services — the app uses the SMTP account you bring (e.g., Gmail app password, Outlook, your own mail server). Set it up in **Settings → Integrations → Email** (auto-detects SSL/STARTTLS by port, with a one-click test).
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### 👥 Recruiters screen expansion
+- Stats header (total / with email / with phone / sent / companies), type filter chips (Recruiter · HR · Careers · Company), sort (newest / name / company / most jobs / recently emailed), load-more pagination.
+- Sticky notes per contact; follow-up reminders (+3d / +7d, overdue chips, "Mark done"); pipeline status (Replied · Interview · Offer · Rejected).
+- Email history per contact (sent/failed logs with subject, body, attachment, timestamp); saved email templates; WhatsApp deep links; batch cold-email queue (select → send sequentially) with bulk dismiss.
+- AI profile enrichment (LLM fills missing name/title from LinkedIn + job context); email validity hint (format + domain MX check); source-job link on identity cards; CSV export of all contacts.
+
 ## v1.4.0 (2026-08-12)
 
 ### 🎨 Professional UI redesign — whitish multi-tint theme
