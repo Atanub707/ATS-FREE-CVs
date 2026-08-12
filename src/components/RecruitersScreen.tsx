@@ -59,6 +59,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [attachMode, setAttachMode] = useState<'none' | 'master' | 'file'>('none');
   const [attachFile, setAttachFile] = useState<{ name: string; data: string } | null>(null);
   const [masterCvName, setMasterCvName] = useState<string | null>(null);
+  const [shownCount, setShownCount] = useState(24);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
@@ -242,6 +243,10 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   );
   const typeCountsMap = typeCounts(visibleRaw as any);
   const visible = sortContacts<Contact>(visibleRaw.filter((c: Contact) => filterByType(c as any, typeFilter)), sortBy);
+  const shown = visible.slice(0, shownCount);
+  const canLoadMore = shownCount < visible.length;
+
+  useEffect(() => setShownCount(24), [typeFilter, company, q]);
 
   useEffect(() => {
     if (focusedId) {
@@ -318,8 +323,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               : 'Try a different search or clear the filters.'}</p>
           </div>
         ) : (
+          <>
           <div className="rc-grid">
-            {visible.map((c, i) => {
+            {shown.map((c, i) => {
               const displayName = c.name || c.recruiterName || '';
               const hasPhoto = !!displayName;
               return (
@@ -412,6 +418,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               );
             })}
           </div>
+          {canLoadMore && (
+            <div className="rc-morewrap">
+              <button className="rc-more" onClick={() => setShownCount((s) => s + 24)}>
+                Show {Math.min(24, visible.length - shownCount)} more ({visible.length - shownCount} left)
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
 
@@ -651,6 +665,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-emailchip.sent { background: var(--color-cta-soft); color: #059669; border: 1px solid var(--color-cta-line); }
         .rc-emailchip.failed { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
         .rc-cact .rc-ghost { margin-left: auto; }
+        .rc-morewrap { text-align: center; padding: 18px 0 4px; }
+        .rc-more { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--blue-border); background: var(--blue-soft); color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+        .rc-more:hover { filter: brightness(.97); }
       `}</style>
     </div>
   );
