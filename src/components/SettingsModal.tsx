@@ -538,6 +538,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </button>
       </div>
 
+      {/* About / attribution — persistent branding (part of the license) */}
+      <div className="set-about">
+        Tailor CV v1.2.0 — created by <b>Atanu Biswas</b> · © 2026 Atanu Biswas.
+        All rights reserved. This software is licensed for personal use only —
+        redistribution or white-labeling is prohibited (see LICENSE).
+      </div>
+
       {/* Saved toast */}
       <div className={`set-toast ${savedToast ? 'show' : ''}`}>
         <CheckCircle2 size={14} /> Configuration saved
@@ -630,6 +637,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .set-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 15px; border-radius: 9px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease; font-family: inherit; }
         .set-btn:hover { border-color: var(--accent-border); }
         .set-btn:disabled { opacity: .55; cursor: not-allowed; }
+        .set-about { margin-top: 14px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: #FAFBFC; font-size: 10.5px; color: var(--faint); line-height: 1.6; text-align: center; }
+        .set-about b { color: var(--muted); }
         .set-btn-primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 85%, var(--accent-2))); border-color: transparent; color: #fff; box-shadow: 0 1px 3px color-mix(in srgb, var(--accent) 45%, transparent); }
         .set-btn-primary:hover { filter: brightness(1.07); }
         .set-btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
