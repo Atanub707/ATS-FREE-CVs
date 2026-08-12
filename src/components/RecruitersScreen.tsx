@@ -441,7 +441,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                       </div>
                     </div>
                   ) : c.notes ? (
-                    <div className="rc-note">
+                    <div className="rc-note-pill">
                       <span className="rc-note-txt">{c.notes}</span>
                       <button className="rc-note-editbtn" onClick={() => setEditingNoteId(c.id)} title="Edit note"><PencilLine size={11} /></button>
                     </div>
@@ -721,7 +721,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-srcjob { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; color: var(--blue); text-decoration: none; padding: 2px 7px; border-radius: 6px; background: var(--blue-soft); border: 1px solid var(--blue-border); }
         .rc-srcjob:hover { filter: brightness(.96); }
         .rc-ctx { font-size: 10.5px; color: var(--faint); font-style: italic; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
-        .rc-note { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 9px; }
+        .rc-note-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 9px; }
         .rc-note-txt { flex: 1; line-height: 1.45; }
         .rc-note-editbtn { border: 0; background: none; color: var(--faint); cursor: pointer; padding: 2px; display: inline-flex; }
         .rc-note-editbtn:hover { color: var(--amber); }
