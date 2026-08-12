@@ -1405,7 +1405,7 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
           ensurePageSpace(12);
           const link = normalizeUrl(proj.link);
           if (link) {
-            doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(link, leftMargin, doc.y, { width: contentWidth });
+            doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(displayUrl(proj.link), leftMargin, doc.y, { width: contentWidth });
             doc.x = leftMargin;
             doc.moveDown(0.1);
           }
@@ -1665,7 +1665,7 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
           const link = normalizeUrl(proj.link);
           if (link) {
             ensurePageSpace(11);
-            doc.font('Helvetica').fontSize(9).fillColor('#111111').text(link, leftMargin, doc.y, { width: contentWidth });
+            doc.font('Helvetica').fontSize(9).fillColor('#111111').text(displayUrl(proj.link), leftMargin, doc.y, { width: contentWidth });
             doc.x = leftMargin;
           }
         }
