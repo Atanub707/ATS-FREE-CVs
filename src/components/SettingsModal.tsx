@@ -52,6 +52,8 @@ interface SettingsModalProps {
   onOpenMasterCv?: () => void;
 }
 
+const OPENCODE_REFERRAL_URL = 'https://opencode.ai/go?ref=TTETM6S7H5';
+
 const PROVIDER_LABELS: Record<LlmProvider, string> = {
   'opencode-go': 'OpenCode Zen',
   'openrouter': 'OpenRouter',
@@ -734,6 +736,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </button>
                         ))}
                       </div>
+                      <div className="st-referral">
+                        <div className="st-referral-txt">
+                          <b>New to OpenCode Zen? Get your API key here</b>
+                          <span>Works out of the box with a free tier — no credit card needed.</span>
+                        </div>
+                        <a className="st-referral-btn" href={OPENCODE_REFERRAL_URL} target="_blank" rel="noreferrer">
+                          Get API key <ArrowSquareOut size={13} />
+                        </a>
+                      </div>
                       <span className="st-flabel" htmlFor="st-llmkey">API key</span>
                       <div className="st-row">
                         <div className="st-lbl"><label htmlFor="st-llmkey"><b>Key</b><span>Stored locally in config.ini — never committed.</span></label></div>
@@ -1000,6 +1011,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-plogo{width:27px; height:27px; border-radius:8px; color:#fff; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
         .st-provider b{font-size:12px; display:block; line-height:1.25; font-weight:700;}
         .st-provider span:not(.st-plogo){font-size:9.5px; color:var(--st-faint); display:block; margin-top:1px;}
+        .st-referral{display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,var(--st-primary-soft),#F5F3FF); border:1px dashed var(--st-primary-line); border-radius:12px; padding:10px 14px; margin:12px 0 4px;}
+        .st-referral-txt{flex:1; min-width:0;}
+        .st-referral-txt b{display:block; font-size:12px; font-weight:800; color:var(--st-ink);}
+        .st-referral-txt span{font-size:11px; color:var(--st-faint);}
+        .st-referral-btn{display:inline-flex; align-items:center; gap:6px; flex-shrink:0; padding:8px 14px; border-radius:9px; background:linear-gradient(135deg,var(--st-primary),var(--st-primary-strong,var(--st-primary))); color:#fff; font-size:12px; font-weight:800; text-decoration:none;}
+        .st-referral-btn:hover{filter:brightness(1.07);}
         .st-btn{display:inline-flex; align-items:center; gap:8px; padding:10px 17px; border-radius:10px; font-size:12.5px; font-weight:700; border:1.5px solid var(--st-line); background:var(--st-surface); color:var(--st-muted); cursor:pointer; transition:background .15s ease,color .15s ease,border-color .15s ease; font-family:inherit;}
         .st-btn:hover{background:#FAFAF9; border-color:var(--st-primary-line); color:var(--st-ink);}
         .st-btn:disabled{opacity:.5; cursor:not-allowed;}
