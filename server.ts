@@ -84,6 +84,8 @@ import {
   listCvVersions,
   getCvVersion,
   deleteCvVersion,
+  getCandidateProfile,
+  saveCandidateProfile,
   listPortalBookmarks,
   addPortalBookmark,
   removePortalBookmark,
@@ -521,6 +523,31 @@ async function startServer() {
       if (!userId) return res.status(401).json({ error: 'Not signed in.' });
       saveMasterCv(req.body, userId);
       res.json({ success: true, cv: getMasterCv(userId) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/profile', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      res.json({ profile: getCandidateProfile() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/profile', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const profile = req.body?.profile;
+      if (!profile || typeof profile !== 'object') {
+        return res.status(400).json({ error: 'Profile is required.' });
+      }
+      saveCandidateProfile(profile);
+      res.json({ success: true, profile: getCandidateProfile() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
