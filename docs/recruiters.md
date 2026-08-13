@@ -12,6 +12,54 @@ own contacts. Storage is SQLite (`better-sqlite3`), schema managed in
 
 ---
 
+## Candidate job profile
+
+Account-level job preferences, kept **off the CV**. The profile lives under
+**Settings → Account → "Job Preferences"** and belongs to the signed-in user,
+not to any document — every field is optional and an empty profile is inert.
+It feeds the AI cold-email draft with availability and fit context that a CV
+wouldn't carry.
+
+### Fields
+
+| Group | Fields |
+|---|---|
+| Work mode | `workModes` — remote / onsite / hybrid / flexible (multi-select) |
+| Locations | `preferredLocations` — full country-state-city autocomplete (`searchLocations`) |
+| Availability | `noticePeriod`, `availableFrom` (date) |
+| Employment | `employmentTypes`, `yearsExperience`, `currentRole`, `currentCompany` |
+| Compensation | `currentSalary`, `expectedSalaryMin`, `expectedSalaryMax`, `salaryCurrency` |
+| Search intent | `jobSearchStatus`, `willingToRelocate`, `willingToTravelPct` |
+| Work eligibility | `workAuthorization`, `needsSponsorship` |
+| Matching | `languages`, `preferredIndustries`, `preferredCompanySize` |
+| Free text | `recruiterNote` |
+
+### API
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/profile` | – | `{ profile: CandidateProfile }` — all-empty defaults when nothing saved; `401` when signed out |
+| PUT | `/api/profile` | `{ profile: CandidateProfile }` | `{ success, profile }` — upsert keyed by `user_id`; `400` when `profile` missing/non-object; `401` when signed out |
+
+- **Where:** routes in server.ts:531/541; `getCandidateProfile` (never throws,
+  returns all-empty defaults) and `saveCandidateProfile` (upsert) in
+  server/storage/fileStorage.ts:710/722, table `candidate_profile`
+  (`user_id` PK, JSON `data` payload). UI: **Settings → Account → Job
+  Preferences** card (class prefix `stp-*`).
+- **Privacy:** compensation fields are stored for the AI matcher only — they
+  are **never** included in the email prompt. The draft prompt's
+  `Candidate job preferences` section (server.ts:1281-1290) carries only:
+  notice period, available-from, work-mode preference, preferred locations,
+  employment-type preference, job search status, years of experience, and the
+  recruiter note. Rules (server.ts:1344-1345) let the email weave in
+  availability and work-mode fit — one short clause max, never invented; salary
+  expectations are explicitly banned from the email body.
+- **Tested:** `tests/recruiters/storage.test.ts` — "returns an empty default
+  profile when none saved" / "saves and reloads a candidate profile" / "keeps
+  profiles isolated per user".
+
+---
+
 ## Data & organization
 
 ### Stats header
@@ -196,6 +244,8 @@ In batch mode, **Dismiss (N)** hides all selected contacts in one call
 | DELETE | `/api/emails/templates/:id` | – | `{ success }` |
 | POST | `/api/emails/draft` | `{ contactId }` | `{ success, draft: { to, subject, body } }` |
 | POST | `/api/emails/send` | `{ contactId, to, subject, body, attachMaster?, attachment? }` | `{ success }`; records history on success **and** failure |
+| GET | `/api/profile` | – | `{ profile: CandidateProfile }` (all-empty defaults; `401` signed out) |
+| PUT | `/api/profile` | `{ profile: CandidateProfile }` | `{ success, profile }` (upsert; `400` bad body, `401` signed out) |
 
 ---
 
