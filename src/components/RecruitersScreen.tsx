@@ -430,7 +430,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                           {c.company}
                           {c.jobRole && <><span className="rc-sep">·</span>{c.jobRole}</>}
                         </span>
-                        {c.jobCount > 1 && <span className="rc-jobs">{c.jobCount} jobs</span>}
                         {c.sourceJobUrl && (
                           <a className="rc-srcjob" href={c.sourceJobUrl} target="_blank" rel="noreferrer">
                             <ExternalLink size={10} /> Job
@@ -771,7 +770,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-email code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
         .rc-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--faint); margin-top: 6px; flex-wrap: wrap; }
         .rc-sep { color: var(--color-faint); }
-        .rc-jobs { color: var(--green); font-weight: 600; background: var(--green-soft); border: 1px solid var(--green-border); padding: 2px 8px; border-radius: 20px; }
         .rc-context { font-size: 11px; color: var(--faint); font-style: italic; margin-top: 5px; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .rc-acts { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .rc-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s ease; }
@@ -805,7 +803,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-co-line { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 2px; }
         .rc-co-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--faint); }
         .rc-co-txt .rc-sep { margin: 0 5px; color: var(--color-faint); }
-        .rc-co-line .rc-jobs { flex-shrink: 0; }
         .rc-co-line .rc-srcjob { flex-shrink: 0; }
         .rc-notscraped { font-size: 11px; font-weight: 500; font-style: italic; color: var(--faint); }
         .rc-chips { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
