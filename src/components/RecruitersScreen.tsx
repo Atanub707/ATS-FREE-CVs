@@ -606,10 +606,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                       )}
                     </div>
                   )}
-                  <div className="rc-furow quick">
-                    <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 3)}>+3d</button>
-                    <button className="rc-fubtn ghost" onClick={() => setFollowUp(c, 7)}>+7d</button>
-                  </div>
 
                   {editingNoteId === c.id ? (
                     <div className="rc-note-edit">
@@ -997,7 +993,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-more { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--blue-border); background: var(--blue-soft); color: var(--blue); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .rc-more:hover { filter: brightness(.97); }
         .rc-furow { display: flex; align-items: center; gap: 6px; }
-        .rc-furow.quick { justify-content: flex-end; margin-top: -4px; }
         .rc-fuchip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
         .rc-fuchip.overdue { background: var(--color-danger-soft); color: var(--color-danger); border: 1px solid #FECACA; }
         .rc-fuchip.done { background: var(--color-cta-soft); color: var(--green); border: 1px solid var(--color-cta-line); }
