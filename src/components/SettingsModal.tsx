@@ -163,13 +163,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setProfileSaving(false);
   };
 
+  const [profileLocDraft, setProfileLocDraft] = useState('');
+
   const onProfileLocationInput = (v: string) => {
-    setCandidateProfile((p) => (p ? { ...p, preferredLocations: v.split(',').map((s) => s.trim()) } : p));
+    setProfileLocDraft(v);
     if (v.trim().length >= 1) {
-      searchLocations(v.split(',').pop() || '', 8).then((list) => setProfileLocOptions(list.map((l) => l.label)));
+      searchLocations(v.trim(), 8).then((list) => setProfileLocOptions(list.map((l) => l.label)));
     } else {
       setProfileLocOptions([]);
     }
+  };
+
+  const addPreferredLocation = (raw: string) => {
+    const loc = raw.trim();
+    if (!loc) return;
+    setCandidateProfile((p) => p && {
+      ...p,
+      preferredLocations: p.preferredLocations.includes(loc) ? p.preferredLocations : [...p.preferredLocations, loc],
+    });
+    setProfileLocDraft('');
+    setProfileLocOptions([]);
+  };
+
+  const removePreferredLocation = (loc: string) => {
+    setCandidateProfile((p) => p && { ...p, preferredLocations: p.preferredLocations.filter((x) => x !== loc) });
   };
 
   // Recovery questions (password accounts only)
@@ -393,9 +410,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div className="stp-field">
                       <label className="stp-label">Preferred locations</label>
-                      <input list="profile-locations" className="stp-input" placeholder="e.g. Kolkata, Bengaluru, Remote"
-                        value={candidateProfile.preferredLocations.join(', ')}
-                        onChange={(e) => onProfileLocationInput(e.target.value)} />
+                      <div className="stp-locbox">
+                        {candidateProfile.preferredLocations.map((loc) => (
+                          <span key={loc} className="stp-loc-chip">
+                            {loc}
+                            <button type="button" className="stp-loc-x" aria-label={`Remove ${loc}`} onClick={() => removePreferredLocation(loc)}>×</button>
+                          </span>
+                        ))}
+                        <input
+                          list="profile-locations"
+                          className="stp-loc-input"
+                          placeholder={candidateProfile.preferredLocations.length ? 'Add another (type & pick or press Enter)…' : 'Type to search locations — e.g. Kolkata, Remote…'}
+                          value={profileLocDraft}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (profileLocOptions.includes(v)) { addPreferredLocation(v); } else { onProfileLocationInput(v); }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); addPreferredLocation(profileLocDraft); }
+                          }}
+                        />
+                      </div>
                       <datalist id="profile-locations">{profileLocOptions.map((o) => <option key={o} value={o} />)}</datalist>
                     </div>
                     <div className="stp-field">
@@ -982,6 +1017,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .stp-label { font-size: 11px; font-weight: 700; color: var(--st-muted, #475569); }
         .stp-input { width: 100%; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; color: var(--st-ink, #0F172A); background: var(--st-card, #fff); outline: none; font-family: inherit; }
         .stp-input:focus { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .stp-locbox { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 6px 8px; background: var(--st-card, #fff); min-height: 38px; }
+        .stp-locbox:focus-within { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .stp-loc-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; background: var(--color-brand-soft, #EFF6FF); color: var(--color-brand, #2563EB); border: 1px solid var(--color-brand-line, #BFDBFE); border-radius: 999px; padding: 4px 8px 4px 11px; }
+        .stp-loc-x { border: 0; background: none; color: inherit; opacity: .55; cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+        .stp-loc-x:hover { opacity: 1; }
+        .stp-loc-input { flex: 1; min-width: 150px; border: 0; outline: none; background: none; font-size: 12.5px; font-family: inherit; color: var(--st-ink, #0F172A); }
+        .stp-loc-input::placeholder { color: var(--st-faint, #64748B); font-weight: 400; }
         .stp-inline { display: flex; gap: 8px; }
         .stp-inline .stp-input { flex: 1; }
         .stp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
