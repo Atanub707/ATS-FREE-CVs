@@ -21,7 +21,6 @@ const filled: CandidateProfile = {
   workAuthorization: 'Citizen',
   needsSponsorship: false,
   languages: ['English', 'Hindi'],
-  preferredIndustries: ['SaaS', 'Fintech'],
   preferredCompanySize: 'Mid-size (51–500)',
   recruiterNote: 'Open to contract-to-hire.',
 };
@@ -32,7 +31,7 @@ const empty: CandidateProfile = {
   currentSalary: '', expectedSalaryMin: '', expectedSalaryMax: '', salaryCurrency: '',
   jobSearchStatus: '', willingToRelocate: 'no', willingToTravelPct: '',
   workAuthorization: '', needsSponsorship: false, languages: [],
-  preferredIndustries: [], preferredCompanySize: '', recruiterNote: '',
+  preferredCompanySize: '', recruiterNote: '',
 };
 
 describe('buildProfileText', () => {

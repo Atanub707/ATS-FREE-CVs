@@ -562,8 +562,7 @@ async function startServer() {
         jobSearchStatus: str(p.jobSearchStatus), willingToRelocate: relocation(p.willingToRelocate),
         willingToTravelPct: str(p.willingToTravelPct), workAuthorization: str(p.workAuthorization),
         needsSponsorship: bool(p.needsSponsorship), languages: arr(p.languages),
-        preferredIndustries: arr(p.preferredIndustries), preferredCompanySize: str(p.preferredCompanySize),
-        recruiterNote: str(p.recruiterNote),
+        preferredCompanySize: str(p.preferredCompanySize), recruiterNote: str(p.recruiterNote),
       };
       saveCandidateProfile(clean);
       res.json({ success: true, profile: getCandidateProfile() });

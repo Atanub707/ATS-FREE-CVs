@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### 👤 Candidate job profile (Settings → Account)
-- Account-level job preferences kept off the CV: work mode (remote/onsite/hybrid/flexible), preferred locations (full country-state-city autocomplete), notice period + availability date, employment type, years of experience, current role/company, job search status, compensation (current + expected range + currency), work authorization + sponsorship, relocation/travel willingness, languages, industries, company size, and a free-text recruiter note.
+- Account-level job preferences kept off the CV: work mode (remote/onsite/hybrid/flexible), preferred locations (full country-state-city autocomplete, chip boxes), notice period + availability date, employment type, years of experience, current role/company, job search status, compensation (current + expected range + all ISO 4217 currencies), work authorization + sponsorship, relocation/travel willingness, languages (chip boxes with ISO 639-1 autocomplete), company size, and a free-text recruiter note.
 - The AI cold-email draft now weaves in availability (notice period) and work-mode fit from the profile alongside the Master CV journey — compensation is stored but never sent in emails.
 
 ### 👥 Recruiters screen expansion

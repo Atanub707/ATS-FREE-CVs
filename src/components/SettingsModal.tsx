@@ -5,7 +5,20 @@ import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
 import { searchLocations } from '../lib/locations';
+import { codes as currencyCodes, code as currencyCodeInfo } from 'currency-codes';
+import languagesData from 'languages/languages.json';
 import pkg from '../../package.json';
+
+// All ISO 4217 currencies (179) — no hardcoded list.
+const ALL_CURRENCIES = currencyCodes()
+  .map((c) => ({ code: c, name: currencyCodeInfo(c)?.currency || '' }))
+  .sort((a, b) => a.code.localeCompare(b.code));
+
+// All ISO 639-1 languages (183) for the language chip autocomplete —
+// { code: [name, nativeName] } straight from the package's data file.
+const ALL_LANGUAGE_NAMES = (Object.values(languagesData.lang) as [string, string][])
+  .map((v) => v[0])
+  .filter(Boolean);
 
 interface CandidateProfile {
   workModes: string[];
@@ -26,7 +39,6 @@ interface CandidateProfile {
   workAuthorization: string;
   needsSponsorship: boolean;
   languages: string[];
-  preferredIndustries: string[];
   preferredCompanySize: string;
   recruiterNote: string;
 }
@@ -138,7 +150,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ...candidateProfile,
       preferredLocations: candidateProfile.preferredLocations.map((s) => s.trim()).filter(Boolean),
       languages: candidateProfile.languages.map((s) => s.trim()).filter(Boolean),
-      preferredIndustries: candidateProfile.preferredIndustries.map((s) => s.trim()).filter(Boolean),
     };
     try {
       const res = await fetch('/api/profile', {
@@ -187,6 +198,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const removePreferredLocation = (loc: string) => {
     setCandidateProfile((p) => p && { ...p, preferredLocations: p.preferredLocations.filter((x) => x !== loc) });
+  };
+
+  const [profileLangDraft, setProfileLangDraft] = useState('');
+  const [profileLangOptions, setProfileLangOptions] = useState<string[]>([]);
+
+  const onProfileLanguageInput = (v: string) => {
+    setProfileLangDraft(v);
+    const q = v.trim().toLowerCase();
+    if (q.length >= 1) {
+      const hits = ALL_LANGUAGE_NAMES
+        .filter((n) => n.toLowerCase().startsWith(q) || n.toLowerCase().includes(q))
+        .slice(0, 8);
+      setProfileLangOptions(hits);
+    } else {
+      setProfileLangOptions([]);
+    }
+  };
+
+  const addPreferredLanguage = (raw: string) => {
+    const lang = raw.trim();
+    if (!lang) return;
+    setCandidateProfile((p) => p && {
+      ...p,
+      languages: p.languages.includes(lang) ? p.languages : [...p.languages, lang],
+    });
+    setProfileLangDraft('');
+    setProfileLangOptions([]);
+  };
+
+  const removePreferredLanguage = (lang: string) => {
+    setCandidateProfile((p) => p && { ...p, languages: p.languages.filter((x) => x !== lang) });
   };
 
   // Recovery questions (password accounts only)
@@ -509,7 +551,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <select className="stp-input" value={candidateProfile.salaryCurrency}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, salaryCurrency: e.target.value })}>
                         <option value="">Not set</option>
-                        <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>SGD</option><option>AUD</option><option>AED</option>
+                        {ALL_CURRENCIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="stp-field">
@@ -545,13 +589,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div className="stp-field">
                       <label className="stp-label">Languages</label>
-                      <input className="stp-input" placeholder="e.g. English, Hindi, Bengali" value={candidateProfile.languages.join(', ')}
-                        onChange={(e) => setCandidateProfile((p) => p && { ...p, languages: e.target.value.split(',').map((s) => s.trim()) })} />
-                    </div>
-                    <div className="stp-field">
-                      <label className="stp-label">Preferred industries</label>
-                      <input className="stp-input" placeholder="e.g. SaaS, Fintech, Healthcare" value={candidateProfile.preferredIndustries.join(', ')}
-                        onChange={(e) => setCandidateProfile((p) => p && { ...p, preferredIndustries: e.target.value.split(',').map((s) => s.trim()) })} />
+                      <div className="stp-locbox">
+                        {candidateProfile.languages.map((lang) => (
+                          <span key={lang} className="stp-loc-chip">
+                            {lang}
+                            <button type="button" className="stp-loc-x" aria-label={`Remove ${lang}`} onClick={() => removePreferredLanguage(lang)}>×</button>
+                          </span>
+                        ))}
+                        <input
+                          list="profile-languages"
+                          className="stp-loc-input"
+                          placeholder={candidateProfile.languages.length ? 'Add another (type & pick or press Enter)…' : 'Type to search languages — e.g. English…'}
+                          value={profileLangDraft}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (profileLangOptions.includes(v)) { addPreferredLanguage(v); } else { onProfileLanguageInput(v); }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); addPreferredLanguage(profileLangDraft); }
+                          }}
+                        />
+                      </div>
+                      <datalist id="profile-languages">{profileLangOptions.map((o) => <option key={o} value={o} />)}</datalist>
                     </div>
                     <div className="stp-field">
                       <label className="stp-label">Preferred company size</label>

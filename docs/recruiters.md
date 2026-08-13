@@ -31,7 +31,7 @@ wouldn't carry.
 | Compensation | `currentSalary`, `expectedSalaryMin`, `expectedSalaryMax`, `salaryCurrency` |
 | Search intent | `jobSearchStatus`, `willingToRelocate` (`yes` / `no` / `certain-cities`), `willingToTravelPct` |
 | Work eligibility | `workAuthorization`, `needsSponsorship` |
-| Matching | `languages`, `preferredIndustries`, `preferredCompanySize` |
+| Matching | `languages` (chip boxes), `preferredCompanySize` |
 | Free text | `recruiterNote` |
 
 ### API

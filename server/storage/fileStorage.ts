@@ -693,7 +693,6 @@ export interface CandidateProfile {
   workAuthorization: string;
   needsSponsorship: boolean;
   languages: string[];
-  preferredIndustries: string[];
   preferredCompanySize: string;
   recruiterNote: string;
 }
@@ -704,7 +703,7 @@ const EMPTY_CANDIDATE_PROFILE: CandidateProfile = {
   currentSalary: '', expectedSalaryMin: '', expectedSalaryMax: '', salaryCurrency: '',
   jobSearchStatus: '', willingToRelocate: 'no', willingToTravelPct: '',
   workAuthorization: '', needsSponsorship: false, languages: [],
-  preferredIndustries: [], preferredCompanySize: '', recruiterNote: '',
+  preferredCompanySize: '', recruiterNote: '',
 };
 
 function normalizeRelocation(v: unknown): 'yes' | 'no' | 'certain-cities' {
