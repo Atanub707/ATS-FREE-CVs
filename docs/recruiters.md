@@ -29,7 +29,7 @@ wouldn't carry.
 | Availability | `noticePeriod`, `availableFrom` (date) |
 | Employment | `employmentTypes`, `yearsExperience`, `currentRole`, `currentCompany` |
 | Compensation | `currentSalary`, `expectedSalaryMin`, `expectedSalaryMax`, `salaryCurrency` |
-| Search intent | `jobSearchStatus`, `willingToRelocate`, `willingToTravelPct` |
+| Search intent | `jobSearchStatus`, `willingToRelocate` (`yes` / `no` / `certain-cities`), `willingToTravelPct` |
 | Work eligibility | `workAuthorization`, `needsSponsorship` |
 | Matching | `languages`, `preferredIndustries`, `preferredCompanySize` |
 | Free text | `recruiterNote` |
@@ -48,15 +48,19 @@ wouldn't carry.
   Preferences** card (class prefix `stp-*`).
 - **Privacy:** compensation fields are stored for the AI matcher only — they
   are **never** included in the email prompt. The draft prompt's
-  `Candidate job preferences` section (server.ts:1281-1290) carries only:
-  notice period, available-from, work-mode preference, preferred locations,
-  employment-type preference, job search status, years of experience, and the
-  recruiter note. Rules (server.ts:1344-1345) let the email weave in
-  availability and work-mode fit — one short clause max, never invented; salary
-  expectations are explicitly banned from the email body.
+  `Candidate job preferences` section (server.ts:1345, built by
+  `buildProfileText` in server/emailProfile.ts, called at server.ts:1299)
+  carries only: notice period, available-from, work-mode preference, preferred
+  locations, employment-type preference, job search status, years of
+  experience, and the recruiter note. Rules (server.ts:1352-1353) let the
+  email weave in availability and work-mode fit — one short clause max, never
+  invented; salary expectations are explicitly banned from the email body.
 - **Tested:** `tests/recruiters/storage.test.ts` — "returns an empty default
   profile when none saved" / "saves and reloads a candidate profile" / "keeps
-  profiles isolated per user".
+  profiles isolated per user"; `tests/recruiters/emailProfile.test.ts` —
+  "builds the 8 preference lines from a filled profile" / "returns an empty
+  string for an empty profile" / "never leaks compensation into the draft
+  text".
 
 ---
 

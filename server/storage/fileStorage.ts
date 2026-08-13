@@ -688,7 +688,7 @@ export interface CandidateProfile {
   expectedSalaryMax: string;
   salaryCurrency: string;
   jobSearchStatus: string;
-  willingToRelocate: boolean;
+  willingToRelocate: 'yes' | 'no' | 'certain-cities';
   willingToTravelPct: string;
   workAuthorization: string;
   needsSponsorship: boolean;
@@ -702,17 +702,25 @@ const EMPTY_CANDIDATE_PROFILE: CandidateProfile = {
   workModes: [], preferredLocations: [], noticePeriod: '', availableFrom: '',
   employmentTypes: [], yearsExperience: '', currentRole: '', currentCompany: '',
   currentSalary: '', expectedSalaryMin: '', expectedSalaryMax: '', salaryCurrency: '',
-  jobSearchStatus: '', willingToRelocate: false, willingToTravelPct: '',
+  jobSearchStatus: '', willingToRelocate: 'no', willingToTravelPct: '',
   workAuthorization: '', needsSponsorship: false, languages: [],
   preferredIndustries: [], preferredCompanySize: '', recruiterNote: '',
 };
+
+function normalizeRelocation(v: unknown): 'yes' | 'no' | 'certain-cities' {
+  if (v === 'yes' || v === 'no' || v === 'certain-cities') return v;
+  return v === true ? 'yes' : 'no';
+}
 
 export function getCandidateProfile(): CandidateProfile {
   const userId = getCurrentUserId();
   if (!userId) return { ...EMPTY_CANDIDATE_PROFILE };
   try {
     const row = getDb().prepare('SELECT data FROM candidate_profile WHERE user_id = ?').get(userId) as { data: string } | undefined;
-    if (row) return { ...EMPTY_CANDIDATE_PROFILE, ...JSON.parse(row.data) };
+    if (row) {
+      const parsed = JSON.parse(row.data) as Record<string, unknown>;
+      return { ...EMPTY_CANDIDATE_PROFILE, ...parsed, willingToRelocate: normalizeRelocation(parsed.willingToRelocate) };
+    }
   } catch (err) {
     console.error('Error reading candidate profile:', err);
   }

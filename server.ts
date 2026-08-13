@@ -370,6 +370,7 @@ ${rawText || 'No readable text extracted.'}`;
 // https: links — recipients can tap-to-call or open the portfolio directly
 // from the email instead of seeing plain text.
 import { textBodyToHtmlWithLinks } from './server/emailHtml.js';
+import { buildProfileText } from './server/emailProfile.js';
 
 async function startServer() {
   const app = express();
@@ -546,7 +547,25 @@ async function startServer() {
       if (!profile || typeof profile !== 'object') {
         return res.status(400).json({ error: 'Profile is required.' });
       }
-      saveCandidateProfile(profile);
+      const p = profile as any;
+      const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+      const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+      const bool = (v: unknown): boolean => v === true;
+      const relocation = (v: unknown): 'yes' | 'no' | 'certain-cities' => (v === 'yes' || v === 'certain-cities' ? v : v === true ? 'yes' : 'no');
+      const clean = {
+        workModes: arr(p.workModes), preferredLocations: arr(p.preferredLocations),
+        noticePeriod: str(p.noticePeriod), availableFrom: str(p.availableFrom),
+        employmentTypes: arr(p.employmentTypes), yearsExperience: str(p.yearsExperience),
+        currentRole: str(p.currentRole), currentCompany: str(p.currentCompany),
+        currentSalary: str(p.currentSalary), expectedSalaryMin: str(p.expectedSalaryMin),
+        expectedSalaryMax: str(p.expectedSalaryMax), salaryCurrency: str(p.salaryCurrency),
+        jobSearchStatus: str(p.jobSearchStatus), willingToRelocate: relocation(p.willingToRelocate),
+        willingToTravelPct: str(p.willingToTravelPct), workAuthorization: str(p.workAuthorization),
+        needsSponsorship: bool(p.needsSponsorship), languages: arr(p.languages),
+        preferredIndustries: arr(p.preferredIndustries), preferredCompanySize: str(p.preferredCompanySize),
+        recruiterNote: str(p.recruiterNote),
+      };
+      saveCandidateProfile(clean);
       res.json({ success: true, profile: getCandidateProfile() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -1277,17 +1296,7 @@ Return valid JSON only — NO markdown, NO code fences:
       }
       const masterCv = getMasterCv();
       const profile = getCandidateProfile();
-      const profileLine = (label: string, value: string) => (value ? `${label}: ${value}` : '');
-      const profileText = [
-        profileLine('Notice period', profile.noticePeriod),
-        profileLine('Available from', profile.availableFrom),
-        profileLine('Work mode preference', profile.workModes.join(', ')),
-        profileLine('Preferred locations', profile.preferredLocations.join(', ')),
-        profileLine('Employment type preference', profile.employmentTypes.join(', ')),
-        profileLine('Job search status', profile.jobSearchStatus),
-        profileLine('Years of experience', profile.yearsExperience),
-        profile.recruiterNote ? `Recruiter note: ${profile.recruiterNote}` : '',
-      ].filter(Boolean).join('\n');
+      const profileText = buildProfileText(profile);
       const job = contact.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
       const name = contact.name || contact.recruiterName || 'there';
       const company = contact.company || job?.company || 'your company';

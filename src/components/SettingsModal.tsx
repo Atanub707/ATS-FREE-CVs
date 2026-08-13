@@ -21,7 +21,7 @@ interface CandidateProfile {
   expectedSalaryMax: string;
   salaryCurrency: string;
   jobSearchStatus: string;
-  willingToRelocate: boolean;
+  willingToRelocate: 'yes' | 'no' | 'certain-cities';
   willingToTravelPct: string;
   workAuthorization: string;
   needsSponsorship: boolean;
@@ -122,15 +122,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [profileLocOptions, setProfileLocOptions] = useState<string[]>([]);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+    setProfileSaveError(null);
     fetch('/api/profile').then((r) => r.json()).then((d) => setCandidateProfile(d.profile || null)).catch(() => setCandidateProfile(null));
   }, [isOpen]);
 
   const saveCandidateProfile = async () => {
     if (!candidateProfile) return;
     setProfileSaving(true);
+    setProfileSaveError(null);
     const clean = {
       ...candidateProfile,
       preferredLocations: candidateProfile.preferredLocations.map((s) => s.trim()).filter(Boolean),
@@ -146,8 +149,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (res.ok) {
         setProfileSaved(true);
         setTimeout(() => setProfileSaved(false), 3000);
+      } else {
+        let msg = 'Failed to save job preferences.';
+        try {
+          const data = await res.json();
+          if (data?.error) msg = data.error;
+        } catch { /* keep default */ }
+        setProfileSaveError(msg);
       }
-    } catch { /* ignore */ }
+    } catch (e: any) {
+      setProfileSaveError(e?.message || 'Failed to save job preferences.');
+    }
     setProfileSaving(false);
   };
 
@@ -367,9 +379,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="stp-card-title">Job Preferences</div>
                   <p className="stp-card-sub">Extra details for the AI — used alongside your CV when drafting cold emails and matching jobs. Nothing here goes on your CV.</p>
 
-                  <div className="st-grid2">
-                    <div className="st-field">
-                      <label className="st-label">Work mode preference</label>
+                  <div className="stp-grid2">
+                    <div className="stp-field">
+                      <label className="stp-label">Work mode preference</label>
                       <div className="stp-chips">
                         {['remote', 'onsite', 'hybrid', 'flexible'].map((m) => (
                           <button key={m} type="button" className={`stp-chip ${candidateProfile.workModes.includes(m) ? 'on' : ''}`}
@@ -379,16 +391,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ))}
                       </div>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Preferred locations</label>
-                      <input list="profile-locations" className="st-input" placeholder="e.g. Kolkata, Bengaluru, Remote"
+                    <div className="stp-field">
+                      <label className="stp-label">Preferred locations</label>
+                      <input list="profile-locations" className="stp-input" placeholder="e.g. Kolkata, Bengaluru, Remote"
                         value={candidateProfile.preferredLocations.join(', ')}
                         onChange={(e) => onProfileLocationInput(e.target.value)} />
                       <datalist id="profile-locations">{profileLocOptions.map((o) => <option key={o} value={o} />)}</datalist>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Notice period</label>
-                      <select className="st-input" value={candidateProfile.noticePeriod}
+                    <div className="stp-field">
+                      <label className="stp-label">Notice period</label>
+                      <select className="stp-input" value={candidateProfile.noticePeriod}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, noticePeriod: e.target.value })}>
                         <option value="">Not set</option>
                         <option>Immediate</option>
@@ -400,13 +412,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <option>Serving notice</option>
                       </select>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Available from</label>
-                      <input type="date" className="st-input" value={candidateProfile.availableFrom}
+                    <div className="stp-field">
+                      <label className="stp-label">Available from</label>
+                      <input type="date" className="stp-input" value={candidateProfile.availableFrom}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, availableFrom: e.target.value })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Employment type preference</label>
+                    <div className="stp-field">
+                      <label className="stp-label">Employment type preference</label>
                       <div className="stp-chips">
                         {['full-time', 'part-time', 'contract', 'freelance'].map((m) => (
                           <button key={m} type="button" className={`stp-chip ${candidateProfile.employmentTypes.includes(m) ? 'on' : ''}`}
@@ -416,22 +428,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ))}
                       </div>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Years of experience</label>
-                      <input className="st-input" placeholder="e.g. 4+ years" value={candidateProfile.yearsExperience}
+                    <div className="stp-field">
+                      <label className="stp-label">Years of experience</label>
+                      <input className="stp-input" placeholder="e.g. 4+ years" value={candidateProfile.yearsExperience}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, yearsExperience: e.target.value })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Current role / company</label>
-                      <input className="st-input" placeholder="e.g. Senior DevSecOps Engineer @ Human Managed" value={`${candidateProfile.currentRole}${candidateProfile.currentRole && candidateProfile.currentCompany ? ' @ ' : ''}${candidateProfile.currentCompany}`}
+                    <div className="stp-field">
+                      <label className="stp-label">Current role / company</label>
+                      <input className="stp-input" placeholder="e.g. Senior DevSecOps Engineer @ Human Managed" value={`${candidateProfile.currentRole}${candidateProfile.currentRole && candidateProfile.currentCompany ? ' @ ' : ''}${candidateProfile.currentCompany}`}
                         onChange={(e) => {
                           const [role, company] = e.target.value.split(' @ ');
                           setCandidateProfile((p) => p && { ...p, currentRole: (role || '').trim(), currentCompany: (company || '').trim() });
                         }} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Job search status</label>
-                      <select className="st-input" value={candidateProfile.jobSearchStatus}
+                    <div className="stp-field">
+                      <label className="stp-label">Job search status</label>
+                      <select className="stp-input" value={candidateProfile.jobSearchStatus}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, jobSearchStatus: e.target.value })}>
                         <option value="">Not set</option>
                         <option>Actively looking</option>
@@ -441,74 +453,74 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="st-section-title" style={{ marginTop: 16 }}>Compensation (kept private — used by the AI for matching, never sent in cold emails)</div>
-                  <div className="st-grid2">
-                    <div className="st-field">
-                      <label className="st-label">Current salary</label>
-                      <input className="st-input" placeholder="e.g. 14,00,000" value={candidateProfile.currentSalary}
+                  <div className="stp-section-title" style={{ marginTop: 16 }}>Compensation (kept private — used by the AI for matching, never sent in cold emails)</div>
+                  <div className="stp-grid2">
+                    <div className="stp-field">
+                      <label className="stp-label">Current salary</label>
+                      <input className="stp-input" placeholder="e.g. 14,00,000" value={candidateProfile.currentSalary}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, currentSalary: e.target.value })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Expected salary (min – max)</label>
-                      <div className="st-inline">
-                        <input className="st-input" placeholder="Min" value={candidateProfile.expectedSalaryMin}
+                    <div className="stp-field">
+                      <label className="stp-label">Expected salary (min – max)</label>
+                      <div className="stp-inline">
+                        <input className="stp-input" placeholder="Min" value={candidateProfile.expectedSalaryMin}
                           onChange={(e) => setCandidateProfile((p) => p && { ...p, expectedSalaryMin: e.target.value })} />
-                        <input className="st-input" placeholder="Max" value={candidateProfile.expectedSalaryMax}
+                        <input className="stp-input" placeholder="Max" value={candidateProfile.expectedSalaryMax}
                           onChange={(e) => setCandidateProfile((p) => p && { ...p, expectedSalaryMax: e.target.value })} />
                       </div>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Currency</label>
-                      <select className="st-input" value={candidateProfile.salaryCurrency}
+                    <div className="stp-field">
+                      <label className="stp-label">Currency</label>
+                      <select className="stp-input" value={candidateProfile.salaryCurrency}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, salaryCurrency: e.target.value })}>
                         <option value="">Not set</option>
                         <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>SGD</option><option>AUD</option><option>AED</option>
                       </select>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Work authorization</label>
-                      <select className="st-input" value={candidateProfile.workAuthorization}
+                    <div className="stp-field">
+                      <label className="stp-label">Work authorization</label>
+                      <select className="stp-input" value={candidateProfile.workAuthorization}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, workAuthorization: e.target.value })}>
                         <option value="">Not set</option>
                         <option>Citizen</option><option>Permanent resident</option><option>Work visa</option><option>Student visa</option><option>Open to sponsorship</option>
                       </select>
                     </div>
-                    <div className="st-field st-check">
-                      <label className="st-check-label">
+                    <div className="stp-field stp-check">
+                      <label className="stp-check-label">
                         <input type="checkbox" checked={candidateProfile.needsSponsorship}
                           onChange={(e) => setCandidateProfile((p) => p && { ...p, needsSponsorship: e.target.checked })} />
                         I need visa sponsorship
                       </label>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Willing to relocate</label>
+                    <div className="stp-field">
+                      <label className="stp-label">Willing to relocate</label>
                       <div className="stp-chips">
-                        {['yes', 'no', 'certain cities'].map((m) => (
-                          <button key={m} type="button" className={`stp-chip ${(candidateProfile.willingToRelocate ? (m === 'yes' ? 'on' : '') : m === 'no' ? 'on' : '')}`}
-                            onClick={() => setCandidateProfile((p) => p && { ...p, willingToRelocate: m === 'yes' })}>
-                            {m === 'certain cities' ? 'Certain cities' : m[0].toUpperCase() + m.slice(1)}
+                        {(['yes', 'no', 'certain-cities'] as const).map((m) => (
+                          <button key={m} type="button" className={`stp-chip ${candidateProfile.willingToRelocate === m ? 'on' : ''}`}
+                            onClick={() => setCandidateProfile((p) => p && { ...p, willingToRelocate: m })}>
+                            {m === 'certain-cities' ? 'Certain cities' : m[0].toUpperCase() + m.slice(1)}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Willing to travel (%)</label>
-                      <input className="st-input" placeholder="e.g. 25" value={candidateProfile.willingToTravelPct}
+                    <div className="stp-field">
+                      <label className="stp-label">Willing to travel (%)</label>
+                      <input className="stp-input" placeholder="e.g. 25" value={candidateProfile.willingToTravelPct}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, willingToTravelPct: e.target.value })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Languages</label>
-                      <input className="st-input" placeholder="e.g. English, Hindi, Bengali" value={candidateProfile.languages.join(', ')}
+                    <div className="stp-field">
+                      <label className="stp-label">Languages</label>
+                      <input className="stp-input" placeholder="e.g. English, Hindi, Bengali" value={candidateProfile.languages.join(', ')}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, languages: e.target.value.split(',').map((s) => s.trim()) })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Preferred industries</label>
-                      <input className="st-input" placeholder="e.g. SaaS, Fintech, Healthcare" value={candidateProfile.preferredIndustries.join(', ')}
+                    <div className="stp-field">
+                      <label className="stp-label">Preferred industries</label>
+                      <input className="stp-input" placeholder="e.g. SaaS, Fintech, Healthcare" value={candidateProfile.preferredIndustries.join(', ')}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, preferredIndustries: e.target.value.split(',').map((s) => s.trim()) })} />
                     </div>
-                    <div className="st-field">
-                      <label className="st-label">Preferred company size</label>
-                      <select className="st-input" value={candidateProfile.preferredCompanySize}
+                    <div className="stp-field">
+                      <label className="stp-label">Preferred company size</label>
+                      <select className="stp-input" value={candidateProfile.preferredCompanySize}
                         onChange={(e) => setCandidateProfile((p) => p && { ...p, preferredCompanySize: e.target.value })}>
                         <option value="">Not set</option>
                         <option>Startup (1–50)</option><option>Mid-size (51–500)</option><option>Large (500+)</option><option>Any</option>
@@ -516,18 +528,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="st-field" style={{ marginTop: 16 }}>
-                    <label className="st-label">Anything else a recruiter should know</label>
-                    <textarea className="st-input" rows={3} placeholder="e.g. Open to contract-to-hire, prefer teams with on-call rotation, relocating to Bangalore in Jan…"
+                  <div className="stp-field" style={{ marginTop: 16 }}>
+                    <label className="stp-label">Anything else a recruiter should know</label>
+                    <textarea className="stp-input" rows={3} placeholder="e.g. Open to contract-to-hire, prefer teams with on-call rotation, relocating to Bangalore in Jan…"
                       value={candidateProfile.recruiterNote}
                       onChange={(e) => setCandidateProfile((p) => p && { ...p, recruiterNote: e.target.value })} />
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
-                    <button type="button" className="st-save" onClick={saveCandidateProfile} disabled={profileSaving}>
+                    <button type="button" className="stp-save" onClick={saveCandidateProfile} disabled={profileSaving}>
                       {profileSaving ? 'Saving…' : 'Save Job Preferences'}
                     </button>
-                    {profileSaved && <span className="st-saved-note">Saved ✓</span>}
+                    {profileSaved && <span className="stp-saved-note">Saved ✓</span>}
+                    {profileSaveError && <span className="stp-save-error">{profileSaveError}</span>}
                   </div>
                 </div>
               )}
@@ -963,24 +976,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .stp-card { background: var(--st-card, #fff); border: 1px solid var(--st-border, #E2E8F0); border-radius: 14px; padding: 18px; }
         .stp-card-title { font-size: 13px; font-weight: 800; color: var(--st-ink, #0F172A); }
         .stp-card-sub { font-size: 11.5px; color: var(--st-faint, #64748B); margin-top: 3px; line-height: 1.55; }
-        .st-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-top: 14px; }
-        .st-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-        .st-field.st-check { justify-content: flex-end; }
-        .st-label { font-size: 11px; font-weight: 700; color: var(--st-muted, #475569); }
-        .st-input { width: 100%; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; color: var(--st-ink, #0F172A); background: var(--st-card, #fff); outline: none; font-family: inherit; }
-        .st-input:focus { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
-        .st-inline { display: flex; gap: 8px; }
-        .st-inline .st-input { flex: 1; }
+        .stp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-top: 14px; }
+        .stp-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+        .stp-field.stp-check { justify-content: flex-end; }
+        .stp-label { font-size: 11px; font-weight: 700; color: var(--st-muted, #475569); }
+        .stp-input { width: 100%; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; color: var(--st-ink, #0F172A); background: var(--st-card, #fff); outline: none; font-family: inherit; }
+        .stp-input:focus { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .stp-inline { display: flex; gap: 8px; }
+        .stp-inline .stp-input { flex: 1; }
         .stp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         .stp-chip { font-size: 11px; font-weight: 700; border: 1.5px solid var(--st-hairline2, #CBD5E1); background: #fff; color: var(--st-muted, #475569); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: all .15s ease; }
         .stp-chip.on { background: var(--color-brand-soft, #EFF6FF); border-color: var(--color-brand-line, #BFDBFE); color: var(--color-brand, #2563EB); }
-        .st-section-title { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--st-faint, #64748B); }
-        .st-check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--st-muted, #475569); cursor: pointer; }
-        .st-check-label input { accent-color: var(--color-brand, #2563EB); width: 15px; height: 15px; }
-        .st-save { padding: 9px 18px; border-radius: 10px; border: 0; background: linear-gradient(135deg, var(--color-brand, #2563EB), var(--color-brand-strong, #1D4ED8)); color: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
-        .st-save:disabled { opacity: .6; cursor: not-allowed; }
-        .st-saved-note { font-size: 12px; font-weight: 700; color: var(--color-cta, #059669); }
-        @media (max-width: 720px) { .st-grid2 { grid-template-columns: 1fr; } }
+        .stp-section-title { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--st-faint, #64748B); }
+        .stp-check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--st-muted, #475569); cursor: pointer; }
+        .stp-check-label input { accent-color: var(--color-brand, #2563EB); width: 15px; height: 15px; }
+        .stp-save { padding: 9px 18px; border-radius: 10px; border: 0; background: linear-gradient(135deg, var(--color-brand, #2563EB), var(--color-brand-strong, #1D4ED8)); color: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .stp-save:disabled { opacity: .6; cursor: not-allowed; }
+        .stp-saved-note { font-size: 12px; font-weight: 700; color: var(--color-cta, #059669); }
+        .stp-save-error { font-size: 12px; font-weight: 700; color: var(--st-danger, #DC2626); }
+        @media (max-width: 720px) { .stp-grid2 { grid-template-columns: 1fr; } }
       `}</style>
     </div>
   );
