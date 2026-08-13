@@ -1,10 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppConfig, LlmProvider } from '../types';
 import { ArrowLeft, User, LockKey, PlugsConnected, Brain, RocketLaunch, EnvelopeSimple, ShieldCheck, SlidersHorizontal, Key, Database, CheckCircle, CaretRight, Warning, Pulse, Check, Eye, EyeSlash, ArrowSquareOut, Info } from '@phosphor-icons/react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 import { PROVIDER_BASE_URLS as LLM_PRESETS } from '../constants/llmPresets';
 import { APIFY_SOURCES } from '../constants/sources';
+import { searchLocations } from '../lib/locations';
 import pkg from '../../package.json';
+
+interface CandidateProfile {
+  workModes: string[];
+  preferredLocations: string[];
+  noticePeriod: string;
+  availableFrom: string;
+  employmentTypes: string[];
+  yearsExperience: string;
+  currentRole: string;
+  currentCompany: string;
+  currentSalary: string;
+  expectedSalaryMin: string;
+  expectedSalaryMax: string;
+  salaryCurrency: string;
+  jobSearchStatus: string;
+  willingToRelocate: boolean;
+  willingToTravelPct: string;
+  workAuthorization: string;
+  needsSponsorship: boolean;
+  languages: string[];
+  preferredIndustries: string[];
+  preferredCompanySize: string;
+  recruiterNote: string;
+}
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -91,6 +116,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [savedToast, setSavedToast] = useState(false);
   const [activePanel, setActivePanel] = useState<'account' | 'security' | 'integration'>('account');
   const [activeItab, setActiveItab] = useState<'llm' | 'apify' | 'email'>('llm');
+
+  // Job preferences (candidate profile)
+  const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
+  const [profileLocOptions, setProfileLocOptions] = useState<string[]>([]);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/profile').then((r) => r.json()).then((d) => setCandidateProfile(d.profile || null)).catch(() => setCandidateProfile(null));
+  }, [isOpen]);
+
+  const saveCandidateProfile = async () => {
+    if (!candidateProfile) return;
+    setProfileSaving(true);
+    const clean = {
+      ...candidateProfile,
+      preferredLocations: candidateProfile.preferredLocations.map((s) => s.trim()).filter(Boolean),
+      languages: candidateProfile.languages.map((s) => s.trim()).filter(Boolean),
+      preferredIndustries: candidateProfile.preferredIndustries.map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: clean }),
+      });
+      if (res.ok) {
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 3000);
+      }
+    } catch { /* ignore */ }
+    setProfileSaving(false);
+  };
+
+  const onProfileLocationInput = (v: string) => {
+    setCandidateProfile((p) => (p ? { ...p, preferredLocations: v.split(',').map((s) => s.trim()) } : p));
+    if (v.trim().length >= 1) {
+      searchLocations(v.split(',').pop() || '', 8).then((list) => setProfileLocOptions(list.map((l) => l.label)));
+    } else {
+      setProfileLocOptions([]);
+    }
+  };
 
   // Recovery questions (password accounts only)
   const [recCurrentPassword, setRecCurrentPassword] = useState('');
@@ -293,6 +361,176 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {candidateProfile && (
+                <div className="stp-card" style={{ marginTop: 18 }}>
+                  <div className="stp-card-title">Job Preferences</div>
+                  <p className="stp-card-sub">Extra details for the AI — used alongside your CV when drafting cold emails and matching jobs. Nothing here goes on your CV.</p>
+
+                  <div className="st-grid2">
+                    <div className="st-field">
+                      <label className="st-label">Work mode preference</label>
+                      <div className="stp-chips">
+                        {['remote', 'onsite', 'hybrid', 'flexible'].map((m) => (
+                          <button key={m} type="button" className={`stp-chip ${candidateProfile.workModes.includes(m) ? 'on' : ''}`}
+                            onClick={() => setCandidateProfile((p) => p && { ...p, workModes: p.workModes.includes(m) ? p.workModes.filter((x) => x !== m) : [...p.workModes, m] })}>
+                            {m[0].toUpperCase() + m.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Preferred locations</label>
+                      <input list="profile-locations" className="st-input" placeholder="e.g. Kolkata, Bengaluru, Remote"
+                        value={candidateProfile.preferredLocations.join(', ')}
+                        onChange={(e) => onProfileLocationInput(e.target.value)} />
+                      <datalist id="profile-locations">{profileLocOptions.map((o) => <option key={o} value={o} />)}</datalist>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Notice period</label>
+                      <select className="st-input" value={candidateProfile.noticePeriod}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, noticePeriod: e.target.value })}>
+                        <option value="">Not set</option>
+                        <option>Immediate</option>
+                        <option>15 days</option>
+                        <option>30 days</option>
+                        <option>45 days</option>
+                        <option>60 days</option>
+                        <option>90 days</option>
+                        <option>Serving notice</option>
+                      </select>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Available from</label>
+                      <input type="date" className="st-input" value={candidateProfile.availableFrom}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, availableFrom: e.target.value })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Employment type preference</label>
+                      <div className="stp-chips">
+                        {['full-time', 'part-time', 'contract', 'freelance'].map((m) => (
+                          <button key={m} type="button" className={`stp-chip ${candidateProfile.employmentTypes.includes(m) ? 'on' : ''}`}
+                            onClick={() => setCandidateProfile((p) => p && { ...p, employmentTypes: p.employmentTypes.includes(m) ? p.employmentTypes.filter((x) => x !== m) : [...p.employmentTypes, m] })}>
+                            {m === 'full-time' ? 'Full-time' : m[0].toUpperCase() + m.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Years of experience</label>
+                      <input className="st-input" placeholder="e.g. 4+ years" value={candidateProfile.yearsExperience}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, yearsExperience: e.target.value })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Current role / company</label>
+                      <input className="st-input" placeholder="e.g. Senior DevSecOps Engineer @ Human Managed" value={`${candidateProfile.currentRole}${candidateProfile.currentRole && candidateProfile.currentCompany ? ' @ ' : ''}${candidateProfile.currentCompany}`}
+                        onChange={(e) => {
+                          const [role, company] = e.target.value.split(' @ ');
+                          setCandidateProfile((p) => p && { ...p, currentRole: (role || '').trim(), currentCompany: (company || '').trim() });
+                        }} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Job search status</label>
+                      <select className="st-input" value={candidateProfile.jobSearchStatus}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, jobSearchStatus: e.target.value })}>
+                        <option value="">Not set</option>
+                        <option>Actively looking</option>
+                        <option>Open to opportunities</option>
+                        <option>Not looking</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="st-section-title" style={{ marginTop: 16 }}>Compensation (kept private — used by the AI for matching, never sent in cold emails)</div>
+                  <div className="st-grid2">
+                    <div className="st-field">
+                      <label className="st-label">Current salary</label>
+                      <input className="st-input" placeholder="e.g. 14,00,000" value={candidateProfile.currentSalary}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, currentSalary: e.target.value })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Expected salary (min – max)</label>
+                      <div className="st-inline">
+                        <input className="st-input" placeholder="Min" value={candidateProfile.expectedSalaryMin}
+                          onChange={(e) => setCandidateProfile((p) => p && { ...p, expectedSalaryMin: e.target.value })} />
+                        <input className="st-input" placeholder="Max" value={candidateProfile.expectedSalaryMax}
+                          onChange={(e) => setCandidateProfile((p) => p && { ...p, expectedSalaryMax: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Currency</label>
+                      <select className="st-input" value={candidateProfile.salaryCurrency}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, salaryCurrency: e.target.value })}>
+                        <option value="">Not set</option>
+                        <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>SGD</option><option>AUD</option><option>AED</option>
+                      </select>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Work authorization</label>
+                      <select className="st-input" value={candidateProfile.workAuthorization}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, workAuthorization: e.target.value })}>
+                        <option value="">Not set</option>
+                        <option>Citizen</option><option>Permanent resident</option><option>Work visa</option><option>Student visa</option><option>Open to sponsorship</option>
+                      </select>
+                    </div>
+                    <div className="st-field st-check">
+                      <label className="st-check-label">
+                        <input type="checkbox" checked={candidateProfile.needsSponsorship}
+                          onChange={(e) => setCandidateProfile((p) => p && { ...p, needsSponsorship: e.target.checked })} />
+                        I need visa sponsorship
+                      </label>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Willing to relocate</label>
+                      <div className="stp-chips">
+                        {['yes', 'no', 'certain cities'].map((m) => (
+                          <button key={m} type="button" className={`stp-chip ${(candidateProfile.willingToRelocate ? (m === 'yes' ? 'on' : '') : m === 'no' ? 'on' : '')}`}
+                            onClick={() => setCandidateProfile((p) => p && { ...p, willingToRelocate: m === 'yes' })}>
+                            {m === 'certain cities' ? 'Certain cities' : m[0].toUpperCase() + m.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Willing to travel (%)</label>
+                      <input className="st-input" placeholder="e.g. 25" value={candidateProfile.willingToTravelPct}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, willingToTravelPct: e.target.value })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Languages</label>
+                      <input className="st-input" placeholder="e.g. English, Hindi, Bengali" value={candidateProfile.languages.join(', ')}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, languages: e.target.value.split(',').map((s) => s.trim()) })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Preferred industries</label>
+                      <input className="st-input" placeholder="e.g. SaaS, Fintech, Healthcare" value={candidateProfile.preferredIndustries.join(', ')}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, preferredIndustries: e.target.value.split(',').map((s) => s.trim()) })} />
+                    </div>
+                    <div className="st-field">
+                      <label className="st-label">Preferred company size</label>
+                      <select className="st-input" value={candidateProfile.preferredCompanySize}
+                        onChange={(e) => setCandidateProfile((p) => p && { ...p, preferredCompanySize: e.target.value })}>
+                        <option value="">Not set</option>
+                        <option>Startup (1–50)</option><option>Mid-size (51–500)</option><option>Large (500+)</option><option>Any</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="st-field" style={{ marginTop: 16 }}>
+                    <label className="st-label">Anything else a recruiter should know</label>
+                    <textarea className="st-input" rows={3} placeholder="e.g. Open to contract-to-hire, prefer teams with on-call rotation, relocating to Bangalore in Jan…"
+                      value={candidateProfile.recruiterNote}
+                      onChange={(e) => setCandidateProfile((p) => p && { ...p, recruiterNote: e.target.value })} />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
+                    <button type="button" className="st-save" onClick={saveCandidateProfile} disabled={profileSaving}>
+                      {profileSaving ? 'Saving…' : 'Save Job Preferences'}
+                    </button>
+                    {profileSaved && <span className="st-saved-note">Saved ✓</span>}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
@@ -722,6 +960,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           .st-providers{grid-template-columns:repeat(2,1fr);}
           .st-inp{width:180px;}
         }
+        .stp-card { background: var(--st-card, #fff); border: 1px solid var(--st-border, #E2E8F0); border-radius: 14px; padding: 18px; }
+        .stp-card-title { font-size: 13px; font-weight: 800; color: var(--st-ink, #0F172A); }
+        .stp-card-sub { font-size: 11.5px; color: var(--st-faint, #64748B); margin-top: 3px; line-height: 1.55; }
+        .st-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-top: 14px; }
+        .st-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+        .st-field.st-check { justify-content: flex-end; }
+        .st-label { font-size: 11px; font-weight: 700; color: var(--st-muted, #475569); }
+        .st-input { width: 100%; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; color: var(--st-ink, #0F172A); background: var(--st-card, #fff); outline: none; font-family: inherit; }
+        .st-input:focus { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .st-inline { display: flex; gap: 8px; }
+        .st-inline .st-input { flex: 1; }
+        .stp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .stp-chip { font-size: 11px; font-weight: 700; border: 1.5px solid var(--st-hairline2, #CBD5E1); background: #fff; color: var(--st-muted, #475569); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: all .15s ease; }
+        .stp-chip.on { background: var(--color-brand-soft, #EFF6FF); border-color: var(--color-brand-line, #BFDBFE); color: var(--color-brand, #2563EB); }
+        .st-section-title { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--st-faint, #64748B); }
+        .st-check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--st-muted, #475569); cursor: pointer; }
+        .st-check-label input { accent-color: var(--color-brand, #2563EB); width: 15px; height: 15px; }
+        .st-save { padding: 9px 18px; border-radius: 10px; border: 0; background: linear-gradient(135deg, var(--color-brand, #2563EB), var(--color-brand-strong, #1D4ED8)); color: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .st-save:disabled { opacity: .6; cursor: not-allowed; }
+        .st-saved-note { font-size: 12px; font-weight: 700; color: var(--color-cta, #059669); }
+        @media (max-width: 720px) { .st-grid2 { grid-template-columns: 1fr; } }
       `}</style>
     </div>
   );
