@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, CheckSquare, BadgeCheck, Plus, Users, Building2, MessageCircle } from 'lucide-react';
+import { X, Search, CheckCircle2, Copy, Trash2, Mail, ExternalLink, Linkedin, Camera, Phone, AlertTriangle, Loader2, Sparkles, Send, FileText, Upload, PencilLine, Clock, BadgeCheck, Plus, Users, Building2, MessageCircle } from 'lucide-react';
 import { filterByType, sortContacts, typeCounts, TYPE_LABELS } from '../lib/recruiters/filterUtils';
 import { followupDue, followupDaysLeft } from '../lib/recruiters/followupUtils';
 
@@ -85,13 +85,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [emailHistory, setEmailHistory] = useState<Record<string, SentEmail[]>>({});
   const [historyFor, setHistoryFor] = useState<Contact | null>(null);
-  const [batchMode, setBatchMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [batchQueue, setBatchQueue] = useState<Contact[]>([]);
-  const [batchIndex, setBatchIndex] = useState(0);
   const [verifyMap, setVerifyMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load the saved Master CV's filename so the attachment chip shows the
   // real CV name (validated on the Master CV screen), not a generic label.
@@ -163,12 +158,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const closeCompose = () => {
-    if (batchTimer.current) { clearTimeout(batchTimer.current); batchTimer.current = null; }
     setComposeContact(null);
-    setBatchQueue([]);
-    setBatchIndex(0);
-    setBatchMode(false);
-    setSelected(new Set());
   };
 
   const sendEmail = async () => {
@@ -195,23 +185,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
         : x));
       setEmailHistory((h) => { const n = { ...h }; delete n[composeContact.id]; return n; });
-      if (batchQueue.length && batchIndex < batchQueue.length) {
-        const next = batchIndex + 1;
-        if (next < batchQueue.length) {
-          batchTimer.current = setTimeout(() => {
-            setBatchIndex(next);
-            const c = batchQueue[next];
-            setComposeContact(c);
-            setComposeTo(c.email || '');
-            setComposeSubject(''); setComposeBody('');
-            setComposeMsg({ ok: true, text: `Sent ✓ — ${next + 1}/${batchQueue.length}` });
-          }, 900);
-          return;
-        }
-        closeCompose();
-        showToast(`Batch complete — ${batchQueue.length} sent`);
-        return;
-      }
       setTimeout(() => setComposeContact(null), 1200);
     } catch (e: any) {
       setComposeMsg({ ok: false, text: e.message || 'Send failed.' });
@@ -235,8 +208,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => () => { if (batchTimer.current) clearTimeout(batchTimer.current); }, []);
 
   // Refetch every time the screen opens — contacts scraped since the app
   // loaded (or since the last visit) must appear immediately.
@@ -306,25 +277,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     } catch { showToast('Could not copy'); }
   };
 
-  const exportCsv = async () => {
-    try {
-      const res = await fetch('/api/contacts/export');
-      if (!res.ok) { showToast('Export failed'); return; }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'recruiters.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('CSV downloaded');
-    } catch {
-      showToast('Could not export');
-    }
-  };
-
   const hideContact = async (id: string) => {
     const prev = contacts;
     setContacts((c) => c.filter((x) => x.id !== id));
@@ -358,48 +310,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     });
     setContacts((prev) => prev.map((x) => (x.id === c.id ? { ...x, notes: note } : x)));
     setEditingNoteId(null);
-  };
-
-  const toggleBatchMode = () => { setBatchMode((v) => !v); setSelected(new Set()); };
-  const toggleSelect = (id: string) => {
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
-  const selectAllVisible = () => setSelected(new Set(visible.map((c) => c.id)));
-  const bulkDismiss = async () => {
-    const ids = [...selected];
-    if (!ids.length) return;
-    const prev = contacts;
-    setContacts((c) => c.filter((x) => !selected.has(x.id)));
-    try {
-      const res = await fetch('/api/contacts/bulk-hide', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
-      });
-      const d = await res.json();
-      if (d.success) {
-        setSelected(new Set());
-        showToast(`${d.count} contact${d.count === 1 ? '' : 's'} dismissed`);
-      } else {
-        setContacts(prev);
-        showToast('Could not dismiss');
-      }
-    } catch {
-      setContacts(prev);
-      showToast('Could not dismiss');
-    }
-  };
-  const startBatch = () => {
-    const q = contacts.filter((c) => selected.has(c.id) && c.email);
-    if (!q.length) return;
-    setBatchQueue(q);
-    setBatchIndex(0);
-    setComposeContact(q[0]);
-    setComposeTo(q[0].email || '');
-    setComposeSubject(''); setComposeBody('');
-    setComposeMsg(null); setAttachMode('none'); setAttachFile(null);
   };
 
   const ql = q.trim().toLowerCase();
@@ -481,11 +391,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               <option key={p.value} value={p.value}>{p.label}</option>
             ))}
           </select>
-          {batchMode && (
-            <span className="rc-batchtip">
-              <CheckSquare size={12} /> {selected.size} selected — Send · Dismiss · or exit batch mode
-            </span>
-          )}
         </div>
 
         <div className="rc-note">
@@ -510,19 +415,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
               const displayName = c.name || c.recruiterName || '';
               const hasPhoto = !!displayName;
               return (
-                <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''} ${batchMode ? 'batching' : ''} ${selected.has(c.id) ? 'rc-selected' : ''}`}>
-                  {batchMode && (
-                    <label className="rc-batchcheck" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
-                    </label>
-                  )}
+                <div key={c.id} id={`rc-card-${c.id}`} className={`rc-idcard ${focusedId === c.id ? 'rc-focus' : ''}`}>
                   <div className="rc-row1">
                     <div className={`rc-photo ${hasPhoto ? `has ${i % 3 === 1 ? 'alt1' : i % 3 === 2 ? 'alt2' : ''}` : ''}`}>
                       {hasPhoto ? displayName.charAt(0).toUpperCase() : <Camera size={18} />}
                     </div>
                     <div className="rc-idn">
                       <div className="rc-nm">
-                        {displayName ? <b>{displayName}</b> : <span className="rc-notscraped">Not scraped</span>}
+                        {displayName ? <b>{displayName}</b> : <span className="rc-notscraped">Not found</span>}
                         <span className={`rc-tag rc-tag-${c.type}`}>{c.typeLabel}</span>
                       </div>
                       <div className="rc-co-line">
@@ -551,7 +451,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         <Mail size={11} /> <span className="rc-chip-txt">{c.email}</span>
                       </span>
                     ) : (
-                      <span className="rc-chip none">Email not scraped</span>
+                      <span className="rc-chip none">Email not found</span>
                     )}
                     {c.phone ? (
                       <>
@@ -565,14 +465,14 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                         )}
                       </>
                     ) : (
-                      <span className="rc-chip none">Phone not scraped</span>
+                      <span className="rc-chip none">Phone not found</span>
                     )}
                     {c.recruiterUrl ? (
                       <a className="rc-chip li" href={c.recruiterUrl} target="_blank" rel="noreferrer">
                         <Linkedin size={11} /> LinkedIn
                       </a>
                     ) : (
-                      <span className="rc-chip none">No LinkedIn</span>
+                      <span className="rc-chip none">LinkedIn not found</span>
                     )}
                   </div>
 
@@ -679,11 +579,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                 <Mail size={15} className="text-pink-500" /> Compose cold email
-                {batchQueue.length > 0 && (
-                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5">
-                    {batchIndex + 1} / {batchQueue.length}
-                  </span>
-                )}
               </h3>
               <button onClick={closeCompose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
                 <X size={16} />
@@ -801,28 +696,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       <div className="rc-actbar">
         <span className="rc-note-text">Emails are pulled from job descriptions you already scrape.</span>
         <div className="rc-spacer" />
-        <button className="rc-btn2" onClick={onClose}>Close</button>
-        <button className="rc-btn2" onClick={exportCsv} disabled={!contacts.length}>
-          <FileText size={14} /> Export CSV
-        </button>
-        <button className={`rc-btn2 ${batchMode ? 'active' : ''}`} onClick={toggleBatchMode}>
-          <CheckSquare size={14} /> {batchMode ? 'Done selecting' : 'Batch'}
-        </button>
-        {batchMode && (
-          <button className="rc-btn2" onClick={selectAllVisible}>
-            <CheckSquare size={14} /> Select all ({visible.length})
-          </button>
-        )}
-        {batchMode && (
-          <button className="rc-btn2 primary" onClick={startBatch} disabled={!contacts.some((c) => selected.has(c.id) && c.email)}>
-            <Send size={14} /> Send {selected.size}
-          </button>
-        )}
-        {batchMode && (
-          <button className="rc-btn2 danger" onClick={bulkDismiss} disabled={!selected.size}>
-            <Trash2 size={14} /> Dismiss ({selected.size})
-          </button>
-        )}
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
@@ -870,7 +743,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-tseg-n { font-size: 10px; font-weight: 800; background: rgba(15,23,42,.08); color: inherit; border-radius: 20px; padding: 1px 6px; }
         .rc-tseg.on .rc-tseg-n { background: rgba(255,255,255,.22); color: #fff; }
         .rc-pipefilter { height: 34px; }
-        .rc-batchtip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border: 1px dashed var(--blue-border); border-radius: 8px; padding: 6px 11px; margin-left: auto; }
         .rc-search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0 13px; color: var(--faint); }
         .rc-search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
         .rc-search input { flex: 1; border: 0; outline: none; background: none; font-size: 13px; font-family: inherit; color: var(--text); }
@@ -919,20 +791,12 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
-        .rc-btn2.active { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
-        .rc-btn2.danger { border-color: #FECACA; color: var(--color-danger); background: var(--color-danger-soft); }
-        .rc-btn2.danger:hover { filter: brightness(.97); }
-        .rc-batchcheck { position: absolute; top: 10px; left: 10px; display: none; cursor: pointer; z-index: 2; }
-        .rc-batchcheck input { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
-        .rc-idcard.batching .rc-batchcheck { display: block; }
-        .rc-idcard.batching .rc-row1 { padding-left: 20px; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }
         .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; align-content: start; }
         .rc-idcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(11,18,32,.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; transition: box-shadow .15s ease, transform .15s ease; position: relative; }
         .rc-idcard:hover { box-shadow: 0 6px 18px -6px rgba(11,18,32,.14); transform: translateY(-1px); }
         .rc-idcard.rc-focus { box-shadow: 0 0 0 2px var(--blue), 0 6px 18px -6px rgba(37,99,235,.25); }
-        .rc-idcard.rc-selected { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,.25); }
         .rc-row1 { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .rc-idn { flex: 1; min-width: 0; }
         .rc-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
