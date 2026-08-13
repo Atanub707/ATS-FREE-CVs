@@ -410,6 +410,7 @@ export function getDb(): Database.Database {
   ensureEmailColumns(db);
   ensureRecruitersFeatureColumns(db);
   ensureContactEmailsTable(db);
+  ensureCandidateProfileTable(db);
   ensureContactIndexes(db);
   return db;
 }
@@ -462,6 +463,16 @@ function ensureContactEmailsTable(db: Database.Database): void {
       sent_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_contact_emails_contact ON contact_emails(contact_id);
+  `);
+}
+
+function ensureCandidateProfileTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS candidate_profile (
+      user_id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 }
 
@@ -659,6 +670,65 @@ export function saveMasterCv(cv: MasterCv, userId?: string): void {
     `).run(targetId, JSON.stringify(cv), new Date().toISOString());
   } catch (err) {
     console.error('Error saving master CV:', err);
+  }
+}
+
+// ─────────────────── Candidate Job Profile (per-user) ───────────────────
+export interface CandidateProfile {
+  workModes: string[];
+  preferredLocations: string[];
+  noticePeriod: string;
+  availableFrom: string;
+  employmentTypes: string[];
+  yearsExperience: string;
+  currentRole: string;
+  currentCompany: string;
+  currentSalary: string;
+  expectedSalaryMin: string;
+  expectedSalaryMax: string;
+  salaryCurrency: string;
+  jobSearchStatus: string;
+  willingToRelocate: boolean;
+  willingToTravelPct: string;
+  workAuthorization: string;
+  needsSponsorship: boolean;
+  languages: string[];
+  preferredIndustries: string[];
+  preferredCompanySize: string;
+  recruiterNote: string;
+}
+
+const EMPTY_CANDIDATE_PROFILE: CandidateProfile = {
+  workModes: [], preferredLocations: [], noticePeriod: '', availableFrom: '',
+  employmentTypes: [], yearsExperience: '', currentRole: '', currentCompany: '',
+  currentSalary: '', expectedSalaryMin: '', expectedSalaryMax: '', salaryCurrency: '',
+  jobSearchStatus: '', willingToRelocate: false, willingToTravelPct: '',
+  workAuthorization: '', needsSponsorship: false, languages: [],
+  preferredIndustries: [], preferredCompanySize: '', recruiterNote: '',
+};
+
+export function getCandidateProfile(): CandidateProfile {
+  const userId = getCurrentUserId();
+  if (!userId) return { ...EMPTY_CANDIDATE_PROFILE };
+  try {
+    const row = getDb().prepare('SELECT data FROM candidate_profile WHERE user_id = ?').get(userId) as { data: string } | undefined;
+    if (row) return { ...EMPTY_CANDIDATE_PROFILE, ...JSON.parse(row.data) };
+  } catch (err) {
+    console.error('Error reading candidate profile:', err);
+  }
+  return { ...EMPTY_CANDIDATE_PROFILE };
+}
+
+export function saveCandidateProfile(p: CandidateProfile): void {
+  const userId = getCurrentUserId();
+  if (!userId) return;
+  try {
+    getDb().prepare(`
+      INSERT INTO candidate_profile (user_id, data, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+    `).run(userId, JSON.stringify(p), new Date().toISOString());
+  } catch (err) {
+    console.error('Error saving candidate profile:', err);
   }
 }
 

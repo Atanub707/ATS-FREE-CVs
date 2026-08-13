@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb, teardownTestDb } from './initDb';
-import { runWithUser, addContactNote, setContactFollowUp, setContactFollowedUp, setContactPipeline, recordContactEmailDetail, listContactEmails, getContactStats, listContactsCsv, getDb } from '../../server/storage/fileStorage';
+import { runWithUser, addContactNote, setContactFollowUp, setContactFollowedUp, setContactPipeline, recordContactEmailDetail, listContactEmails, getContactStats, listContactsCsv, getDb, getCandidateProfile, saveCandidateProfile } from '../../server/storage/fileStorage';
 
 describe('recruiter storage', () => {
   beforeEach(() => { setupTestDb(); runWithUser('u1', () => {
@@ -61,6 +61,36 @@ describe('recruiter storage', () => {
       const rows = listContactsCsv();
       expect(rows).toHaveLength(2);
       expect(rows[0].name).toBe('Alice');
+    });
+  });
+
+  it('returns an empty default profile when none saved', () => {
+    runWithUser('u1', () => {
+      const p = getCandidateProfile();
+      expect(p.noticePeriod).toBe('');
+      expect(p.workModes).toEqual([]);
+    });
+  });
+
+  it('saves and reloads a candidate profile', () => {
+    runWithUser('u1', () => {
+      const p = getCandidateProfile();
+      const filled = { ...p, noticePeriod: '30 days', workModes: ['remote', 'hybrid'], preferredLocations: ['Kolkata, West Bengal, India'], expectedSalaryMin: '1200000', expectedSalaryMax: '1800000', salaryCurrency: 'INR' };
+      saveCandidateProfile(filled);
+      const reloaded = getCandidateProfile();
+      expect(reloaded.noticePeriod).toBe('30 days');
+      expect(reloaded.workModes).toEqual(['remote', 'hybrid']);
+      expect(reloaded.expectedSalaryMax).toBe('1800000');
+    });
+  });
+
+  it('keeps profiles isolated per user', () => {
+    runWithUser('u1', () => {
+      const p = getCandidateProfile();
+      saveCandidateProfile({ ...p, noticePeriod: 'immediate' });
+    });
+    runWithUser('u2', () => {
+      expect(getCandidateProfile().noticePeriod).toBe('');
     });
   });
 });
