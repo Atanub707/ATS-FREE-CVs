@@ -1276,6 +1276,18 @@ Return valid JSON only — NO markdown, NO code fences:
         return;
       }
       const masterCv = getMasterCv();
+      const profile = getCandidateProfile();
+      const profileLine = (label: string, value: string) => (value ? `${label}: ${value}` : '');
+      const profileText = [
+        profileLine('Notice period', profile.noticePeriod),
+        profileLine('Available from', profile.availableFrom),
+        profileLine('Work mode preference', profile.workModes.join(', ')),
+        profileLine('Preferred locations', profile.preferredLocations.join(', ')),
+        profileLine('Employment type preference', profile.employmentTypes.join(', ')),
+        profileLine('Job search status', profile.jobSearchStatus),
+        profileLine('Years of experience', profile.yearsExperience),
+        profile.recruiterNote ? `Recruiter note: ${profile.recruiterNote}` : '',
+      ].filter(Boolean).join('\n');
       const job = contact.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
       const name = contact.name || contact.recruiterName || 'there';
       const company = contact.company || job?.company || 'your company';
@@ -1321,12 +1333,16 @@ Candidate skills: ${skillsText}
 Candidate career journey (roles in order, oldest → newest, with what they actually did): ${expText}
 Candidate projects: ${projectsText}
 Candidate certifications: ${certsText}
+Candidate job preferences (from their account — separate from the CV):
+${profileText || '(none set)'}
 
 Rules — this must feel human, not AI:
 - FIRST LINE: a greeting — literally "${greetingName ? 'Hi ' + greetingName + ',' : 'Hi there,'}" followed by a newline, then continue with the email. Nothing may appear before the greeting.
 - Write in the FIRST PERSON as the candidate: always "I", "my", "me". Never refer to the candidate by name, and never write in the third person ("he/she/their CV").
 - 120-160 words total (excluding the greeting and signature). Three short paragraphs maximum.
 - Use ONLY the candidate's REAL data above — never invent facts, companies, projects, numbers, or credentials.
+- If "Candidate job preferences" has a notice period or availability, weave it in naturally when it helps the recruiter (e.g. "I'm available immediately" or "I'm on a 30-day notice period") — one short clause max. Do NOT invent availability if none is set.
+- If the role's work mode (remote/onsite/hybrid from the job description) matches the candidate's stated preference, mention the fit briefly ("I work fully remote today, which fits this remote setup"). One clause max. Never mention salary expectations in the email body.
 - The candidate IS interested in this role — say so directly and naturally early on ("I'm interested in the ${role} role at ${company}" or similar, in your own words). Do not be coy or generic.
 - Establish the candidate's experience LEVEL from the WHOLE career: state their total years of experience and the progression of roles and companies from "Candidate career journey" (e.g. "I've spent over four years in DevOps and DevSecOps, starting as a DevOps Engineer at PearlThoughts and now working as a Senior DevSecOps Engineer at Human Managed"), plus what they actually do day-to-day.
 - Include ALL of the candidate's projects from "Candidate projects" — every single one, each as ONE short clause (name + what it does, e.g. "I also built Tailor CV, an AI job-search platform, and OS-Admin, a multi-tenant restaurant SaaS"). Do not drop any project.
