@@ -126,52 +126,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
   const [testMsg, setTestMsg] = useState('');
   const [savedToast, setSavedToast] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'account' | 'security' | 'integration'>('account');
   const [activeItab, setActiveItab] = useState<'llm' | 'apify' | 'email'>('llm');
 
   // Job preferences (candidate profile)
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [profileLocOptions, setProfileLocOptions] = useState<string[]>([]);
-  const [profileSaved, setProfileSaved] = useState(false);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
-    setProfileSaveError(null);
     fetch('/api/profile').then((r) => r.json()).then((d) => setCandidateProfile(d.profile || null)).catch(() => setCandidateProfile(null));
   }, [isOpen]);
 
-  const saveCandidateProfile = async () => {
-    if (!candidateProfile) return;
-    setProfileSaving(true);
-    setProfileSaveError(null);
+  // Saves the job preferences with the main "Save changes" flow — the
+  // cleaned profile rides along with the config save.
+  const saveCandidateProfileWithConfig = async (): Promise<boolean> => {
+    if (!candidateProfile) return true;
     const clean = {
       ...candidateProfile,
       preferredLocations: candidateProfile.preferredLocations.map((s) => s.trim()).filter(Boolean),
       languages: candidateProfile.languages.map((s) => s.trim()).filter(Boolean),
     };
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: clean }),
-      });
-      if (res.ok) {
-        setProfileSaved(true);
-        setTimeout(() => setProfileSaved(false), 3000);
-      } else {
-        let msg = 'Failed to save job preferences.';
-        try {
-          const data = await res.json();
-          if (data?.error) msg = data.error;
-        } catch { /* keep default */ }
-        setProfileSaveError(msg);
-      }
-    } catch (e: any) {
-      setProfileSaveError(e?.message || 'Failed to save job preferences.');
-    }
-    setProfileSaving(false);
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile: clean }),
+    });
+    return res.ok;
   };
 
   const [profileLocDraft, setProfileLocDraft] = useState('');
@@ -269,11 +251,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSave = async () => {
     setIsSaving(true);
-    await onSaveConfig(formData);
-    setIsSaving(false);
-    setDirty(false);
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2400);
+    setSaveError(null);
+    try {
+      await onSaveConfig(formData);
+      const profileOk = await saveCandidateProfileWithConfig();
+      if (!profileOk) throw new Error('Could not save job preferences.');
+      setDirty(false);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2400);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Could not save changes.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const selectProvider = (p: LlmProvider) => {
@@ -628,14 +618,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       value={candidateProfile.recruiterNote}
                       onChange={(e) => setCandidateProfile((p) => p && { ...p, recruiterNote: e.target.value })} />
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
-                    <button type="button" className="stp-save" onClick={saveCandidateProfile} disabled={profileSaving}>
-                      {profileSaving ? 'Saving…' : 'Save Job Preferences'}
-                    </button>
-                    {profileSaved && <span className="stp-saved-note">Saved ✓</span>}
-                    {profileSaveError && <span className="stp-save-error">{profileSaveError}</span>}
-                  </div>
+                  <p className="stp-hint">Job preferences are saved with the main <b>Save changes</b> button.</p>
                 </div>
               )}
             </section>
@@ -931,6 +914,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Save bar */}
           <div className="st-savebar">
+            {saveError && <span className="stp-save-error">{saveError}</span>}
             <div className="st-spacer" />
             <button className="st-btn sm">Reset</button>
             <button className="st-btn primary" onClick={handleSave} disabled={isSaving}>
@@ -1091,9 +1075,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .stp-section-title { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--st-faint, #64748B); }
         .stp-check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--st-muted, #475569); cursor: pointer; }
         .stp-check-label input { accent-color: var(--color-brand, #2563EB); width: 15px; height: 15px; }
-        .stp-save { padding: 9px 18px; border-radius: 10px; border: 0; background: linear-gradient(135deg, var(--color-brand, #2563EB), var(--color-brand-strong, #1D4ED8)); color: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
-        .stp-save:disabled { opacity: .6; cursor: not-allowed; }
-        .stp-saved-note { font-size: 12px; font-weight: 700; color: var(--color-cta, #059669); }
+        .stp-hint { font-size: 11px; color: var(--st-faint, #64748B); margin-top: 14px; line-height: 1.5; }
         .stp-save-error { font-size: 12px; font-weight: 700; color: var(--st-danger, #DC2626); }
         @media (max-width: 720px) { .stp-grid2 { grid-template-columns: 1fr; } }
       `}</style>
