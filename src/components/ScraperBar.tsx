@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { MagnifyingGlass, MapPin, Play, CaretDown, CheckCircle, Info } from '@phosphor-icons/react';
 import { JobSource } from '../types';
-import { PREDEFINED_LOCATIONS, getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
+import { getRoleSuggestions, getKeywordSuggestions } from '../constants/suggestions';
 import { getSourceFlag, getSourceCountry, getSourceMeta } from '../constants/sourceMeta';
+import { searchLocations } from '../lib/locations';
 
 interface ScraperBarProps {
   onScrape: (params: {
@@ -31,6 +32,7 @@ const MORE_SOURCES = ALL_SOURCES.filter((src) => !getSourceMeta(src)?.apifyActor
 export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, apifyAvailable }) => {
   const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
   const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '30d'>('24h');
   const [jobType, setJobType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('remote');
   const [jobTypeInfoOpen, setJobTypeInfoOpen] = useState(false);
@@ -144,7 +146,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
       </datalist>
 
       <datalist id="datalist-locations">
-        {PREDEFINED_LOCATIONS.map((loc) => (
+        {locationOptions.map((loc) => (
           <option key={loc} value={loc} />
         ))}
       </datalist>
@@ -197,7 +199,15 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 id="input-scrape-location"
                 list="datalist-locations"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  const q = e.target.value.trim();
+                  if (q.length >= 1) {
+                    searchLocations(q, 30).then((list) => setLocationOptions(list.map((l) => l.label)));
+                  } else {
+                    setLocationOptions([]);
+                  }
+                }}
                 placeholder="Worldwide"
                 autoComplete="off"
                 name="ats-search-location"

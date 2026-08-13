@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
 import { llmErrorMessage } from '../lib/llmError';
-import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS, PREDEFINED_LOCATIONS } from '../constants/suggestions';
+import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS } from '../constants/suggestions';
+import { searchLocations } from '../lib/locations';
 import { DateRangePicker } from './DateRangePicker';
 import { TagInput } from './TagInput';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
@@ -49,6 +50,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   onSaveMasterCv,
 }) => {
   const [formData, setFormData] = useState<MasterCv>(masterCv);
+  const [masterCvLocationOptions, setMasterCvLocationOptions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -818,7 +820,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
 
           {/* Predefined Datalists for Master CV */}
           <datalist id="mastercv-locations">
-            {PREDEFINED_LOCATIONS.map((loc) => (
+            {masterCvLocationOptions.map((loc) => (
               <option key={loc} value={loc} />
             ))}
           </datalist>
@@ -882,12 +884,20 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
                   type="text"
                   list="mastercv-locations"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, location: e.target.value });
+                    const q = e.target.value.trim();
+                    if (q.length >= 1) {
+                      searchLocations(q, 10).then((list) => setMasterCvLocationOptions(list.map((l) => l.label)));
+                    } else {
+                      setMasterCvLocationOptions([]);
+                    }
+                  }}
                   placeholder="City, State / Country or Remote"
                   className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {PREDEFINED_LOCATIONS.slice(0, 4).map((loc) => (
+                  {masterCvLocationOptions.slice(0, 4).map((loc) => (
                     <button
                       type="button"
                       key={loc}

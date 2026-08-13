@@ -756,16 +756,3 @@ export function getKeywordSuggestions(query: string): string[] {
 
 export const PREDEFINED_ROLES = TRENDING_ROLES;
 export const PREDEFINED_KEYWORDS = TRENDING_KEYWORDS;
-export const PREDEFINED_LOCATIONS = [
-  'Worldwide',
-  'United States',
-  'United Kingdom',
-  'India',
-  'Singapore',
-  'Germany',
-  'Netherlands',
-  'Canada',
-  'Australia',
-  'United Arab Emirates',
-  'Remote',
-];
