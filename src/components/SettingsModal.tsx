@@ -739,7 +739,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="st-referral">
                         <div className="st-referral-txt">
                           <b>New to OpenCode Go? Get your API key here</b>
-                          <span>Works out of the box with a free tier — no credit card needed.</span>
                         </div>
                         <a className="st-referral-btn" href={OPENCODE_REFERRAL_URL} target="_blank" rel="noreferrer">
                           Get API key <ArrowSquareOut size={13} />
