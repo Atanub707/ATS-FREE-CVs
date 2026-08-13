@@ -55,7 +55,7 @@ interface SettingsModalProps {
 const OPENCODE_REFERRAL_URL = 'https://opencode.ai/go?ref=TTETM6S7H5';
 
 const PROVIDER_LABELS: Record<LlmProvider, string> = {
-  'opencode-go': 'OpenCode Zen',
+  'opencode-go': 'OpenCode Go',
   'openrouter': 'OpenRouter',
   'openai': 'OpenAI',
   'gemini': 'Gemini',
@@ -738,7 +738,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                       <div className="st-referral">
                         <div className="st-referral-txt">
-                          <b>New to OpenCode Zen? Get your API key here</b>
+                          <b>New to OpenCode Go? Get your API key here</b>
                           <span>Works out of the box with a free tier — no credit card needed.</span>
                         </div>
                         <a className="st-referral-btn" href={OPENCODE_REFERRAL_URL} target="_blank" rel="noreferrer">
