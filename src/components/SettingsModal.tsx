@@ -1059,6 +1059,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .stp-field.stp-check { justify-content: flex-end; }
         .stp-label { font-size: 11px; font-weight: 700; color: var(--st-muted, #475569); }
         .stp-input { width: 100%; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; color: var(--st-ink, #0F172A); background: var(--st-card, #fff); outline: none; font-family: inherit; }
+        select.stp-input { appearance: none; -webkit-appearance: none; height: 38px; line-height: normal; padding-right: 30px; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; }
         .stp-input:focus { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
         .stp-locbox { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border: 1.5px solid var(--st-hairline2, #CBD5E1); border-radius: 9px; padding: 6px 8px; background: var(--st-card, #fff); min-height: 38px; }
         .stp-locbox:focus-within { border-color: var(--color-brand, #2563EB); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
