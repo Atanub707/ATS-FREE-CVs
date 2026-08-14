@@ -99,3 +99,7 @@ h2{font-size:44px; letter-spacing:-.045em; font-weight:800;}
 @media (max-width:480px){
   .hero h1{font-size:36px;}
 }
+
+/* carousel — editorial */
+.carousel-dot{background:var(--line2);}
+.carousel-dot.active{background:#0C0C0C; transform:scale(1.3);}
