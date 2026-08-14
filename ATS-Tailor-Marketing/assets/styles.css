@@ -195,6 +195,7 @@ h2{font-size:36px; font-weight:800; letter-spacing:-.035em; line-height:1.12; ma
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width:960px){
+  .keys-grid{grid-template-columns:1fr;}
   .feat-grid,.pain-grid,.trust-grid{grid-template-columns:1fr 1fr;}
   .steps::before{display:none;}
   .steps{grid-template-columns:1fr; gap:32px;}
@@ -237,3 +238,9 @@ h2{font-size:36px; font-weight:800; letter-spacing:-.035em; line-height:1.12; ma
 .carousel-dot:hover{background:var(--brand-line);}
 .carousel-dot.active{background:var(--brand); transform:scale(1.3);}
 @media (prefers-reduced-motion: reduce){ .carousel-slide{transition:none;} }
+
+/* ═══ KEYS (bring your own key) ═══ */
+.keys-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:48px;}
+.keys-item .shot{box-shadow:var(--shadow-md);}
+.keys-item h3{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-top:18px;}
+.keys-item p{font-size:13px; color:var(--muted); margin-top:6px; line-height:1.6;}

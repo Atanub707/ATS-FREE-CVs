@@ -103,3 +103,11 @@ h2{font-size:44px; letter-spacing:-.045em; font-weight:800;}
 /* carousel — editorial */
 .carousel-dot{background:var(--line2);}
 .carousel-dot.active{background:#0C0C0C; transform:scale(1.3);}
+
+/* keys — editorial */
+.keys-item .shot{box-shadow:none;}
+.keys-item h3{font-size:16px; font-weight:800; margin-top:16px;}
+.keys-item p{font-size:13.5px; color:var(--muted); margin-top:6px;}
+@media (max-width:768px){
+  .keys-grid{grid-template-columns:1fr;}
+}
