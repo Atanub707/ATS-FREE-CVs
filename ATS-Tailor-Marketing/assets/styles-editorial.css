@@ -111,3 +111,12 @@ h2{font-size:44px; letter-spacing:-.045em; font-weight:800;}
 @media (max-width:768px){
   .keys-grid{grid-template-columns:1fr;}
 }
+
+/* final neutralization — no blue leaks */
+.band::before{display:none;}
+.btn-primary:hover{box-shadow:none;}
+.shot-glow{display:none;}
+.provider-chip:hover{border-color:#0C0C0C;}
+.faq-q:hover{color:#0C0C0C;}
+a{color:#0C0C0C; text-decoration:underline; text-underline-offset:3px;}
+a.btn{text-decoration:none;}
