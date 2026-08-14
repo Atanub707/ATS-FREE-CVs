@@ -65,7 +65,7 @@ monthly credit** — the scraper is paid per event from that credit.
 
 ### Steps
 
-1. Go to https://console.apify.com and sign up (or sign in).
+1. Go to [console.apify.com](https://console.apify.com/sign-up?fpr=xu9hcp) and sign up (or sign in).
 2. Open **Settings → Integrations** (bottom-left of the console).
 3. Click **API token** and copy it (it starts with `apify_api_`).
 4. Open the app → **Settings** → **Apify — Reliable LinkedIn Source**.
@@ -74,6 +74,9 @@ monthly credit** — the scraper is paid per event from that credit.
 
 If the token is missing or expires, the app **automatically falls back**
 to the built-in free scraper — searches keep working.
+
+> 💡 New to Apify? Signing up via the link above supports development —
+> the price is exactly the same for you.
 
 ---
 

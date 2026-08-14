@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: AppConfig = {
   apify: {
     token: '',
     enabled: false,
-    referralUrl: '',
+    referralUrl: 'https://console.apify.com/sign-up?fpr=xu9hcp',
   },
   email: {
     host: '',

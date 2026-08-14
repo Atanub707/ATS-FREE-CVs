@@ -53,6 +53,7 @@ interface SettingsModalProps {
 }
 
 const OPENCODE_REFERRAL_URL = 'https://opencode.ai/go?ref=TTETM6S7H5';
+const APIFY_REFERRAL_URL = 'https://console.apify.com/sign-up?fpr=xu9hcp';
 
 const PROVIDER_LABELS: Record<LlmProvider, string> = {
   'opencode-go': 'OpenCode Go',
@@ -828,17 +829,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               <span key={s.id} className="st-chip">{s.label} <span className="st-chip-p">· {s.pricePer1K}/1K</span></span>
                             ))}
                           </div>
-                          {formData.apify.referralUrl && (
-                            <div className="st-referral">
-                              <div style={{ flex: 1 }}>
-                                <b>New to Apify?</b>
-                                <span>Start with the free $5 monthly trial. This referral link supports development — same price for you.</span>
-                              </div>
-                              <a href={formData.apify.referralUrl} target="_blank" rel="noopener noreferrer">
-                                <ArrowSquareOut size={13} weight="bold" /> Open Apify
-                              </a>
+                          <div className="st-referral">
+                            <div className="st-referral-txt">
+                              <b>New to Apify? Get your API token here</b>
+                              <span>Sign up in a minute — this link supports development, same price for you.</span>
                             </div>
-                          )}
+                            <a className="st-referral-btn" href={formData.apify.referralUrl || APIFY_REFERRAL_URL} target="_blank" rel="noopener noreferrer">
+                              Get token <ArrowSquareOut size={13} />
+                            </a>
+                          </div>
                         </>
                       )}
                     </div>
