@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### 🤖 AI System — Interview with AI (JD-grounded)
+### 🤖 AI Interview (JD-grounded — renamed from AI System, Personalize removed)
 - **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
 - **Interview with AI** takes over the full screen: the interviewer asks 3 intro questions (role from your dashboard with real job counts, experience, optional pick a real posting), then runs a 7-question session where **every question is grounded in the actual job descriptions you scraped** (title/company + description excerpt in the prompt). Answers scored 0–10 with feedback; final scorecard with overall + verdict.
 - Role aggregation (`GET /api/interview/roles`), job picker (`GET /api/interview/jobs`), `ask()` gained a text mode (fixes the `json_object` rejection from opencode-go).

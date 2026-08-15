@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, ChatCircleText, PencilSimple, Sparkle } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, ChatCircleText, Sparkle } from '@phosphor-icons/react';
 
 interface RoleOption { label: string; count: number }
 interface JobOption { id: string; title: string; company: string }
@@ -7,7 +7,7 @@ interface Question { question: string; jobTitle: string; company: string; questi
 interface ScorecardRow { question: string; jobTitle: string; score: number; feedback: string }
 interface Scorecard { overall: number; verdict: string; perQuestion: ScorecardRow[] }
 
-type View = 'landing' | 'interview' | 'personalize';
+type View = 'landing' | 'interview';
 type IvStep = 'intro' | 'qa' | 'scorecard';
 
 export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -114,7 +114,6 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
   };
 
   const openInterview = () => { resetInterview(); setError(null); setView('interview'); };
-  const openPersonalize = () => { setError(null); setView('personalize'); };
   const backToLanding = () => { setView('landing'); setError(null); };
 
   const orbClass = busy ? 'orb orb-speaking' : 'orb orb-idle';
@@ -124,12 +123,12 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
       <header className="ai-hdr">
         <div className="ai-hdr-logo"><span className="orb orb-sm orb-idle" aria-hidden="true"></span></div>
         <div className="ai-hdr-ttl">
-          <b>AI System</b>
-          <span>Interview with AI · Personalized AI Assistant</span>
+          <b>AI Interview</b>
+          <span>Mock interview grounded in your real job descriptions</span>
         </div>
         <div className="ai-spacer" />
         {view !== 'landing' && (
-          <button className="ai-back" onClick={view === 'interview' ? backToLanding : backToLanding} aria-label="Back to AI System">
+          <button className="ai-back" onClick={view === 'interview' ? backToLanding : backToLanding} aria-label="Back to AI Interview">
             <ArrowLeft size={17} /> Back
           </button>
         )}
@@ -139,7 +138,7 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
       {view === 'landing' && (
         <div className="ai-landing">
           <div className="ai-lhead">
-            <span className="ai-eyebrow"><Sparkle size={12} weight="fill" /> AI System</span>
+            <span className="ai-eyebrow"><Sparkle size={12} weight="fill" /> AI Interview</span>
             <h1>What would you like to do?</h1>
             <p>Two professional AI assistants — both work entirely on your own data: your scraped jobs and your Master CV.</p>
           </div>
@@ -159,31 +158,6 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
               <span className="ai-cgo">Start interview <ArrowRight size={15} weight="bold" /></span>
             </button>
 
-            <button className="ai-choice pz" onClick={openPersonalize}>
-              <div className="ai-choice-top">
-                <span className="ai-choice-ico"><PencilSimple size={24} weight="duotone" /></span>
-                <span className="ai-choice-badge">CV Analyzer</span>
-              </div>
-              <span className="ai-choice-ico ai-pz-big"><PencilSimple size={22} weight="duotone" /></span>
-              <h2>Personalized AI Assistant</h2>
-              <p>Studies your <b>missing-keyword data across every scored job</b> — tells you exactly what your CV is missing and adds the keywords you approve, straight to your Master CV.</p>
-              <div className="ai-cstats">
-                <span className="ai-cstat">Analyzes scored jobs</span>
-                <span className="ai-cstat">One-click Master CV update</span>
-              </div>
-              <span className="ai-cgo">Coming soon <ArrowRight size={15} weight="bold" /></span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view === 'personalize' && (
-        <div className="ai-personalize">
-          <div className="ai-ps-card">
-            <span className="ai-ps-ico"><PencilSimple size={28} weight="duotone" /></span>
-            <h2>Personalized AI Assistant</h2>
-            <p>This assistant is next up — it analyzes the missing keywords stored across all your scored jobs and adds the ones you approve to your Master CV with one click.</p>
-            <button className="ai-btn violet" onClick={backToLanding}>Back to AI System</button>
           </div>
         </div>
       )}
@@ -321,8 +295,8 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-eyebrow{display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:6px 14px; margin-bottom:14px;}
         .ai-lhead h1{font-size:28px; font-weight:800; letter-spacing:-.04em;}
         .ai-lhead p{font-size:13px; color:var(--muted,#475569); margin-top:8px; max-width:520px; margin-left:auto; margin-right:auto; line-height:1.6;}
-        .ai-choices{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
-        @media(max-width:860px){.ai-choices{grid-template-columns:1fr;}}
+        .ai-choices{display:flex; justify-content:center;}
+        .ai-choice{max-width:520px; width:100%;}
         .ai-choice{position:relative; background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:18px; padding:28px 26px; cursor:pointer; transition:transform .2s ease, box-shadow .25s ease, border-color .2s ease; text-align:left; overflow:hidden; font-family:inherit;}
         .ai-choice:hover{transform:translateY(-3px); box-shadow:0 18px 40px -16px rgba(15,23,42,.22);}
         .ai-choice::before{content:''; position:absolute; top:0; left:0; right:0; height:5px;}
@@ -349,14 +323,9 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-choice.pz .ai-cgo{background:linear-gradient(135deg,#059669,#2563EB); box-shadow:0 10px 24px -10px rgba(5,150,105,.45);}
         .ai-cgo:hover{filter:brightness(1.07);}
 
-        /* interview + personalize screens */
+        /* interview screen */
         .ai-iv{flex:1; overflow-y:auto; padding:26px 30px 44px;}
         .ai-iv-col{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:16px; animation:aiRise .28s ease;}
-        .ai-personalize{flex:1; overflow-y:auto; display:flex; align-items:center; justify-content:center; padding:30px;}
-        .ai-ps-card{max-width:440px; background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:18px; padding:34px 32px; text-align:center; box-shadow:0 18px 40px -18px rgba(15,23,42,.2);}
-        .ai-ps-ico{width:58px; height:58px; border-radius:17px; background:linear-gradient(135deg,#059669,#2563EB); color:#fff; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;}
-        .ai-ps-card h2{font-size:19px; font-weight:800; margin-bottom:9px;}
-        .ai-ps-card p{font-size:12.5px; color:var(--muted,#475569); line-height:1.65; margin-bottom:22px;}
         @keyframes aiRise{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 
         .ai-card{background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:16px; padding:24px; box-shadow:0 6px 16px -8px rgba(15,23,42,.12);}
