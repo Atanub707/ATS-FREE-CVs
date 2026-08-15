@@ -219,6 +219,9 @@ function fallbackParseCvFromText(rawText: string) {
 }
 
 import { ask } from './server/llm/llmAdapter.js';
+import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
+import { CHAT_TOOLS } from './server/mcp/registry.js';
+import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
 // Convert the stored Master CV into the TailoredCv shape the PDF generator
@@ -568,6 +571,29 @@ async function startServer() {
       res.json({ success: true, profile: getCandidateProfile() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── AI Assistant chat (MCP-powered tool use) ──
+  app.post('/api/chat', async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const messages: { role: string; content: string }[] = Array.isArray(req.body?.messages) ? req.body.messages : [];
+      if (!messages.length) return res.status(400).json({ error: 'Messages are required.' });
+
+      const pair = createMcpPair();
+      const out = await chatWithTools({
+        messages: [{ role: 'user', content: SYSTEM_PROMPT }, ...messages.map((m) => ({ role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant', content: String(m.content || '') }))],
+        tools: CHAT_TOOLS,
+        toolExecutor: (name: string, args: any) => callMcpTool(pair, name, args),
+        maxRounds: 5,
+      });
+      const { text, jobs } = parseJobsBlock(out.reply);
+      res.json({ reply: text, jobs });
+    } catch (err: any) {
+      console.error('Chat error:', err);
+      res.status(500).json({ error: err?.message || 'Chat failed.' });
     }
   });
 
