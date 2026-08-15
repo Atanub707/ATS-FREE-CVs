@@ -7,8 +7,8 @@ describe('tool loop', () => {
     const calls: string[] = [];
     const fakeAsk = vi
       .fn()
-      .mockResolvedValueOnce(JSON.stringify({ tool_calls: [{ name: 'search_jobs', args: { role: 'DevOps' } }] }))
-      .mockResolvedValueOnce(JSON.stringify({ reply: 'Here are 5 jobs…' }));
+      .mockResolvedValueOnce({ toolCalls: [{ name: 'search_jobs', args: { role: 'DevOps' } }] })
+      .mockResolvedValueOnce({ reply: 'Here are 5 jobs…' });
     const loop = buildToolLoop(fakeAsk as any);
     const out = await loop({
       messages: [{ role: 'user', content: 'remote jobs' }],
@@ -26,7 +26,7 @@ describe('tool loop', () => {
 
   it('stops after maxRounds', async () => {
     const tools = [{ name: 'search_jobs', description: 'x', inputSchema: {} }];
-    const fakeAsk = vi.fn().mockResolvedValue(JSON.stringify({ tool_calls: [{ name: 'search_jobs', args: {} }] }));
+    const fakeAsk = vi.fn().mockResolvedValue({ toolCalls: [{ name: 'search_jobs', args: {} }] });
     const loop = buildToolLoop(fakeAsk as any);
     const out = await loop({ messages: [], tools, toolExecutor: async () => ({}), maxRounds: 2 });
     expect(fakeAsk).toHaveBeenCalledTimes(2);
@@ -37,8 +37,8 @@ describe('tool loop', () => {
     const tools = [{ name: 'broken', description: 'x', inputSchema: {} }];
     const fakeAsk = vi
       .fn()
-      .mockResolvedValueOnce(JSON.stringify({ tool_calls: [{ name: 'broken', args: {} }] }))
-      .mockResolvedValueOnce(JSON.stringify({ reply: 'Sorry, that failed.' }));
+      .mockResolvedValueOnce({ toolCalls: [{ name: 'broken', args: {} }] })
+      .mockResolvedValueOnce({ reply: 'Sorry, that failed.' });
     const loop = buildToolLoop(fakeAsk as any);
     const out = await loop({ messages: [], tools, toolExecutor: async () => { throw new Error('boom'); }, maxRounds: 3 });
     expect(out.reply).toBe('Sorry, that failed.');
