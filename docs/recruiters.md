@@ -314,8 +314,9 @@ hands-free conversation:
 4. **You can interrupt** — speaking while it talks stops it instantly (barge-in) and it listens to you.
 5. **It listens again** automatically after replying — a continuous back-and-forth loop. Works in Interview mode too (the interviewer speaks each question, you speak the answer).
 
-One-off usage without Voice mode: the mic button dictates into the input (pause to fill), and
-the speaker button makes any reply speak aloud. Voicebox (local voice studio on
+**The rule:** if your message was **spoken** (Voice mode or the mic button), the assistant
+**always answers in voice** — no toggle needed. The speaker button only controls spoken
+replies for purely typed messages. Voicebox (local voice studio on
 `127.0.0.1:17493`) upgrades TTS quality when installed; everything degrades gracefully.
 
 - `GET /api/voice/health` → `{ available, profiles }` (probes Voicebox)

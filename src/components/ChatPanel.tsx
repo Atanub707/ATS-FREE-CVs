@@ -59,6 +59,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   speakerOnRef.current = speakerOn;
   const listeningRef = useRef(listening);
   listeningRef.current = listening;
+  const dictatedRef = useRef(false);
   const orbState = busy || speaking ? 'speaking' : listening || inputFocused ? 'listening' : 'idle';
   const [error, setError] = useState<string | null>(null);
   const [thinkStep, setThinkStep] = useState(0);
@@ -131,8 +132,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   });
 
   // Speak a reply sentence-by-sentence (streaming feel), then auto-listen in voice chat.
-  const speakQueue = async (text: string) => {
-    if (!speakerOnRef.current || !text) return;
+  // force = true when the user's message was spoken — a spoken question ALWAYS gets a spoken answer.
+  const speakQueue = async (text: string, force = false) => {
+    if (!text || (!force && !speakerOnRef.current)) return;
     stopSpeech();
     const myId = ++speakQueueIdRef.current;
     const sentences = splitSentences(text);
@@ -161,6 +163,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
     let finalText = '';
     rec.onresult = (e: any) => {
       noSpeechStreakRef.current = 0;
+      dictatedRef.current = true;
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
@@ -218,13 +221,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
     return () => clearInterval(id);
   }, [busy]);
 
-  const send = async (raw?: string) => {
+  const send = async (raw?: string, spokenInput = false) => {
     const text = (raw ?? input).trim();
     if (!text || busy) return;
     setError(null);
     setInput('');
+    // A spoken message (mic) always gets a spoken answer — no toggle needed.
+    const spoken = spokenInput || dictatedRef.current || voiceChatRef.current;
+    dictatedRef.current = false;
     // Barge-in: a new turn interrupts whatever the assistant was saying.
-    if (speakerOnRef.current) stopSpeech();
+    if (speakerOnRef.current || spoken) stopSpeech();
 
     // Interview mode: start or answer via the interview endpoints
     if (interviewMode) {
@@ -241,7 +247,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
           if (!res.ok) throw new Error(d?.error || 'Could not start the interview.');
           setInterviewSession({ sessionId: d.sessionId, questionIndex: d.questionIndex, total: d.total });
           setMessages((m) => [...m, { role: 'assistant', content: `Interview started for: ${text}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
-          void speakQueue(d.question);
+          void speakQueue(d.question, voiceChatRef.current);
         } catch (e: any) {
           setError(e?.message || 'Could not start the interview.');
         } finally {
@@ -271,11 +277,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
             sc.verdict,
           ];
           setMessages((m) => [...m, { role: 'assistant', content: lines.join('\n') }]);
-          void speakQueue(sc.verdict);
+          void speakQueue(sc.verdict, voiceChatRef.current);
         } else {
           setInterviewSession((s) => (s ? { ...s, questionIndex: d.questionIndex, total: d.total } : s));
           setMessages((m) => [...m, { role: 'assistant', content: `Score: ${d.score}/10 — ${d.feedback}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
-          void speakQueue(d.question);
+          void speakQueue(d.question, voiceChatRef.current);
         }
       } catch (e: any) {
         setError(e?.message || 'Could not evaluate your answer.');
@@ -301,7 +307,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         return;
       }
       setMessages((m) => [...m, { role: 'assistant', content: data.reply || '…', jobs: data.jobs || [], cv: data.cv }]);
-      void speakQueue(data.reply || '');
+      void speakQueue(data.reply || '', spoken);
     } catch (e: any) {
       setError(e?.message || 'Could not reach the assistant.');
     } finally {
@@ -373,6 +379,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
           className={`chat-modebtn voice ${voiceChat ? 'on' : ''}`}
           onClick={toggleVoiceChat}
           aria-pressed={voiceChat}
+          title="Voice chat — speak, and I'll answer in voice"
         >
           {listening ? 'Listening…' : 'Voice'}
         </button>
@@ -488,7 +495,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
           <Microphone size={16} weight="fill" />
         </button>
         <div className="chat-inputwrap">
-          {listening && <div className="chat-listen-hint"><span className="chat-listen-dot"></span>{voiceChat ? 'Listening — speak now, pause to send' : 'Listening — pause to fill your message'}</div>}
+          {listening && <div className="chat-listen-hint"><span className="chat-listen-dot"></span>{voiceChat ? 'Listening — speak, pause to send. I\u2019ll answer in voice.' : 'Listening — speak, then send'}</div>}
           <input
             className="chat-input"
             placeholder={interviewMode ? (interviewSession ? `Q${interviewSession.questionIndex}/${interviewSession.total} — your answer…` : 'Enter the target role, e.g. Senior DevOps Engineer') : hasChat ? 'Ask anything about your jobs…' : 'Ask for jobs — e.g. 5 remote DevOps roles from LinkedIn'}
