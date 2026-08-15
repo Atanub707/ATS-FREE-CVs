@@ -88,7 +88,7 @@ export function parseJobsBlock(reply: string): { text: string; jobs: any[]; cv?:
   let cv: { token: string; template?: string } | undefined;
   if (cvMatch) {
     try {
-      cv = JSON.parse(cvMatch[0]);
+      cv = JSON.parse(cvMatch[0]).__cv;
     } catch {
       cv = undefined;
     }

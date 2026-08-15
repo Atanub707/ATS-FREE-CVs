@@ -21,8 +21,8 @@ describe('MCP tool registry', () => {
   });
   afterEach(() => teardownTestDb());
 
-  it('exposes the seven chat tools', () => {
-    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary', 'scrape_jobs', 'analyze_skill_gaps', 'apply_gaps_to_cv']);
+  it('exposes the eight chat tools', () => {
+    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary', 'scrape_jobs', 'analyze_skill_gaps', 'apply_gaps_to_cv', 'generate_cv']);
   });
 
   it('search_jobs filters by source and role and caps at limit', async () => {
