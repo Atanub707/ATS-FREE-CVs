@@ -153,16 +153,7 @@ temperature=0.2
 
 ## 🤖 Supported LLM Providers
 
-| Provider | Free Tier? | How to Get a Key |
-|---|---|---|
-| **OpenCode Go** | ✅ Free (default) | Built-in default provider — pre-selected in Settings |
-| **Google Gemini** | ✅ Free (via Google) | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **NVIDIA (Free Tier)** | ✅ Free, no key needed | Select `NVIDIA` in Settings |
-| **OpenAI** | ❌ Paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| **Anthropic (Claude)** | ❌ Paid | [console.anthropic.com](https://console.anthropic.com) |
-| **OpenRouter** | ❌ Paid | [openrouter.ai/keys](https://openrouter.ai/keys) — access 200+ models |
-
-> 💡 **Recommendation:** OpenCode Go works with zero setup; Google Gemini also offers a generous free tier. Sign up, get your key, and you're ready to go.
+**OpenCode Go** (built-in default, pre-selected in Settings) · **Google Gemini** ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) · **NVIDIA** (select in Settings) · **OpenAI** ([platform.openai.com/api-keys](https://platform.openai.com/api-keys)) · **Anthropic (Claude)** ([console.anthropic.com](https://console.anthropic.com)) · **OpenRouter** ([openrouter.ai/keys](https://openrouter.ai/keys) — access 200+ models)
 
 ---
 
