@@ -16,6 +16,8 @@
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome"/>
 </p>
 
+> 💬 **Recommended:** dictate your prompts with **[Wispr Flow](https://ref.wisprflow.ai/atanu-biswas)** — turn speech into flawless text in Tailor CV and any other app, at 2× your typing speed.
+
 ---
 
 ## 📋 Overview

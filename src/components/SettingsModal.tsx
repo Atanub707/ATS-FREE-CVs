@@ -53,6 +53,7 @@ interface SettingsModalProps {
 }
 
 const OPENCODE_REFERRAL_URL = 'https://opencode.ai/go?ref=TTETM6S7H5';
+const WISPRFLOW_REFERRAL_URL = 'https://ref.wisprflow.ai/atanu-biswas';
 const APIFY_REFERRAL_URL = 'https://console.apify.com/sign-up?fpr=xu9hcp';
 
 const PROVIDER_LABELS: Record<LlmProvider, string> = {
@@ -745,6 +746,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           Get API key <ArrowSquareOut size={13} />
                         </a>
                       </div>
+                      <div className="st-referral wispr">
+                        <div className="st-referral-txt">
+                          <b>Write prompts faster — dictate them with Wispr Flow</b>
+                          <span>Turn speech into flawless prompt text in any app — our recommendation for talking to the AI assistant.</span>
+                        </div>
+                        <a className="st-referral-btn wispr-btn" href={WISPRFLOW_REFERRAL_URL} target="_blank" rel="noreferrer">
+                          Try Wispr Flow <ArrowSquareOut size={13} />
+                        </a>
+                      </div>
                       <span className="st-flabel" htmlFor="st-llmkey">API key</span>
                       <div className="st-row">
                         <div className="st-lbl"><label htmlFor="st-llmkey"><b>Key</b><span>Stored locally in config.ini — never committed.</span></label></div>
@@ -1010,6 +1020,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-provider b{font-size:12px; display:block; line-height:1.25; font-weight:700;}
         .st-provider span:not(.st-plogo){font-size:9.5px; color:var(--st-faint); display:block; margin-top:1px;}
         .st-referral{display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,var(--st-primary-soft),#F5F3FF); border:1px dashed var(--st-primary-line); border-radius:12px; padding:10px 14px; margin:12px 0 4px;}
+        .st-referral.wispr{background:linear-gradient(135deg,#ECFDF5,#EFF6FF); border-style:solid; border-color:#A7F3D0; margin-top:8px;}
+        .st-referral.wispr .st-referral-txt span{display:block; font-size:11px; color:var(--st-muted,#475569); margin-top:2px; line-height:1.45;}
+        .st-referral-btn.wispr-btn{background:linear-gradient(135deg,#059669,#2563EB);}
         .st-referral-txt{flex:1; min-width:0;}
         .st-referral-txt b{display:block; font-size:12px; font-weight:800; color:var(--st-ink);}
         .st-referral-txt span{font-size:11px; color:var(--st-faint);}

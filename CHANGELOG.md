@@ -9,6 +9,7 @@
 - **generate_cv tool** — the assistant can generate your CV as a PDF using the existing 4 templates only; chat shows a Download PDF button.
 - **Interview mode** — toggle in the chat header; tell it a target role and get a 7-question mock interview with per-question scores, feedback and a final verdict.
 
+- **Wispr Flow recommendation** — the LLM & AI settings screen now recommends **Wispr Flow** (affiliate: https://ref.wisprflow.ai/atanu-biswas) for dictating prompts; same link added to the README.
 > **Voice I/O removed (2026-08-15):** the voice assistant button, mic/speaker controls, Voicebox integration and all speech fallbacks were deleted from the app, server, docker-compose and docs. The assistant remains fully text-based.
 
 ### 🤖 AI Assistant (MCP-powered chat)
