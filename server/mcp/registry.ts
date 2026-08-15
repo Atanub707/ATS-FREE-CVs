@@ -1,4 +1,4 @@
-import { getAllJobs, getMasterCv, getCandidateProfile, saveNewJobs } from '../storage/fileStorage.js';
+import { getAllJobs, getMasterCv, getCandidateProfile, saveNewJobs, saveMasterCv } from '../storage/fileStorage.js';
 import { ScraperFactory } from '../scraper/scraperFactory.js';
 
 export interface ToolDef {
@@ -41,7 +41,7 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: 'scrape_jobs',
     description:
-      "Scrape NEW jobs from the user's configured sources and store them in their job list (they appear on the dashboard). Use when the user asks to scrape/find/search for new jobs. Filters: role/keywords (required), location, sources (optional array e.g. ['LinkedIn'] or ['Indeed','Naukri']), maxJobsPerSource (default 15), under10Applicants (true/false).",
+      "Scrape NEW jobs from the user's configured sources and store them in their job list (they appear on the dashboard). Use when the user asks to scrape/find/search for new jobs. Filters: role/keywords (required), location (optional), sources (optional array e.g. ['LinkedIn'] or ['Indeed','Naukri']), maxJobsPerSource (default 15), under10Applicants (true/false).",
     inputSchema: {
       type: 'object',
       properties: {
@@ -52,6 +52,25 @@ export const CHAT_TOOLS: ToolDef[] = [
         under10Applicants: { type: 'boolean' },
       },
       required: ['role'],
+    },
+  },
+  {
+    name: 'analyze_skill_gaps',
+    description:
+      "Analyze the most common missing keywords across the user's scored jobs. Use when the user asks what to add to their CV, what skills are missing, or how to improve their profile. Returns the top gaps with how many jobs mention each.",
+    inputSchema: {
+      type: 'object',
+      properties: { limit: { type: 'number' } },
+    },
+  },
+  {
+    name: 'apply_gaps_to_cv',
+    description:
+      "Add the given keywords to the user's Master CV skills (as a new 'Market Skills' category). Use ONLY after the user explicitly confirms they want the listed gaps added to their CV. Returns the new skills list.",
+    inputSchema: {
+      type: 'object',
+      properties: { keywords: { type: 'array', items: { type: 'string' } } },
+      required: ['keywords'],
     },
   },
 ];
@@ -177,5 +196,38 @@ export const TOOL_EXECUTORS: Record<string, (args: any) => Promise<any>> = {
         url: j.url,
       })),
     };
+  },
+  async analyze_skill_gaps(args) {
+    const limit = Math.min(25, Math.max(1, Number(args?.limit) || 15));
+    const scored = getAllJobs().filter((j: any) => j.gapAnalysis && Array.isArray(j.gapAnalysis.missingKeywords) && j.gapAnalysis.missingKeywords.length > 0);
+    const counts = new Map<string, number>();
+    for (const j of scored) {
+      const uniq = new Set((j.gapAnalysis.missingKeywords as string[]).map((k: string) => k.toLowerCase().trim()).filter(Boolean));
+      uniq.forEach((k) => counts.set(k, (counts.get(k) || 0) + 1));
+    }
+    const total = scored.length;
+    const gaps = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([keyword, count]) => ({ keyword, count, ofTotal: total, pct: total ? Math.round((count / total) * 100) : 0 }));
+    return { totalScored: total, gaps, note: total ? `Based on ${total} scored jobs.` : 'No scored jobs yet — ask the user to score some jobs first.' };
+  },
+  async apply_gaps_to_cv(args) {
+    const keywords = (Array.isArray(args?.keywords) ? args.keywords : [])
+      .map((k: any) => String(k).trim())
+      .filter(Boolean)
+      .filter((k: string) => k.length <= 60);
+    if (!keywords.length) return { error: 'No valid keywords provided.' };
+    const cv = getMasterCv() as any;
+    const skills: { category: string; items: string[] }[] = (cv.skills || []).map((s: any) => ({ ...s, items: [...(s.items || [])] }));
+    const existing = new Set(skills.flatMap((s) => s.items.map((i: string) => i.toLowerCase().trim())));
+    const added = keywords.filter((k: string) => !existing.has(k.toLowerCase().trim()));
+    if (!added.length) return { error: 'All of those keywords are already in your CV.' };
+    const market = skills.find((s) => s.category?.toLowerCase().includes('market'));
+    if (market) market.items = [...market.items, ...added];
+    else skills.push({ category: 'Market Skills', items: added });
+    const newCv = { ...cv, skills };
+    saveMasterCv(newCv as any);
+    return { added, skills: skills.flatMap((s) => s.items) };
   },
 };

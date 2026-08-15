@@ -21,8 +21,8 @@ describe('MCP tool registry', () => {
   });
   afterEach(() => teardownTestDb());
 
-  it('exposes the five chat tools', () => {
-    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary', 'scrape_jobs']);
+  it('exposes the seven chat tools', () => {
+    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary', 'scrape_jobs', 'analyze_skill_gaps', 'apply_gaps_to_cv']);
   });
 
   it('search_jobs filters by source and role and caps at limit', async () => {
@@ -79,5 +79,25 @@ describe('MCP tool registry', () => {
   it('scrape_jobs rejects a missing role', async () => {
     const out = await runWithUser('u1', () => TOOL_EXECUTORS['scrape_jobs']({}));
     expect(out.error).toBeTruthy();
+  });
+
+  it('analyze_skill_gaps aggregates missing keywords across scored jobs', async () => {
+    runWithUser('u1', () => {
+      seedJob('g1', { title: 'DevOps', company: 'A', gapAnalysis: { missingKeywords: ['Terraform', 'Kubernetes'] } });
+      seedJob('g2', { title: 'SRE', company: 'B', gapAnalysis: { missingKeywords: ['Terraform', 'AWS'] } });
+    });
+    const out = await runWithUser('u1', () => TOOL_EXECUTORS['analyze_skill_gaps']({}));
+    expect(out.totalScored).toBe(2);
+    expect(out.gaps[0].keyword).toBe('terraform');
+    expect(out.gaps[0].count).toBe(2);
+    expect(out.gaps[0].pct).toBe(100);
+  });
+
+  it('apply_gaps_to_cv adds new keywords to a Market Skills category', async () => {
+    const out = await runWithUser('u1', () => TOOL_EXECUTORS['apply_gaps_to_cv']({ keywords: ['Terraform', 'Kubernetes'] }));
+    expect(out.added).toEqual(['Terraform', 'Kubernetes']);
+    expect(out.skills).toContain('Terraform');
+    const dup = await runWithUser('u1', () => TOOL_EXECUTORS['apply_gaps_to_cv']({ keywords: ['Terraform'] }));
+    expect(dup.error).toBeTruthy();
   });
 });
