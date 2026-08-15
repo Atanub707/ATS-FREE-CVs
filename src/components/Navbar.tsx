@@ -119,11 +119,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => onOpenChat?.()}
             className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[12.5px] font-semibold border border-[var(--color-hairline)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-violet-soft,#F5F3FF)] hover:border-[var(--color-violet-line,#E9D5FF)]"
-            title="Ask the AI assistant for jobs"
+            title="AI System — mock interviews & CV personalization"
             style={{ color: 'var(--color-muted)' }}
           >
             <ChatCircleDots size={15} weight="duotone" style={{ color: '#7C3AED' }} />
-            AI Assistant
+            AI System
           </button>
 
           <button

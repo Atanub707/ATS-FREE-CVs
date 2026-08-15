@@ -221,7 +221,7 @@ function fallbackParseCvFromText(rawText: string) {
 import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
 import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
-import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession } from './server/interview.js';
+import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession, getRoleOptions, getJobsForRole } from './server/interview.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -635,16 +635,42 @@ async function startServer() {
     res.send(buf);
   });
 
-  // ── Mock interview mode ──
+  // ── AI System · Interview (job-description grounded) ──
+  app.get('/api/interview/roles', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      res.json({ roles: getRoleOptions() });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not load roles.' });
+    }
+  });
+
+  app.get('/api/interview/jobs', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const role = String(req.query.role || '').trim();
+      if (!role) return res.json({ jobs: [] });
+      res.json({ jobs: getJobsForRole(role).map((j) => ({ id: j.id, title: j.title, company: j.company })) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not load jobs.' });
+    }
+  });
+
   app.post('/api/interview/start', async (req, res) => {
     try {
       const userId = getCurrentUserId();
       if (!userId) return res.status(401).json({ error: 'Not signed in.' });
-      const role = String(req.body?.targetRole || '').trim();
+      const role = String(req.body?.role || req.body?.targetRole || '').trim();
       if (!role) return res.status(400).json({ error: 'Target role is required.' });
-      const session = startInterview(role);
-      const question = await askNextQuestion(session);
-      res.json({ sessionId: session.id, question, questionIndex: 1, total: session.total });
+      const session = startInterview({
+        role,
+        experienceYears: String(req.body?.experienceYears || ''),
+        jobId: req.body?.jobId ? String(req.body.jobId) : undefined,
+      });
+      const { question, jobTitle, company } = await askNextQuestion(session);
+      res.json({ sessionId: session.id, question, jobTitle, company, questionIndex: 1, total: session.total });
     } catch (err: any) {
       console.error('Interview start error:', err);
       res.status(500).json({ error: err?.message || 'Could not start the interview.' });
@@ -660,13 +686,13 @@ async function startServer() {
       const answer = String(req.body?.answer || '').trim();
       if (!answer) return res.status(400).json({ error: 'Answer is required.' });
       const last = session.qa[session.qa.length - 1];
-      const { score, feedback } = await scoreAnswer(session, last?.question || 'your last question', answer);
+      const { score, feedback } = await scoreAnswer(session, last?.question || 'your last question', last?.jobTitle || session.role, last?.company || '', answer);
       if (session.qIndex >= session.total) {
         const scorecard = await buildScorecard(session);
         return res.json({ done: true, scorecard });
       }
-      const question = await askNextQuestion(session);
-      res.json({ done: false, score, feedback, question, questionIndex: session.qIndex + 1, total: session.total });
+      const { question, jobTitle, company } = await askNextQuestion(session);
+      res.json({ done: false, score, feedback, question, jobTitle, company, questionIndex: session.qIndex + 1, total: session.total });
     } catch (err: any) {
       console.error('Interview answer error:', err);
       res.status(500).json({ error: err?.message || 'Could not evaluate your answer.' });

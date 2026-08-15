@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI System — Mockup v2 (Interview · Personalize)</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#F7F8FA; --card:#FFFFFF; --ink:#0F172A; --muted:#475569; --faint:#64748B;
+    --line:#E2E8F0; --line2:#CBD5E1;
+    --brand:#2563EB; --brand-strong:#1D4ED8; --brand-line:#BFDBFE; --brand-soft:#EFF6FF;
+    --violet:#7C3AED; --violet-strong:#6D28D9; --violet-line:#E9D5FF; --violet-soft:#F5F3FF;
+    --emerald:#059669; --emerald-strong:#047857; --emerald-line:#A7F3D0; --emerald-soft:#ECFDF5;
+    --amber:#D97706; --amber-soft:#FFFBEB; --amber-line:#FDE68A;
+    --danger:#DC2626; --danger-soft:#FEF2F2; --danger-line:#FECACA;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.07);
+    --shadow-md:0 6px 16px -8px rgba(15,23,42,.12), 0 3px 8px -4px rgba(15,23,42,.08);
+    --shadow-lg:0 18px 40px -16px rgba(15,23,42,.22);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+  button{font-family:inherit; cursor:pointer;}
+  .mok{position:fixed; top:12px; right:14px; z-index:99; font-size:10.5px; font-weight:800; color:#fff; background:linear-gradient(135deg,#F59E0B,#DC2626); border-radius:999px; padding:6px 13px; letter-spacing:.05em; box-shadow:0 8px 18px -8px rgba(220,38,38,.6);}
+  svg{flex-shrink:0;}
+  :focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:6px;}
+
+  /* ════════ VIEW 1 · LANDING (two choices) ════════ */
+  #view-landing{min-height:100vh; display:flex; flex-direction:column;}
+  .nav{display:flex; align-items:center; gap:12px; padding:18px 30px; background:rgba(255,255,255,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20;}
+  .nav-logo{width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg,var(--brand),var(--violet)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; box-shadow:0 6px 16px -6px rgba(37,99,235,.55);}
+  .nav-t b{font-size:15px; font-weight:800; display:block; line-height:1.1;}
+  .nav-t span{font-size:11px; color:var(--faint); font-weight:500;}
+  .nav-spacer{flex:1;}
+  .nav-pill{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; padding:9px 18px; border-radius:999px; transition:all .18s ease; border:1.5px solid var(--line2); background:var(--card); color:var(--muted);}
+  .nav-pill:hover{border-color:var(--brand); color:var(--brand);}
+  .nav-pill.on{background:linear-gradient(135deg,var(--brand),var(--violet)); border-color:transparent; color:#fff; box-shadow:var(--shadow-sm);}
+
+  .landing-body{flex:1; display:flex; align-items:center; justify-content:center; padding:40px 30px 64px;}
+  .landing-inner{width:100%; max-width:1080px;}
+  .lhead{text-align:center; margin-bottom:38px;}
+  .lhead .eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--violet); background:var(--violet-soft); border:1px solid var(--violet-line); border-radius:999px; padding:6px 14px; margin-bottom:16px;}
+  .lhead h1{font-size:30px; font-weight:800; letter-spacing:-.04em; line-height:1.15;}
+  .lhead p{font-size:13.5px; color:var(--muted); margin-top:9px; max-width:560px; margin-left:auto; margin-right:auto; line-height:1.6;}
+
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:26px;}
+  @media(max-width:900px){.choices{grid-template-columns:1fr;}}
+  .choice{position:relative; background:var(--card); border:1px solid var(--line); border-radius:20px; padding:34px 30px 30px; cursor:pointer; transition:transform .2s ease, box-shadow .25s ease, border-color .2s ease; text-align:left; overflow:hidden; box-shadow:var(--shadow-sm);}
+  .choice:hover{transform:translateY(-4px); box-shadow:var(--shadow-lg);}
+  .choice::before{content:''; position:absolute; top:0; left:0; right:0; height:5px;}
+  .choice.iv::before{background:linear-gradient(90deg,var(--violet),var(--brand));}
+  .choice.pz::before{background:linear-gradient(90deg,var(--emerald),var(--brand));}
+  .choice-top{display:flex; align-items:center; gap:15px; margin-bottom:18px;}
+  .choice-ico{width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);}
+  .choice.iv .choice-ico{background:linear-gradient(135deg,var(--violet),var(--brand)); color:#fff;}
+  .choice.pz .choice-ico{background:linear-gradient(135deg,var(--emerald),var(--brand)); color:#fff;}
+  .choice-badge{font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; border-radius:999px; padding:5px 12px; margin-left:auto;}
+  .choice.iv .choice-badge{color:var(--violet); background:var(--violet-soft); border:1px solid var(--violet-line);}
+  .choice.pz .choice-badge{color:var(--emerald); background:var(--emerald-soft); border:1px solid var(--emerald-line);}
+  .choice h2{font-size:20px; font-weight:800; letter-spacing:-.02em; margin-bottom:7px;}
+  .choice .cdesc{font-size:12.5px; color:var(--muted); line-height:1.65; margin-bottom:18px;}
+  .cstats{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;}
+  .cstat{font-size:10.5px; font-weight:800; color:var(--faint); background:#F1F5F9; border:1px solid var(--line); border-radius:999px; padding:6px 13px; display:inline-flex; align-items:center; gap:6px;}
+  .cstat b{color:var(--ink);}
+  .choice.iv .cstat b{color:var(--violet);}
+  .choice.pz .cstat b{color:var(--emerald);}
+  .cgo{display:inline-flex; align-items:center; gap:9px; font-size:13px; font-weight:800; padding:12px 22px; border-radius:12px; color:#fff; transition:filter .18s ease, gap .18s ease; border:0;}
+  .choice:hover .cgo{gap:13px;}
+  .choice.iv .cgo{background:linear-gradient(135deg,var(--violet),var(--brand)); box-shadow:0 10px 24px -10px rgba(124,58,237,.55);}
+  .choice.pz .cgo{background:linear-gradient(135deg,var(--emerald),var(--brand)); box-shadow:0 10px 24px -10px rgba(5,150,105,.5);}
+  .cgo:hover{filter:brightness(1.08);}
+
+  .orb-sm{position:relative; width:46px; height:46px; border-radius:50%; display:inline-block;
+    background:radial-gradient(circle at 32% 28%, #fff 0%, #DBEAFE 9%, var(--violet) 42%, var(--brand) 68%, #1E3A8A 100%);
+    box-shadow:inset -7px -6px 12px rgba(30,58,138,.45), inset 4px 4px 9px rgba(255,255,255,.55), 0 6px 16px -6px rgba(37,99,235,.5);
+    animation:float 3.6s ease-in-out infinite;}
+  .orb-sm::before{content:''; position:absolute; top:8%; left:14%; width:40%; height:26%; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.9), rgba(255,255,255,0) 70%); transform:rotate(-18deg);}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+  /* ════════ VIEWS 2&3 · FULL-SCREEN ════════ */
+  .screen{position:fixed; inset:0; background:var(--bg); display:none; flex-direction:column; z-index:40;}
+  .screen.active{display:flex; animation:screenIn .28s ease;}
+  @keyframes screenIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  .s-hdr{display:flex; align-items:center; gap:14px; padding:0 30px; height:66px; background:var(--card); border-bottom:1px solid var(--line); flex-shrink:0;}
+  .s-back{width:40px; height:40px; border-radius:12px; border:1.5px solid var(--line2); background:var(--card); color:var(--muted); display:flex; align-items:center; justify-content:center; transition:all .15s ease;}
+  .s-back:hover{border-color:var(--brand); color:var(--brand); background:var(--brand-soft);}
+  .s-hdr .ttl b{font-size:15px; font-weight:800; display:block; line-height:1.2;}
+  .s-hdr .ttl span{font-size:11px; color:var(--faint); font-weight:500;}
+  .s-hdr .prog{margin-left:auto; display:flex; align-items:center; gap:10px;}
+  .s-body{flex:1; overflow-y:auto; padding:28px 30px 40px;}
+
+  .iv-col{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:18px;}
+  .iv-q{background:var(--card); border:1.5px solid var(--violet-line); border-left:5px solid var(--violet); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow-md); animation:rise .3s ease;}
+  .iv-q .qtag{display:inline-flex; align-items:center; gap:7px; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--violet); background:var(--violet-soft); border:1px solid var(--violet-line); border-radius:999px; padding:4px 12px; margin-bottom:12px;}
+  .iv-q .qtext{font-size:15px; font-weight:700; line-height:1.65;}
+  .iv-q .qsrc{margin-top:12px; font-size:11px; color:var(--faint); display:flex; align-items:center; gap:6px;}
+  .iv-q .qsrc .src-chip{background:#F1F5F9; border:1px solid var(--line); border-radius:6px; padding:2px 8px; font-weight:700; color:var(--muted); font-size:10.5px;}
+  .iv-answer{width:100%; border:1.5px solid var(--line2); border-radius:14px; padding:15px 17px; min-height:92px; font-size:13.5px; color:var(--ink); line-height:1.65; resize:vertical; outline:none; background:var(--card); font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease;}
+  .iv-answer:focus{border-color:var(--violet); box-shadow:0 0 0 4px rgba(124,58,237,.08);}
+  .iv-actions{display:flex; align-items:center; gap:12px;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; padding:13px 24px; font-size:13.5px; font-weight:800; transition:filter .18s ease, transform .12s ease; text-decoration:none;}
+  .btn:hover{filter:brightness(1.07);}
+  .btn:active{transform:scale(.985);}
+  .btn.violet{background:linear-gradient(135deg,var(--violet),var(--brand)); color:#fff; box-shadow:0 10px 24px -10px rgba(124,58,237,.5);}
+  .btn.emerald{background:linear-gradient(135deg,var(--emerald),var(--brand)); color:#fff; box-shadow:0 10px 24px -10px rgba(5,150,105,.45);}
+  .btn.ghost{background:var(--card); color:var(--muted); border:1.5px solid var(--line2);}
+  .btn.ghost:hover{border-color:var(--brand); color:var(--brand); filter:none;}
+  .btn.sm{padding:10px 18px; font-size:12.5px; border-radius:10px;}
+  .score-pill{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800; color:var(--emerald); background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:999px; padding:7px 14px;}
+  .hint{font-size:11.5px; color:var(--faint); line-height:1.5;}
+  .microbar{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:800; color:var(--danger); background:var(--danger-soft); border:1px solid var(--danger-line); border-radius:999px; padding:7px 14px; display:none;}
+  .microbar.on{display:inline-flex; animation:rise .25s ease;}
+  .micro-dot{width:8px; height:8px; border-radius:50%; background:var(--danger); animation:dot 1.1s ease-in-out infinite;}
+  @keyframes dot{0%,100%{opacity:1; transform:scale(1)}50%{opacity:.4; transform:scale(.75)}}
+
+  .intro-card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; box-shadow:var(--shadow-md); animation:rise .3s ease;}
+  .intro-card h3{font-size:15px; font-weight:800; margin-bottom:4px;}
+  .intro-card .isub{font-size:12px; color:var(--faint); margin-bottom:16px;}
+  .q-chip{display:flex; align-items:center; gap:11px; font-size:13px; font-weight:700; color:var(--muted); background:#FAFAF9; border:1.5px solid var(--line); border-radius:12px; padding:12px 15px; cursor:pointer; transition:all .15s ease; width:100%; text-align:left; margin-bottom:9px;}
+  .q-chip:hover{border-color:var(--violet); color:var(--violet); background:var(--violet-soft);}
+  .q-chip.on{border-color:var(--violet); background:var(--violet-soft); color:var(--violet);}
+  .q-chip .n{width:24px; height:24px; border-radius:8px; background:#F1F5F9; color:var(--faint); font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .q-chip.on .n{background:var(--violet); color:#fff;}
+  .q-chip .jobs{font-size:10.5px; color:var(--faint); font-weight:600; margin-left:auto;}
+  .q-field label{display:block; font-size:11px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.07em; margin-bottom:7px;}
+  .q-field input{width:100%; border:1.5px solid var(--line2); border-radius:12px; padding:12px 15px; font-size:13px; font-family:inherit; color:var(--ink); outline:none; transition:border-color .15s ease, box-shadow .15s ease; background:#fff;}
+  .q-field input:focus{border-color:var(--violet); box-shadow:0 0 0 4px rgba(124,58,237,.1);}
+  .intro-nav{display:flex; gap:10px; margin-top:16px; align-items:center;}
+  .prog-steps{display:flex; gap:6px;}
+  .prog-steps i{width:26px; height:4px; border-radius:999px; background:var(--line2); transition:background .2s ease;}
+  .prog-steps i.on{background:var(--violet);}
+
+  /* scorecard */
+  .scorecard{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:26px; box-shadow:var(--shadow-lg); animation:rise .35s ease;}
+  .sc-head{display:flex; align-items:center; gap:16px; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:18px;}
+  .sc-ring{width:74px; height:74px; border-radius:50%; background:conic-gradient(var(--emerald) 78%, #E2E8F0 0); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .sc-ring::after{content:''; position:absolute; width:58px; height:58px; border-radius:50%; background:var(--card);}
+  .sc-ring b{position:relative; font-size:17px; font-weight:800; color:var(--emerald); z-index:1;}
+  .sc-head h3{font-size:17px; font-weight:800;}
+  .sc-head p{font-size:12px; color:var(--muted); margin-top:2px; line-height:1.5;}
+  .sc-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #F1F5F9;}
+  .sc-row:last-child{border-bottom:0;}
+  .sc-q{flex:1; font-size:12.5px; font-weight:700; color:var(--ink); line-height:1.5;}
+  .sc-score{font-size:12px; font-weight:800; color:var(--emerald); background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:999px; padding:4px 11px; flex-shrink:0;}
+  .sc-score.low{color:var(--amber); background:var(--amber-soft); border-color:var(--amber-line);}
+
+  /* personalize screen */
+  .pz-col{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:18px;}
+  .pz-hero{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px 24px; display:flex; align-items:center; gap:16px; box-shadow:var(--shadow-md); animation:rise .3s ease;}
+  .pz-hero .pz-ico{width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--emerald),var(--brand)); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm); flex-shrink:0;}
+  .pz-hero b{font-size:15px; font-weight:800; display:block;}
+  .pz-hero span{font-size:12px; color:var(--muted); line-height:1.5;}
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media(max-width:640px){.kpis{grid-template-columns:1fr;}}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow-sm);}
+  .kpi .klab{font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:6px;}
+  .kpi .kval{font-size:22px; font-weight:800; letter-spacing:-.02em;}
+  .kpi .ksub{font-size:11px; color:var(--faint); margin-top:3px;}
+  .kpi.blue .kval{color:var(--brand);}
+  .kpi.green .kval{color:var(--emerald);}
+  .kpi.violet .kval{color:var(--violet);}
+  .gaps-card{background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-md); overflow:hidden; animation:rise .3s ease;}
+  .gaps-head{display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line);}
+  .gaps-head b{font-size:14.5px; font-weight:800;}
+  .gaps-head span{font-size:11.5px; color:var(--faint); font-weight:600;}
+  .gap-row{display:flex; align-items:center; gap:13px; padding:13px 22px; border-bottom:1px solid #F1F5F9; transition:background .15s ease;}
+  .gap-row:hover{background:#FBFCFE;}
+  .gap-row:last-child{border-bottom:0;}
+  .gap-cb{width:20px; height:20px; border-radius:6px; border:1.5px solid var(--line2); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s ease; color:transparent; flex-shrink:0;}
+  .gap-cb:hover{border-color:var(--emerald);}
+  .gap-cb.on{background:var(--emerald); border-color:var(--emerald); color:#fff;}
+  .gap-name{width:128px; font-size:13px; font-weight:800; color:var(--ink); flex-shrink:0;}
+  .gap-bar-wrap{flex:1; background:#F1F5F9; border-radius:999px; height:9px; overflow:hidden;}
+  .gap-bar{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--emerald),var(--brand)); animation:grow .7s ease-out both;}
+  @keyframes grow{from{width:0}}
+  .gap-pct{width:96px; text-align:right; font-size:11.5px; font-weight:700; color:var(--faint); flex-shrink:0;}
+  .gap-pct b{color:var(--ink);}
+  .recommend{background:var(--amber-soft); border:1px solid var(--amber-line); border-radius:14px; padding:15px 18px; font-size:12.5px; color:var(--muted); line-height:1.65; box-shadow:var(--shadow-sm);}
+  .recommend b{color:var(--amber);}
+  .pz-actions{display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  .done-bar{display:flex; align-items:center; gap:11px; background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:14px; padding:15px 18px; font-size:13px; font-weight:700; color:var(--emerald); animation:rise .3s ease;}
+  .done-bar svg{flex-shrink:0;}
+  .sel-count{font-size:12px; font-weight:800; color:var(--faint);}
+  .sel-count b{color:var(--emerald);}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important; transition:none !important;}}
+</style>
+</head>
+<body>
+<div class="mok">MOCKUP v2 — clickable · not the app yet</div>
+
+<!-- ═══════════════════ VIEW 1 · LANDING ═══════════════════ -->
+<div id="view-landing">
+  <div class="nav">
+    <div class="nav-logo">T</div>
+    <div class="nav-t"><b>Tailor CV</b><span>Workspace · AI System</span></div>
+    <div class="nav-spacer"></div>
+    <button class="nav-pill">Job Portals</button>
+    <button class="nav-pill on">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M4 10a8 8 0 0 0 16 0"/><path d="M12 18v3"/></svg>
+      AI System
+    </button>
+    <button class="nav-pill">Recruiters</button>
+  </div>
+
+  <div class="landing-body">
+    <div class="landing-inner">
+      <div class="lhead">
+        <span class="eyebrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          AI System
+        </span>
+        <h1>What would you like to do?</h1>
+        <p>Two professional AI assistants — pick one. Both work entirely on your own data: your scraped jobs and your Master CV.</p>
+      </div>
+
+      <div class="choices">
+        <!-- LEFT · Interview -->
+        <button class="choice iv" onclick="openScreen('screen-interview')">
+          <div class="choice-top">
+            <span class="choice-ico">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
+            <span class="choice-badge">AI Interviewer</span>
+          </div>
+          <div class="orb-sm" style="margin-bottom:16px" aria-hidden="true"></div>
+          <h2>Interview with AI</h2>
+          <p class="cdesc">A senior interviewer who actually reads your dashboard — questions come from the <b>real job descriptions</b> you've scraped for the role you pick. One question at a time, scored answers, final verdict.</p>
+          <div class="cstats">
+            <span class="cstat"><b>151</b> jobs in dashboard</span>
+            <span class="cstat"><b>29</b> scored with AI</span>
+            <span class="cstat">Questions from real JDs</span>
+          </div>
+          <span class="cgo">Start interview
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </span>
+        </button>
+
+        <!-- RIGHT · Personalize -->
+        <button class="choice pz" onclick="openScreen('screen-personalize')">
+          <div class="choice-top">
+            <span class="choice-ico">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </span>
+            <span class="choice-badge">CV Analyzer</span>
+          </div>
+          <div class="choice-ico" style="margin-bottom:16px; width:46px; height:46px; background:linear-gradient(135deg,var(--emerald),var(--brand)); color:#fff; border-radius:14px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+          </div>
+          <h2>Personalized AI Assistant</h2>
+          <p class="cdesc">A professional CV analyzer. It studies your <b>missing-keyword data across every scored job</b> (DevOps, SRE, Cloud…), tells you exactly what your CV is missing, and adds the keywords you approve — <b>straight to your Master CV</b>.</p>
+          <div class="cstats">
+            <span class="cstat"><b>28</b> DevOps jobs analyzed</span>
+            <span class="cstat">Avg match <b>69%</b></span>
+            <span class="cstat">One-click Master CV update</span>
+          </div>
+          <span class="cgo">Personalize my CV
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ VIEW 2 · INTERVIEW (full screen) ═══════════════════ -->
+<div class="screen" id="screen-interview">
+  <div class="s-hdr">
+    <button class="s-back" onclick="closeScreen()" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="ttl"><b>Interview with AI</b><span>Senior interviewer · questions from your real job descriptions</span></div>
+    <div class="prog">
+      <span class="microbar" id="microbar"><span class="micro-dot"></span>Listening — speak, pause to send</span>
+      <span class="score-pill" style="display:none" id="lastScore">Last answer 8/10</span>
+    </div>
+  </div>
+
+  <div class="s-body">
+    <div class="iv-col">
+
+      <!-- STEP A · intro questions -->
+      <div id="introStep">
+        <div class="intro-card">
+          <h3>Before we begin</h3>
+          <p class="isub">A quick setup — the interviewer asks you 3 questions to personalize the session.</p>
+          <div class="prog-steps" style="margin-bottom:16px"><i class="on"></i><i></i><i></i></div>
+
+          <p class="q-field" style="margin-bottom:14px"><label>1. Which role from your dashboard?</label></p>
+          <button class="q-chip on"><span class="n">1</span>DevOps Engineer <span class="jobs">21 jobs</span></button>
+          <button class="q-chip"><span class="n">2</span>Site Reliability Engineer <span class="jobs">6 jobs</span></button>
+          <button class="q-chip"><span class="n">3</span>Cloud Engineer <span class="jobs">11 jobs</span></button>
+          <div class="q-field" style="margin-top:12px"><input placeholder="Or type another role…" value=""/></div>
+
+          <div class="q-field" style="margin-top:14px"><label>2. Years of experience in this role</label><input placeholder="e.g. 5" value="4+ years"/></div>
+          <div class="q-field" style="margin-top:14px"><label>3. Pick a real posting from your list (optional)</label><input placeholder="e.g. STACKIT Database — DevOps Engineer (Barcelona)" value=""/></div>
+
+          <div class="intro-nav">
+            <button class="btn violet" onclick="startInterview()">Begin interview
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <span class="hint">7 questions · scored per answer · final verdict</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP B · Q&A -->
+      <div id="qaStep" style="display:none">
+        <div class="iv-q">
+          <span class="qtag">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Question 1 of 7
+          </span>
+          <p class="qtext">Your dashboard shows the STACKIT Database — DevOps Engineer posting requires Kubernetes, Terraform and GitLab CI. Walk me through how you would design a GitOps deployment pipeline for a multi-tenant Kubernetes cluster.</p>
+          <div class="qsrc">
+            From this JD:
+            <span class="src-chip">STACKIT Database — DevOps Engineer</span>
+            <span class="src-chip">Barcelona</span>
+            <span class="src-chip">LinkedIn</span>
+          </div>
+        </div>
+        <textarea class="iv-answer" placeholder="Type your answer… (in the app: speak or type — it auto-sends on pause)"></textarea>
+        <div class="iv-actions">
+          <button class="btn violet" onclick="nextQuestion()">Submit answer</button>
+          <button class="btn ghost" onclick="document.getElementById('microbar').classList.toggle('on')">Speak instead</button>
+          <span class="hint">Scored 0–10 · feedback after each answer</span>
+        </div>
+      </div>
+
+      <!-- STEP C · scorecard -->
+      <div id="scorecardStep" style="display:none">
+        <div class="scorecard">
+          <div class="sc-head">
+            <div class="sc-ring"><b>7.9</b></div>
+            <div>
+              <h3>Interview complete — Senior DevOps Engineer</h3>
+              <p>Strong systems thinking and clear pipeline design. Go deeper on incident-runbooks and multi-region failover — both appeared in 6 of your 21 DevOps JDs.</p>
+            </div>
+          </div>
+          <div class="sc-row"><span class="sc-q">Design a GitOps deployment pipeline for multi-tenant Kubernetes</span><span class="sc-score">8/10</span></div>
+          <div class="sc-row"><span class="sc-q">Your dashboard shows Terraform in 18 of 21 JDs — walk me through state management at scale</span><span class="sc-score">8/10</span></div>
+          <div class="sc-row"><span class="sc-q">A production incident hits your cluster at 3am — walk me through your response</span><span class="sc-score low">6/10</span></div>
+          <div class="sc-row"><span class="sc-q">How would you improve the deploy pipeline of the STACKIT posting you picked?</span><span class="sc-score">8/10</span></div>
+          <div class="sc-row"><span class="sc-q">GitLab CI vs GitHub Actions for this team — what would you standardize on and why?</span><span class="sc-score">8/10</span></div>
+          <div class="sc-row"><span class="sc-q">Where does your 4+ years experience show strongest in this stack?</span><span class="sc-score low">7/10</span></div>
+          <div class="sc-row"><span class="sc-q">What would you automate first if hired for the STACKIT role?</span><span class="sc-score">9/10</span></div>
+          <div style="display:flex; gap:12px; margin-top:20px">
+            <button class="btn violet" onclick="closeScreen()">Done</button>
+            <button class="btn ghost" onclick="restartInterview()">Take another interview</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ VIEW 3 · PERSONALIZE (full screen) ═══════════════════ -->
+<div class="screen" id="screen-personalize">
+  <div class="s-hdr">
+    <button class="s-back" onclick="closeScreen()" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="ttl"><b>Personalized AI Assistant</b><span>Professional CV analyzer · powered by your scored jobs</span></div>
+  </div>
+
+  <div class="s-body">
+    <div class="pz-col">
+
+      <div class="pz-hero">
+        <div class="pz-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </div>
+        <div>
+          <b>Your CV vs. the market — where the gaps are</b>
+          <span>Every job you've scored stores which keywords were missing from your CV. This analysis aggregates all of them for your role.</span>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi violet"><div class="klab">Jobs analyzed</div><div class="kval">28</div><div class="ksub">DevOps roles in dashboard</div></div>
+        <div class="kpi blue"><div class="klab">Average match</div><div class="kval">69%</div><div class="ksub">Across all scored jobs</div></div>
+        <div class="kpi green"><div class="klab">Projected match</div><div class="kval">81%</div><div class="ksub">After adding top gaps</div></div>
+      </div>
+
+      <div class="gaps-card">
+        <div class="gaps-head">
+          <b>Missing keywords — most frequent first</b>
+          <span>found in the JDs you scored, missing from your Master CV</span>
+        </div>
+        <div class="gap-row">
+          <span class="gap-cb on" onclick="toggleGap(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="gap-name">Terraform</span>
+          <div class="gap-bar-wrap"><div class="gap-bar" style="width:86%"></div></div>
+          <span class="gap-pct"><b>86%</b> · 24/28 JDs</span>
+        </div>
+        <div class="gap-row">
+          <span class="gap-cb on" onclick="toggleGap(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="gap-name">AWS EKS</span>
+          <div class="gap-bar-wrap"><div class="gap-bar" style="width:71%"></div></div>
+          <span class="gap-pct"><b>71%</b> · 20/28 JDs</span>
+        </div>
+        <div class="gap-row">
+          <span class="gap-cb on" onclick="toggleGap(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="gap-name">Helm</span>
+          <div class="gap-bar-wrap"><div class="gap-bar" style="width:64%"></div></div>
+          <span class="gap-pct"><b>64%</b> · 18/28 JDs</span>
+        </div>
+        <div class="gap-row">
+          <span class="gap-cb" onclick="toggleGap(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="gap-name">GitOps</span>
+          <div class="gap-bar-wrap"><div class="gap-bar" style="width:57%"></div></div>
+          <span class="gap-pct"><b>57%</b> · 16/28 JDs</span>
+        </div>
+        <div class="gap-row">
+          <span class="gap-cb" onclick="toggleGap(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="gap-name">Prometheus</span>
+          <div class="gap-bar-wrap"><div class="gap-bar" style="width:43%"></div></div>
+          <span class="gap-pct"><b>43%</b> · 12/28 JDs</span>
+        </div>
+      </div>
+
+      <div class="recommend">
+        <b>Recommendation:</b> these keywords appear in most DevOps JDs you've scored but are missing from your Master CV. Adding them could raise your average match from <b>69% → ~81%</b> — the highest-impact, cheapest win available right now.
+      </div>
+
+      <div class="pz-actions">
+        <button class="btn emerald" id="pzDoneBtn" onclick="personalizeDone()">Done — add to Master CV</button>
+        <span class="sel-count" id="selCount"><b>4</b> keywords selected</span>
+      </div>
+
+      <div id="pzDone" style="display:none">
+        <div class="done-bar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          4 keywords added to your Master CV — saved under “Market Skills”. They'll now match in future scores.
+        </div>
+        <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap">
+          <button class="btn ghost sm" onclick="resetPersonalize()">Run analysis again</button>
+          <button class="btn ghost sm" onclick="closeScreen()">Back to AI System</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const iv = document.getElementById('screen-interview');
+  const pz = document.getElementById('screen-personalize');
+  const landing = document.getElementById('view-landing');
+  function openScreen(id){
+    landing.style.display = 'none';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+  function closeScreen(){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    landing.style.display = 'flex';
+  }
+  function step(which){
+    ['introStep','qaStep','scorecardStep'].forEach(id => document.getElementById(id).style.display = id === which ? '' : 'none');
+  }
+  function startInterview(){ step('qaStep'); }
+  function nextQuestion(){ step('scorecardStep'); }
+  function restartInterview(){ step('introStep'); }
+  function toggleGap(el){
+    el.classList.toggle('on');
+    const n = document.querySelectorAll('.gap-cb.on').length;
+    document.getElementById('selCount').innerHTML = '<b>'+n+'</b> keywords selected';
+  }
+  function personalizeDone(){
+    document.getElementById('pzDone').style.display = '';
+    document.getElementById('pzDoneBtn').style.display = 'none';
+  }
+  function resetPersonalize(){
+    document.getElementById('pzDone').style.display = 'none';
+    document.getElementById('pzDoneBtn').style.display = '';
+    document.querySelectorAll('.gap-cb').forEach(c => c.classList.add('on'));
+    document.getElementById('selCount').innerHTML = '<b>4</b> keywords selected';
+  }
+</script>
+</body>
+</html>

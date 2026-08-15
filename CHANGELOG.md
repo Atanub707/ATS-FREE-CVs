@@ -2,15 +2,10 @@
 
 ## Unreleased
 
-### 🪩 Voice AI Agent (in-house, no MCP)
-- **Living 3D orb character** in the chat — floats when idle, pulses when you're typing, wobbles while the assistant works.
-- **scrape_jobs tool** — ask the assistant to find/scrape new jobs and it runs the app's real scrapers; results are stored in your job list and appear on the dashboard.
-- **analyze_skill_gaps tool** — "what should I add to my CV?" is answered with real aggregate data across all your scored jobs (top missing keywords + % of jobs mentioning each); apply confirmed gaps to the Master CV.
-- **generate_cv tool** — the assistant can generate your CV as a PDF using the existing 4 templates only; chat shows a Download PDF button.
-- **Interview mode** — toggle in the chat header; tell it a target role and get a 7-question mock interview with per-question scores, feedback and a final verdict.
-
-- **Wispr Flow recommendation** — the LLM & AI settings screen recommends **Wispr Flow** (affiliate: https://ref.wisprflow.ai/atanu-biswas) for dictating prompts; the README carries an **Affiliated by Wispr Flow** badge linking to the referral.
-> **Voice I/O removed (2026-08-15):** the voice assistant button, mic/speaker controls, Voicebox integration and all speech fallbacks were deleted from the app, server, docker-compose and docs. The assistant remains fully text-based.
+### 🤖 AI System — Interview with AI (JD-grounded)
+- **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
+- **Interview with AI** takes over the full screen: the interviewer asks 3 intro questions (role from your dashboard with real job counts, experience, optional pick a real posting), then runs a 7-question session where **every question is grounded in the actual job descriptions you scraped** (title/company + description excerpt in the prompt). Answers scored 0–10 with feedback; final scorecard with overall + verdict.
+- Role aggregation (`GET /api/interview/roles`), job picker (`GET /api/interview/jobs`), `ask()` gained a text mode (fixes the `json_object` rejection from opencode-go).
 
 ### 🤖 AI Assistant (MCP-powered chat)
 - Chat with your job database in natural language — same BYOK key, no new config.

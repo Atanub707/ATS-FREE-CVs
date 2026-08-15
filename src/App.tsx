@@ -8,7 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { RecruitersScreen } from './components/RecruitersScreen';
-import { ChatPanel } from './components/ChatPanel';
+import { AiSystemScreen } from './components/AiSystemScreen';
 import { OnboardingTour, startTour } from './components/OnboardingTour';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
@@ -32,7 +32,7 @@ export default function App() {
   const [isManualJdOpen, setIsManualJdOpen] = useState(false);
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
   const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAiSystemOpen, setIsAiSystemOpen] = useState(false);
   const [recruiterBadge, setRecruiterBadge] = useState(0);
   const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
@@ -434,7 +434,7 @@ export default function App() {
               setRecruiterBadge(0);
               setIsRecruitersOpen(true);
             }}
-            onOpenChat={() => setIsChatOpen(true)}
+            onOpenChat={() => setIsAiSystemOpen(true)}
             recruiterBadge={recruiterBadge}
             onTour={startTour}
           />
@@ -533,7 +533,7 @@ export default function App() {
           />
 
           {/* AI Assistant chat */}
-          {isChatOpen && <ChatPanel onClose={() => setIsChatOpen(false)} />}
+          {isAiSystemOpen && <AiSystemScreen onClose={() => setIsAiSystemOpen(false)} />}
         </>
       )}
     </div>

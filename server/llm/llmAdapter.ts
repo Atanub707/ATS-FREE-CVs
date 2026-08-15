@@ -12,7 +12,7 @@ function resolveApiKey(configuredKey: string): string | undefined {
 
 export { resolveApiKey };
 
-export async function ask(prompt: string, temperature?: number): Promise<string> {
+export async function ask(prompt: string, temperature?: number, responseFormat: 'json' | 'text' = 'json'): Promise<string> {
   const config = loadConfig();
   const temp = temperature ?? config.llm.temperature ?? 0.2;
   const provider = config.llm.provider || 'gemini';
@@ -30,7 +30,7 @@ export async function ask(prompt: string, temperature?: number): Promise<string>
     case 'openrouter':
     case 'openai': {
       const baseUrl = config.llm.baseUrl || PROVIDER_BASE_URLS[provider];
-      return await askOpenAi({ baseUrl, apiKey, model, prompt, temperature: temp });
+      return await askOpenAi({ baseUrl, apiKey, model, prompt, temperature: temp, responseFormat });
     }
     case 'gemini':
       return await askGemini(apiKey, model, prompt, temp);
