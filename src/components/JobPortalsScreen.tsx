@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Globe, Search, ExternalLink, Sparkles, TrendingUp, X, Bookmark } from 'lucide-react';
+import { ArrowLeft, Globe, Search, ExternalLink, Sparkles, TrendingUp, X, Bookmark, Star } from 'lucide-react';
 import { JOB_PORTALS, PORTAL_CATEGORIES, JobPortal } from '../constants/jobPortals';
 
 interface JobPortalsScreenProps {
@@ -28,6 +28,10 @@ const POPULAR_NAMES = new Set([
   'Indeed', 'LinkedIn Jobs', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Naukri',
   'Reed', 'Seek (AU)', 'Wellfound (AngelList)', 'Himalayas', 'RemoteOK', 'MyCareersFuture (SG Gov)',
 ]);
+
+// Curated by us — pinned at the top of the portal list. Wellfound uses a
+// referral sign-up link, so new users who join through it support the project.
+const RECOMMENDED = new Set(['LinkedIn Jobs', 'Wellfound (AngelList)', 'Wellfound (Startups)']);
 
 export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onClose }) => {
   const [search, setSearch] = useState('');
@@ -79,6 +83,11 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
     [featured, category, search]
   );
 
+  const recommended = useMemo(
+    () => (category === 'all' && !search ? JOB_PORTALS.filter((p) => RECOMMENDED.has(p.name)) : []),
+    [category, search]
+  );
+
   const favorited = useMemo(
     () => (bookmarks.size > 0 && category === 'all' && !search ? JOB_PORTALS.filter((p) => bookmarks.has(p.name)) : []),
     [bookmarks, category, search]
@@ -108,12 +117,16 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
           {p.name[0]}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1.5">
-            <span className="block text-[13px] font-bold text-[var(--color-ink)] truncate group-hover:text-[var(--color-brand)] transition-colors">{p.name}</span>
-            {POPULAR_NAMES.has(p.name) && (
-              <Sparkles className="w-3 h-3 text-[var(--color-amber,#C2410C)] shrink-0" />
-            )}
-          </span>
+            <span className="flex items-center gap-1.5">
+              <span className="block text-[13px] font-bold text-[var(--color-ink)] truncate group-hover:text-[var(--color-brand)] transition-colors">{p.name}</span>
+              {RECOMMENDED.has(p.name) ? (
+                <span className="shrink-0 text-[9px] font-extrabold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] rounded-full px-1.5 py-0.5">
+                  Recommended by us
+                </span>
+              ) : POPULAR_NAMES.has(p.name) && (
+                <Sparkles className="w-3 h-3 text-[var(--color-amber,#C2410C)] shrink-0" />
+              )}
+            </span>
           <span className="block text-[10.5px] text-[var(--color-faint)] truncate font-medium">
             {p.url.replace(/^https?:\/\/(www\.)?/, '')}
           </span>
@@ -230,6 +243,22 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-5 space-y-7">
+          {/* Recommended by us — pinned at the top */}
+          {recommended.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-3.5 h-3.5 text-[var(--color-brand)] fill-[var(--color-brand)]" />
+                <span className="text-[12px] font-extrabold text-[var(--color-ink)] uppercase tracking-wider">Recommended by us</span>
+                <span className="text-[10.5px] font-bold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] rounded-full px-2 py-0.5">{recommended.length}</span>
+                <span className="flex-1 h-px bg-[var(--color-brand-line)]" />
+                <span className="text-[10.5px] text-[var(--color-faint)] font-semibold">Start here — curated picks that work best with Tailor CV</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {recommended.map((p) => <PortalCard key={p.name} p={p} />)}
+              </div>
+            </div>
+          )}
+
           {/* Favorites */}
           {favorited.length > 0 && (
             <div>

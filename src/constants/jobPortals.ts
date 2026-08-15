@@ -59,7 +59,7 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Jobicy', url: 'https://jobicy.com', region: 'global', category: 'global' },
   { name: 'Levels.fyi Jobs', url: 'https://www.levels.fyi/jobs', region: 'global', category: 'global' },
   { name: 'Y Combinator Jobs', url: 'https://www.ycombinator.com/jobs', region: 'global', category: 'global' },
-  { name: 'Wellfound (AngelList)', url: 'https://wellfound.com', region: 'global', category: 'global' },
+  { name: 'Wellfound (AngelList)', url: 'https://wellfound.com/l/2CxtSr', region: 'global', category: 'global' },
 
   // ── USA / Canada ──
   { name: 'Dice (Tech)', url: 'https://www.dice.com', region: 'usa-canada', category: 'usa-canada' },
@@ -202,7 +202,7 @@ export const JOB_PORTALS: JobPortal[] = [
   { name: 'Recruiter.co.za', url: 'https://www.recruiter.co.za', region: 'me-africa', category: 'me-africa' },
 
   // ── Tech & Remote specialists ──
-  { name: 'Wellfound (Startups)', url: 'https://wellfound.com', region: 'tech-remote', category: 'tech-remote' },
+  { name: 'Wellfound (Startups)', url: 'https://wellfound.com/l/2CxtSr', region: 'tech-remote', category: 'tech-remote' },
   { name: 'YC Work at a Startup', url: 'https://www.workatastartup.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Toptal', url: 'https://www.toptal.com', region: 'tech-remote', category: 'tech-remote' },
   { name: 'Turing', url: 'https://www.turing.com', region: 'tech-remote', category: 'tech-remote' },
