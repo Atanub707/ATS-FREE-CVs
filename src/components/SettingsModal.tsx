@@ -376,6 +376,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           ))}
           <div className="st-side-note">
             Tailor CV v{pkg.version} — created by <b>Atanu Biswas</b><br />© 2026 Atanu Biswas · All rights reserved.
+            <a className="st-wispr-foot" href={WISPRFLOW_REFERRAL_URL} target="_blank" rel="noreferrer">
+              <span className="st-wispr-badge">W</span> Prompts powered by Wispr Flow
+            </a>
           </div>
         </aside>
 
@@ -971,6 +974,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         .st-side-item.on .st-side-cnt{background:var(--st-surface); color:var(--st-primary);}
         .st-side-note{margin-top:auto; padding:13px 14px 4px; font-size:10.5px; color:var(--st-faint); line-height:1.65; border-top:1px solid var(--st-line);}
         .st-side-note b{color:var(--st-muted); font-weight:700;}
+        .st-wispr-foot{display:inline-flex; align-items:center; gap:7px; margin-top:10px; font-size:10.5px; font-weight:700; color:var(--st-muted); text-decoration:none; transition:color .15s ease;}
+        .st-wispr-foot:hover{color:var(--st-primary);}
+        .st-wispr-badge{width:17px; height:17px; border-radius:5px; background:linear-gradient(135deg,#7C3AED,#2563EB); color:#fff; font-size:9px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;}
         .st-content{flex:1; min-width:0; overflow-y:auto; padding-right:6px;}
         .st-panel{animation:st-rise .22s ease;}
         @keyframes st-rise{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
