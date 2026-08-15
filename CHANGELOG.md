@@ -6,6 +6,7 @@
 - **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
 - **Interview with AI** takes over the full screen: the interviewer asks 3 intro questions (role from your dashboard with real job counts, experience, optional pick a real posting), then runs a 7-question session where **every question is grounded in the actual job descriptions you scraped** (title/company + description excerpt in the prompt). Answers scored 0–10 with feedback; final scorecard with overall + verdict.
 - Role aggregation (`GET /api/interview/roles`), job picker (`GET /api/interview/jobs`), `ask()` gained a text mode (fixes the `json_object` rejection from opencode-go).
+- Answer options in the interview: **type and send**, or **"Recommended: use Wispr Flow"** — a button that opens the Wispr Flow affiliate link (ref.wisprflow.ai/atanu-biswas) so users can dictate their answers (replaces the placeholder "Speak (coming soon)").
 
 ### 🤖 AI Assistant (MCP-powered chat)
 - Chat with your job database in natural language — same BYOK key, no new config.
