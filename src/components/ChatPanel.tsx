@@ -22,6 +22,7 @@ interface ChatMsg {
 
 interface ChatPanelProps {
   onClose: () => void;
+  openVoice?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -35,7 +36,7 @@ const THINKING_STEPS = ['Searching your scraped jobs…', 'Scoring the best matc
 
 const APPLY_STEPS = ['Opening all postings…', 'Building your tracking CSV…', 'Done — CSV downloaded'];
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
@@ -74,6 +75,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
       .then((r) => r.json())
       .then((d) => setVoicebox({ available: d.available === true, profiles: Array.isArray(d.profiles) ? d.profiles : [] }))
       .catch(() => setVoicebox({ available: false, profiles: [] }));
+  }, []);
+
+  // Opened from the search-bar voice button → start the voice conversation immediately.
+  useEffect(() => {
+    if (openVoice) {
+      setVoiceChat(true);
+      voiceChatRef.current = true;
+      window.setTimeout(() => startListening(), 250);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Voice engine (turn-based conversation) ────────────────────────────────

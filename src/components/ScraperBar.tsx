@@ -20,6 +20,7 @@ interface ScraperBarProps {
   }) => Promise<{ scrapedTotal: number; addedCount: number; skippedDuplicates: number; filteredOutCount?: number; skippedSources?: { source: string; reason: string }[]; newContacts?: { name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null; company: string }[] } | void>;
   isLoading: boolean;
   apifyAvailable?: boolean; // Apify enabled + token saved — lights up Apify-only sources
+  onOpenVoiceAssistant?: () => void;
 }
 
 const ALL_SOURCES: JobSource[] = ['LinkedIn', 'Arbeitnow', 'SimplyHired', 'Dice', 'Reed', 'MyCareersFuture', 'Cutshort', 'Gupy', 'JobsCh', 'Daijob', 'MyJobMag', 'RemoteOK', 'WeWorkRemotely', 'Indeed', 'Naukri', 'Glassdoor', 'Upwork'];
@@ -29,7 +30,7 @@ const COMING_SOON: JobSource[] = ['RemoteOK', 'WeWorkRemotely'];
 const APIFY_SOURCES_VISIBLE = ALL_SOURCES.filter((src) => getSourceMeta(src)?.apifyActorId);
 const MORE_SOURCES = ALL_SOURCES.filter((src) => !getSourceMeta(src)?.apifyActorId);
 
-export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, apifyAvailable }) => {
+export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, apifyAvailable, onOpenVoiceAssistant }) => {
   const [keywords, setKeywords] = useState('');
   const [location, setLocation] = useState('');
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
@@ -184,6 +185,16 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 <span>Search Jobs</span>
               </>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenVoiceAssistant}
+            title="Voice assistant — talk to the AI, get answers in voice"
+            aria-label="Open the AI voice assistant"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-[#7C3AED] to-[#2563EB] hover:brightness-110 text-white rounded-[10px] px-4 py-3 text-[13.5px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <span className="w-[22px] h-[22px] rounded-[7px] bg-white/25 text-white text-[9.5px] font-extrabold inline-flex items-center justify-center tracking-wide shadow-[inset_0_1px_0_rgba(255,255,255,.35)]">AI</span>
+            <span>Voice</span>
           </button>
         </div>
 

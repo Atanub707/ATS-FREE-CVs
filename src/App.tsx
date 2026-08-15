@@ -33,6 +33,7 @@ export default function App() {
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
   const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatOpenVoice, setChatOpenVoice] = useState(false);
   const [recruiterBadge, setRecruiterBadge] = useState(0);
   const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
@@ -440,7 +441,15 @@ export default function App() {
           />
 
           {/* Live Job Scraper Bar */}
-          <ScraperBar onScrape={handleScrape} isLoading={isScrapingLoading} apifyAvailable={!!config?.apify.enabled && !!config?.apify.token} />
+          <ScraperBar
+            onScrape={handleScrape}
+            isLoading={isScrapingLoading}
+            apifyAvailable={!!config?.apify.enabled && !!config?.apify.token}
+            onOpenVoiceAssistant={() => {
+              setChatOpenVoice(true);
+              setIsChatOpen(true);
+            }}
+          />
 
           {/* Main Jobs Matrix View */}
           <main>
@@ -529,7 +538,12 @@ export default function App() {
           />
 
           {/* AI Assistant chat */}
-          {isChatOpen && <ChatPanel onClose={() => setIsChatOpen(false)} />}
+          {isChatOpen && (
+            <ChatPanel
+              onClose={() => { setIsChatOpen(false); setChatOpenVoice(false); }}
+              openVoice={chatOpenVoice}
+            />
+          )}
         </>
       )}
     </div>
