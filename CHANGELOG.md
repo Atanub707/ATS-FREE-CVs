@@ -16,7 +16,7 @@
 - Chat with your job database in natural language — same BYOK key, no new config.
 - A real in-process MCP server (search_jobs, get_job, score_job, get_cv_summary) drives the model's tool calls (capped loop, OpenAI-compatible / Gemini / Anthropic).
 - Ask for jobs ("5 remote DevOps roles from LinkedIn") → up to 5 results with reasons why each fits your CV.
-- **Apply All** opens every posting in a new tab (no auto-submit).
+- **Clean job cards with links** — the assistant sends jobs with Open-posting links by default (no Apply All, no bulk actions). Scores/reasons only when explicitly requested.
 
 
 ### 👤 Candidate job profile (Settings → Account)

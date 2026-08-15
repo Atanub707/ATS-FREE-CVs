@@ -310,8 +310,9 @@ The assistant is a living 3D CSS orb (radial-gradient sphere + glossy highlight)
 **wobbles** on an irregular rhythm while the assistant is working/replying
 (`prefers-reduced-motion` disables all animation).
 
-**Apply All:** opens all returned job postings in new tabs. No auto-submit / browser
-automation — per the user decision, applying stays manual.
+**Job cards:** each result shows title, company, location, source and an **Open posting**
+link — the user applies manually from the original posting (no auto-submit, no bulk actions).
+Scores appear on cards only when the user explicitly asks for scoring.
 
 - **API:** `POST /api/chat` body `{ messages: [{ role, content }] }` → `{ reply, jobs: [{ id, title, company, location, source, url, score, reason }] }` (401 signed out).
 - **Where:** `server/mcp/registry.ts` (tools), `server/mcp/server.ts` (SDK pair), `server/llm/tools.ts` (`chatWithTools` — OpenAI-compatible / Gemini / Anthropic wrappers + capped loop), `src/components/ChatPanel.tsx` (UI).

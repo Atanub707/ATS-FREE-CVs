@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CheckCircle, FileCsv, ArrowSquareIn, DotsThree } from '@phosphor-icons/react';
+import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CheckCircle, FileCsv } from '@phosphor-icons/react';
 
 interface JobCard {
   id: string;
@@ -32,8 +32,6 @@ const SUGGESTIONS = [
 
 const THINKING_STEPS = ['Searching your scraped jobs…', 'Scoring the best matches…', 'Writing your reasons…'];
 
-const APPLY_STEPS = ['Opening all postings…', 'Building your tracking CSV…', 'Done — CSV downloaded'];
-
 export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
@@ -44,8 +42,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   const orbState = busy ? 'speaking' : inputFocused ? 'listening' : 'idle';
   const [error, setError] = useState<string | null>(null);
   const [thinkStep, setThinkStep] = useState(0);
-  const [applying, setApplying] = useState(false);
-  const [applyStep, setApplyStep] = useState(-1);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -145,45 +141,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
     }
   };
 
-  const exportCsv = (jobs: JobCard[]) => {
-    const esc = (v: string | null | undefined) => {
-      const s = v ?? '';
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const lines = [
-      'Title,Company,Location,Source,Score,Reason,URL',
-      ...jobs.map((j) => [j.title, j.company, j.location, j.source, j.score ?? '', j.reason, j.url].map(esc).join(',')),
-    ];
-    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'tailor-cv-applications.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
-
-  const applyAll = (jobs: JobCard[]) => {
-    if (applying) return;
-    setApplying(true);
-    setApplyStep(0);
-    // Step 0: open each posting (staggered so the user sees them fly out)
-    jobs.forEach((j, i) => {
-      if (!j.url) return;
-      setTimeout(() => window.open(j.url, '_blank', 'noopener'), i * 350);
-    });
-    setTimeout(() => setApplyStep(1), Math.max(1200, jobs.length * 350 + 300));
-    setTimeout(() => {
-      exportCsv(jobs);
-      setApplyStep(2);
-    }, Math.max(2200, jobs.length * 350 + 1200));
-    setTimeout(() => {
-      setApplying(false);
-      setApplyStep(-1);
-    }, 5200);
-  };
-
   const hasChat = messages.length > 0;
 
   return (
@@ -243,9 +200,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
                   <div className="chat-jobs">
                     <div className="chat-jobs-hdr">
                       <span className="chat-jobs-count">{m.jobs.length} results</span>
-                      <button className="chat-applyall" onClick={() => applyAll(m.jobs!)} disabled={applying}>
-                        {applying ? <DotsThree size={13} weight="bold" /> : <Sparkle size={12} weight="bold" />} Apply All
-                      </button>
+                      <span className="chat-jobs-hint">Open a posting to apply</span>
                     </div>
                     {m.jobs.map((j, idx) => (
                       <div key={j.id} className="chat-job" style={{ animationDelay: `${idx * 90}ms` }}>
@@ -283,23 +238,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
               <span className="chat-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
               <span className="chat-typing-label">{THINKING_STEPS[thinkStep]}</span>
             </div>
-          </div>
-        )}
-
-        {applying && (
-          <div className="chat-pipeline" role="status">
-            <div className="chat-pipe-title">
-              <Sparkle size={14} weight="fill" /> Applying — watch the steps
-            </div>
-            {APPLY_STEPS.map((label, i) => (
-              <div key={i} className={`chat-pipe-step ${i === applyStep ? 'active' : i < applyStep ? 'done' : ''}`}>
-                <span className="chat-pipe-ico">
-                  {i < applyStep ? <CheckCircle size={14} weight="fill" /> : i === 0 ? <ArrowSquareIn size={14} /> : i === 1 ? <FileCsv size={14} /> : <CheckCircle size={14} />}
-                </span>
-                <span className="chat-pipe-label">{label}</span>
-                {i === applyStep && <span className="chat-pipe-spin" aria-hidden="true"></span>}
-              </div>
-            ))}
           </div>
         )}
 
@@ -408,9 +346,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-cvbtn:hover { filter: brightness(1.08); }
         .chat-jobs-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
         .chat-jobs-count { font-size: 11px; font-weight: 800; color: var(--faint, #64748B); text-transform: uppercase; letter-spacing: .08em; }
-        .chat-applyall { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--brand, #2563EB), var(--brand-strong, #1D4ED8)); border: 0; border-radius: 8px; padding: 6px 13px; cursor: pointer; transition: filter .2s ease; }
-        .chat-applyall:hover { filter: brightness(1.08); }
-        .chat-applyall:disabled { opacity: .55; cursor: not-allowed; }
         .chat-job { border: 1px solid var(--line, #E2E8F0); border-radius: 11px; padding: 11px 13px; background: #FAFAF9; animation: jobIn .4s ease-out both; }
         @keyframes jobIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
         .chat-job-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -422,17 +357,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-job-reason { font-size: 11.5px; color: var(--muted, #475569); margin-top: 5px; line-height: 1.5; }
         .chat-job-open { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--brand, #2563EB); text-decoration: none; margin-top: 6px; }
 
-        .chat-pipeline { align-self: center; width: 100%; max-width: 380px; background: var(--card, #fff); border: 1px solid var(--line, #E2E8F0); border-radius: 14px; padding: 14px 16px; box-shadow: 0 10px 30px -12px rgba(15,23,42,.15); animation: jobIn .35s ease-out both; }
-        .chat-pipe-title { font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 7px; margin-bottom: 11px; color: var(--ink, #0F172A); }
-        .chat-pipe-title svg { color: var(--brand, #2563EB); }
-        .chat-pipe-step { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 12.5px; font-weight: 600; color: var(--faint, #64748B); transition: color .2s ease; }
-        .chat-pipe-step.active { color: var(--ink, #0F172A); }
-        .chat-pipe-step.done { color: #047857; }
-        .chat-pipe-ico { display: inline-flex; width: 22px; }
-        .chat-pipe-step.done .chat-pipe-ico svg { color: #059669; animation: popIn .3s ease-out both; }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-        .chat-pipe-spin { width: 14px; height: 14px; margin-left: auto; border-radius: 50%; border: 2px solid var(--brand-line, #BFDBFE); border-top-color: var(--brand, #2563EB); animation: chatspin .8s linear infinite; }
-        @keyframes chatspin { to { transform: rotate(360deg); } }
 
         .chat-inputrow { display: flex; justify-content: center; padding: 14px 24px 20px; border-top: 1px solid var(--line, #E2E8F0); background: var(--card, #fff); flex-shrink: 0; }
         .chat-inputwrap { position: relative; width: 100%; max-width: 720px; }

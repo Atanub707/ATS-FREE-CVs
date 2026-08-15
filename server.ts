@@ -596,20 +596,26 @@ async function startServer() {
       // show a real message instead of an empty bubble.
       const replyText = text.trim() || (jobs.length ? `Here ${jobs.length === 1 ? 'is' : 'are'} ${jobs.length} matching job${jobs.length === 1 ? '' : 's'}:` : 'I could not find any results — try a different role, location, or scrape new jobs first.');
       // Enrich the cards from the real DB (the model only reliably sends ids).
+      // Scores are only attached when the user explicitly asked for scoring
+      // (the model signals it with withScore: true) — plain job requests get
+      // clean cards with just title, company, location and the link.
       const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
       const enriched = jobs.slice(0, 10).map((j: any) => {
         const found = jobIndex.get(j.id);
         if (!found) return j;
-        return {
+        const card: any = {
           id: j.id,
           title: found.title,
           company: found.company,
           location: found.location,
           source: found.source,
           url: found.url,
-          score: found.gapAnalysis?.matchScore ?? null,
           reason: j.reason || '',
         };
+        if (j.withScore === true) {
+          card.score = found.gapAnalysis?.matchScore ?? null;
+        }
+        return card;
       });
       res.json({ reply: replyText, jobs: enriched, cv });
     } catch (err: any) {
