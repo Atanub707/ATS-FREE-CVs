@@ -41,7 +41,10 @@ export function buildToolLoop(
           results.push(`[${tc.name} error] ${e?.message || 'tool failed'}`);
         }
       }
-      history.push({ role: 'assistant', content: `Tool results:\n${results.join('\n')}` });
+      // Feed tool results back as a USER message — interleaving them as
+      // assistant messages breaks the tool protocol on OpenAI-compatible
+      // providers and makes models loop on tool calls forever.
+      history.push({ role: 'user', content: `Tool results:\n${results.join('\n')}` });
     }
     return { reply: '', toolCalls };
   };
@@ -56,6 +59,7 @@ import { resolveApiKey } from './llmAdapter.js';
 
 export const SYSTEM_PROMPT = `You are the Tailor CV assistant. You help the user find and understand jobs from their own scraped database using tools.
 - When the user asks for jobs, ALWAYS call search_jobs first (use their filters: role, location, source, workMode).
+- Do NOT call search_jobs again with the same filters once you have results — write the answer.
 - Pick the best 5 results, and for each give a one-line reason why it fits (use skills from get_cv_summary, and score_job when useful).
 - Keep the reply short and human. Personalize using get_cv_summary.
 - If the user asks about a specific job, use get_job / score_job.

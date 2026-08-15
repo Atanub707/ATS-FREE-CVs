@@ -590,7 +590,23 @@ async function startServer() {
         maxRounds: 5,
       });
       const { text, jobs } = parseJobsBlock(out.reply);
-      res.json({ reply: text, jobs });
+      // Enrich the cards from the real DB (the model only reliably sends ids).
+      const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
+      const enriched = jobs.map((j: any) => {
+        const found = jobIndex.get(j.id);
+        if (!found) return j;
+        return {
+          id: j.id,
+          title: found.title,
+          company: found.company,
+          location: found.location,
+          source: found.source,
+          url: found.url,
+          score: found.gapAnalysis?.matchScore ?? null,
+          reason: j.reason || '',
+        };
+      });
+      res.json({ reply: text, jobs: enriched });
     } catch (err: any) {
       console.error('Chat error:', err);
       res.status(500).json({ error: err?.message || 'Chat failed.' });

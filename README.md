@@ -35,6 +35,7 @@ Tailor scrapes job listings from **17 sources** — 5 Apify-powered (LinkedIn, I
 | **Recruiters & Cold Email** | Recruiter contacts extracted from job descriptions, AI-drafted emails sent via your own SMTP, follow-up reminders, email history, templates, batch send, WhatsApp links, and CSV export — with sent/failed status on every card |
 | **Candidate Job Profile** | Account-level job preferences (work mode, locations, notice period, salary expectations, sponsorship…) used by the AI for personalized outreach — kept off the CV |
 | **Job Portals Browser** | 190+ job boards worldwide, organized into 13 categories with country flags |
+| **AI Assistant** | Chat with your job database — ask for jobs in natural language and get the best matches with reasons, plus one-click **Apply All** (opens postings) |
 | **Manual JD Analysis** | Paste any job description, get scored and get a tailored CV — no scraping needed; every analysis is saved and restorable |
 | **Applicant Counts** | See how many people applied to each LinkedIn job — right in the listing |
 | **Local Accounts** | Email+password or guest sign-in; each account has its own CV, jobs, and history |

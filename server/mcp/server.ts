@@ -1,7 +1,21 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { z } from 'zod';
 import { CHAT_TOOLS, TOOL_EXECUTORS } from './registry.js';
+
+const ZOD_SHAPES: Record<string, z.ZodRawShape> = {
+  search_jobs: {
+    role: z.string().optional(),
+    location: z.string().optional(),
+    source: z.string().optional(),
+    workMode: z.string().optional(),
+    limit: z.number().optional(),
+  },
+  get_job: { id: z.string() },
+  score_job: { id: z.string() },
+  get_cv_summary: {},
+};
 
 export interface McpPair {
   client: Client;
@@ -13,7 +27,7 @@ export function createMcpPair(): McpPair {
   for (const t of CHAT_TOOLS) {
     server.registerTool(
       t.name,
-      { title: t.name, description: t.description, inputSchema: t.inputSchema },
+      { title: t.name, description: t.description, inputSchema: ZOD_SHAPES[t.name] || {} },
       async (args: any) => {
         const out = await TOOL_EXECUTORS[t.name](args || {});
         return { content: [{ type: 'text', text: JSON.stringify(out) }] };

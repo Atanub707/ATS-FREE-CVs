@@ -266,3 +266,31 @@ npm test
 npx tsc --noEmit
 npx vite build
 ```
+
+---
+
+## AI Assistant (chat with MCP tools)
+
+A chat panel (navbar → **AI Assistant**) where users talk to their own job database in
+natural language — powered by the same BYOK LLM key.
+
+**How it works:** the chat endpoint runs a real MCP server (in-process,
+`@modelcontextprotocol/sdk` + `InMemoryTransport`) exposing tools the model can call:
+
+| Tool | What it does |
+|---|---|
+| `search_jobs` | Filters the user's scraped jobs by role / location / source / work mode, capped at 25 |
+| `get_job` | Full details of one job |
+| `score_job` | Stored AI match score + matched/missing skills |
+| `get_cv_summary` | CV summary + preferences (skills, years, locations, notice period) |
+
+The model loops through tool calls (max 5 rounds) and ends with a short human reply plus a
+structured job block. The server enriches the job cards from the real DB (title, company,
+location, source, URL, score), so cards are always complete.
+
+**Apply All:** opens all returned job postings in new tabs. No auto-submit / browser
+automation — per the user decision, applying stays manual.
+
+- **API:** `POST /api/chat` body `{ messages: [{ role, content }] }` → `{ reply, jobs: [{ id, title, company, location, source, url, score, reason }] }` (401 signed out).
+- **Where:** `server/mcp/registry.ts` (tools), `server/mcp/server.ts` (SDK pair), `server/llm/tools.ts` (`chatWithTools` — OpenAI-compatible / Gemini / Anthropic wrappers + capped loop), `src/components/ChatPanel.tsx` (UI).
+- **Tested:** `tests/recruiters/mcp.test.ts` (registry), `tests/recruiters/llmTools.test.ts` (loop: executes tools, stops at maxRounds, surfaces tool errors), `tests/recruiters/chat.test.ts` (`parseJobsBlock` — valid/missing/malformed).
