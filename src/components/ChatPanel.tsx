@@ -39,6 +39,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [interviewMode, setInterviewMode] = useState(false);
+  const [interviewSession, setInterviewSession] = useState<{ sessionId: string; questionIndex: number; total: number } | null>(null);
   const orbState = busy ? 'speaking' : inputFocused ? 'listening' : 'idle';
   const [error, setError] = useState<string | null>(null);
   const [thinkStep, setThinkStep] = useState(0);
@@ -62,6 +64,64 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
     const text = (raw ?? input).trim();
     if (!text || busy) return;
     setError(null);
+    setInput('');
+
+    // Interview mode: start or answer via the interview endpoints
+    if (interviewMode) {
+      setBusy(true);
+      if (!interviewSession) {
+        setMessages((m) => [...m, { role: 'user', content: `Target role: ${text}` }]);
+        try {
+          const res = await fetch('/api/interview/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetRole: text }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d?.error || 'Could not start the interview.');
+          setInterviewSession({ sessionId: d.sessionId, questionIndex: d.questionIndex, total: d.total });
+          setMessages((m) => [...m, { role: 'assistant', content: `Interview started for: ${text}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
+        } catch (e: any) {
+          setError(e?.message || 'Could not start the interview.');
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
+      setMessages((m) => [...m, { role: 'user', content: text }]);
+      try {
+        const res = await fetch('/api/interview/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: interviewSession.sessionId, answer: text }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d?.error || 'Could not evaluate your answer.');
+        if (d.done) {
+          const sc = d.scorecard;
+          setInterviewSession(null);
+          const lines = [
+            'Interview complete — here is your scorecard:',
+            '',
+            ...sc.perQuestion.map((q: any, i: number) => `${i + 1}. ${q.question}\n   Score ${q.score}/10 — ${q.feedback}`),
+            '',
+            `Overall: ${sc.overall}/10`,
+            '',
+            sc.verdict,
+          ];
+          setMessages((m) => [...m, { role: 'assistant', content: lines.join('\n') }]);
+        } else {
+          setInterviewSession((s) => (s ? { ...s, questionIndex: d.questionIndex, total: d.total } : s));
+          setMessages((m) => [...m, { role: 'assistant', content: `Score: ${d.score}/10 — ${d.feedback}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Could not evaluate your answer.');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     const history: ChatMsg[] = [...messages, { role: 'user', content: text }];
     setMessages(history);
     setInput('');
@@ -135,6 +195,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
           <span>Your job copilot — searches your scraped jobs via MCP tools</span>
         </div>
         <div className="chat-spacer" />
+        <button
+          className={`chat-modebtn ${interviewMode ? 'on' : ''}`}
+          onClick={() => {
+            setInterviewMode((v) => !v);
+            setError(null);
+          }}
+          aria-pressed={interviewMode}
+        >
+          Interview
+        </button>
         <button className="chat-x" onClick={onClose} aria-label="Close chat"><X size={17} /></button>
       </header>
 
@@ -142,8 +212,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         {!hasChat ? (
           <div className="chat-hero">
             <div className={`orb orb-${orbState}`} aria-hidden="true"></div>
-            <h2>Your Job Copilot</h2>
-            <p>Ask me anything about your scraped jobs — I'll search, score and explain why each one fits your CV.</p>
+            <h2>{interviewMode ? 'Mock Interview' : 'Your Job Copilot'}</h2>
+            <p>{interviewMode ? "Tell me the target role and I'll interview you — one question at a time, with a scorecard at the end." : "Ask me anything about your scraped jobs — I'll search, score and explain why each one fits your CV."}</p>
+            {!interviewMode && (
             <div className="chat-suggestions">
               {SUGGESTIONS.map((s) => (
                 <button key={s} className="chat-chip" onClick={() => send(s)}>
@@ -151,6 +222,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
                 </button>
               ))}
             </div>
+            )}
           </div>
         ) : (
           messages.map((m, i) => (
@@ -239,7 +311,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         <div className="chat-inputwrap">
           <input
             className="chat-input"
-            placeholder={hasChat ? 'Ask anything about your jobs…' : 'Ask for jobs — e.g. 5 remote DevOps roles from LinkedIn'}
+            placeholder={interviewMode ? (interviewSession ? `Q${interviewSession.questionIndex}/${interviewSession.total} — your answer…` : 'Enter the target role, e.g. Senior DevOps Engineer') : hasChat ? 'Ask anything about your jobs…' : 'Ask for jobs — e.g. 5 remote DevOps roles from LinkedIn'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
@@ -264,6 +336,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-ttl b { font-size: 14.5px; font-weight: 800; display: block; line-height: 1.2; }
         .chat-ttl span { font-size: 11px; color: var(--faint, #64748B); font-weight: 500; }
         .chat-spacer { flex: 1; }
+        .chat-modebtn { border: 1.5px solid var(--line2, #CBD5E1); background: var(--card, #fff); color: var(--muted, #475569); font-size: 12px; font-weight: 800; border-radius: 999px; padding: 7px 15px; cursor: pointer; transition: all .2s ease; }
+        .chat-modebtn:hover { border-color: var(--brand, #2563EB); color: var(--brand, #2563EB); }
+        .chat-modebtn.on { background: linear-gradient(135deg, #7C3AED, #2563EB); border-color: transparent; color: #fff; }
         .chat-x { border: 0; background: none; color: var(--faint, #64748B); cursor: pointer; padding: 6px; border-radius: 8px; display: inline-flex; }
         .chat-x:hover { background: #F1F5F9; color: var(--ink, #0F172A); }
 

@@ -221,6 +221,7 @@ function fallbackParseCvFromText(rawText: string) {
 import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
 import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
+import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession } from './server/interview.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -622,6 +623,44 @@ async function startServer() {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="Tailor-CV.pdf"');
     res.send(buf);
+  });
+
+  // ── Mock interview mode ──
+  app.post('/api/interview/start', async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const role = String(req.body?.targetRole || '').trim();
+      if (!role) return res.status(400).json({ error: 'Target role is required.' });
+      const session = startInterview(role);
+      const question = await askNextQuestion(session);
+      res.json({ sessionId: session.id, question, questionIndex: 1, total: session.total });
+    } catch (err: any) {
+      console.error('Interview start error:', err);
+      res.status(500).json({ error: err?.message || 'Could not start the interview.' });
+    }
+  });
+
+  app.post('/api/interview/answer', async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const session = getInterviewSession(String(req.body?.sessionId || ''));
+      if (!session) return res.status(404).json({ error: 'Interview session expired. Start a new one.' });
+      const answer = String(req.body?.answer || '').trim();
+      if (!answer) return res.status(400).json({ error: 'Answer is required.' });
+      const last = session.qa[session.qa.length - 1];
+      const { score, feedback } = await scoreAnswer(session, last?.question || 'your last question', answer);
+      if (session.qIndex >= session.total) {
+        const scorecard = await buildScorecard(session);
+        return res.json({ done: true, scorecard });
+      }
+      const question = await askNextQuestion(session);
+      res.json({ done: false, score, feedback, question, questionIndex: session.qIndex + 1, total: session.total });
+    } catch (err: any) {
+      console.error('Interview answer error:', err);
+      res.status(500).json({ error: err?.message || 'Could not evaluate your answer.' });
+    }
   });
 
   // ── Auth ──
