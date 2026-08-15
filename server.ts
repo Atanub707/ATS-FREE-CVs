@@ -698,7 +698,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: 'Text is required.' });
       const audio = await voiceboxSpeak(text.slice(0, 1000));
       if (!audio) return res.status(502).json({ error: 'Voicebox could not generate speech.' });
-      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Content-Type', 'audio/wav');
       res.send(audio);
     } catch (err: any) {
       console.error('Speak error:', err);

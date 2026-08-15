@@ -10,3 +10,34 @@ services:
     environment:
       - DISABLE_HMR=true
     restart: unless-stopped
+    depends_on:
+      - voicebox
+
+  # Voicebox — local AI voice studio (Kokoro/Qwen neural voices, Whisper STT).
+  # Runs on host port 17600 (the official voicebox compose default; the installed
+  # desktop app keeps 17493 — the app probes both). First /speak downloads the
+  # voice model (~330MB). One-time fix for a fresh HF cache volume:
+  #   docker exec -u root voicebox sh -c "chown -R voicebox:voicebox /home/voicebox/.cache"
+  voicebox:
+    image: voicebox-voicebox:latest
+    container_name: voicebox
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:17600:17493"
+    volumes:
+      - voicebox_voicebox-data:/app/data
+      - voicebox_huggingface-cache:/home/voicebox/.cache/huggingface
+    environment:
+      - LOG_LEVEL=info
+      - NUMBA_CACHE_DIR=/tmp/numba_cache
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+volumes:
+  voicebox_voicebox-data:
+    external: true
+  voicebox_huggingface-cache:
+    external: true
