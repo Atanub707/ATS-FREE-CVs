@@ -222,7 +222,7 @@ import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
 import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
 import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession } from './server/interview.js';
-import { voiceboxAvailable, voiceboxProfiles, voiceboxTranscribe, voiceboxSpeak } from './server/voice.js';
+import { voiceboxAvailable, voiceboxPort, voiceboxProfiles, voiceboxTranscribe, voiceboxSpeak } from './server/voice.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -666,9 +666,10 @@ async function startServer() {
 
   // ── Voice I/O (Voicebox, with graceful fallback) ──
   app.get('/api/voice/health', async (_req, res) => {
-    const available = await voiceboxAvailable();
+    const port = await voiceboxPort();
+    const available = port !== null;
     const profiles = available ? await voiceboxProfiles() : [];
-    res.json({ available, profiles });
+    res.json({ available, profiles, engine: available ? 'voicebox' : 'browser', port });
   });
 
   app.post('/api/voice/transcribe', async (req: any, res) => {
