@@ -50,8 +50,8 @@ export function getCurrentUserId(): string {
   return authContext.getStore()?.userId || '';
 }
 
-export function runWithUser(userId: string, fn: () => void): void {
-  authContext.run({ userId }, fn);
+export function runWithUser<T>(userId: string, fn: () => T): T {
+  return authContext.run({ userId }, fn);
 }
 
 // ─────────────────── Sessions ───────────────────
