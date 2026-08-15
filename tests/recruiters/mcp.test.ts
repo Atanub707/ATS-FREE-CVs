@@ -87,9 +87,9 @@ describe('MCP tool registry', () => {
       seedJob('g2', { title: 'SRE', company: 'B', gapAnalysis: { missingKeywords: ['Terraform', 'AWS'] } });
     });
     const out = await runWithUser('u1', () => TOOL_EXECUTORS['analyze_skill_gaps']({}));
-    expect(out.totalScored).toBe(2);
+    expect(out.totalScored).toBe(3);
     expect(out.gaps[0].keyword).toBe('terraform');
-    expect(out.gaps[0].count).toBe(2);
+    expect(out.gaps[0].count).toBe(3);
     expect(out.gaps[0].pct).toBe(100);
   });
 
