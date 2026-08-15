@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, CaretRight } from '@phosphor-icons/react';
+import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, CaretRight, ChatCircleDots } from '@phosphor-icons/react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -7,6 +7,7 @@ interface NavbarProps {
   onOpenManualJd: () => void;
   onOpenJobPortals?: () => void;
   onOpenRecruiters?: () => void;
+  onOpenChat?: () => void;
   onTour?: () => void;
   recruiterBadge?: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenManualJd,
   onOpenJobPortals,
   onOpenRecruiters,
+  onOpenChat,
   onTour,
   recruiterBadge = 0,
   user,
@@ -112,6 +114,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <GlobeSimple size={15} style={{ color: 'var(--color-brand)' }} weight="duotone" />
             Job Portals
+          </button>
+
+          <button
+            onClick={() => onOpenChat?.()}
+            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[12.5px] font-semibold border border-[var(--color-hairline)] bg-white transition-colors cursor-pointer hover:bg-[var(--color-violet-soft,#F5F3FF)] hover:border-[var(--color-violet-line,#E9D5FF)]"
+            title="Ask the AI assistant for jobs"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            <ChatCircleDots size={15} weight="duotone" style={{ color: '#7C3AED' }} />
+            AI Assistant
           </button>
 
           <button
