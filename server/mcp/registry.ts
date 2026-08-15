@@ -1,5 +1,59 @@
 import { getAllJobs, getMasterCv, getCandidateProfile, saveNewJobs, saveMasterCv } from '../storage/fileStorage.js';
 import { ScraperFactory } from '../scraper/scraperFactory.js';
+import { generatePdfBuffer } from '../builder/docxGenerator.js';
+
+const CV_TEMPLATES = ['harvard', 'jake', 'atanu', 'atanu-pro'];
+
+const CV_PDF_TTL = 10 * 60 * 1000;
+const cvPdfStore = new Map<string, { buf: Buffer; expiry: number }>();
+
+export function getCvPdf(token: string): Buffer | null {
+  const e = cvPdfStore.get(token);
+  if (!e) return null;
+  if (Date.now() > e.expiry) {
+    cvPdfStore.delete(token);
+    return null;
+  }
+  return e.buf;
+}
+
+function masterCvToTailoredCvShape(m: any): any {
+  return {
+    candidateName: m.fullName,
+    contactInfo: {
+      email: m.email,
+      phone: m.phone,
+      location: m.location,
+      linkedin: m.linkedin,
+      github: m.github,
+      website: m.website,
+    },
+    targetRole: m.experiences?.[0]?.title || '',
+    professionalSummary: m.summary,
+    coreCompetencies: (m.skills || []).flatMap((s: any) => s.items || []),
+    workExperience: (m.experiences || []).map((e: any) => ({
+      title: e.title,
+      company: e.company,
+      location: e.location,
+      dates: e.dates,
+      highlights: e.responsibilities,
+    })),
+    education: (m.education || []).map((e: any) => ({
+      degree: e.degree,
+      institution: e.institution,
+      dates: e.dates,
+      details: e.details || '',
+    })),
+    technicalSkills: (m.skills || []).map((s: any) => ({
+      category: s.category,
+      skills: s.items,
+    })),
+    projects: m.projects || [],
+    certifications: (m.certifications || []).map((c: any) =>
+      typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
+    ),
+  };
+}
 
 export interface ToolDef {
   name: string;
@@ -71,6 +125,23 @@ export const CHAT_TOOLS: ToolDef[] = [
       type: 'object',
       properties: { keywords: { type: 'array', items: { type: 'string' } } },
       required: ['keywords'],
+    },
+  },
+  {
+    name: 'generate_cv',
+    description:
+      "Generate a downloadable PDF of the user's CV (using their current template — the existing 4 templates only). Optional changes: summary (new professional summary text) and skillsAdd (list of keywords to add). Returns a token the UI turns into a Download PDF button. Use when the user asks to create/download/export their CV.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        changes: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string' },
+            skillsAdd: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
     },
   },
 ];
@@ -229,5 +300,33 @@ export const TOOL_EXECUTORS: Record<string, (args: any) => Promise<any>> = {
     const newCv = { ...cv, skills };
     saveMasterCv(newCv as any);
     return { added, skills: skills.flatMap((s) => s.items) };
+  },
+  async generate_cv(args) {
+    const cv = getMasterCv() as any;
+    const template = (CV_TEMPLATES.includes(cv.templateId || '') ? cv.templateId : 'harvard') as string;
+    const changes = args?.changes || {};
+
+    const summary = typeof changes.summary === 'string' && changes.summary.trim()
+      ? changes.summary.trim()
+      : cv.summary;
+
+    const skills = (cv.skills || []).map((s: any) => ({ ...s, items: [...(s.items || [])] }));
+    const addSkills = (Array.isArray(changes.skillsAdd) ? changes.skillsAdd : [])
+      .map(String).filter(Boolean).filter((k: string) => k.length <= 60);
+    if (addSkills.length) {
+      const existing = new Set(skills.flatMap((s) => s.items.map((i: string) => i.toLowerCase().trim())));
+      const fresh = addSkills.filter((k: string) => !existing.has(k.toLowerCase().trim()));
+      if (fresh.length) {
+        const market = skills.find((s) => s.category?.toLowerCase().includes('market'));
+        if (market) market.items = [...market.items, ...fresh];
+        else skills.push({ category: 'Market Skills', items: fresh });
+      }
+    }
+
+    const working = { ...cv, summary, skills };
+    const pdf = await generatePdfBuffer(masterCvToTailoredCvShape(working), template);
+    const token = crypto.randomUUID();
+    cvPdfStore.set(token, { buf: Buffer.from(pdf), expiry: Date.now() + CV_PDF_TTL });
+    return { token, template, filename: 'Tailor-CV.pdf' };
   },
 };

@@ -69,9 +69,11 @@ export const SYSTEM_PROMPT = `You are the Tailor CV assistant. You help the user
 - Formatting: PLAIN TEXT ONLY. No markdown symbols (*, **, #, -, >), no emojis, no bullet lists. Use simple numbered lines (1. 2. 3.) when listing jobs.
 - When presenting job results, end with exactly one JSON line (nothing after it) in this shape:
 {"__jobs":[{"id":"...","reason":"..."}]}
-Include up to 10 jobs. Only include jobs you actually found via search_jobs.`;
+Include up to 10 jobs. Only include jobs you actually found via search_jobs.
+- When you generated a CV via generate_cv, end your reply with exactly one JSON line (nothing after it) in this shape, with the token returned by the tool:
+{"__cv":{"token":"...","template":"..."}}`;
 
-export function parseJobsBlock(reply: string): { text: string; jobs: any[] } {
+export function parseJobsBlock(reply: string): { text: string; jobs: any[]; cv?: { token: string; template?: string } } {
   const match = reply.match(/\{"__jobs":(\[.*?\])\}/s);
   let jobs: any[] = [];
   if (match) {
@@ -81,7 +83,18 @@ export function parseJobsBlock(reply: string): { text: string; jobs: any[] } {
       jobs = [];
     }
   }
-  return { text: reply.replace(/\{"__jobs":\[.*?\]\}/s, '').trim(), jobs };
+  let text = reply.replace(/\{"__jobs":\[.*?\]\}/s, '').trim();
+  const cvMatch = text.match(/\{"__cv":\{(?:[^{}])*\}\}/);
+  let cv: { token: string; template?: string } | undefined;
+  if (cvMatch) {
+    try {
+      cv = JSON.parse(cvMatch[0]);
+    } catch {
+      cv = undefined;
+    }
+    text = text.replace(/\{"__cv":\{(?:[^{}])*\}\}/, '').trim();
+  }
+  return { text, jobs, cv };
 }
 
 function toNativeTools(tools: ToolDef[]): any[] {

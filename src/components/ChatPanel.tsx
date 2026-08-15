@@ -16,6 +16,7 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
   jobs?: JobCard[];
+  cv?: { token: string; template?: string };
 }
 
 interface ChatPanelProps {
@@ -76,7 +77,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         setError(data?.error || 'Chat failed.');
         return;
       }
-      setMessages((m) => [...m, { role: 'assistant', content: data.reply || '…', jobs: data.jobs || [] }]);
+      setMessages((m) => [...m, { role: 'assistant', content: data.reply || '…', jobs: data.jobs || [], cv: data.cv }]);
     } catch (e: any) {
       setError(e?.message || 'Could not reach the assistant.');
     } finally {
@@ -157,6 +158,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
               {m.role === 'assistant' && <span className="chat-msg-av" aria-hidden="true"><span className="orb orb-sm orb-idle"></span></span>}
               <div className="chat-bubble">
                 {m.content}
+                {m.cv && (
+                  <div className="chat-cvbar">
+                    <FileCsv size={14} />
+                    <span>Your tailored CV is ready</span>
+                    <a className="chat-cvbtn" href={`/api/agent/cv/${m.cv.token}`} target="_blank" rel="noreferrer">
+                      Download PDF
+                    </a>
+                  </div>
+                )}
                 {m.jobs && m.jobs.length > 0 && (
                   <div className="chat-jobs">
                     <div className="chat-jobs-hdr">
@@ -317,6 +327,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-error { align-self: center; font-size: 12px; font-weight: 700; color: var(--danger, #DC2626); background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; padding: 9px 14px; }
 
         .chat-jobs { margin-top: 13px; display: flex; flex-direction: column; gap: 9px; }
+        .chat-cvbar { margin-top: 13px; display: flex; align-items: center; gap: 9px; background: var(--brand-soft, #EFF6FF); border: 1px solid var(--brand-line, #BFDBFE); border-radius: 10px; padding: 9px 12px; font-size: 12px; font-weight: 700; color: var(--brand, #2563EB); }
+        .chat-cvbar svg { flex-shrink: 0; }
+        .chat-cvbtn { margin-left: auto; display: inline-flex; align-items: center; background: linear-gradient(135deg, var(--brand, #2563EB), var(--brand-strong, #1D4ED8)); color: #fff; border: 0; border-radius: 8px; padding: 7px 13px; font-size: 11.5px; font-weight: 800; text-decoration: none; transition: filter .2s ease; }
+        .chat-cvbtn:hover { filter: brightness(1.08); }
         .chat-jobs-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
         .chat-jobs-count { font-size: 11px; font-weight: 800; color: var(--faint, #64748B); text-transform: uppercase; letter-spacing: .08em; }
         .chat-applyall { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--brand, #2563EB), var(--brand-strong, #1D4ED8)); border: 0; border-radius: 8px; padding: 6px 13px; cursor: pointer; transition: filter .2s ease; }

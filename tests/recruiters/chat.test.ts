@@ -21,4 +21,19 @@ describe('parseJobsBlock', () => {
     const out = parseJobsBlock('{"__jobs":[broken}');
     expect(out.jobs).toEqual([]);
   });
+
+  it('extracts the cv block and strips it', () => {
+    const reply = 'Your CV is ready.\n{"__cv":{"token":"abc123","template":"harvard"}}';
+    const out = parseJobsBlock(reply);
+    expect(out.cv).toEqual({ token: 'abc123', template: 'harvard' });
+    expect(out.text).toContain('Your CV is ready');
+    expect(out.text).not.toContain('__cv');
+  });
+
+  it('keeps jobs and cv blocks separately', () => {
+    const reply = 'Done.\n{"__jobs":[{"id":"j1"}]}\n{"__cv":{"token":"t1"}}';
+    const out = parseJobsBlock(reply);
+    expect(out.jobs).toHaveLength(1);
+    expect(out.cv?.token).toBe('t1');
+  });
 });

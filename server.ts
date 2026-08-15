@@ -220,7 +220,7 @@ function fallbackParseCvFromText(rawText: string) {
 
 import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
-import { CHAT_TOOLS } from './server/mcp/registry.js';
+import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -589,7 +589,7 @@ async function startServer() {
         toolExecutor: (name: string, args: any) => callMcpTool(pair, name, args),
         maxRounds: 5,
       });
-      const { text, jobs } = parseJobsBlock(out.reply);
+      const { text, jobs, cv } = parseJobsBlock(out.reply);
       // Enrich the cards from the real DB (the model only reliably sends ids).
       const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
       const enriched = jobs.slice(0, 10).map((j: any) => {
@@ -606,11 +606,22 @@ async function startServer() {
           reason: j.reason || '',
         };
       });
-      res.json({ reply: text, jobs: enriched });
+      res.json({ reply: text, jobs: enriched, cv });
     } catch (err: any) {
       console.error('Chat error:', err);
       res.status(500).json({ error: err?.message || 'Chat failed.' });
     }
+  });
+
+  // Chat-generated CV PDF download (temp store, 10-min TTL)
+  app.get('/api/agent/cv/:token', (req, res) => {
+    const userId = getCurrentUserId();
+    if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+    const buf = getCvPdf(req.params.token);
+    if (!buf) return res.status(404).json({ error: 'PDF not found or expired.' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="Tailor-CV.pdf"');
+    res.send(buf);
   });
 
   // ── Auth ──
