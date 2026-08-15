@@ -2,14 +2,14 @@
 
 ## Unreleased
 
-### 🪄 Voice AI Agent (in-house, no MCP)
-- **Living 3D orb character** in the chat — floats when idle, pulses when you're speaking into it, wobbles word-by-word while the assistant talks.
+### 🪩 Voice AI Agent (in-house, no MCP)
+- **Living 3D orb character** in the chat — floats when idle, pulses when you're typing, wobbles while the assistant works.
 - **scrape_jobs tool** — ask the assistant to find/scrape new jobs and it runs the app's real scrapers; results are stored in your job list and appear on the dashboard.
 - **analyze_skill_gaps tool** — "what should I add to my CV?" is answered with real aggregate data across all your scored jobs (top missing keywords + % of jobs mentioning each); apply confirmed gaps to the Master CV.
 - **generate_cv tool** — the assistant can generate your CV as a PDF using the existing 4 templates only; chat shows a Download PDF button.
-- **Interview mode** — toggle in the chat header; tell it a target role and get a 7-question spoken/typed mock interview with per-question scores, feedback and a final verdict.
-- **Voice assistant button (AI logo)** — in the **dashboard search bar** (right of Search Jobs): tap it and the chat opens straight into voice-to-voice — talk, get answers in voice. Spoken input ALWAYS gets a spoken answer. Speaker toggle removed.
-- **Real neural voices** — the app now speaks through **Voicebox** (Kokoro/Qwen neural TTS, same engines as voicebox.sh): bundled in docker-compose (`docker compose up -d` runs both), async /speak flow with generation polling, WAV streamed back, first voice profile used (Heart preset auto-created). Probes installed app (17493) and Docker (17600), including host.docker.internal from inside the container. Browser speechSynthesis stays as the last-resort fallback (with the Chrome async-voice "no sound" fix).
+- **Interview mode** — toggle in the chat header; tell it a target role and get a 7-question mock interview with per-question scores, feedback and a final verdict.
+
+> **Voice I/O removed (2026-08-15):** the voice assistant button, mic/speaker controls, Voicebox integration and all speech fallbacks were deleted from the app, server, docker-compose and docs. The assistant remains fully text-based.
 
 ### 🤖 AI Assistant (MCP-powered chat)
 - Chat with your job database in natural language — same BYOK key, no new config.

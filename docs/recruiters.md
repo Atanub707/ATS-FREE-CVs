@@ -303,33 +303,11 @@ scored 0–10 with one-line feedback → final scorecard (per-question notes + o
 - **Where:** `server/interview.ts` (sessions + prompts), routes in `server.ts`, UI in `ChatPanel.tsx`.
 - **Tested:** `tests/recruiters/interview.test.ts`.
 
-### Voice I/O (turn-based conversation)
-
-The assistant speaks and listens like a human — **tap Voice** in the chat header to start a
-hands-free conversation:
-
-1. **You speak** — live transcription shows your words as you say them (interim results); the orb pulses (listening).
-2. **You pause** — it auto-sends after ~0.5s of silence. No buttons.
-3. **It answers out loud, streaming** — the reply is spoken **sentence by sentence** as it plays (Voicebox TTS when running, browser speechSynthesis otherwise); the orb wobbles per sentence.
-4. **You can interrupt** — speaking while it talks stops it instantly (barge-in) and it listens to you.
-5. **It listens again** automatically after replying — a continuous back-and-forth loop. Works in Interview mode too (the interviewer speaks each question, you speak the answer).
-
-**The rule:** if your message was **spoken** (Voice mode or the mic button), the assistant
-**always answers in voice** — no toggle needed. The speaker button only controls spoken
-replies for purely typed messages. Voicebox (local voice studio on
-`127.0.0.1:17493`) upgrades TTS quality when installed; everything degrades gracefully.
-
-- `GET /api/voice/health` → `{ available, profiles }` (probes Voicebox)
-- `POST /api/voice/transcribe` (audio body) → `{ text }` (forwards to Voicebox `/transcribe`)
-- `POST /api/voice/speak` `{ text }` → audio/mpeg (forwards to Voicebox `/speak`; client calls it per sentence)
-- **Where:** `server/voice.ts`, routes in `server.ts`, voice engine + UI in `ChatPanel.tsx`, sentence chunking in `src/lib/speechChunk.ts`.
-- **Tested:** `tests/recruiters/speechChunk.test.ts` (sentence splitting), `tests/recruiters/interview.test.ts`.
-
 ### The orb
 
 The assistant is a living 3D CSS orb (radial-gradient sphere + glossy highlight). It
-**floats** when idle, **pulses with a ring** while you're speaking/typing (listening), and
-**wobbles** on an irregular rhythm while the assistant is replying or speaking aloud
+**floats** when idle, **pulses with a ring** while you're typing (listening), and
+**wobbles** on an irregular rhythm while the assistant is working/replying
 (`prefers-reduced-motion` disables all animation).
 
 **Apply All:** opens all returned job postings in new tabs. No auto-submit / browser

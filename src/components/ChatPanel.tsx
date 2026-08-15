@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CheckCircle, FileCsv, ArrowSquareIn, DotsThree, Microphone } from '@phosphor-icons/react';
-import { splitSentences } from '../lib/speechChunk';
+import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CheckCircle, FileCsv, ArrowSquareIn, DotsThree } from '@phosphor-icons/react';
 
 interface JobCard {
   id: string;
@@ -22,7 +21,6 @@ interface ChatMsg {
 
 interface ChatPanelProps {
   onClose: () => void;
-  openVoice?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -36,29 +34,14 @@ const THINKING_STEPS = ['Searching your scraped jobs…', 'Scoring the best matc
 
 const APPLY_STEPS = ['Opening all postings…', 'Building your tracking CSV…', 'Done — CSV downloaded'];
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [interviewMode, setInterviewMode] = useState(false);
   const [interviewSession, setInterviewSession] = useState<{ sessionId: string; questionIndex: number; total: number } | null>(null);
-  const [voicebox, setVoicebox] = useState<{ available: boolean; profiles: { id: string; name: string }[] }>({ available: false, profiles: [] });
-  const [voiceChat, setVoiceChat] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const recRef = useRef<any>(null);
-  const autoSendTimerRef = useRef<number | null>(null);
-  const speakQueueIdRef = useRef(0);
-  const speechAbortRef = useRef<AbortController | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const noSpeechStreakRef = useRef(0);
-  const voiceChatRef = useRef(voiceChat);
-  voiceChatRef.current = voiceChat;
-  const listeningRef = useRef(listening);
-  listeningRef.current = listening;
-  const dictatedRef = useRef(false);
-  const orbState = busy || speaking ? 'speaking' : listening || inputFocused ? 'listening' : 'idle';
+  const orbState = busy ? 'speaking' : inputFocused ? 'listening' : 'idle';
   const [error, setError] = useState<string | null>(null);
   const [thinkStep, setThinkStep] = useState(0);
   const [applying, setApplying] = useState(false);
@@ -69,193 +52,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, busy, thinkStep]);
 
-  // Probe for Voicebox (local voice studio) — voice works without it too (fallbacks).
-  useEffect(() => {
-    fetch('/api/voice/health')
-      .then((r) => r.json())
-      .then((d) => setVoicebox({ available: d.available === true, profiles: Array.isArray(d.profiles) ? d.profiles : [] }))
-      .catch(() => setVoicebox({ available: false, profiles: [] }));
-  }, []);
-
-  // Opened from the search-bar voice button → start the voice conversation immediately.
-  useEffect(() => {
-    if (openVoice) {
-      setVoiceChat(true);
-      voiceChatRef.current = true;
-      window.setTimeout(() => startListening(), 250);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Voice engine (turn-based conversation) ────────────────────────────────
-
-  const stopSpeech = () => {
-    speakQueueIdRef.current += 1;
-    speechAbortRef.current?.abort();
-    speechAbortRef.current = null;
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; audioRef.current = null; }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    setSpeaking(false);
-  };
-
-  const stopListening = () => {
-    if (autoSendTimerRef.current) { clearTimeout(autoSendTimerRef.current); autoSendTimerRef.current = null; }
-    try { recRef.current?.stop(); } catch { /* ignore */ }
-    setListening(false);
-  };
-
-  // Chrome loads speech voices asynchronously — speaking before they're ready
-  // silently produces NO sound. Wait for them (this is the #1 "no voice" cause).
-  const synthVoicesReady = (): Promise<boolean> => new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) return resolve(false);
-    if (window.speechSynthesis.getVoices().length) return resolve(true);
-    let done = false;
-    const fin = () => {
-      if (!done) {
-        done = true;
-        window.speechSynthesis.onvoiceschanged = null;
-        resolve(true);
-      }
-    };
-    window.speechSynthesis.onvoiceschanged = fin;
-    setTimeout(fin, 1500);
-  });
-
-  const synthSpeak = (sentence: string, myId: number): Promise<void> => new Promise(async (resolve) => {
-    if (!('speechSynthesis' in window)) return resolve();
-    await synthVoicesReady();
-    if (speakQueueIdRef.current !== myId) return resolve();
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(sentence);
-    const vs = synth.getVoices();
-    const en = vs.find((v) => /en[-_]/i.test(v.lang) && /natural|google/i.test(v.name))
-      || vs.find((v) => /en[-_]/i.test(v.lang))
-      || vs[0];
-    if (en) u.voice = en;
-    u.rate = 1.02;
-    u.pitch = 1;
-    u.volume = 1;
-    u.onstart = () => { if (speakQueueIdRef.current === myId) setSpeaking(true); };
-    u.onend = () => { if (speakQueueIdRef.current === myId) setSpeaking(false); resolve(); };
-    u.onerror = () => { if (speakQueueIdRef.current === myId) setSpeaking(false); resolve(); };
-    synth.speak(u);
-    synth.resume();
-    // Safety: if the utterance never starts (Chrome quirk), don't hang the queue.
-    setTimeout(() => { if (!synth.speaking) resolve(); }, 8000);
-  });
-
-  // Speak one sentence; resolves when it finishes (or is interrupted).
-  const speakOne = (sentence: string, myId: number): Promise<void> => {
-    if (speakQueueIdRef.current !== myId) return Promise.resolve();
-    if (!voicebox.available) return synthSpeak(sentence, myId);
-    return new Promise((resolve) => {
-      const ctrl = new AbortController();
-      speechAbortRef.current = ctrl;
-      fetch('/api/voice/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence.slice(0, 500) }),
-        signal: ctrl.signal,
-      })
-        .then(async (res) => {
-          if (!res.ok) throw new Error('speak failed');
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.volume = 1;
-          audio.onended = () => { URL.revokeObjectURL(url); if (speakQueueIdRef.current === myId) setSpeaking(false); resolve(); };
-          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-          audio.onabort = () => { URL.revokeObjectURL(url); resolve(); };
-          setSpeaking(true);
-          audio.play().catch(() => { URL.revokeObjectURL(url); void synthSpeak(sentence, myId).then(() => resolve()); });
-        })
-        .catch(() => { void synthSpeak(sentence, myId).then(() => resolve()); });
-    });
-  };
-
-  // Speak a reply sentence-by-sentence (streaming feel), then auto-listen in voice chat.
-  const speakQueue = async (text: string) => {
-    if (!text) return;
-    stopSpeech();
-    const myId = ++speakQueueIdRef.current;
-    const sentences = splitSentences(text);
-    for (const s of sentences) {
-      if (speakQueueIdRef.current !== myId) return;
-      await speakOne(s, myId);
-    }
-    if (speakQueueIdRef.current === myId) {
-      setSpeaking(false);
-      if (voiceChatRef.current) {
-        window.setTimeout(() => { if (voiceChatRef.current && !busy) startListening(); }, 350);
-      }
-    }
-  };
-
-  // Live recognition: words appear as you talk; a pause auto-sends in voice chat.
-  const startListening = () => {
-    if (listeningRef.current) return;
-    stopSpeech();
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { setError('Speech recognition is not supported in this browser.'); return; }
-    const rec = new SR();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = false;
-    let finalText = '';
-    rec.onresult = (e: any) => {
-      noSpeechStreakRef.current = 0;
-      dictatedRef.current = true;
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalText += (r[0].transcript || '') + ' ';
-        else interim += r[0].transcript || '';
-      }
-      setInput(finalText.trim() + (interim ? ' ' + interim : ''));
-    };
-    rec.onend = () => {
-      setListening(false);
-      const text = finalText.trim();
-      if (text) {
-        noSpeechStreakRef.current = 0;
-        if (voiceChatRef.current) {
-          autoSendTimerRef.current = window.setTimeout(() => send(text), 450);
-        }
-      } else if (voiceChatRef.current) {
-        noSpeechStreakRef.current += 1;
-        if (noSpeechStreakRef.current < 4) {
-          autoSendTimerRef.current = window.setTimeout(() => { if (voiceChatRef.current) startListening(); }, 500);
-        }
-      }
-    };
-    rec.onerror = (e: any) => {
-      setListening(false);
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        setError('Microphone access was denied — allow the mic to use voice chat.');
-        setVoiceChat(false);
-      }
-    };
-    recRef.current = rec;
-    setListening(true);
-    try { rec.start(); } catch { setListening(false); }
-  };
-
-  const toggleVoiceChat = () => {
-    const next = !voiceChat;
-    setVoiceChat(next);
-    if (next) startListening();
-    else { stopListening(); stopSpeech(); }
-  };
-
-  // cleanup: stop recognition + speech on unmount
-  useEffect(() => () => {
-    if (autoSendTimerRef.current) clearTimeout(autoSendTimerRef.current);
-    stopListening();
-    stopSpeech();
-  }, []);
-
   // rotate the "thinking" status line while busy
   useEffect(() => {
     if (!busy) return;
@@ -264,16 +60,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
     return () => clearInterval(id);
   }, [busy]);
 
-  const send = async (raw?: string, spokenInput = false) => {
+  const send = async (raw?: string) => {
     const text = (raw ?? input).trim();
     if (!text || busy) return;
     setError(null);
     setInput('');
-    // A spoken message (mic) or voice-assistant mode always gets a spoken answer.
-    const spoken = spokenInput || dictatedRef.current || voiceChatRef.current;
-    dictatedRef.current = false;
-    // Barge-in: a new turn interrupts whatever the assistant was saying.
-    if (spoken) stopSpeech();
 
     // Interview mode: start or answer via the interview endpoints
     if (interviewMode) {
@@ -290,7 +81,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
           if (!res.ok) throw new Error(d?.error || 'Could not start the interview.');
           setInterviewSession({ sessionId: d.sessionId, questionIndex: d.questionIndex, total: d.total });
           setMessages((m) => [...m, { role: 'assistant', content: `Interview started for: ${text}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
-          if (voiceChatRef.current) void speakQueue(d.question);
         } catch (e: any) {
           setError(e?.message || 'Could not start the interview.');
         } finally {
@@ -320,11 +110,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
             sc.verdict,
           ];
           setMessages((m) => [...m, { role: 'assistant', content: lines.join('\n') }]);
-          if (voiceChatRef.current) void speakQueue(sc.verdict);
         } else {
           setInterviewSession((s) => (s ? { ...s, questionIndex: d.questionIndex, total: d.total } : s));
           setMessages((m) => [...m, { role: 'assistant', content: `Score: ${d.score}/10 — ${d.feedback}\n\nQ${d.questionIndex}/${d.total}. ${d.question}` }]);
-          if (voiceChatRef.current) void speakQueue(d.question);
         }
       } catch (e: any) {
         setError(e?.message || 'Could not evaluate your answer.');
@@ -350,7 +138,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
         return;
       }
       setMessages((m) => [...m, { role: 'assistant', content: data.reply || '…', jobs: data.jobs || [], cv: data.cv }]);
-      if (spoken) void speakQueue(data.reply || '');
     } catch (e: any) {
       setError(e?.message || 'Could not reach the assistant.');
     } finally {
@@ -417,15 +204,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
           aria-pressed={interviewMode}
         >
           Interview
-        </button>
-        <button
-          className={`chat-modebtn voice ${voiceChat ? 'on' : ''}`}
-          onClick={toggleVoiceChat}
-          aria-pressed={voiceChat}
-          title="Voice assistant — speak, and I'll answer in voice"
-        >
-          <span className="ai-logo">AI</span>
-          {listening ? 'Listening…' : speaking ? 'Speaking…' : 'Voice'}
         </button>
         <button className="chat-x" onClick={onClose} aria-label="Close chat"><X size={17} /></button>
       </header>
@@ -530,16 +308,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
       </div>
 
       <div className="chat-inputrow">
-        <button
-          className={`chat-vbtn ${listening ? 'mic-on' : ''}`}
-          onClick={() => (listening ? stopListening() : startListening())}
-          aria-label={listening ? 'Stop listening' : 'Speak your message'}
-          title={listening ? 'Stop listening' : 'Speak your message'}
-        >
-          <Microphone size={16} weight="fill" />
-        </button>
         <div className="chat-inputwrap">
-          {listening && <div className="chat-listen-hint"><span className="chat-listen-dot"></span>{voiceChat ? 'Listening — speak, pause to send. I\u2019ll answer in voice.' : 'Listening — speak, then send'}</div>}
           <input
             className="chat-input"
             placeholder={interviewMode ? (interviewSession ? `Q${interviewSession.questionIndex}/${interviewSession.total} — your answer…` : 'Enter the target role, e.g. Senior DevOps Engineer') : hasChat ? 'Ask anything about your jobs…' : 'Ask for jobs — e.g. 5 remote DevOps roles from LinkedIn'}
@@ -570,11 +339,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
         .chat-modebtn { border: 1.5px solid var(--line2, #CBD5E1); background: var(--card, #fff); color: var(--muted, #475569); font-size: 12px; font-weight: 800; border-radius: 999px; padding: 7px 15px; cursor: pointer; transition: all .2s ease; }
         .chat-modebtn:hover { border-color: var(--brand, #2563EB); color: var(--brand, #2563EB); }
         .chat-modebtn.on { background: linear-gradient(135deg, #7C3AED, #2563EB); border-color: transparent; color: #fff; }
-        .chat-modebtn.voice { display: inline-flex; align-items: center; gap: 8px; }
-        .ai-logo { width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #7C3AED, #2563EB); color: #fff; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; letter-spacing: .03em; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
-        .chat-modebtn.voice.on { background: linear-gradient(135deg, #059669, #10B981); border-color: transparent; color: #fff; animation: voiceBtnPulse 2s ease-in-out infinite; }
-        .chat-modebtn.voice.on .ai-logo { background: rgba(255, 255, 255, .28); color: #fff; }
-        @keyframes voiceBtnPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .4); } 50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); } }
         .chat-x { border: 0; background: none; color: var(--faint, #64748B); cursor: pointer; padding: 6px; border-radius: 8px; display: inline-flex; }
         .chat-x:hover { background: #F1F5F9; color: var(--ink, #0F172A); }
 
@@ -670,15 +434,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, openVoice }) => {
         .chat-pipe-spin { width: 14px; height: 14px; margin-left: auto; border-radius: 50%; border: 2px solid var(--brand-line, #BFDBFE); border-top-color: var(--brand, #2563EB); animation: chatspin .8s linear infinite; }
         @keyframes chatspin { to { transform: rotate(360deg); } }
 
-        .chat-inputrow { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 24px 20px; border-top: 1px solid var(--line, #E2E8F0); background: var(--card, #fff); flex-shrink: 0; }
-        .chat-vbtn { width: 42px; height: 42px; border-radius: 12px; border: 1.5px solid var(--line2, #CBD5E1); background: var(--card, #fff); color: var(--muted, #475569); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s ease; flex-shrink: 0; }
-        .chat-vbtn:hover { border-color: var(--brand, #2563EB); color: var(--brand, #2563EB); }
-        .chat-vbtn.mic-on { background: #DC2626; border-color: #DC2626; color: #fff; animation: micPulse 1.4s ease-in-out infinite; }
-        @keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .4); } 50% { box-shadow: 0 0 0 9px rgba(220, 38, 38, 0); } }
+        .chat-inputrow { display: flex; justify-content: center; padding: 14px 24px 20px; border-top: 1px solid var(--line, #E2E8F0); background: var(--card, #fff); flex-shrink: 0; }
         .chat-inputwrap { position: relative; width: 100%; max-width: 720px; }
-        .chat-listen-hint { position: absolute; top: -24px; left: 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: #DC2626; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; padding: 4px 11px; animation: msgIn .25s ease-out both; }
-        .chat-listen-dot { width: 8px; height: 8px; border-radius: 50%; background: #DC2626; animation: listenDot 1.1s ease-in-out infinite; }
-        @keyframes listenDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.75); } }
         .chat-input { width: 100%; border: 1.5px solid var(--line2, #CBD5E1); border-radius: 14px; padding: 13px 52px 13px 16px; font-size: 13.5px; font-family: inherit; color: var(--ink, #0F172A); outline: none; transition: border-color .2s ease, box-shadow .2s ease; background: var(--bg, #F9FAFB); }
         .chat-input:focus { border-color: var(--brand, #2563EB); box-shadow: 0 0 0 4px rgba(37,99,235,.1); background: #fff; }
         .chat-send { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 11px; border: 0; background: linear-gradient(135deg, var(--brand, #2563EB), var(--brand-strong, #1D4ED8)); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: filter .2s ease; }

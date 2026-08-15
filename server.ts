@@ -222,7 +222,6 @@ import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
 import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
 import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession } from './server/interview.js';
-import { voiceboxAvailable, voiceboxPort, voiceboxProfiles, voiceboxTranscribe, voiceboxSpeak } from './server/voice.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -661,48 +660,6 @@ async function startServer() {
     } catch (err: any) {
       console.error('Interview answer error:', err);
       res.status(500).json({ error: err?.message || 'Could not evaluate your answer.' });
-    }
-  });
-
-  // ── Voice I/O (Voicebox, with graceful fallback) ──
-  app.get('/api/voice/health', async (_req, res) => {
-    const port = await voiceboxPort();
-    const available = port !== null;
-    const profiles = available ? await voiceboxProfiles() : [];
-    res.json({ available, profiles, engine: available ? 'voicebox' : 'browser', port });
-  });
-
-  app.post('/api/voice/transcribe', async (req: any, res) => {
-    try {
-      const userId = getCurrentUserId();
-      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
-      if (!(await voiceboxAvailable())) return res.status(503).json({ error: 'Voicebox is not running. Start the Voicebox app first.' });
-      const chunks: Buffer[] = [];
-      for await (const chunk of req) chunks.push(chunk);
-      const buf = Buffer.concat(chunks);
-      const mime = req.headers['content-type'] === 'audio/webm' ? 'audio/webm' : 'audio/mp4';
-      const text = await voiceboxTranscribe(buf, mime);
-      res.json({ text });
-    } catch (err: any) {
-      console.error('Transcribe error:', err);
-      res.status(500).json({ error: err?.message || 'Could not transcribe audio.' });
-    }
-  });
-
-  app.post('/api/voice/speak', async (req, res) => {
-    try {
-      const userId = getCurrentUserId();
-      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
-      if (!(await voiceboxAvailable())) return res.status(503).json({ error: 'Voicebox is not running.' });
-      const text = String(req.body?.text || '').trim();
-      if (!text) return res.status(400).json({ error: 'Text is required.' });
-      const audio = await voiceboxSpeak(text.slice(0, 1000));
-      if (!audio) return res.status(502).json({ error: 'Voicebox could not generate speech.' });
-      res.setHeader('Content-Type', 'audio/wav');
-      res.send(audio);
-    } catch (err: any) {
-      console.error('Speak error:', err);
-      res.status(500).json({ error: err?.message || 'Could not generate speech.' });
     }
   });
 
