@@ -28,7 +28,7 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [answer, setAnswer] = useState('');
-  const [lastResult, setLastResult] = useState<{ score: number; feedback: string } | null>(null);
+  const [lastResult, setLastResult] = useState<{ score: number; feedback: string; dims?: { accuracy: number; depth: number; structure: number; examples: number } } | null>(null);
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
 
   const role = (selectedRole || customRole.trim());
@@ -94,7 +94,7 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         setScorecard(d.scorecard);
         setIvStep('scorecard');
       } else {
-        setLastResult({ score: d.score, feedback: d.feedback });
+        setLastResult({ score: d.score, feedback: d.feedback, dims: d.dims });
         setQuestion({ question: d.question, jobTitle: d.jobTitle, company: d.company, questionIndex: d.questionIndex, total: d.total });
       }
     } catch (e: any) {
@@ -251,7 +251,11 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
                   <span className="ai-w-logo">W</span> Stop texting, start speaking.
                 </a>
                 {lastResult && (
-                  <span className="ai-score-pill">{lastResult.score}/10 — {lastResult.feedback}</span>
+                  <span className="ai-score-pill">
+                    <b>{lastResult.score}/10</b>
+                    {lastResult.dims && <span className="ai-dims">Acc {lastResult.dims.accuracy} · Dep {lastResult.dims.depth} · Str {lastResult.dims.structure} · Ex {lastResult.dims.examples}</span>}
+                    — {lastResult.feedback}
+                  </span>
                 )}
               </div>
               {error && <div className="ai-error">{error}</div>}
@@ -391,7 +395,9 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-answer{width:100%; border:1.5px solid var(--line2,#CBD5E1); border-radius:13px; padding:14px 16px; min-height:92px; font-size:13.5px; color:var(--ink,#0F172A); line-height:1.65; resize:vertical; outline:none; background:var(--card,#fff); font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease;}
         .ai-answer:focus{border-color:#7C3AED; box-shadow:0 0 0 4px rgba(124,58,237,.08);}
         .ai-iv-actions{display:flex; align-items:center; gap:11px; flex-wrap:wrap;}
-        .ai-score-pill{font-size:12px; font-weight:800; color:#059669; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:999px; padding:7px 14px; animation:aiRise .25s ease;}
+        .ai-score-pill{font-size:12px; font-weight:800; color:#059669; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:999px; padding:7px 14px; animation:aiRise .25s ease; display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;}
+        .ai-score-pill b{font-size:14px;}
+        .ai-dims{font-size:10.5px; font-weight:700; color:#047857; background:rgba(255,255,255,.6); border:1px solid #A7F3D0; border-radius:999px; padding:3px 9px; letter-spacing:.02em;}
         .ai-btn.wispr{display:inline-flex; align-items:center; gap:9px; border:0; background:#0F172A; color:#fff; text-decoration:none; box-shadow:0 10px 24px -12px rgba(15,23,42,.6); transition:background .18s ease, transform .12s ease, box-shadow .18s ease;}
         .ai-btn.wispr:hover{background:#1E293B; filter:none; box-shadow:0 14px 30px -12px rgba(15,23,42,.7);}
         .ai-w-logo{width:22px; height:22px; border-radius:7px; background:rgba(255,255,255,.16); color:#fff; font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.2);}

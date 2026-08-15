@@ -5,7 +5,7 @@ import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getRoleOp
 
 vi.mock('../../server/llm/llmAdapter', () => ({
   ask: vi.fn(async (prompt: string) => {
-    if (prompt.includes('SCORE:')) return 'SCORE: 8\nFEEDBACK: Solid answer with specifics.';
+    if (prompt.includes('ACCURACY:')) return 'ACCURACY: 8\nDEPTH: 7\nSTRUCTURE: 9\nEXAMPLES: 6\nFEEDBACK: Solid answer with specifics.';
     if (prompt.includes('verdict')) return 'Strong candidate for the role. Good communication. Focus on AWS depth.';
     return 'Tell me about a time you handled a production incident.';
   }),
@@ -56,25 +56,36 @@ describe('interview engine (JD-grounded)', () => {
     expect(asked).toContain('Kubernetes');
   });
 
-  it('scores answers, tracks the source JD, and advances', async () => {
+  it('scores answers with the rubric, tracks the source JD, and advances', async () => {
     const session = runWithUser('u1', () => startInterview({ role: 'DevOps Engineer' }));
     const q = await askNextQuestion(session);
-    const { score, feedback } = await scoreAnswer(session, q.question, q.jobTitle, q.company, 'I led an incident response last quarter.');
-    expect(score).toBe(8);
+    const { score, feedback, dims } = await scoreAnswer(session, q.question, q.jobTitle, q.company, 'I led an incident response last quarter. I wrote the runbook, coordinated the on-call team, and ran the postmortem with clear action items for the whole platform group.');
+    // weighted: 8*.4 + 7*.25 + 9*.15 + 6*.2 = 7.5
+    expect(dims).toEqual({ accuracy: 8, depth: 7, structure: 9, examples: 6 });
+    expect(score).toBe(7.5);
     expect(feedback).toContain('Solid');
     expect(session.qIndex).toBe(1);
     expect(session.qa[0].jobTitle).toBe(q.jobTitle);
+  });
+
+  it('caps the score for one-line answers — no inflation', async () => {
+    const session = runWithUser('u1', () => startInterview({ role: 'DevOps Engineer' }));
+    const q = await askNextQuestion(session);
+    const short = await scoreAnswer(session, q.question, q.jobTitle, q.company, 'I would use Terraform.');
+    expect(short.score).toBeLessThanOrEqual(4);
+    const mid = await scoreAnswer(session, q.question, q.jobTitle, q.company, 'I would design it carefully with proper planning and testing.');
+    expect(mid.score).toBeLessThanOrEqual(6);
   });
 
   it('builds a scorecard with overall and verdict', async () => {
     const session = runWithUser('u1', () => startInterview({ role: 'DevOps Engineer' }));
     for (let i = 0; i < 2; i++) {
       const q = await askNextQuestion(session);
-      await scoreAnswer(session, q.question, q.jobTitle, q.company, 'My answer with specific results.');
+      await scoreAnswer(session, q.question, q.jobTitle, q.company, 'I have handled this exact scenario at scale before: I built the pipeline, measured the results, and improved uptime measurably while documenting everything for the team.');
     }
     const sc = await buildScorecard(session);
     expect(sc.perQuestion).toHaveLength(2);
-    expect(sc.overall).toBe(8);
+    expect(sc.overall).toBe(7.5);
     expect(sc.verdict.length).toBeGreaterThan(10);
   });
 });

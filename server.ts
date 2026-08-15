@@ -686,13 +686,13 @@ async function startServer() {
       const answer = String(req.body?.answer || '').trim();
       if (!answer) return res.status(400).json({ error: 'Answer is required.' });
       const last = session.qa[session.qa.length - 1];
-      const { score, feedback } = await scoreAnswer(session, last?.question || 'your last question', last?.jobTitle || session.role, last?.company || '', answer);
+      const { score, feedback, dims } = await scoreAnswer(session, last?.question || 'your last question', last?.jobTitle || session.role, last?.company || '', answer);
       if (session.qIndex >= session.total) {
         const scorecard = await buildScorecard(session);
         return res.json({ done: true, scorecard });
       }
       const { question, jobTitle, company } = await askNextQuestion(session);
-      res.json({ done: false, score, feedback, question, jobTitle, company, questionIndex: session.qIndex + 1, total: session.total });
+      res.json({ done: false, score, feedback, dims, question, jobTitle, company, questionIndex: session.qIndex + 1, total: session.total });
     } catch (err: any) {
       console.error('Interview answer error:', err);
       res.status(500).json({ error: err?.message || 'Could not evaluate your answer.' });

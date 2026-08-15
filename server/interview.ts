@@ -1,6 +1,13 @@
 import { ask } from './llm/llmAdapter.js';
 import { getMasterCv, getAllJobs } from './storage/fileStorage.js';
 
+export interface AnswerDims {
+  accuracy: number;
+  depth: number;
+  structure: number;
+  examples: number;
+}
+
 export interface InterviewQ {
   question: string;
   answer: string;
@@ -8,6 +15,17 @@ export interface InterviewQ {
   feedback: string;
   jobTitle: string;
   company: string;
+  dims: AnswerDims;
+}
+
+// Genuine scoring: the model scores four rubric dimensions per answer; the
+// overall is computed HERE with fixed weights so no single number can be
+// inflated by the model.
+const DIM_WEIGHTS: Record<keyof AnswerDims, number> = { accuracy: 0.4, depth: 0.25, structure: 0.15, examples: 0.2 };
+
+function computeOverall(dims: AnswerDims): number {
+  const raw = dims.accuracy * DIM_WEIGHTS.accuracy + dims.depth * DIM_WEIGHTS.depth + dims.structure * DIM_WEIGHTS.structure + dims.examples * DIM_WEIGHTS.examples;
+  return Math.round(raw * 10) / 10;
 }
 
 export interface InterviewSession {
@@ -159,21 +177,42 @@ export async function askNextQuestion(session: InterviewSession): Promise<{ ques
   };
 }
 
-export async function scoreAnswer(session: InterviewSession, question: string, jobTitle: string, company: string, answer: string): Promise<{ score: number; feedback: string }> {
+export async function scoreAnswer(session: InterviewSession, question: string, jobTitle: string, company: string, answer: string): Promise<{ score: number; feedback: string; dims: AnswerDims }> {
   const prompt = [
     `You are a senior interviewer for the role: ${session.role}.`,
     session.cvContext,
+    jobTitle ? `Job posting this question came from: ${jobTitle}${company ? ` at ${company}` : ''}` : '',
     `Question: ${question}`,
     `Candidate's answer: ${answer}`,
-    'Score the answer 0-10 (10 = exceptional) and give ONE short constructive feedback line.',
-    'Reply EXACTLY in this format:\nSCORE: <number 0-10>\nFEEDBACK: <one line>',
+    'Score the answer honestly against FOUR rubric dimensions (each 0-10):',
+    '- ACCURACY: technical correctness against the role and the job posting',
+    '- DEPTH: specificity — real tools, concepts, scenarios, elaboration beyond one-liners',
+    '- STRUCTURE: clear, organized, direct answer',
+    '- EXAMPLES: concrete experience or evidence from the candidate\'s own work',
+    'Be fair and calibrate to a normal interview: a typical acceptable answer to this question earns a 6.0; a good senior-level answer with the right tools and a sound approach earns 7.5-8.5. Only vague, generic, or wrong answers fall below 5. Reserve 9-10 for truly exceptional, deep, distinctive answers.',
+    'A generic answer without specifics must score low on DEPTH and EXAMPLES.',
+    'Reply EXACTLY in this format:',
+    'ACCURACY: <0-10>',
+    'DEPTH: <0-10>',
+    'STRUCTURE: <0-10>',
+    'EXAMPLES: <0-10>',
+    'FEEDBACK: <one short line>',
   ].join('\n');
   const raw = (await ask(prompt, undefined, 'text')).trim();
-  const score = Math.max(0, Math.min(10, Number((raw.match(/SCORE:\s*(\d{1,2})/) || [])[1]) || 5));
+  const num = (label: string) => {
+    const v = Number((raw.match(new RegExp(`${label}:\\s*(\\d{1,2}(?:\\.\\d)?)`)) || [])[1]);
+    return Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 5;
+  };
+  const dims: AnswerDims = { accuracy: num('ACCURACY'), depth: num('DEPTH'), structure: num('STRUCTURE'), examples: num('EXAMPLES') };
   const feedback = (raw.match(/FEEDBACK:\s*(.+)/) || [])[1]?.trim().slice(0, 200) || '';
-  session.qa.push({ question, answer, score, feedback, jobTitle, company });
+  // A one-line answer cannot be a strong interview answer, no matter what the model says.
+  let score = computeOverall(dims);
+  const wordCount = answer.trim().split(/\s+/).length;
+  if (wordCount < 12) score = Math.min(score, 4);
+  else if (wordCount < 25) score = Math.min(score, 6);
+  session.qa.push({ question, answer, score, feedback, jobTitle, company, dims });
   session.qIndex += 1;
-  return { score, feedback };
+  return { score, feedback, dims };
 }
 
 export async function buildScorecard(session: InterviewSession): Promise<Scorecard> {
@@ -182,11 +221,13 @@ export async function buildScorecard(session: InterviewSession): Promise<Scoreca
 
   let verdict = 'Interview complete. Keep practicing to raise your score.';
   try {
+    const weakest = [...session.qa].sort((a, b) => a.score - b.score)[0];
     const prompt = [
       `You are a senior interviewer for the role: ${session.role}.`,
       session.cvContext,
-      `Scores: ${perQuestion.map((q) => `${q.score}/10`).join(', ')}`,
-      'Write a 3-sentence final verdict: overall assessment, strongest area, and the single most important improvement for this role.',
+      `Per-question scores: ${perQuestion.map((q, i) => `Q${i + 1} ${q.score}/10`).join(', ')}`,
+      weakest ? `Weakest answer (Q: "${weakest.question.slice(0, 120)}") scored ${weakest.score}/10 — feedback: ${weakest.feedback}` : '',
+      'Write a 3-sentence final verdict: overall assessment, strongest area, and the single most important improvement for this role. Be honest — do not inflate.',
       'Return ONLY the verdict text. No markdown, no emojis.',
     ].join('\n');
     const v = (await ask(prompt, undefined, 'text')).trim();
