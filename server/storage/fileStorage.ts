@@ -370,6 +370,12 @@ export function getDb(): Database.Database {
       tailored_cv TEXT,
       created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS interview_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS cv_versions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -819,6 +825,43 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number; ne
   }
 
   return { added, skipped, newContacts };
+}
+
+// ─────────────────── Interview sessions (history) ───────────────────
+
+export interface StoredInterview {
+  id: string;
+  role: string;
+  total: number;
+  overall: number;
+  verdict: string;
+  perQuestion: { question: string; jobTitle: string; score: number; feedback: string }[];
+  createdAt: string;
+}
+
+export function saveInterviewSession(data: Omit<StoredInterview, 'createdAt'>): void {
+  const userId = getCurrentUserId();
+  if (!userId) return;
+  const createdAt = new Date().toISOString();
+  getDb().prepare('INSERT OR REPLACE INTO interview_sessions (id, user_id, data, created_at) VALUES (?, ?, ?, ?)')
+    .run(data.id, userId, JSON.stringify(data), createdAt);
+}
+
+export function getInterviewHistory(limit = 30): StoredInterview[] {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  const rows = getDb()
+    .prepare('SELECT data, created_at FROM interview_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?')
+    .all(userId, limit) as { data: string; created_at: string }[];
+  return rows.map((r) => ({ ...JSON.parse(r.data) as Omit<StoredInterview, 'createdAt'>, createdAt: r.created_at }));
+}
+
+export function getInterviewSessionRecord(id: string): StoredInterview | null {
+  const userId = getCurrentUserId();
+  if (!userId) return null;
+  const row = getDb().prepare('SELECT data, created_at FROM interview_sessions WHERE id = ? AND user_id = ?').get(id, userId) as { data: string; created_at: string } | undefined;
+  if (!row) return null;
+  return { ...JSON.parse(row.data) as Omit<StoredInterview, 'createdAt'>, createdAt: row.created_at };
 }
 
 // ─────────────────── HR / Recruiter contacts ───────────────────

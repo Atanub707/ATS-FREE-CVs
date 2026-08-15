@@ -222,6 +222,7 @@ import { ask } from './server/llm/llmAdapter.js';
 import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
 import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
 import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession, getRoleOptions, getJobsForRole } from './server/interview.js';
+import { saveInterviewSession, getInterviewHistory, getInterviewSessionRecord } from './server/storage/fileStorage.js';
 import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
@@ -689,13 +690,44 @@ async function startServer() {
       const { score, feedback, dims } = await scoreAnswer(session, last?.question || 'your last question', last?.jobTitle || session.role, last?.company || '', answer);
       if (session.qIndex >= session.total) {
         const scorecard = await buildScorecard(session);
-        return res.json({ done: true, scorecard });
+        saveInterviewSession({
+          id: session.id,
+          role: session.role,
+          total: session.total,
+          overall: scorecard.overall,
+          verdict: scorecard.verdict,
+          perQuestion: scorecard.perQuestion,
+        });
+        return res.json({ done: true, scorecard, sessionId: session.id });
       }
       const { question, jobTitle, company } = await askNextQuestion(session);
       res.json({ done: false, score, feedback, dims, question, jobTitle, company, questionIndex: session.qIndex + 1, total: session.total });
     } catch (err: any) {
       console.error('Interview answer error:', err);
       res.status(500).json({ error: err?.message || 'Could not evaluate your answer.' });
+    }
+  });
+
+  // Interview history
+  app.get('/api/interview/history', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      res.json({ sessions: getInterviewHistory() });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not load interview history.' });
+    }
+  });
+
+  app.get('/api/interview/history/:id', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const record = getInterviewSessionRecord(req.params.id);
+      if (!record) return res.status(404).json({ error: 'Interview not found.' });
+      res.json({ session: record });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not load the interview.' });
     }
   });
 

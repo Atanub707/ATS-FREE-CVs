@@ -6,6 +6,15 @@ interface JobOption { id: string; title: string; company: string }
 interface Question { question: string; jobTitle: string; company: string; questionIndex: number; total: number }
 interface ScorecardRow { question: string; jobTitle: string; score: number; feedback: string }
 interface Scorecard { overall: number; verdict: string; perQuestion: ScorecardRow[] }
+interface StoredInterview {
+  id: string;
+  role: string;
+  total: number;
+  overall: number;
+  verdict: string;
+  perQuestion: ScorecardRow[];
+  createdAt: string;
+}
 
 type View = 'landing' | 'interview';
 type IvStep = 'intro' | 'qa' | 'scorecard';
@@ -31,7 +40,20 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const [lastResult, setLastResult] = useState<{ score: number; feedback: string; dims?: { accuracy: number; depth: number; structure: number; examples: number } } | null>(null);
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
 
+  // interview history
+  const [history, setHistory] = useState<StoredInterview[] | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const role = (selectedRole || customRole.trim());
+
+  useEffect(() => {
+    if (view === 'landing') {
+      fetch('/api/interview/history')
+        .then((r) => r.json())
+        .then((d) => setHistory(d.sessions || []))
+        .catch(() => setHistory([]));
+    }
+  }, [view]);
 
   useEffect(() => {
     if (view === 'interview' && roles.length === 0) {
@@ -139,8 +161,8 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         <div className="ai-landing">
           <div className="ai-lhead">
             <span className="ai-eyebrow"><Sparkle size={12} weight="fill" /> AI Interview</span>
-            <h1>What would you like to do?</h1>
-            <p>Two professional AI assistants — both work entirely on your own data: your scraped jobs and your Master CV.</p>
+            <h1>Ready for your interview?</h1>
+            <p>A senior interviewer quizzes you on the real job descriptions in your dashboard — one question at a time, rubric-scored, with a final verdict.</p>
           </div>
           <div className="ai-choices">
             <button className="ai-choice iv" onClick={openInterview}>
@@ -158,6 +180,43 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
               <span className="ai-cgo">Start interview <ArrowRight size={15} weight="bold" /></span>
             </button>
 
+          </div>
+
+          <div className="ai-history">
+            <div className="ai-history-head">
+              <b>Interview history</b>
+              <span>{history ? `${history.length} session${history.length === 1 ? '' : 's'}` : '…'}</span>
+            </div>
+            {history === null && <div className="ai-history-empty">Loading…</div>}
+            {history !== null && history.length === 0 && (
+              <div className="ai-history-empty">No interviews yet — your completed sessions will appear here.</div>
+            )}
+            {history !== null && history.length > 0 && (
+              <div className="ai-history-list">
+                {history.map((h) => (
+                  <div key={h.id} className={`ai-history-row ${expandedId === h.id ? 'open' : ''}`}>
+                    <button className="ai-history-row-main" onClick={() => setExpandedId(expandedId === h.id ? null : h.id)}>
+                      <span className="ai-h-ring" style={{ '--p': `${h.overall * 10}%` } as React.CSSProperties}><b>{h.overall}</b></span>
+                      <span className="ai-h-meta">
+                        <b>{h.role}</b>
+                        <span>{new Date(h.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} · {new Date(h.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · {h.total} questions</span>
+                      </span>
+                      <span className="ai-h-verdict">{h.verdict.slice(0, 90)}{h.verdict.length > 90 ? '…' : ''}</span>
+                    </button>
+                    {expandedId === h.id && (
+                      <div className="ai-h-detail">
+                        {h.perQuestion.map((q, i) => (
+                          <div className="ai-h-q" key={i}>
+                            <span className="ai-h-qtext">{i + 1}. {q.question}</span>
+                            <span className={`ai-sc-score ${q.score < 7 ? 'low' : ''}`}>{q.score}/10</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -371,6 +430,26 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-btn.wispr:hover{background:#1E293B; filter:none; box-shadow:0 14px 30px -12px rgba(15,23,42,.7);}
         .ai-w-logo{width:22px; height:22px; border-radius:7px; background:rgba(255,255,255,.16); color:#fff; font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.2);}
 
+        .ai-history{max-width:520px; width:100%; margin:34px auto 0;}
+        .ai-history-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+        .ai-history-head b{font-size:14.5px; font-weight:800;}
+        .ai-history-head span{font-size:11px; font-weight:800; color:var(--faint,#64748B); background:#F1F5F9; border:1px solid var(--line,#E2E8F0); border-radius:999px; padding:4px 11px;}
+        .ai-history-empty{font-size:12px; color:var(--faint,#64748B); background:var(--card,#fff); border:1px dashed var(--line2,#CBD5E1); border-radius:12px; padding:18px; text-align:center;}
+        .ai-history-list{display:flex; flex-direction:column; gap:9px;}
+        .ai-history-row{background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:13px; overflow:hidden; box-shadow:var(--shadow-sm);}
+        .ai-history-row-main{display:flex; align-items:center; gap:13px; width:100%; padding:13px 15px; border:0; background:none; cursor:pointer; font-family:inherit; text-align:left; transition:background .15s ease;}
+        .ai-history-row-main:hover{background:#FBFCFE;}
+        .ai-h-ring{position:relative; width:42px; height:42px; border-radius:50%; background:conic-gradient(#059669 var(--p), #E2E8F0 0); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#047857; flex-shrink:0;}
+        .ai-h-ring::after{content:''; position:absolute; width:32px; height:32px; border-radius:50%; background:var(--card,#fff);}
+        .ai-h-ring b{position:relative; z-index:1;}
+        .ai-h-meta{flex:1; min-width:0;}
+        .ai-h-meta b{display:block; font-size:13px; font-weight:800; color:var(--ink,#0F172A);}
+        .ai-h-meta span{font-size:11px; color:var(--faint,#64748B); font-weight:500;}
+        .ai-h-verdict{max-width:200px; font-size:11px; color:var(--muted,#475569); line-height:1.45; text-align:right;}
+        .ai-h-detail{padding:4px 15px 13px; border-top:1px solid #F1F5F9;}
+        .ai-h-q{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid #F8FAFC;}
+        .ai-h-q:last-child{border-bottom:0;}
+        .ai-h-qtext{flex:1; font-size:12px; font-weight:600; color:var(--muted,#475569); line-height:1.5;}
         .ai-scorecard{background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:17px; padding:26px; box-shadow:0 18px 40px -18px rgba(15,23,42,.2);}
         .ai-sc-head{display:flex; align-items:center; gap:16px; padding-bottom:17px; border-bottom:1px solid var(--line,#E2E8F0); margin-bottom:16px;}
         .ai-sc-ring{position:relative; width:74px; height:74px; border-radius:50%; background:conic-gradient(#059669 var(--p), #E2E8F0 0); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
