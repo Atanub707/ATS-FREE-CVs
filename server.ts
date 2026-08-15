@@ -585,12 +585,16 @@ async function startServer() {
 
       const pair = createMcpPair();
       const out = await chatWithTools({
-        messages: [{ role: 'user', content: SYSTEM_PROMPT }, ...messages.map((m) => ({ role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant', content: String(m.content || '') }))],
+        system: SYSTEM_PROMPT,
+        messages: messages.map((m) => ({ role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant', content: String(m.content || '') })),
         tools: CHAT_TOOLS,
         toolExecutor: (name: string, args: any) => callMcpTool(pair, name, args),
         maxRounds: 5,
       });
       const { text, jobs, cv } = parseJobsBlock(out.reply);
+      // Guard: if the model returned only the JSON block (or nothing), still
+      // show a real message instead of an empty bubble.
+      const replyText = text.trim() || (jobs.length ? `Here ${jobs.length === 1 ? 'is' : 'are'} ${jobs.length} matching job${jobs.length === 1 ? '' : 's'}:` : 'I could not find any results — try a different role, location, or scrape new jobs first.');
       // Enrich the cards from the real DB (the model only reliably sends ids).
       const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
       const enriched = jobs.slice(0, 10).map((j: any) => {
@@ -607,7 +611,7 @@ async function startServer() {
           reason: j.reason || '',
         };
       });
-      res.json({ reply: text, jobs: enriched, cv });
+      res.json({ reply: replyText, jobs: enriched, cv });
     } catch (err: any) {
       console.error('Chat error:', err);
       res.status(500).json({ error: err?.message || 'Chat failed.' });
