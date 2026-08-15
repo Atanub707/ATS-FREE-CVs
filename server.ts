@@ -592,7 +592,7 @@ async function startServer() {
       const { text, jobs } = parseJobsBlock(out.reply);
       // Enrich the cards from the real DB (the model only reliably sends ids).
       const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
-      const enriched = jobs.map((j: any) => {
+      const enriched = jobs.slice(0, 10).map((j: any) => {
         const found = jobIndex.get(j.id);
         if (!found) return j;
         return {

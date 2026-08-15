@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CircleNotch, ChatCircleDots } from '@phosphor-icons/react';
+import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, ChatCircleDots } from '@phosphor-icons/react';
 
 interface JobCard {
   id: string;
@@ -118,7 +118,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         {busy && (
           <div className="chat-msg assistant">
             <div className="chat-bubble chat-typing">
-              <CircleNotch size={14} className="spin" /> Thinking…
+              <span className="chat-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span className="chat-typing-label">Thinking…</span>
             </div>
           </div>
         )}
@@ -158,9 +159,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-bubble { max-width: 78%; padding: 11px 15px; border-radius: 14px; font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; }
         .chat-msg.user .chat-bubble { background: var(--brand, #2563EB); color: #fff; border-bottom-right-radius: 4px; }
         .chat-msg.assistant .chat-bubble { background: var(--card, #fff); border: 1px solid var(--line, #E2E8F0); border-bottom-left-radius: 4px; }
-        .chat-typing { color: var(--faint, #64748B); display: inline-flex; align-items: center; gap: 8px; }
-        .spin { animation: chatspin .8s linear infinite; }
-        @keyframes chatspin { to { transform: rotate(360deg); } }
+        .chat-typing { color: var(--faint, #64748B); display: inline-flex; align-items: center; gap: 10px; }
+        .chat-typing-dots { display: inline-flex; gap: 4px; }
+        .chat-typing-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand, #2563EB); animation: chatdot 1.2s ease-in-out infinite; }
+        .chat-typing-dots i:nth-child(2) { animation-delay: .18s; }
+        .chat-typing-dots i:nth-child(3) { animation-delay: .36s; }
+        @keyframes chatdot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+        .chat-typing-label { font-size: 12px; font-weight: 600; letter-spacing: .02em; }
         .chat-error { align-self: center; font-size: 12px; font-weight: 700; color: var(--danger, #DC2626); background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; padding: 9px 14px; }
         .chat-jobs { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
         .chat-jobs-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
