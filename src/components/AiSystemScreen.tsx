@@ -247,8 +247,8 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <button className="ai-btn violet" onClick={submitAnswer} disabled={busy || !answer.trim()}>
                   {busy ? 'Scoring…' : 'Submit answer'}
                 </button>
-                <a className="ai-btn wispr" href="https://ref.wisprflow.ai/atanu-biswas" target="_blank" rel="noreferrer" title="Recommended — dictate your answers with Wispr Flow">
-                  <span className="ai-w-logo">W</span> Recommended: use Wispr Flow
+                <a className="ai-btn wispr" href="https://ref.wisprflow.ai/atanu-biswas" target="_blank" rel="noreferrer" title="Stop texting, start speaking — dictate your answers with Wispr Flow">
+                  <span className="ai-w-logo">W</span> Stop texting, start speaking.
                 </a>
                 {lastResult && (
                   <span className="ai-score-pill">{lastResult.score}/10 — {lastResult.feedback}</span>
@@ -392,9 +392,9 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-answer:focus{border-color:#7C3AED; box-shadow:0 0 0 4px rgba(124,58,237,.08);}
         .ai-iv-actions{display:flex; align-items:center; gap:11px; flex-wrap:wrap;}
         .ai-score-pill{font-size:12px; font-weight:800; color:#059669; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:999px; padding:7px 14px; animation:aiRise .25s ease;}
-        .ai-btn.wispr{display:inline-flex; align-items:center; gap:9px; border:1.5px solid #C4B5FD; background:#F5F3FF; color:#6D28D9; text-decoration:none; transition:border-color .18s ease, background .18s ease, box-shadow .18s ease;}
-        .ai-btn.wispr:hover{background:#EDE9FE; border-color:#7C3AED; box-shadow:0 8px 20px -10px rgba(124,58,237,.4); filter:none;}
-        .ai-w-logo{width:22px; height:22px; border-radius:7px; background:linear-gradient(135deg,#7C3AED,#2563EB); color:#fff; font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.35);}
+        .ai-btn.wispr{display:inline-flex; align-items:center; gap:9px; border:0; background:#0F172A; color:#fff; text-decoration:none; box-shadow:0 10px 24px -12px rgba(15,23,42,.6); transition:background .18s ease, transform .12s ease, box-shadow .18s ease;}
+        .ai-btn.wispr:hover{background:#1E293B; filter:none; box-shadow:0 14px 30px -12px rgba(15,23,42,.7);}
+        .ai-w-logo{width:22px; height:22px; border-radius:7px; background:rgba(255,255,255,.16); color:#fff; font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.2);}
 
         .ai-scorecard{background:var(--card,#fff); border:1px solid var(--line,#E2E8F0); border-radius:17px; padding:26px; box-shadow:0 18px 40px -18px rgba(15,23,42,.2);}
         .ai-sc-head{display:flex; align-items:center; gap:16px; padding-bottom:17px; border-bottom:1px solid var(--line,#E2E8F0); margin-bottom:16px;}
