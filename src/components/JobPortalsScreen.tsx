@@ -31,7 +31,7 @@ const POPULAR_NAMES = new Set([
 
 // Curated by us — pinned at the top of the portal list. Wellfound uses a
 // referral sign-up link, so new users who join through it support the project.
-const RECOMMENDED = new Set(['LinkedIn Jobs', 'Wellfound (AngelList)', 'Wellfound (Startups)']);
+const RECOMMENDED = new Set(['LinkedIn Jobs', 'Wellfound (AngelList)']);
 
 export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onClose }) => {
   const [search, setSearch] = useState('');
@@ -117,8 +117,8 @@ export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onCl
           {p.name[0]}
         </span>
         <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5">
-              <span className="block text-[13px] font-bold text-[var(--color-ink)] truncate group-hover:text-[var(--color-brand)] transition-colors">{p.name}</span>
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className="block text-[13px] font-bold text-[var(--color-ink)] truncate min-w-0 group-hover:text-[var(--color-brand)] transition-colors">{p.name}</span>
               {RECOMMENDED.has(p.name) ? (
                 <span className="shrink-0 text-[9px] font-extrabold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] rounded-full px-1.5 py-0.5">
                   Recommended by us
