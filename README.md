@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT"/>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome"/>
   <a href="https://ref.wisprflow.ai/atanu-biswas" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/Powered%20by-Wispr%20Flow-7C3AED?style=for-the-badge&labelColor=5B21B6" alt="Powered by Wispr Flow"/>
+    <img src="https://img.shields.io/badge/Affiliated%20by-Wispr%20Flow-7C3AED?style=for-the-badge&labelColor=5B21B6" alt="Affiliated by Wispr Flow"/>
   </a>
 </p>
 
