@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setupTestDb, teardownTestDb } from './initDb';
 import { runWithUser, getDb } from '../../server/storage/fileStorage';
 import { CHAT_TOOLS, TOOL_EXECUTORS } from '../../server/mcp/registry';
@@ -21,8 +21,8 @@ describe('MCP tool registry', () => {
   });
   afterEach(() => teardownTestDb());
 
-  it('exposes the four chat tools', () => {
-    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary']);
+  it('exposes the five chat tools', () => {
+    expect(CHAT_TOOLS.map((t) => t.name)).toEqual(['search_jobs', 'get_job', 'score_job', 'get_cv_summary', 'scrape_jobs']);
   });
 
   it('search_jobs filters by source and role and caps at limit', async () => {
@@ -58,5 +58,26 @@ describe('MCP tool registry', () => {
     const out = await runWithUser('u1', () => TOOL_EXECUTORS['get_cv_summary']({}));
     expect(typeof out.fullName).toBe('string');
     expect(Array.isArray(out.skills)).toBe(true);
+  });
+
+  it('scrape_jobs runs the scraper and stores new jobs in the list', async () => {
+    const { ScraperFactory } = await import('../../server/scraper/scraperFactory');
+    const spy = vi.spyOn(ScraperFactory, 'runScrape').mockResolvedValue([
+      { id: 'linkedin-999', title: 'DevOps Engineer', company: 'NEWCO', location: 'Remote', source: 'LinkedIn', url: 'https://x/999' },
+    ] as any);
+    try {
+      const out = await runWithUser('u1', () => TOOL_EXECUTORS['scrape_jobs']({ role: 'DevOps', location: 'Remote' }));
+      expect(out.addedCount).toBe(1);
+      expect(out.jobs[0].company).toBe('NEWCO');
+      const stored = getDb().prepare('SELECT data FROM jobs WHERE id = ?').get('linkedin-999');
+      expect(stored).toBeTruthy();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('scrape_jobs rejects a missing role', async () => {
+    const out = await runWithUser('u1', () => TOOL_EXECUTORS['scrape_jobs']({}));
+    expect(out.error).toBeTruthy();
   });
 });
