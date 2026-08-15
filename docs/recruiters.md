@@ -303,16 +303,26 @@ scored 0–10 with one-line feedback → final scorecard (per-question notes + o
 - **Where:** `server/interview.ts` (sessions + prompts), routes in `server.ts`, UI in `ChatPanel.tsx`.
 - **Tested:** `tests/recruiters/interview.test.ts`.
 
-### Voice I/O (Voicebox + fallbacks)
+### Voice I/O (turn-based conversation)
 
-The mic button + voice-reply toggle in the chat input bar. Voicebox (local voice studio,
-REST on `127.0.0.1:17493`) is used when running; the browser's native speech
-(SpeechRecognition / speechSynthesis) is the automatic fallback.
+The assistant speaks and listens like a human — **tap Voice** in the chat header to start a
+hands-free conversation:
+
+1. **You speak** — live transcription shows your words as you say them (interim results); the orb pulses (listening).
+2. **You pause** — it auto-sends after ~0.5s of silence. No buttons.
+3. **It answers out loud, streaming** — the reply is spoken **sentence by sentence** as it plays (Voicebox TTS when running, browser speechSynthesis otherwise); the orb wobbles per sentence.
+4. **You can interrupt** — speaking while it talks stops it instantly (barge-in) and it listens to you.
+5. **It listens again** automatically after replying — a continuous back-and-forth loop. Works in Interview mode too (the interviewer speaks each question, you speak the answer).
+
+One-off usage without Voice mode: the mic button dictates into the input (pause to fill), and
+the speaker button makes any reply speak aloud. Voicebox (local voice studio on
+`127.0.0.1:17493`) upgrades TTS quality when installed; everything degrades gracefully.
 
 - `GET /api/voice/health` → `{ available, profiles }` (probes Voicebox)
 - `POST /api/voice/transcribe` (audio body) → `{ text }` (forwards to Voicebox `/transcribe`)
-- `POST /api/voice/speak` `{ text }` → audio/mpeg (forwards to Voicebox `/speak`)
-- **Where:** `server/voice.ts`, routes in `server.ts`, mic/speaker UI in `ChatPanel.tsx`.
+- `POST /api/voice/speak` `{ text }` → audio/mpeg (forwards to Voicebox `/speak`; client calls it per sentence)
+- **Where:** `server/voice.ts`, routes in `server.ts`, voice engine + UI in `ChatPanel.tsx`, sentence chunking in `src/lib/speechChunk.ts`.
+- **Tested:** `tests/recruiters/speechChunk.test.ts` (sentence splitting), `tests/recruiters/interview.test.ts`.
 
 ### The orb
 
