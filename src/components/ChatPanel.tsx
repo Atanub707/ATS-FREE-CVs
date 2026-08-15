@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, ChatCircleDots, CheckCircle, FileCsv, ArrowSquareIn, DotsThree } from '@phosphor-icons/react';
+import { X, PaperPlaneTilt, Sparkle, ArrowSquareOut, CheckCircle, FileCsv, ArrowSquareIn, DotsThree } from '@phosphor-icons/react';
 
 interface JobCard {
   id: string;
@@ -36,7 +36,9 @@ const APPLY_STEPS = ['Opening all postings…', 'Building your tracking CSV…',
 export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
   const [busy, setBusy] = useState(false);
+  const orbState = busy ? 'speaking' : inputFocused ? 'listening' : 'idle';
   const [error, setError] = useState<string | null>(null);
   const [thinkStep, setThinkStep] = useState(0);
   const [applying, setApplying] = useState(false);
@@ -126,7 +128,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
   return (
     <div className="chat-screen">
       <header className="chat-hdr">
-        <div className="chat-botmini"><ChatCircleDots size={16} weight="fill" /></div>
+        <div className="chat-botmini"><span className={`orb orb-sm orb-${orbState}`} aria-hidden="true"></span></div>
         <div className="chat-ttl">
           <b>AI Assistant</b>
           <span>Your job copilot — searches your scraped jobs via MCP tools</span>
@@ -138,12 +140,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
       <div className="chat-body">
         {!hasChat ? (
           <div className="chat-hero">
-            <div className="chat-bot" aria-hidden="true">
-              <span className="chat-bot-ant"><i></i></span>
-              <span className="chat-bot-eye"></span>
-              <span className="chat-bot-eye"></span>
-              <span className="chat-bot-mouth"></span>
-            </div>
+            <div className={`orb orb-${orbState}`} aria-hidden="true"></div>
             <h2>Your Job Copilot</h2>
             <p>Ask me anything about your scraped jobs — I'll search, score and explain why each one fits your CV.</p>
             <div className="chat-suggestions">
@@ -157,7 +154,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         ) : (
           messages.map((m, i) => (
             <div key={i} className={`chat-msg ${m.role}`}>
-              {m.role === 'assistant' && <span className="chat-msg-av" aria-hidden="true"><ChatCircleDots size={13} weight="fill" /></span>}
+              {m.role === 'assistant' && <span className="chat-msg-av" aria-hidden="true"><span className="orb orb-sm orb-idle"></span></span>}
               <div className="chat-bubble">
                 {m.content}
                 {m.jobs && m.jobs.length > 0 && (
@@ -199,7 +196,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
 
         {busy && (
           <div className="chat-msg assistant">
-            <span className="chat-msg-av" aria-hidden="true"><ChatCircleDots size={13} weight="fill" /></span>
+            <span className="chat-msg-av" aria-hidden="true"><span className="orb orb-sm orb-speaking"></span></span>
             <div className="chat-bubble chat-typing">
               <span className="chat-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
               <span className="chat-typing-label">{THINKING_STEPS[thinkStep]}</span>
@@ -236,6 +233,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             disabled={busy}
             aria-label="Ask the AI assistant"
           />
@@ -251,7 +250,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
           display: flex; flex-direction: column; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
         }
         .chat-hdr { display: flex; align-items: center; gap: 12px; padding: 0 24px; height: 60px; border-bottom: 1px solid var(--line, #E2E8F0); background: var(--card, #fff); flex-shrink: 0; }
-        .chat-botmini { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--brand, #2563EB), #7C3AED); color: #fff; display: flex; align-items: center; justify-content: center; }
+        .chat-botmini { display: inline-flex; align-items: center; justify-content: center; }
         .chat-ttl b { font-size: 14.5px; font-weight: 800; display: block; line-height: 1.2; }
         .chat-ttl span { font-size: 11px; color: var(--faint, #64748B); font-weight: 500; }
         .chat-spacer { flex: 1; }
@@ -260,15 +259,39 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
 
         .chat-body { flex: 1; overflow-y: auto; padding: 26px 24px 18px; display: flex; flex-direction: column; gap: 14px; max-width: 820px; width: 100%; margin: 0 auto; }
         .chat-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; padding-bottom: 30px; }
-        .chat-bot { position: relative; width: 96px; height: 96px; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #2563EB), #7C3AED); box-shadow: 0 18px 50px -12px rgba(37,99,235,.55), inset 0 2px 0 rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px; animation: botIn .5s ease-out both; }
-        .chat-bot-ant { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 4px; height: 14px; border-radius: 2px; background: rgba(37,99,235,.4); }
-        .chat-bot-ant i { display: block; width: 8px; height: 8px; border-radius: 50%; background: #7C3AED; margin: -10px auto 0; animation: botPulse 2s ease-in-out infinite; }
-        .chat-bot-eye { width: 14px; height: 16px; border-radius: 50%; background: #fff; position: relative; animation: botBlink 4.5s infinite; }
-        .chat-bot-eye::after { content: ''; position: absolute; left: 3px; bottom: 3px; width: 8px; height: 9px; border-radius: 50%; background: var(--ink, #0F172A); }
-        .chat-bot-mouth { position: absolute; bottom: 26px; width: 22px; height: 9px; border-bottom: 3px solid #fff; border-radius: 0 0 14px 14px; }
-        @keyframes botIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
-        @keyframes botBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
-        @keyframes botPulse { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }
+        .orb { position: relative; width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; margin-bottom: 20px;
+          background: radial-gradient(circle at 32% 28%, #fff 0%, #DBEAFE 9%, #7C3AED 42%, #2563EB 68%, #1E3A8A 100%);
+          box-shadow: inset -14px -12px 26px rgba(30, 58, 138, .5), inset 8px 8px 18px rgba(255, 255, 255, .55), 0 22px 55px -14px rgba(37, 99, 235, .6);
+          will-change: transform; }
+        .orb::before { content: ''; position: absolute; top: 9%; left: 16%; width: 36%; height: 24%; border-radius: 50%;
+          background: radial-gradient(circle, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 70%); transform: rotate(-20deg); }
+        .orb::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+          background: radial-gradient(circle at 50% 115%, rgba(124, 58, 237, .5), transparent 55%); }
+        .orb-idle { animation: orbFloat 3.6s ease-in-out infinite; }
+        .orb-listening { animation: orbListen 1.5s ease-in-out infinite; }
+        .orb-listening::after { animation: orbRing 1.5s ease-out infinite; }
+        .orb-speaking { animation: orbWobble .62s ease-in-out infinite; }
+        @keyframes orbFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes orbListen { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @keyframes orbRing { 0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, .35); } 100% { box-shadow: 0 0 0 22px rgba(124, 58, 237, 0); } }
+        @keyframes orbWobble {
+          0% { transform: rotate(-3deg) scaleX(1); }
+          12% { transform: rotate(2.5deg) scaleX(1.04); }
+          25% { transform: rotate(-2deg) scaleY(1.05); }
+          37% { transform: rotate(3deg) scaleX(.96); }
+          50% { transform: rotate(-2.5deg) scaleX(1.03); }
+          62% { transform: rotate(2deg) scaleY(1.04); }
+          75% { transform: rotate(-3deg) scaleX(.97); }
+          87% { transform: rotate(1.5deg) scaleX(1.02); }
+          100% { transform: rotate(-3deg) scaleX(1); }
+        }
+        .orb-sm { width: 32px; height: 32px; margin: 0;
+          box-shadow: inset -6px -5px 10px rgba(30, 58, 138, .45), inset 4px 4px 8px rgba(255, 255, 255, .5), 0 6px 16px -6px rgba(37, 99, 235, .5); }
+        .orb-sm::before { top: 8%; left: 14%; width: 40%; height: 26%; }
+        .orb-sm::after { background: radial-gradient(circle at 50% 115%, rgba(124, 58, 237, .4), transparent 55%); }
+        @media (prefers-reduced-motion: reduce) {
+          .orb-idle, .orb-listening, .orb-speaking { animation: none; }
+        }
         .chat-hero h2 { font-size: 24px; font-weight: 800; letter-spacing: -.03em; }
         .chat-hero p { font-size: 13.5px; color: var(--muted, #475569); max-width: 440px; line-height: 1.65; margin-bottom: 22px; }
         .chat-suggestions { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; max-width: 520px; }
@@ -278,7 +301,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose }) => {
         .chat-msg { display: flex; gap: 10px; align-items: flex-start; animation: msgIn .35s ease-out both; }
         .chat-msg.user { justify-content: flex-end; }
         @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-        .chat-msg-av { width: 28px; height: 28px; border-radius: 9px; background: linear-gradient(135deg, var(--brand, #2563EB), #7C3AED); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .chat-msg-av { flex-shrink: 0; margin-top: 2px; display: inline-flex; }
         .chat-bubble { max-width: 82%; padding: 12px 16px; border-radius: 14px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
         .chat-msg.user .chat-bubble { background: var(--brand, #2563EB); color: #fff; border-bottom-right-radius: 4px; }
         .chat-msg.assistant .chat-bubble { background: var(--card, #fff); border: 1px solid var(--line, #E2E8F0); border-bottom-left-radius: 4px; }
