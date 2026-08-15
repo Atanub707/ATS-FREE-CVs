@@ -283,10 +283,43 @@ natural language — powered by the same BYOK LLM key.
 | `get_job` | Full details of one job |
 | `score_job` | Stored AI match score + matched/missing skills |
 | `get_cv_summary` | CV summary + preferences (skills, years, locations, notice period) |
+| `scrape_jobs` | Runs the app's real scrapers for a role and **stores new jobs** in the job list (dashboard) |
+| `analyze_skill_gaps` | Aggregates the most common missing keywords across all scored jobs |
+| `apply_gaps_to_cv` | Adds confirmed keywords to the Master CV (new "Market Skills" category) |
+| `generate_cv` | Builds a working copy of the CV → PDF via the **existing 4 templates only** → returns a download token |
 
 The model loops through tool calls (max 5 rounds) and ends with a short human reply plus a
 structured job block. The server enriches the job cards from the real DB (title, company,
 location, source, URL, score), so cards are always complete.
+
+### Interview mode
+
+Toggle **Interview** in the chat header → tell the assistant a target role → it runs a
+7-question mock interview (one question at a time, informed by your CV) → each answer is
+scored 0–10 with one-line feedback → final scorecard (per-question notes + overall + verdict).
+
+- `POST /api/interview/start` `{ targetRole }` → `{ sessionId, question, questionIndex, total }`
+- `POST /api/interview/answer` `{ sessionId, answer }` → `{ done: false, score, feedback, question, ... }` or `{ done: true, scorecard: { overall, verdict, perQuestion[] } }`
+- **Where:** `server/interview.ts` (sessions + prompts), routes in `server.ts`, UI in `ChatPanel.tsx`.
+- **Tested:** `tests/recruiters/interview.test.ts`.
+
+### Voice I/O (Voicebox + fallbacks)
+
+The mic button + voice-reply toggle in the chat input bar. Voicebox (local voice studio,
+REST on `127.0.0.1:17493`) is used when running; the browser's native speech
+(SpeechRecognition / speechSynthesis) is the automatic fallback.
+
+- `GET /api/voice/health` → `{ available, profiles }` (probes Voicebox)
+- `POST /api/voice/transcribe` (audio body) → `{ text }` (forwards to Voicebox `/transcribe`)
+- `POST /api/voice/speak` `{ text }` → audio/mpeg (forwards to Voicebox `/speak`)
+- **Where:** `server/voice.ts`, routes in `server.ts`, mic/speaker UI in `ChatPanel.tsx`.
+
+### The orb
+
+The assistant is a living 3D CSS orb (radial-gradient sphere + glossy highlight). It
+**floats** when idle, **pulses with a ring** while you're speaking/typing (listening), and
+**wobbles** on an irregular rhythm while the assistant is replying or speaking aloud
+(`prefers-reduced-motion` disables all animation).
 
 **Apply All:** opens all returned job postings in new tabs. No auto-submit / browser
 automation — per the user decision, applying stays manual.

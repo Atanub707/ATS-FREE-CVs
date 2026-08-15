@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 🪄 Voice AI Agent (in-house, no MCP)
+- **Living 3D orb character** in the chat — floats when idle, pulses when you're speaking into it, wobbles word-by-word while the assistant talks.
+- **scrape_jobs tool** — ask the assistant to find/scrape new jobs and it runs the app's real scrapers; results are stored in your job list and appear on the dashboard.
+- **analyze_skill_gaps tool** — "what should I add to my CV?" is answered with real aggregate data across all your scored jobs (top missing keywords + % of jobs mentioning each); apply confirmed gaps to the Master CV.
+- **generate_cv tool** — the assistant can generate your CV as a PDF using the existing 4 templates only; chat shows a Download PDF button.
+- **Interview mode** — toggle in the chat header; tell it a target role and get a 7-question spoken/typed mock interview with per-question scores, feedback and a final verdict.
+- **Voice I/O** — mic button (Voicebox local transcription with browser-speech fallback) + voice replies (Voicebox TTS with browser speech fallback); the orb wobbles while it talks and pulses while you record.
+
 ### 🤖 AI Assistant (MCP-powered chat)
 - Chat with your job database in natural language — same BYOK key, no new config.
 - A real in-process MCP server (search_jobs, get_job, score_job, get_cv_summary) drives the model's tool calls (capped loop, OpenAI-compatible / Gemini / Anthropic).
