@@ -31,6 +31,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
+  const [engine, setEngine] = useState<'free' | 'apify'>('free');
+  const [quota, setQuota] = useState<{ used: number; quota: number; remaining: number; resetAt: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/config')
@@ -51,20 +53,26 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       const res = await fetch('/api/linkedin-posts/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: q, limit: 12 }),
+        body: JSON.stringify({ keywords: q, limit: 20, engine }),
       });
       const d = await res.json();
-      if (!res.ok) throw new Error(d?.error || 'Search failed.');
+      if (!res.ok) {
+        if (d?.quota) setQuota(d.quota);
+        throw new Error(d?.error || 'Search failed.');
+      }
       setPosts(d.posts || []);
       setAddedCount(d.addedCount || 0);
       setDebug(d.debug || null);
+      if (d.quota) setQuota(d.quota);
       setState('done');
-      if (d.total === 0) {
-        setMessage('No LinkedIn posts found in the last 24 hours for this search. Recruiters may not have posted yet — try broader keywords or search again later.');
+      if (d.valid === false) {
+        setMessage('not valid — this search only works for job postings from the last 24 hours. Try a job role, e.g. "DevOps Engineer".');
+      } else if (d.total === 0) {
+        setMessage('No job postings found in the last 24 hours for this search. Try broader keywords or search again later.');
       } else if (d.addedCount > 0) {
-        setMessage(`Found ${d.total} posts from the last 24 hours — ${d.addedCount} new ones added to your job list.`);
+        setMessage(`Found ${d.total} job postings from the last 24 hours — ${d.addedCount} new ones added to your job list.`);
       } else {
-        setMessage(`Found ${d.total} posts from the last 24 hours (all already in your job list).`);
+        setMessage(`Found ${d.total} job postings from the last 24 hours (all already in your job list).`);
       }
     } catch (e: any) {
       setError(e?.message || 'Could not search LinkedIn posts.');
@@ -89,8 +97,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       <div className="lp-body">
         {setup && !setup.apify && (
           <div className="lp-setup">
-            <b>⚡ For reliable results, add your Apify token</b>
-            <p>Search engines only index a fraction of LinkedIn posts. Paste your <b>Apify token</b> in <b>Settings → Integrations → Apify</b> — post search then runs through a dedicated LinkedIn posts actor (~$0.002/post, budget-capped) and reliably finds the last 24 hours. No LinkedIn cookie needed.</p>
+            <b>⚡ Free engine is active — no token needed</b>
+            <p>Search runs through built-in search engines (Google/DuckDuckGo/Bing), free and unlimited up to your daily 20-post budget. For more reliable results, add your <b>Apify token</b> in <b>Settings → Integrations → Apify</b> and switch to the Apify engine — you control your own token and its cost (~$0.20/search).</p>
           </div>
         )}
         <div className="lp-hero">
@@ -117,7 +125,35 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
               <MagnifyingGlass size={19} weight="bold" />
             </button>
           </form>
-          <p className="lp-hint">Scrapes posts from the last 24 hours · results are added to your job list with a “LinkedIn Posts” tag</p>
+
+          {/* Engine toggle: Free (built-in, no token) vs Apify (user's token) */}
+          <div className="lp-engine" role="group" aria-label="Search engine">
+            <button
+              type="button"
+              className={`lp-engine-btn ${engine === 'free' ? 'on' : ''}`}
+              onClick={() => setEngine('free')}
+              disabled={busy}
+            >
+              <span className="lp-engine-dot">◉</span> Free engine
+              <span className="lp-engine-sub">built-in · no token</span>
+            </button>
+            <button
+              type="button"
+              className={`lp-engine-btn ${engine === 'apify' ? 'on' : ''}`}
+              onClick={() => setEngine('apify')}
+              disabled={busy || !setup?.apify}
+              title={setup?.apify ? 'Uses your Apify token (~$0.20 per search)' : 'Add your Apify token in Settings → Integrations to enable'}
+            >
+              <span className="lp-engine-dot">✦</span> Apify engine
+              <span className="lp-engine-sub">your token · ~$0.20/search</span>
+            </button>
+            {quota && (
+              <span className={`lp-quota ${quota.remaining === 0 ? 'out' : ''}`}>
+                {quota.used}/{quota.quota} posts today
+              </span>
+            )}
+          </div>
+          <p className="lp-hint">Job postings only · last 24 hours · max 20 posts/day · results are added to your job list with a “LinkedIn Posts” tag</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
@@ -129,7 +165,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         {state === 'done' && posts.length > 0 && (
           <div className="lp-results">
             <div className="lp-results-head">
-              <b>{posts.length} posts from the last 24 hours</b>
+              <b>{posts.length} job postings from the last 24 hours</b>
               <span>{addedCount > 0 ? `+${addedCount} new in your job list` : 'all already saved'}</span>
             </div>
             <div className="lp-grid">
@@ -204,6 +240,15 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-spin{width:18px; height:18px; border-radius:50%; border:2.5px solid #DBEAFE; border-top-color:#2563EB; animation:lpRot .7s linear infinite; flex-shrink:0;}
         @keyframes lpRot{to{transform:rotate(360deg)}}
         .lp-hint{font-size:11px; color:#64748B; margin-top:12px; font-weight:600;}
+        .lp-engine{display:flex; align-items:center; justify-content:center; gap:9px; margin-top:18px; flex-wrap:wrap;}
+        .lp-engine-btn{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:#475569; cursor:pointer;
+          background:#fff; border:1.5px solid #CBD5E1; border-radius:999px; padding:8px 15px; transition:all .18s ease; font-family:inherit;}
+        .lp-engine-btn .lp-engine-sub{font-size:10px; font-weight:600; color:#94A3B8;}
+        .lp-engine-btn.on{border-color:#2563EB; color:#1D4ED8; background:#EFF6FF; box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+        .lp-engine-btn:disabled{opacity:.45; cursor:not-allowed;}
+        .lp-engine-dot{font-size:13px; line-height:1;}
+        .lp-quota{font-size:11px; font-weight:800; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:6px 13px;}
+        .lp-quota.out{color:#DC2626; background:#FEF2F2; border-color:#FECACA;}
         .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
         .lp-setup{max-width:620px; margin:0 auto 22px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:15px 18px;}
         .lp-setup b{display:block; font-size:12.5px; font-weight:800; color:#92400E; margin-bottom:4px;}

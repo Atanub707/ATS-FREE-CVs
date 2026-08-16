@@ -191,6 +191,7 @@ export interface ScraperParams {
   experienceLevel?: string;
   under10Applicants?: boolean;
   jobIds?: string[];
+  engine?: 'free' | 'apify';
 }
 
 export type LlmProvider = 'opencode-go' | 'openrouter' | 'openai' | 'gemini' | 'anthropic' | 'nvidia';

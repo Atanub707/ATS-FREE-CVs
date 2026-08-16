@@ -417,6 +417,7 @@ export function getDb(): Database.Database {
   ensureRecruitersFeatureColumns(db);
   ensureContactEmailsTable(db);
   ensureCandidateProfileTable(db);
+  ensurePostsDailyTable(db);
   ensureContactIndexes(db);
   return db;
 }
@@ -480,6 +481,43 @@ function ensureCandidateProfileTable(db: Database.Database): void {
       updated_at TEXT NOT NULL
     );
   `);
+}
+
+// ── LinkedIn Posts daily quota (20 job posts / rolling 24h) ──
+function ensurePostsDailyTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS posts_daily_usage (
+      user_id TEXT NOT NULL,
+      day_key TEXT NOT NULL,
+      count INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day_key)
+    );
+  `);
+}
+
+export const POSTS_DAILY_QUOTA = 20;
+
+function postsDayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function getPostsDailyUsage(userId: string): { used: number; quota: number; resetAt: string } {
+  const db = getDb();
+  ensurePostsDailyTable(db);
+  const row = db.prepare('SELECT count FROM posts_daily_usage WHERE user_id = ? AND day_key = ?').get(userId, postsDayKey()) as { count: number } | undefined;
+  return { used: row?.count || 0, quota: POSTS_DAILY_QUOTA, resetAt: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 1)).toISOString() };
+}
+
+// Increment the counter by n; returns the new used total.
+export function addPostsDailyUsage(userId: string, n: number): number {
+  const db = getDb();
+  ensurePostsDailyTable(db);
+  const key = postsDayKey();
+  db.prepare(
+    `INSERT INTO posts_daily_usage (user_id, day_key, count) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, day_key) DO UPDATE SET count = count + excluded.count`
+  ).run(userId, key, n);
+  return getPostsDailyUsage(userId).used;
 }
 
 // Light migration: whatsapp flag column (default 0). A simple ALTER is

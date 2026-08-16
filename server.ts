@@ -104,6 +104,8 @@ import {
   getContactStats,
   listContactsCsv,
   backfillContacts,
+  getPostsDailyUsage,
+  addPostsDailyUsage,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LinkedInPostsScraper } from './server/scraper/linkedInPostsScraper.js';
@@ -574,14 +576,23 @@ async function startServer() {
     }
   });
 
-  // ── LinkedIn Posts (last 24h) ──
+  // ── LinkedIn Posts (job postings, last 24h, 20/day per user) ──
   app.post('/api/linkedin-posts/search', async (req, res) => {
     try {
       const userId = getCurrentUserId();
       if (!userId) return res.status(401).json({ error: 'Not signed in.' });
       const keywords = String(req.body?.keywords || '').trim();
       if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
-      const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 10));
+      const engine = req.body?.engine === 'apify' ? 'apify' : 'free';
+      const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 20));
+      const quota = getPostsDailyUsage(userId);
+      if (quota.used >= quota.quota) {
+        return res.status(429).json({
+          valid: false,
+          error: `Daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}.`,
+          quota,
+        });
+      }
       const scraper = new LinkedInPostsScraper();
       const posts = await scraper.scrape({
         keywords,
@@ -590,9 +601,25 @@ async function startServer() {
         datePostedFilter: '24h',
         jobType: 'all',
         maxJobsPerSource: limit,
+        engine,
       } as any);
+      // Job-posting search only — anything else returns "not valid".
+      if (posts.length === 0) {
+        const remaining = Math.max(0, quota.quota - quota.used);
+        return res.status(200).json({
+          valid: false,
+          message: 'not valid — this search only works for job postings from the last 24 hours.',
+          debug: scraper.lastDebug,
+          posts: [],
+          addedCount: 0,
+          total: 0,
+          quota: { ...quota, remaining },
+        });
+      }
       const { added } = saveNewJobs(posts as any);
+      const newUsed = addPostsDailyUsage(userId, posts.length);
       res.json({
+        valid: true,
         debug: scraper.lastDebug,
         posts: posts.map((p) => ({
           id: p.id,
@@ -606,6 +633,7 @@ async function startServer() {
         })),
         addedCount: added.length,
         total: posts.length,
+        quota: { used: newUsed, quota: quota.quota, remaining: Math.max(0, quota.quota - newUsed), resetAt: quota.resetAt },
       });
     } catch (err: any) {
       console.error('LinkedIn posts search error:', err);

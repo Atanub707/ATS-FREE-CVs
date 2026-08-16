@@ -42,7 +42,7 @@ describe('LinkedInPostsScraper', () => {
     globalThis.fetch = realFetch;
   });
 
-  it('uses the Apify actor path when the token is configured (no cookie needed)', async () => {
+  it('uses the Apify actor path when the Apify engine is selected', async () => {
     mockConfig();
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
@@ -57,6 +57,7 @@ describe('LinkedInPostsScraper', () => {
       datePostedFilter: '24h',
       jobType: 'all',
       maxJobsPerSource: 5,
+      engine: 'apify',
     } as any);
 
     expect(jobs).toHaveLength(2);
@@ -74,6 +75,72 @@ describe('LinkedInPostsScraper', () => {
     const body = JSON.parse(String(vi.mocked(globalThis.fetch).mock.calls[0][1]?.body));
     expect(Array.isArray(body.searchQueries)).toBe(true);
     expect(body.searchQueries[0]).toBe('DevSecOps');
+  });
+
+  it('does NOT call the Apify actor when the free engine is selected (default)', async () => {
+    mockConfig();
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '<html></html>',
+    } as any);
+
+    const jobs = await new LinkedInPostsScraper().scrape({
+      keywords: 'DevSecOps',
+      location: '',
+      sources: [],
+      datePostedFilter: '24h',
+      jobType: 'all',
+      maxJobsPerSource: 5,
+    } as any);
+
+    expect(jobs).toEqual([]);
+    const calls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
+    expect(calls.some((u) => u.includes('api.apify.com'))).toBe(false);
+  });
+
+  it('filters out non-job posts ("not valid" material) and posts older than 24h', async () => {
+    mockConfig();
+    const now = Date.now();
+    const mixed = [
+      {
+        linkedinUrl: 'https://www.linkedin.com/posts/activity-999-JOB',
+        content: 'We are hiring a #DevOps engineer! Apply now: https://jobs.example.com/apply',
+        author: { name: 'ACME' },
+        postedAt: { timestamp: now - 2 * 3600000 },
+        job: { title: 'DevOps Engineer', linkedinUrl: 'https://www.linkedin.com/jobs/view/555' },
+      },
+      {
+        linkedinUrl: 'https://www.linkedin.com/posts/activity-999-NEWS',
+        content: 'Excited to share our Q3 results with our community!',
+        author: { name: 'ACME' },
+        postedAt: { timestamp: now - 1 * 3600000 },
+      },
+      {
+        linkedinUrl: 'https://www.linkedin.com/posts/activity-999-OLD',
+        content: 'We are hiring a #DevOps engineer, apply now.',
+        author: { name: 'ACME' },
+        postedAt: { timestamp: now - 30 * 3600000 },
+      },
+    ];
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mixed,
+    } as any);
+
+    const jobs = await new LinkedInPostsScraper().scrape({
+      keywords: 'DevSecOps',
+      location: '',
+      sources: [],
+      datePostedFilter: '24h',
+      jobType: 'all',
+      maxJobsPerSource: 5,
+      engine: 'apify',
+    } as any);
+
+    expect(jobs).toHaveLength(1); // only the fresh job posting survives
+    expect(jobs[0].url).toContain('activity-999-JOB');
   });
 
   it('falls back to engines gracefully when no Apify token is configured', async () => {

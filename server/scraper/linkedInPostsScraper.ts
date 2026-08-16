@@ -207,6 +207,28 @@ interface ParsedPost {
   hashtags: string[];
 }
 
+// ── Job-posting validation ───────────────────────────────────────────────────
+// The search is for JOB-HUNTING posts ONLY. Anything else (news, memes,
+// thought-leadership) is dropped and the caller reports "not valid".
+const JOB_TEXT_SIGNALS =
+  /\b(hiring|now hiring|we are hiring|we're hiring|looking for|openings?|job opening|open position|apply (now|here|today)|recruit(ing|er)?|opportunity|position|vacancy|join (us|our|the))\b|\b#?(hiring|nowhiring|jobopening|jobs|job)\b/i;
+const ROLE_HINT = /\b(engineer|developer|architect|analyst|manager|lead|specialist|consultant|scientist|designer|admin|devops|sre|security|cloud|backend|frontend|full[- ]?stack|qa)\b/i;
+
+export function isJobPosting(text: string, hasJobLink = false): boolean {
+  if (hasJobLink) return true; // apify items carry a real job listing
+  if (!text || text.length < 12) return false;
+  const t = text.toLowerCase();
+  return JOB_TEXT_SIGNALS.test(t) && ROLE_HINT.test(t);
+}
+
+// Strict "last 24 hours" cut: known dates older than 24h are dropped.
+const CUTOFF_24H_MS = 24 * 3600000;
+export function isWithin24h(iso?: string): boolean {
+  if (!iso) return true; // unknown date → keep (engines are already 24h-scoped)
+  const t = new Date(iso).getTime();
+  return !Number.isNaN(t) && Date.now() - t <= CUTOFF_24H_MS;
+}
+
 export function extractHashtags(text: string): string[] {
   const tags = [...new Set(text.match(/#[A-Za-z0-9_]+/g) || [])].slice(0, 8);
   return tags;
@@ -298,13 +320,17 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
       const text = String(item.content || item.text || item.description || item.postContent || '').trim();
       const author = String(item.author?.name || item.authorName || item.companyName || 'LinkedIn').trim();
       if (!url.includes('linkedin.com') || !text || seen.has(url)) continue;
+      const jobUrl = item.job?.linkedinUrl ? String(item.job.linkedinUrl) : undefined;
+      // Job-posting search only: keep posts that ARE job postings.
+      if (!isJobPosting(text, !!jobUrl)) continue;
+      const postedRaw = item.postedAt?.date || item.postedAt?.timestamp || item.postedAt || item.date;
+      const postedIso = postedRaw ? new Date(postedRaw).toISOString() : undefined;
+      if (!isWithin24h(postedIso)) continue; // last 24h only
       seen.add(url);
       const now = new Date().toISOString();
       const firstLine = text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || text.slice(0, 110);
       // The post often carries the actual JOB listing — prefer it as the apply link.
-      const jobUrl = item.job?.linkedinUrl ? String(item.job.linkedinUrl) : undefined;
       const company = item.job?.subtitle ? String(item.job.subtitle).replace(/^Job by\s*/i, '') : author;
-      const postedRaw = item.postedAt?.date || item.postedAt?.timestamp || item.postedAt || item.date;
       jobs.push({
         id: `linkedinpost-${Buffer.from(url).toString('base64url').slice(0, 24)}`,
         title: firstLine.slice(0, 110),
@@ -313,8 +339,8 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
         source: 'LinkedInPosts',
         description: text.slice(0, 3000),
         url,
-        postedDate: postedRaw ? new Date(postedRaw).toISOString() : undefined,
-        postedDateParsed: postedRaw ? String(postedRaw).slice(0, 10) : undefined,
+        postedDate: postedIso,
+        postedDateParsed: postedIso ? postedIso.slice(0, 10) : undefined,
         applyUrl: jobUrl || (item.externalUrl ? String(item.externalUrl) : undefined),
         hashtags: extractHashtags(text),
         jobType: 'Post',
@@ -336,16 +362,20 @@ export class LinkedInPostsScraper {
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
     if (!keywords) return [];
-    const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 10));
+    const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 20));
+    // The user chooses the engine. Free (built-in engines, no token) is the
+    // default — Apify is opt-in and charged to the user's own token.
+    const engine: 'free' | 'apify' = params.engine || 'free';
 
-    // Reliable path first: Apify actor + user's LinkedIn session cookie.
-    const apifyJobs = await apifyPostsSearch(keywords, limit);
-    if (apifyJobs.length > 0) {
-      this.lastDebug = { queriesTried: 1, linksFound: apifyJobs.length, via: 'apify' };
+    if (engine === 'apify') {
+      const apifyJobs = await apifyPostsSearch(keywords, limit);
+      if (apifyJobs.length > 0) {
+        this.lastDebug = { queriesTried: 1, linksFound: apifyJobs.length, via: 'apify' };
+      }
       return apifyJobs;
     }
 
-    // Free path: multi-engine discovery (works without a cookie).
+    // Free path: multi-engine discovery (works without a cookie or token).
     const { urls, queriesTried, linksFound } = await discoverPostUrls(keywords, limit);
     this.lastDebug = { queriesTried, linksFound };
     const jobs: Job[] = [];
@@ -355,6 +385,9 @@ export class LinkedInPostsScraper {
       if (jobs.length >= limit) break;
       const post = await fetchPost(url);
       if (!post) continue;
+      // Job-posting search only: drop non-job posts ("not valid" material).
+      if (!isJobPosting(post.text)) continue;
+      if (!isWithin24h(post.date)) continue; // last 24h only
       const firstLine = post.text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || post.text.slice(0, 90);
       const title = firstLine.slice(0, 110);
       if (seen.has(title.toLowerCase())) continue;
