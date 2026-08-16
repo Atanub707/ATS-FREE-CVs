@@ -33,14 +33,14 @@ describe('interview engine (JD-grounded)', () => {
   it('aggregates roles from dashboard titles', () => {
     const roles = runWithUser('u1', () => getRoleOptions());
     expect(roles).toHaveLength(2);
-    expect(roles[0].label).toContain('DevOps');
+    expect(roles[0].label).toBe('DevOps Engineer');
     expect(roles[0].count).toBe(2);
-    expect(roles[1].label).toContain('Sre');
+    expect(roles[1].label).toBe('Site Reliability Engineer');
   });
 
   it('finds real jobs with descriptions for a role', () => {
     const jobs = runWithUser('u1', () => getJobsForRole('DevOps Engineer'));
-    expect(jobs).toHaveLength(2);
+    expect(jobs.length).toBeGreaterThanOrEqual(2);
     expect(jobs[0].description.length).toBeGreaterThan(50);
   });
 

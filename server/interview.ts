@@ -73,15 +73,32 @@ function destroyInterview(id: string): void {
   sessions.delete(id);
 }
 
-// "Senior DevOps Engineer (Paris)" → "DevOps Engineer" — groups job titles
-// into role buckets so the intro screen can offer real dashboard roles.
+// Maps a job title to ONE clean role bucket, so "Ingeniero/a DevOps",
+// "Analista DevOps (Remoto)", "DevOps-Ingenieur:In" and "Cloud DevOps Engineer"
+// all roll up into "DevOps Engineer" — the lists the user sees are real.
+const ROLE_KEYWORDS: [RegExp, string][] = [
+  [/devsecops/i, 'devsecops engineer'],
+  [/site reliability|sre\b/i, 'site reliability engineer'],
+  [/devops/i, 'devops engineer'],
+  [/platform/i, 'platform engineer'],
+  [/cloud/i, 'cloud engineer'],
+  [/security/i, 'security engineer'],
+  [/infrastructure/i, 'infrastructure engineer'],
+  [/data engineer/i, 'data engineer'],
+  [/backend/i, 'backend engineer'],
+  [/frontend/i, 'frontend engineer'],
+  [/full[- ]?stack/i, 'full stack engineer'],
+  [/qa engineer|quality engineer/i, 'qa engineer'],
+  [/network engineer/i, 'network engineer'],
+  [/data analyst/i, 'data analyst'],
+];
+
 function normalizeRole(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/\((.*?)\)/g, '')
-    .replace(/^(senior|lead|principal|junior|staff|sr\.?|mid|chief|head of|assistant|associate)\s+/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const t = title.toLowerCase().replace(/\((.*?)\)/g, ' ').replace(/[^\w\s-]/g, ' ');
+  for (const [re, label] of ROLE_KEYWORDS) {
+    if (re.test(t)) return label;
+  }
+  return t.replace(/\s+/g, ' ').trim();
 }
 
 function titleCase(s: string): string {
@@ -108,16 +125,13 @@ export function getRoleOptions(limit = 10): { label: string; count: number }[] {
     .map(([label, { count, display }]) => ({ label: titleCase(display || label), count }));
 }
 
-export function getJobsForRole(role: string): { id: string; title: string; company: string; description: string }[] {
-  const words = role.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+export function getJobsForRole(role: string, limit = 25): { id: string; title: string; company: string; description: string }[] {
+  const target = normalizeRole(role);
+  if (!target) return [];
   const jobs = (getAllJobs() as any[])
-    .filter((j) => {
-      if (!j?.title) return false;
-      const t = j.title.toLowerCase();
-      return words.some((w) => t.includes(w));
-    })
+    .filter((j) => j?.title && normalizeRole(j.title) === target)
     .filter((j) => j.description && j.description.trim().length > 50)
-    .slice(0, 5)
+    .slice(0, limit)
     .map((j) => ({
       id: String(j.id),
       title: j.title || 'Role',
