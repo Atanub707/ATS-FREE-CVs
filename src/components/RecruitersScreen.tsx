@@ -71,6 +71,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   const [toast, setToast] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [composeContact, setComposeContact] = useState<Contact | null>(null);
+  const [composeOpen, setComposeOpen] = useState(false);
   const [composeTo, setComposeTo] = useState('');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
@@ -123,7 +124,20 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
     setComposeMsg(null);
     setAttachMode('none');
     setAttachFile(null);
+    setComposeOpen(true);
     loadMasterCvName();
+  };
+
+  // Manual email — same slide-in panel, blank fields, no contact needed.
+  const openManualCompose = () => {
+    setComposeContact(null);
+    setComposeTo('');
+    setComposeSubject('');
+    setComposeBody('');
+    setComposeMsg(null);
+    setAttachMode('none');
+    setAttachFile(null);
+    setComposeOpen(true);
   };
 
   const openHistory = async (c: Contact) => {
@@ -138,13 +152,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const draftEmail = async () => {
-    if (!composeContact) return;
+    if (!composeTo.trim()) { setComposeMsg({ ok: false, text: 'Add a recipient email first.' }); return; }
     setDraftBusy(true); setComposeMsg(null);
     try {
       const res = await fetch('/api/emails/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: composeContact.id }),
+        body: JSON.stringify({ contactId: composeContact?.id ?? null, to: composeTo }),
       });
       const data = await res.json();
       if (!res.ok) { setComposeMsg({ ok: false, text: data.error || 'Draft failed.' }); return; }
@@ -158,18 +172,18 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
   };
 
   const closeCompose = () => {
+    setComposeOpen(false);
     setComposeContact(null);
   };
 
   const sendEmail = async () => {
-    if (!composeContact) return;
     setSendBusy(true); setComposeMsg(null);
     try {
       const res = await fetch('/api/emails/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contactId: composeContact.id,
+          contactId: composeContact?.id ?? null,
           to: composeTo,
           subject: composeSubject,
           body: composeBody,
@@ -181,11 +195,13 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       if (!res.ok) { setComposeMsg({ ok: false, text: data.error || 'Send failed.' }); return; }
       setComposeMsg({ ok: true, text: 'Sent ✓' });
       // Update the card status immediately.
-      setContacts((prev) => prev.map((x) => x.id === composeContact.id
-        ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
-        : x));
-      setEmailHistory((h) => { const n = { ...h }; delete n[composeContact.id]; return n; });
-      setTimeout(() => setComposeContact(null), 1200);
+      if (composeContact) {
+        setContacts((prev) => prev.map((x) => x.id === composeContact.id
+          ? { ...x, emailStatus: 'sent', lastEmailSent: new Date().toISOString() }
+          : x));
+        setEmailHistory((h) => { const n = { ...h }; delete n[composeContact.id]; return n; });
+      }
+      setTimeout(() => closeCompose(), 1200);
     } catch (e: any) {
       setComposeMsg({ ok: false, text: e.message || 'Send failed.' });
     } finally {
@@ -572,11 +588,11 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       </div>
 
       {/* ═══ Compose email — slide-in panel (right) ═══ */}
-      <div className={`rc-overlay ${composeContact ? 'open' : ''}`} onClick={() => !draftBusy && !sendBusy && closeCompose()}></div>
+      <div className={`rc-overlay ${composeOpen ? 'open' : ''}`} onClick={() => !draftBusy && !sendBusy && closeCompose()}></div>
       <aside
-        className={`rc-emailpanel ${composeContact ? 'open' : ''}`}
+        className={`rc-emailpanel ${composeOpen ? 'open' : ''}`}
         aria-label="Email workflow"
-        aria-hidden={!composeContact}
+        aria-hidden={!composeOpen}
       >
         <div className="rc-email-head">
           <span className="rc-email-ico">
@@ -713,6 +729,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       <div className="rc-actbar">
         <span className="rc-note-text">Emails are pulled from job descriptions you already scrape.</span>
         <div className="rc-spacer" />
+        <button className="rc-btn2 manual" onClick={openManualCompose} title="Compose a fresh email to any address — no contact needed">
+          <Mail size={13} /> Manual Email
+        </button>
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
@@ -806,6 +825,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.primary { background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong)); border-color: transparent; color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
+        .rc-btn2.manual { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); font-weight: 700; }
+        .rc-btn2.manual:hover { background: #DBEAFE; }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
         .rc-wrap { max-width: 1360px; }

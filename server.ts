@@ -1424,20 +1424,26 @@ Return valid JSON only — NO markdown, NO code fences:
   // job posting + the candidate's own Master CV). Nothing is sent here.
   app.post('/api/emails/draft', async (req, res) => {
     try {
-      const { contactId } = req.body || {};
-      const contact = getContactById(contactId);
-      if (!contact) {
+      const { contactId, to } = req.body || {};
+      const contact = contactId ? getContactById(contactId) : undefined;
+      if (contactId && !contact) {
         res.status(404).json({ error: 'Contact not found.' });
         return;
       }
       const masterCv = getMasterCv();
       const profile = getCandidateProfile();
       const profileText = buildProfileText(profile);
-      const job = contact.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
-      const name = contact.name || contact.recruiterName || 'there';
-      const company = contact.company || job?.company || 'your company';
-      const role = job?.title || contact.jobRole || 'the role';
-      const firstName = (contact.name || contact.recruiterName || '').trim().split(/\s+/)[0] || '';
+      const job = contact?.sourceJobId ? getJobById(contact.sourceJobId) : undefined;
+      // Manual emails (no contact): derive a greeting from the address if it
+      // looks like a personal name, otherwise fall back to "there".
+      const localPart = String(to || '').split('@')[0].replace(/[._-]+/g, ' ').trim();
+      const greetingGuess = localPart.length >= 4 && !/^(info|contact|careers|jobs|hr|hello|support|admin|team|apply)$/i.test(localPart)
+        ? localPart.split(/\s+/)[0]
+        : '';
+      const name = contact?.name || contact?.recruiterName || (greetingGuess ? `${greetingGuess[0].toUpperCase()}${greetingGuess.slice(1)}` : 'there');
+      const company = contact?.company || job?.company || 'your company';
+      const role = job?.title || contact?.jobRole || 'the role';
+      const firstName = (contact?.name || contact?.recruiterName || greetingGuess || '').trim().split(/\s+/)[0] || '';
       // Heuristic: only greet with a first name when it actually looks like
       // a personal name. Extracted "names" are often companies or
       // departments ("Company Mob", "Talent Acquisition", "O CLRS").
@@ -1448,7 +1454,7 @@ Return valid JSON only — NO markdown, NO code fences:
         firstName.length >= 4 &&
         !NON_NAME_TOKENS.includes(firstLower) &&
         firstLower !== companyFirst &&
-        contact.type !== 'careers';
+        (contact?.type !== 'careers');
       const greetingName = looksLikeName ? firstName : '';
 
       const skillsText = (masterCv?.skills || [])
@@ -1515,7 +1521,7 @@ Return valid JSON only, no markdown:
       res.json({
         success: true,
         draft: {
-          to: contact.email || '',
+          to: contact?.email || String(to || ''),
           subject: String(parsed.subject || '').slice(0, 160),
           body: body ? `${body}\n\n${signature}` : '',
         },
