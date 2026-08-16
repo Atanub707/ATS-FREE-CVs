@@ -302,7 +302,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // will crash with "Rendered more hooks than during the previous render"
   // when the screen opens (hook count changes between renders).
   const dragStateRef = useRef<{ list: string; from: number } | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<{ list: string; index: number; side: 'above' | 'below' } | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
 
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
@@ -566,58 +567,73 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
     const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
 
-  // ── Drag & drop reordering (HTML5) ──────────────────────────────────
-  // One hook per list: returns handlers to make each row draggable and to
-  // accept drops that call `onMove(fromIdx, toIdx)` with the new order.
-  // Handles reordering between visible rows only — hidden (AI-off) rows are
-  // untouched because they aren't rendered (HTML5 DnD can't drop onto them).
-  const beginDrag = (listKey: string, from: number) => (e: React.DragEvent) => {
-    dragStateRef.current = { list: listKey, from };
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', `${listKey}:${from}`);
-  };
-  const dropOnto = (listKey: string, onMove: (from: number, to: number) => void, to: number) => (e: React.DragEvent) => {
+  // ── Drag & drop reordering (pointer-based — reliable with inputs/buttons
+  //    inside rows, mouse + touch; HTML5 DnD proved too flaky here) ──
+  // Rows expose data-dnd-list + data-dnd-index; a global pointermove tracks
+  // the hovered row and shows an insertion indicator; pointerup resolves the
+  // final index (top half of row = insert before, bottom half = after) and
+  // dispatches to the matching reorder.
+  const startDrag = (listKey: string, from: number) => (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // Never start a drag from an input/textarea/button — those are for
+    // editing/clicking. Dragging begins from the grip or row body.
+    const t = e.target as HTMLElement;
+    if (t.closest('input, textarea, button, a')) return;
     e.preventDefault();
-    setDragOver(null);
-    const st = dragStateRef.current;
-    if (st && st.list === listKey && st.from !== to) {
-      // Precise placement: the insertion point is chosen by WHERE on the row
-      // the user releases — top half inserts BEFORE the row, bottom half AFTER.
-      // Then the classic "drag down shifts indices" correction applies.
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const below = e.clientY > rect.top + rect.height / 2;
+    dragStateRef.current = { list: listKey, from };
+    setDraggingKey(`${listKey}:${from}`);
+
+    const resolveRow = (ev: PointerEvent) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+      return el?.closest('[data-dnd-list]') as HTMLElement | null;
+    };
+
+    const onMove = (ev: PointerEvent) => {
+      const row = resolveRow(ev);
+      if (!row) { setDragOver(null); return; }
+      const list = row.dataset.dndList;
+      const index = Number(row.dataset.dndIndex);
+      if (!list || list !== listKey || Number.isNaN(index)) { setDragOver(null); return; }
+      const rect = row.getBoundingClientRect();
+      const side: 'above' | 'below' = ev.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
+      setDragOver((prev) => (prev && prev.list === list && prev.index === index && prev.side === side ? prev : { list, index, side }));
+    };
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      const st = dragStateRef.current;
+      dragStateRef.current = null;
+      setDraggingKey(null);
+      setDragOver(null);
+      if (!st) return;
+      const row = resolveRow(ev);
+      if (!row || row.dataset.dndList !== st.list) return;
+      const to = Number(row.dataset.dndIndex);
+      if (Number.isNaN(to) || to === st.from) return;
+      const rect = row.getBoundingClientRect();
+      const below = ev.clientY > rect.top + rect.height / 2;
       let insert = below ? to + 1 : to;
       if (st.from < insert) insert -= 1;
-      onMove(st.from, insert);
-    }
-    dragStateRef.current = null;
+      // Dispatch to the right list's reorder (list keys: exp / bl:<expId> / sk:<category>)
+      if (st.list === 'exp') reorderExps(st.from, insert);
+      else if (st.list.startsWith('bl:')) reorderBullets(st.list.slice(3))(st.from, insert);
+      else if (st.list.startsWith('sk:')) reorderSkills(st.list.slice(3))(st.from, insert);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   };
-  const overRow = (rowKey: string | null, insertSide: 'above' | 'below' | null = null) => (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragStateRef.current?.list) {
-      // Track the precise insert side (top half = above the row, bottom = below)
-      // so the drop indicator shows exactly where the item will land.
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const side: 'above' | 'below' = e.clientY <= rect.top + rect.height / 2 ? 'above' : 'below';
-      setDragOver(`${rowKey}:${side}`);
-    }
-  };
-  const leaveRow = () => (e: React.DragEvent) => {
-    if (dragStateRef.current?.list) setDragOver(null);
-  };
-  const rowCls = (rowKey: string | null) => {
-    const over = dragOver;
-    const isOver = over?.startsWith(`${rowKey}:`);
-    const side = over?.split(':').pop() as 'above' | 'below' | undefined;
-    // Drop indicator: a 3px accent line on the side where the item will land.
-    const indicator =
-      isOver && side
-        ? side === 'above'
-          ? ' shadow-[0_-3px_0_0_var(--color-brand)]'
-          : ' shadow-[0_3px_0_0_var(--color-brand)]'
-        : '';
-    return `relative cursor-grab active:cursor-grabbing ${indicator}`;
+
+  // Indicator classes: a 3px accent line above/below the hovered row.
+  const rowCls = (rowKey: string, index: number) => {
+    const isOver = dragOver !== null && dragOver.list === rowKey && dragOver.index === index;
+    const indicator = isOver
+      ? dragOver.side === 'above'
+        ? ' shadow-[0_-3px_0_0_var(--color-brand)]'
+        : ' shadow-[0_3px_0_0_var(--color-brand)]'
+      : '';
+    return `relative cursor-grab active:cursor-grabbing touch-none ${indicator}`;
   };
 
   // Generic reorder for a flat array (returns a NEW order via onReorder).
@@ -1163,13 +1179,10 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                             {g.items.map((s, si) => (
                               <span
                                 key={s.id}
-                                draggable
-                                onDragStart={beginDrag(`sk:${g.category}`, si)}
-                                onDragOver={overRow(`sk:${g.category}:${si}`)}
-                                onDragLeave={leaveRow()}
-                                onDrop={dropOnto(`sk:${g.category}`, reorderSkills(g.category), si)}
-                                onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${g.category}:${si}`)} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
+                                data-dnd-list={`sk:${g.category}`}
+                                data-dnd-index={si}
+                                onPointerDown={startDrag(`sk:${g.category}`, si)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${g.category}`, si)} ${draggingKey === `sk:${g.category}:${si}` ? 'opacity-40' : ''} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
                               >
                                 <span className="text-[9px] text-slate-300">⠿</span>
                                 {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
@@ -1199,16 +1212,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     {editableCv.experiences.map((exp, ei) => (
                       <div
                         key={exp.id}
-                        draggable
-                        onDragStart={beginDrag('exp', ei)}
-                        onDragOver={overRow(`exp:${ei}`)}
-                        onDrop={dropOnto('exp', reorderExps, ei)}
-                        onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls(`exp:${ei}`)}`}
+                        data-dnd-list="exp"
+                        data-dnd-index={ei}
+                        onPointerDown={startDrag('exp', ei)}
+                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls('exp', ei)} ${draggingKey === `exp:${ei}` ? 'opacity-40' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-[11px] text-slate-300 cursor-grab" title="Drag to reorder experience">⠿</span>
+                            <span className="text-[11px] text-slate-300 cursor-grab touch-none" title="Drag to reorder experience">⠿</span>
                             <input
                               value={exp.title}
                               onChange={(e) => setExpTitle(exp.id, e.target.value)}
@@ -1222,14 +1233,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
                             <div
                               key={b.id}
-                              draggable
-                              onDragStart={beginDrag(`bl:${ei}`, bi)}
-                              onDragOver={overRow(`bl:${ei}:${bi}`)}
-                              onDrop={dropOnto(`bl:${ei}`, reorderBullets(exp.id), bi)}
-                              onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${ei}:${bi}`)}`}
+                              data-dnd-list={`bl:${exp.id}`}
+                              data-dnd-index={bi}
+                              onPointerDown={startDrag(`bl:${exp.id}`, bi)}
+                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${exp.id}`, bi)} ${draggingKey === `bl:${exp.id}:${bi}` ? 'opacity-40' : ''}`}
                             >
-                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none">⠿</span>
+                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none touch-none">⠿</span>
                               <input
                                 value={b.text}
                                 onChange={(e) => setBullet(b.id, e.target.value)}
