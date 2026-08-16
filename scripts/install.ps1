@@ -1,12 +1,18 @@
 # ═══════════════════════════════════════════════════════════════════════════
 #  Tailor CV — one-click installer (Windows)
 #
-#  Launched by install.bat. Idempotent — safe to rerun.
-#    1. Checks for Docker → installs Docker Desktop via winget (one UAC click)
-#    2. Installs WSL2 if missing (first-time machines; may need one reboot)
-#    3. Starts the Docker engine and waits until it is ready
-#    4. Downloads Tailor CV (git clone) if not present
-#    5. Runs `docker compose up -d` and opens the app in your browser
+#  Run via the copy-paste one-liner (irm | iex) or install.bat.
+#  Idempotent — safe to rerun.
+#
+#  Architecture:
+#    1. Check Docker CLI → install Docker Desktop via winget if missing
+#    2. Install WSL2 if missing (first-time machines; may need one reboot)
+#    3. START Docker Desktop explicitly
+#    4. WAIT until the Docker engine is actually ready (docker info)
+#    5. Verify docker compose v2
+#    6. Download Tailor CV (git clone) if not present
+#    7. Run docker compose up -d
+#    8. Verify the app is healthy (HTTP check)
 #
 #  No code-signing needed: you run Docker Desktop (signed by Docker Inc),
 #  so SmartScreen shows no warnings about this app.
@@ -16,6 +22,7 @@ $ErrorActionPreference = 'Stop'
 $AppDir  = Join-Path $env:USERPROFILE 'tailor-cv'
 $RepoUrl = 'https://github.com/Atanub707/ATS-FREE-CVs.git'
 $AppUrl  = 'http://localhost:3000'
+$DockerDesktopExe = Join-Path ${env:ProgramFiles} 'Docker\Docker\Docker Desktop.exe'
 
 function Say  ($m) { Write-Host $m -ForegroundColor White }
 function Ok   ($m) { Write-Host "OK   $m" -ForegroundColor Green }
@@ -53,29 +60,44 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
   if ($LASTEXITCODE -ne 0) {
     Warn 'WSL2 is missing — installing it now (this may take a few minutes).'
     wsl --install --no-distribution | Out-Host
-    Fail 'WSL2 was installed. Restart your PC, then double-click install.bat again — it will skip straight to starting the app.'
+    Fail 'WSL2 was installed. Restart your PC, then run the installer again — it will skip straight to starting the app.'
   }
   Ok 'Docker Desktop installed'
 }
 
-# Compose v2 (bundled with Docker Desktop)?
-docker compose version *> $null
-if ($LASTEXITCODE -ne 0) { Fail 'docker compose v2 is missing — update Docker Desktop.' }
+# ── 2. Start Docker Desktop EXPLICITLY ──────────────────────────────────────
+# Installing Docker Desktop does NOT start the engine. Launch it by its full
+# path so the Linux engine (dockerDesktopLinuxEngine pipe) actually comes up.
+if (-not (Test-Path $DockerDesktopExe)) { $DockerDesktopExe = 'Docker Desktop' }
+$engineReady = $false
+if (docker info *> $null) {
+  $engineReady = $true
+} else {
+  Say 'Starting Docker Desktop…'
+  try { Start-Process $DockerDesktopExe } catch { Warn 'Could not launch Docker Desktop — please start it manually from the Start menu.' }
 
-# ── 2. Docker engine ────────────────────────────────────────────────────────
-if (-not (docker info *> $null)) {
-  Say 'Starting Docker Desktop and waiting for the engine (first launch can take a minute)…'
-  Start-Process 'Docker Desktop'
-  $ready = $false
-  for ($i = 0; $i -lt 120; $i++) {
-    if (docker info *> $null) { $ready = $true; break }
+  # ── 3. WAIT for the engine (not just the CLI) ─────────────────────────────
+  # First launch: Docker service → WSL2 init → Linux VM → engine → named pipe.
+  # This can take 1–3 minutes. Poll docker info every 2s (90 attempts).
+  Say 'Waiting for the Docker engine to be ready (first launch can take a few minutes)…'
+  for ($i = 1; $i -le 90; $i++) {
+    if (docker info *> $null) { $engineReady = $true; break }
+    if ($i % 10 -eq 0) { Say "  still waiting… attempt $i/90" }
     Start-Sleep -Seconds 2
   }
-  if (-not $ready) { Fail 'The Docker engine did not start. Open Docker Desktop once, let it finish, then rerun this installer.' }
-  Ok 'Docker engine is ready'
 }
 
-# ── 3. Get the app ──────────────────────────────────────────────────────────
+if (-not $engineReady) {
+  Fail 'The Docker engine did not become ready. Open Docker Desktop once, accept any first-run prompts, then run the installer again.'
+}
+Ok 'Docker engine is ready'
+
+# ── 4. Verify compose v2 (bundled with Docker Desktop) ──────────────────────
+docker compose version *> $null
+if ($LASTEXITCODE -ne 0) { Fail 'docker compose v2 is missing — update Docker Desktop.' }
+Ok 'docker compose v2 found'
+
+# ── 5. Get the app ──────────────────────────────────────────────────────────
 if (-not (Test-Path (Join-Path $AppDir 'docker-compose.yml'))) {
   Say "Downloading Tailor CV to $AppDir"
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -90,13 +112,24 @@ if (-not (Test-Path (Join-Path $AppDir 'docker-compose.yml'))) {
   Ok 'App downloaded'
 }
 
-# ── 4. Run ──────────────────────────────────────────────────────────────────
+# ── 6. Run ──────────────────────────────────────────────────────────────────
 Say 'Starting Tailor CV…'
 docker compose -f (Join-Path $AppDir 'docker-compose.yml') up -d --pull missing
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose failed — see the output above.' }
-Ok 'Tailor CV is running'
+Ok 'Tailor CV container started'
 
-Start-Sleep -Seconds 2
+# ── 7. Verify the app is healthy ────────────────────────────────────────────
+Say 'Verifying the app…'
+$healthy = $false
+for ($i = 1; $i -le 30; $i++) {
+  try {
+    $check = Invoke-WebRequest -Uri $AppUrl -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+    if ($check.StatusCode -eq 200) { $healthy = $true; break }
+  } catch { }
+  Start-Sleep -Seconds 2
+}
+if ($healthy) { Ok 'Tailor CV is running and healthy' } else { Warn 'The app started, but is still warming up — open the URL below in a moment.' }
+
 Start-Process $AppUrl
 
 Say ''
@@ -105,7 +138,7 @@ Say "Done! Tailor CV is ready at $AppUrl"
 Say '  Sign in or continue as guest, then set your AI key:'
 Say '  top-right menu -> Settings -> Integrations -> LLM & AI'
 Say "  Stop it:     docker compose -f $(Join-Path $AppDir 'docker-compose.yml') down"
-Say '  Update:      double-click update.bat'
-Say '  Uninstall:   double-click uninstall.bat'
+Say '  Update:      run update.bat (or the same one-liner with update.ps1)'
+Say '  Uninstall:   run uninstall.bat'
 Say '──────────────────────────────────────────────'
 Say ''

@@ -19,6 +19,16 @@ git -C $AppDir pull --ff-only
 if ($LASTEXITCODE -ne 0) { Fail 'Could not pull the update — check your connection.' }
 Ok 'Code updated'
 
+# Make sure the Docker engine is actually ready before compose (first
+# launch / after a reboot the engine needs time to come up).
+$engineReady = $false
+for ($i = 1; $i -le 60; $i++) {
+  if (docker info *> $null) { $engineReady = $true; break }
+  Start-Sleep -Seconds 2
+}
+if (-not $engineReady) { Fail 'The Docker engine did not become ready. Open Docker Desktop once, then run update.bat again.' }
+Ok 'Docker engine ready'
+
 Say 'Refreshing the app…'
 docker compose -f (Join-Path $AppDir 'docker-compose.yml') up -d --build --pull missing
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose failed — see the output above.' }
