@@ -240,7 +240,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [editableNewCv, setEditableNewCv] = useState<PdfCvShape | null>(null);
   // View step — lets users click a completed step in the stepper to go back.
   // Auto-follows the derived step whenever the flow advances.
-  const [viewStep, setViewStep] = useState<1 | 2 | 3 | 4>(1);
+  const [viewStep, setViewStep] = useState<1 | 2 | 3>(1);
   const draggingRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const oldScrollRef = useRef<HTMLDivElement>(null);
@@ -255,7 +255,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 // Once the tailored CV loads, advance the user to the new Preview Stage (4);
 // the Tailor step stays clickable so the diff review is never lost.
   useEffect(() => {
-    const s: 1 | 2 | 3 | 4 = !result ? 1 : !diff ? (tailoring ? 3 : 2) : tailoredCv && !tailoring ? 4 : 3;
+    const s: 1 | 2 | 3 = !result ? 1 : !diff ? 2 : tailoredCv && !tailoring ? 3 : 2;
     setViewStep(s);
   }, [result, diff, tailoring, tailoredCv]);
 
@@ -567,7 +567,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     }
   };
 
-    const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
+    const previewDragActive = viewStep === 3 && !!editableNewCv && !!tailoredCv;
 
   // ── Drag & drop reordering — IDENTICAL mechanism to the Master CV screen ──
   // draggable row → onDragStart stores the index → onDragOver allows the drop
@@ -632,7 +632,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const visibleMatched = showAllMatched ? matchedSkills : matchedSkills.slice(0, CHIP_CAP);
   const visibleAdditions = showAllAdditions ? additions : additions.slice(0, CHIP_CAP);
   const displayScore = result?.matchScore ?? 0;
-  const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : tailoredCv && !tailoring ? 4 : 3;
+  const step = !result ? 1 : !diff ? 2 : tailoredCv && !tailoring ? 3 : 2;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
   const clamp1: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
@@ -725,8 +725,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
         {[
           { n: 1 as const, label: 'Add JD', on: step >= 2, reachable: true },
           { n: 2 as const, label: 'Analysis', on: step >= 3, reachable: !!result },
-          { n: 3 as const, label: 'Tailor', on: step >= 3 && !tailoring, reachable: !!diff },
-          { n: 4 as const, label: 'Preview', on: step >= 4 && !tailoring, reachable: !!editableNewCv },
+          { n: 3 as const, label: 'Preview', on: step >= 3 && !tailoring, reachable: !!editableNewCv },
         ].map((s, i) => {
           const isCurrent = viewStep === s.n;
           const canClick = !loading && !tailoring && s.reachable;
@@ -760,7 +759,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
             </span>
-            <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 4</span>
+            <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 3</span>
           </div>
 
           <div className="relative flex-1 min-h-0 overflow-hidden bg-white">
@@ -906,8 +905,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         className={`${btnBase} ${generateStatus === 'error' ? 'bg-white border border-[#FECACA] text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]' : 'bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)] text-white'}`}>
                         {tailoring ? <><Loader2 className="w-4 h-4 animate-spin" /> Tailoring CV…</>
                           : generateStatus === 'error' ? <><AlertTriangle className="w-4 h-4" /> Try Again</>
-                          : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> CV Generated</>
-                          : <><FileText className="w-4 h-4" /> Tailor CV <ArrowRight className="w-4 h-4" /></>}
+                          : generateStatus === 'success' ? <><CheckCircle2 className="w-4 h-4" /> Tailor CV Generated</>
+                          : <><FileText className="w-4 h-4" /> Generate Tailor CV <ArrowRight className="w-4 h-4" /></>}
                       </button>
                       {tailorError && error && <p className="text-xs text-[var(--color-danger)] mt-2">{error}</p>}
                       <p className="text-xs text-[var(--color-faint)] text-center mt-2">AI will tailor your CV with the selected additions</p>
@@ -917,39 +916,54 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
               </div>
             </div>
 
-            {/* PANEL 3 · ATS result */}
+
+            {/* PANEL 3 · Preview · edit (score + editor) */}
             <div className={panelCls(3)}>
-              {tailoring && loadingOverlay('Tailoring your CV…')}
-              <div className={`flex flex-col h-full min-h-0 transition-opacity duration-200 ${tailoring ? 'opacity-10' : 'opacity-100'}`}>
-                <h2 className="text-[16px] font-bold text-[var(--color-ink)] mb-3 flex items-center justify-between gap-2 shrink-0">
-                  Tailoring updates {stepBadge(3)}
-                </h2>
-                {!diff ? (
-                  <div className="flex-1 flex items-center justify-center text-center">
-                    <div>
-                      <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
-                        <Sparkles className="w-6 h-6 text-[var(--color-faint)]" />
-                      </div>
-                      <p className="text-sm font-semibold text-[var(--color-faint)]">Tailor your CV to see updates</p>
+              {!editableCv ? (
+                <div className="flex-1 flex items-center justify-center text-center px-6">
+                  <div>
+                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
+                      <PencilLine className="w-6 h-6 text-[var(--color-faint)]" />
                     </div>
+                    <p className="text-sm font-semibold text-[var(--color-faint)]">Tailor your CV to unlock the editor</p>
+                    <p className="text-[11px] text-slate-300 mt-1">The AI-prepared CV becomes a fully editable draft here</p>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1">
+                </div>
+              ) : (
+                <div className="flex flex-col h-full min-h-0">
+                  <div className="shrink-0 flex items-center justify-between gap-2 mb-3">
+                    <h2 className="text-[16px] font-bold text-[var(--color-ink)] flex items-center gap-2">
+                      Preview · make it yours {stepBadge(3)}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={toggleHideAI}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-colors cursor-pointer ${
+                        hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-ink)]' : 'bg-[var(--color-brand-soft)] border-[var(--color-brand-line)] text-[var(--color-brand)]'
+                      }`}
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      {hideAI ? 'Show AI content' : 'Hide AI content'}
+                    </button>
+                  </div>
+
+                  {/* ATS score card — how the tailored CV covers the JD */}
+                  {diff && (
+                    <div className="shrink-0 mb-3">
                       <div className="flex items-center gap-4 p-4 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
                         <div className="text-[36px] font-bold text-[var(--color-cta)] leading-none shrink-0">{diff.afterScore}%</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[var(--color-ink)]">
-                            ATS score after tailoring <span className="text-[11px] font-extrabold text-[var(--color-cta)] bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] rounded-lg px-1.5 py-0.5 ml-1">+{diff.scoreBoost}%</span>
+                            ATS score after tailoring{' '}
+                            <span className="text-[11px] font-extrabold text-[var(--color-cta)] bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] rounded-lg px-1.5 py-0.5 ml-1">+{diff.scoreBoost}%</span>
                           </div>
                           <div className="text-xs text-[var(--color-faint)] mt-0.5">{diff.beforeScore}% before → {diff.afterScore}% after</div>
                           <div className="h-1.5 rounded-full bg-slate-200 relative overflow-hidden mt-2">
-                            <div className="absolute inset-y-0 bg-[var(--color-cta-soft)]0" style={{ left: `${diff.beforeScore}%`, width: `${Math.max(0, diff.afterScore - diff.beforeScore)}%` }} />
+                            <div className="absolute inset-y-0 bg-[var(--color-cta-soft)]" style={{ left: `${Math.min(100, diff.beforeScore)}%`, width: `${Math.max(0, Math.min(100, diff.afterScore) - Math.min(100, diff.beforeScore))}%` }} />
                           </div>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-2 mt-2">
                         <div className="flex items-center gap-2.5 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl px-3 py-2.5">
                           <div className="w-8 h-8 rounded-lg bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] flex items-center justify-center shrink-0">
                             <Plus className="w-4 h-4 text-[var(--color-cta)]" />
@@ -978,147 +992,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           </div>
                         </div>
                       </div>
-
-                      {reviewSkills.length > 0 && (
-                        <div>
-                          <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
-                            What's been added
-                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewSkills.length}</span>
-                            {reviewSkills.length > ADDED_CAP && (
-                              <button onClick={() => setShowAllAddedSkills((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
-                                {showAllAddedSkills ? 'Show less' : `+${reviewSkills.length - ADDED_CAP} more`}
-                              </button>
-                            )}
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5 min-w-0">
-                            {visibleAddedSkills.map((s) => (
-                              <span key={s} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold bg-[var(--color-cta-soft)] border border-[var(--color-cta-line)] text-[var(--color-cta)] max-w-full">
-                                <Plus className="w-3 h-3 shrink-0" />
-                                <span className="break-words min-w-0">{s}</span>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {reviewBullets.length > 0 && (
-                        <div>
-                          <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
-                            What's been rewritten
-                            <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewBullets.length}</span>
-                            {reviewBullets.length > REWRITE_CAP && (
-                              <button onClick={() => setShowAllRewrites((v) => !v)} className="ml-auto text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer">
-                                {showAllRewrites ? 'Show less' : `+${reviewBullets.length - REWRITE_CAP} more`}
-                              </button>
-                            )}
-                          </h3>
-                          <div className="space-y-1.5">
-                            {visibleRewrites.map((br, bi) => (
-                              <div key={`rw:${bi}`} className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-lg px-2.5 py-2">
-                                <div className="flex items-start gap-2">
-                                  <PenLine className="w-3.5 h-3.5 text-[var(--color-cta)] mt-0.5 shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-[var(--color-faint)]">Before</p>
-                                    <p className="text-[11.5px] text-[var(--color-faint)] line-through leading-relaxed break-words mt-0.5" style={clamp1}>{br.original}</p>
-                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-[var(--color-cta)] mt-1.5">After</p>
-                                    <p className="text-[12px] text-[var(--color-muted)] leading-relaxed break-words mt-0.5" style={clamp2}>{br.rewritten}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="border border-[var(--color-hairline)] rounded-xl px-3.5 py-2.5 bg-[#FAFAF9]/70">
-                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-1.5">What's preserved</h3>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1">
-                          {['Job titles', 'Employers', 'Employment dates'].map((x) => (
-                            <span key={x} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-muted)]">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-cta)] shrink-0" /> {x}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)] mb-2 flex items-center gap-2">
-                          Review changes — remove what you don't like
-                          <span className="text-[11px] font-bold text-[var(--color-faint)] bg-[#F1F5F9] rounded-lg px-1.5 py-0.5">{reviewItems.length}</span>
-                        </h3>
-                        <div className="divide-y divide-slate-100">
-                          {visibleReview.map((item) => {
-                            const removed = removedPoints.has(item.key);
-                            return item.kind === 'skill' ? (
-                              <div key={item.key} className={`flex items-center gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
-                                <div className="flex-1 text-[12.5px] text-[var(--color-muted)] min-w-0 break-words">
-                                  {removed ? <span className="line-through text-[var(--color-faint)]">Added skill {item.label}</span> : <>Added skill <b className="text-[var(--color-cta)]">{item.label}</b></>}
-                                </div>
-                                <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
-                                  aria-label={removed ? `Restore ${item.label}` : `Remove ${item.label}`}
-                                  className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-[var(--color-cta-soft)] border-[var(--color-cta-line)] text-[var(--color-cta)]' : 'bg-[var(--color-danger-soft)] border-[#FECACA] text-[var(--color-danger)] hover:bg-[#FDE8E8]'}`}>
-                                  {removed ? '↺' : '✕'}
-                                </button>
-                              </div>
-                            ) : (
-                              <div key={item.key} className={`flex items-start gap-2.5 py-1.5 ${removed ? 'opacity-40' : ''}`}>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[10.5px] text-[var(--color-faint)] line-through leading-relaxed break-words" style={clamp1}>{item.original}</p>
-                                  <p className={`text-[12px] leading-relaxed break-words mt-0.5 ${removed ? 'line-through text-[var(--color-faint)]' : 'text-[var(--color-muted)]'}`} style={clamp2} title={item.label}>{item.label}</p>
-                                </div>
-                                <button onClick={() => setRemovedPoints((p) => removed ? (() => { const n = new Set(p); n.delete(item.key); return n; })() : new Set(p).add(item.key))}
-                                  aria-label={removed ? 'Restore change' : 'Remove change'}
-                                  className={`w-7 h-7 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors shrink-0 ${removed ? 'bg-[var(--color-cta-soft)] border-[var(--color-cta-line)] text-[var(--color-cta)]' : 'bg-[var(--color-danger-soft)] border-[#FECACA] text-[var(--color-danger)] hover:bg-[#FDE8E8]'}`}>
-                                  {removed ? '↺' : '✕'}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {reviewItems.length > REVIEW_CAP && (
-                          <button onClick={() => setShowAllReview((v) => !v)} className="w-full mt-2 py-1.5 rounded-lg border border-[var(--color-hairline)] text-[11.5px] font-bold text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)] cursor-pointer transition-colors">
-                            {showAllReview ? 'Show less' : `+${reviewItems.length - REVIEW_CAP} more additions`}
-                          </button>
-                        )}
-                        {reviewItems.length === 0 && (
-                          <p className="text-xs text-[var(--color-faint)]">No changes to review.</p>
-                        )}
-                      </div>
                     </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* PANEL 4 · Preview · edit */}
-            <div className={panelCls(4)}>
-              {!editableCv ? (
-                <div className="flex-1 flex items-center justify-center text-center px-6">
-                  <div>
-                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
-                      <PencilLine className="w-6 h-6 text-[var(--color-faint)]" />
-                    </div>
-                    <p className="text-sm font-semibold text-[var(--color-faint)]">Tailor your CV to unlock the editor</p>
-                    <p className="text-[11px] text-slate-300 mt-1">The AI-prepared CV becomes a fully editable draft here</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col h-full min-h-0">
-                  <div className="shrink-0 flex items-center justify-between gap-2 mb-3">
-                    <h2 className="text-[16px] font-bold text-[var(--color-ink)] flex items-center gap-2">
-                      Preview · make it yours {stepBadge(4)}
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={toggleHideAI}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-colors cursor-pointer ${
-                        hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-ink)]' : 'bg-[var(--color-brand-soft)] border-[var(--color-brand-line)] text-[var(--color-brand)]'
-                      }`}
-                    >
-                      <Wand2 className="w-3.5 h-3.5" />
-                      {hideAI ? 'Show AI content' : 'Hide AI content'}
-                    </button>
-                  </div>
+                  )}
                   <div className="text-[10.5px] font-semibold text-[var(--color-faint)] -mt-2 mb-3">
                     {hideAI
                       ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
@@ -1387,10 +1262,42 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
           </div>
 
           <div className="relative flex-1 min-h-0 bg-[#F1F5F9]" ref={wrapRef}>
-            {previewDragActive && editableNewCv ? (
-              <div className="absolute inset-0 overflow-y-auto bg-[#F1F5F9] p-6">
-                <CvPdfPreview cv={editableNewCv} template={previewTemplate} zoom={previewZoom} />
-              </div>
+            {previewDragActive && originalCv && editableNewCv ? (
+              <>
+                {/* ORIGINAL layer */}
+                <div
+                  ref={oldScrollRef}
+                  onScroll={(e) => syncScroll(e.currentTarget, newScrollRef.current)}
+                  className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
+                >
+                  <CvPdfPreview cv={originalCv} template={previewTemplate} zoom={previewZoom} />
+                </div>
+                {/* EDITED layer (clipped by the slider) — live-updates with edits */}
+                <div
+                  ref={newScrollRef}
+                  onScroll={(e) => syncScroll(e.currentTarget, oldScrollRef.current)}
+                  className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
+                  style={{ clipPath: `inset(0 0 0 ${cut}%)` }}
+                >
+                  <CvPdfPreview cv={editableNewCv} template={previewTemplate} zoom={previewZoom} />
+                </div>
+                {/* Handle */}
+                <div
+                  className="absolute top-0 bottom-0 w-[2px] bg-[var(--color-brand)] z-10 cursor-ew-resize"
+                  style={{ left: `${cut}%` }}
+                  onPointerDown={(e) => { e.preventDefault(); draggingRef.current = true; }}
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center shadow-md">
+                    <ChevronsLeftRight className="w-4 h-4 text-[var(--color-brand)]" />
+                  </div>
+                </div>
+                {/* Tags */}
+                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-faint)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-2.5 py-1 shadow-sm">ORIGINAL</span>
+                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-brand)] bg-[var(--color-brand-soft)]/95 border border-[var(--color-brand-line)] rounded-full px-2.5 py-1 shadow-sm">YOUR EDITED</span>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-[10.5px] font-semibold text-[var(--color-muted)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-3 py-1.5 shadow-sm whitespace-nowrap">
+                  ↔ Drag to compare Original vs your edited CV
+                </div>
+              </>
             ) : !tailoredCv ? (
               originalCv ? (
                 <div className="absolute inset-0 overflow-y-auto p-6">
