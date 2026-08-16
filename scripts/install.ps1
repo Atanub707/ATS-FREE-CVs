@@ -17,7 +17,11 @@
 #  No code-signing needed: you run Docker Desktop (signed by Docker Inc),
 #  so SmartScreen shows no warnings about this app.
 # ═══════════════════════════════════════════════════════════════════════════
-$ErrorActionPreference = 'Stop'
+# NEVER use Stop: PowerShell 7.3+ makes native stderr (e.g. Docker's error
+# output) a TERMINATING error under Stop — killing the installer before the
+# engine wait loop runs. We check $LASTEXITCODE explicitly everywhere instead.
+$ErrorActionPreference = 'Continue'
+$PSNativeCommandUseErrorActionPreference = $false
 
 $AppDir  = Join-Path $env:USERPROFILE 'tailor-cv'
 $RepoUrl = 'https://github.com/Atanub707/ATS-FREE-CVs.git'

@@ -1,5 +1,9 @@
 # Tailor CV — updater (Windows). Launched by update.bat.
-$ErrorActionPreference = 'Stop'
+# NEVER use Stop: PowerShell 7.3+ makes native stderr (e.g. Docker's error
+# output) a TERMINATING error under Stop — killing the installer before the
+# engine wait loop runs. We check $LASTEXITCODE explicitly everywhere instead.
+$ErrorActionPreference = 'Continue'
+$PSNativeCommandUseErrorActionPreference = $false
 $AppDir = Join-Path $env:USERPROFILE 'tailor-cv'
 $AppUrl = 'http://localhost:3000'
 
