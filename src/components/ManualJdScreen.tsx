@@ -298,12 +298,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // the hook count never changes between renders.
   const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu' | 'atanu-pro'>(masterCv?.templateId || 'harvard');
 
-  // Drag & drop state — hooks MUST live before the isOpen guard or React
-  // will crash with "Rendered more hooks than during the previous render"
-  // when the screen opens (hook count changes between renders).
-  const dragStateRef = useRef<{ list: string; from: number } | null>(null);
-  const [dragOver, setDragOver] = useState<{ list: string; index: number; side: 'above' | 'below' } | null>(null);
-  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  // Drag & drop reordering — same mechanism as the Master CV screen
+  // (draggable rows, drag index in state, splice on drop). Hooks MUST live
+  // before the isOpen guard or React crashes when the screen opens.
+  const [dragExpIdx, setDragExpIdx] = useState<number | null>(null);
+  const [dragSkill, setDragSkill] = useState<{ cat: string; idx: number } | null>(null);
+  const [dragBullet, setDragBullet] = useState<{ expId: string; idx: number } | null>(null);
 
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
@@ -502,7 +502,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // (incl. hidden AI) list by walking the original order and swapping.
   // The group is matched by CATEGORY (not index) because the rendered group
   // list is filtered — empty categories shift the visible indices.
-  const reorderSkills = (catName: string) => (from: number, to: number) => {
+  const reorderSkills = (catName: string, from: number, to: number) => {
     if (!editableCv) return;
     const g = editableCv.skills.find((x) => x.category === catName);
     if (!g) return;
@@ -518,7 +518,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     });
   };
 
-  const reorderBullets = (eid: string) => (from: number, to: number) => {
+  const reorderBullets = (eid: string, from: number, to: number) => {
     if (!editableCv) return;
     const e = editableCv.experiences.find((x) => x.id === eid);
     if (!e) return;
@@ -567,73 +567,51 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
     const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
 
-  // ── Drag & drop reordering (pointer-based — reliable with inputs/buttons
-  //    inside rows, mouse + touch; HTML5 DnD proved too flaky here) ──
-  // Rows expose data-dnd-list + data-dnd-index; a global pointermove tracks
-  // the hovered row and shows an insertion indicator; pointerup resolves the
-  // final index (top half of row = insert before, bottom half = after) and
-  // dispatches to the matching reorder.
-  const startDrag = (listKey: string, from: number) => (e: React.PointerEvent) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    // Never start a drag from an input/textarea/button — those are for
-    // editing/clicking. Dragging begins from the grip or row body.
-    const t = e.target as HTMLElement;
-    if (t.closest('input, textarea, button, a')) return;
-    e.preventDefault();
-    dragStateRef.current = { list: listKey, from };
-    setDraggingKey(`${listKey}:${from}`);
-
-    const resolveRow = (ev: PointerEvent) => {
-      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-      return el?.closest('[data-dnd-list]') as HTMLElement | null;
-    };
-
-    const onMove = (ev: PointerEvent) => {
-      const row = resolveRow(ev);
-      if (!row) { setDragOver(null); return; }
-      const list = row.dataset.dndList;
-      const index = Number(row.dataset.dndIndex);
-      if (!list || list !== listKey || Number.isNaN(index)) { setDragOver(null); return; }
-      const rect = row.getBoundingClientRect();
-      const side: 'above' | 'below' = ev.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
-      setDragOver((prev) => (prev && prev.list === list && prev.index === index && prev.side === side ? prev : { list, index, side }));
-    };
-    const onUp = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      const st = dragStateRef.current;
-      dragStateRef.current = null;
-      setDraggingKey(null);
-      setDragOver(null);
-      if (!st) return;
-      const row = resolveRow(ev);
-      if (!row || row.dataset.dndList !== st.list) return;
-      const to = Number(row.dataset.dndIndex);
-      if (Number.isNaN(to) || to === st.from) return;
-      const rect = row.getBoundingClientRect();
-      const below = ev.clientY > rect.top + rect.height / 2;
-      let insert = below ? to + 1 : to;
-      if (st.from < insert) insert -= 1;
-      // Dispatch to the right list's reorder (list keys: exp / bl:<expId> / sk:<category>)
-      if (st.list === 'exp') reorderExps(st.from, insert);
-      else if (st.list.startsWith('bl:')) reorderBullets(st.list.slice(3))(st.from, insert);
-      else if (st.list.startsWith('sk:')) reorderSkills(st.list.slice(3))(st.from, insert);
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
+  // ── Drag & drop reordering — IDENTICAL mechanism to the Master CV screen ──
+  // draggable row → onDragStart stores the index → onDragOver allows the drop
+  // → onDrop splices the item to the target slot. No dataTransfer, no state
+  // churn during the drag, works reliably with inputs/buttons in the row.
+  const handleDragStart = (e: React.DragEvent, idx: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    return idx; // stored by the caller in its own state
   };
 
-  // Indicator classes: a 3px accent line above/below the hovered row.
-  const rowCls = (rowKey: string, index: number) => {
-    const isOver = dragOver !== null && dragOver.list === rowKey && dragOver.index === index;
-    const indicator = isOver
-      ? dragOver.side === 'above'
-        ? ' shadow-[0_-3px_0_0_var(--color-brand)]'
-        : ' shadow-[0_3px_0_0_var(--color-brand)]'
-      : '';
-    return `relative cursor-grab active:cursor-grabbing touch-none ${indicator}`;
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleExpDragStart = (e: React.DragEvent, idx: number) => {
+    setDragExpIdx(idx);
+    handleDragStart(e, idx);
+  };
+  const handleExpDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (dragExpIdx === null || dragExpIdx === targetIdx) { setDragExpIdx(null); return; }
+    reorderExps(dragExpIdx, targetIdx);
+    setDragExpIdx(null);
+  };
+
+  const handleSkillDragStart = (e: React.DragEvent, cat: string, idx: number) => {
+    setDragSkill({ cat, idx });
+    handleDragStart(e, idx);
+  };
+  const handleSkillDrop = (e: React.DragEvent, cat: string, targetIdx: number) => {
+    e.preventDefault();
+    if (!dragSkill || dragSkill.cat !== cat || dragSkill.idx === targetIdx) { setDragSkill(null); return; }
+    reorderSkills(cat, dragSkill.idx, targetIdx);
+    setDragSkill(null);
+  };
+
+  const handleBulletDragStart = (e: React.DragEvent, expId: string, idx: number) => {
+    setDragBullet({ expId, idx });
+    handleDragStart(e, idx);
+  };
+  const handleBulletDrop = (e: React.DragEvent, expId: string, targetIdx: number) => {
+    e.preventDefault();
+    if (!dragBullet || dragBullet.expId !== expId || dragBullet.idx === targetIdx) { setDragBullet(null); return; }
+    reorderBullets(expId, dragBullet.idx, targetIdx);
+    setDragBullet(null);
   };
 
   // Generic reorder for a flat array (returns a NEW order via onReorder).
@@ -1179,10 +1157,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                             {g.items.map((s, si) => (
                               <span
                                 key={s.id}
-                                data-dnd-list={`sk:${g.category}`}
-                                data-dnd-index={si}
-                                onPointerDown={startDrag(`sk:${g.category}`, si)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${g.category}`, si)} ${draggingKey === `sk:${g.category}:${si}` ? 'opacity-40' : ''} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
+                                draggable
+                                onDragStart={(e) => handleSkillDragStart(e, g.category, si)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleSkillDrop(e, g.category, si)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none cursor-grab active:cursor-grabbing transition-all ${dragSkill?.cat === g.category && dragSkill.idx === si ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
                               >
                                 <span className="text-[9px] text-slate-300">⠿</span>
                                 {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
@@ -1212,10 +1191,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     {editableCv.experiences.map((exp, ei) => (
                       <div
                         key={exp.id}
-                        data-dnd-list="exp"
-                        data-dnd-index={ei}
-                        onPointerDown={startDrag('exp', ei)}
-                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls('exp', ei)} ${draggingKey === `exp:${ei}` ? 'opacity-40' : ''}`}
+                        draggable
+                        onDragStart={(e) => handleExpDragStart(e, ei)}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleExpDrop(e, ei)}
+                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none cursor-grab active:cursor-grabbing transition-all ${dragExpIdx === ei ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1233,12 +1213,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
                             <div
                               key={b.id}
-                              data-dnd-list={`bl:${exp.id}`}
-                              data-dnd-index={bi}
-                              onPointerDown={startDrag(`bl:${exp.id}`, bi)}
-                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${exp.id}`, bi)} ${draggingKey === `bl:${exp.id}:${bi}` ? 'opacity-40' : ''}`}
+                              draggable
+                              onDragStart={(e) => handleBulletDragStart(e, exp.id, bi)}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleBulletDrop(e, exp.id, bi)}
+                              className={`flex items-start gap-2 rounded-lg cursor-grab active:cursor-grabbing transition-all ${dragBullet?.expId === exp.id && dragBullet.idx === bi ? 'opacity-60 bg-blue-50' : ''}`}
                             >
-                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none touch-none">⠿</span>
+                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none">⠿</span>
                               <input
                                 value={b.text}
                                 onChange={(e) => setBullet(b.id, e.target.value)}
