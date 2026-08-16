@@ -499,9 +499,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   // Reorder a skill group's VISIBLE items by index → maps back onto the full
   // (incl. hidden AI) list by walking the original order and swapping.
-  const reorderSkills = (catIdx: number) => (from: number, to: number) => {
+  // The group is matched by CATEGORY (not index) because the rendered group
+  // list is filtered — empty categories shift the visible indices.
+  const reorderSkills = (catName: string) => (from: number, to: number) => {
     if (!editableCv) return;
-    const g = editableCv.skills[catIdx];
+    const g = editableCv.skills.find((x) => x.category === catName);
     if (!g) return;
     const visible = g.items.filter((s) => !hideAI || !s.ai);
     const next = reorderArr(visible, from, to);
@@ -511,7 +513,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     const full = g.items.map((x) => (hideAI && x.ai ? x : next[v++]));
     commitEdits({
       ...editableCv,
-      skills: editableCv.skills.map((gg, i) => (i === catIdx ? { ...gg, items: full } : gg)),
+      skills: editableCv.skills.map((gg) => (gg.category === catName ? { ...gg, items: full } : gg)),
     });
   };
 
@@ -578,19 +580,45 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     e.preventDefault();
     setDragOver(null);
     const st = dragStateRef.current;
-    if (st && st.list === listKey && st.from !== to) onMove(st.from, to);
+    if (st && st.list === listKey && st.from !== to) {
+      // Precise placement: the insertion point is chosen by WHERE on the row
+      // the user releases — top half inserts BEFORE the row, bottom half AFTER.
+      // Then the classic "drag down shifts indices" correction applies.
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const below = e.clientY > rect.top + rect.height / 2;
+      let insert = below ? to + 1 : to;
+      if (st.from < insert) insert -= 1;
+      onMove(st.from, insert);
+    }
     dragStateRef.current = null;
   };
-  const overRow = (rowKey: string | null) => (e: React.DragEvent) => {
+  const overRow = (rowKey: string | null, insertSide: 'above' | 'below' | null = null) => (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOver(rowKey);
+    if (dragStateRef.current?.list) {
+      // Track the precise insert side (top half = above the row, bottom = below)
+      // so the drop indicator shows exactly where the item will land.
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const side: 'above' | 'below' = e.clientY <= rect.top + rect.height / 2 ? 'above' : 'below';
+      setDragOver(`${rowKey}:${side}`);
+    }
   };
   const leaveRow = () => (e: React.DragEvent) => {
     if (dragStateRef.current?.list) setDragOver(null);
   };
-  const rowCls = (rowKey: string | null, selectedClassName = 'ring-2 ring-[var(--color-brand)]/60 border-[var(--color-brand)]') =>
-    `relative cursor-grab active:cursor-grabbing ${dragOver === rowKey ? selectedClassName : ''}`;
+  const rowCls = (rowKey: string | null) => {
+    const over = dragOver;
+    const isOver = over?.startsWith(`${rowKey}:`);
+    const side = over?.split(':').pop() as 'above' | 'below' | undefined;
+    // Drop indicator: a 3px accent line on the side where the item will land.
+    const indicator =
+      isOver && side
+        ? side === 'above'
+          ? ' shadow-[0_-3px_0_0_var(--color-brand)]'
+          : ' shadow-[0_3px_0_0_var(--color-brand)]'
+        : '';
+    return `relative cursor-grab active:cursor-grabbing ${indicator}`;
+  };
 
   // Generic reorder for a flat array (returns a NEW order via onReorder).
   const reorderArr = <T,>(arr: T[], from: number, to: number): T[] => {
@@ -1128,7 +1156,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         </button>
                       </div>
                       <p className="text-[10px] font-semibold text-[var(--color-faint)] mb-2">Drag to reorder</p>
-                      {visibleSkillGroups.map((g, gi) => (
+                      {visibleSkillGroups.map((g) => (
                         <div key={g.category} className="mb-2 last:mb-0">
                           <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] mb-1.5">{g.category}</div>
                           <div className="flex flex-wrap gap-1.5">
@@ -1136,12 +1164,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                               <span
                                 key={s.id}
                                 draggable
-                                onDragStart={beginDrag(`sk:${gi}`, si)}
-                                onDragOver={overRow(`sk:${gi}:${si}`)}
+                                onDragStart={beginDrag(`sk:${g.category}`, si)}
+                                onDragOver={overRow(`sk:${g.category}:${si}`)}
                                 onDragLeave={leaveRow()}
-                                onDrop={dropOnto(`sk:${gi}`, reorderSkills(gi), si)}
+                                onDrop={dropOnto(`sk:${g.category}`, reorderSkills(g.category), si)}
                                 onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${gi}:${si}`, 'ring-2 ring-[var(--color-brand)]/60 border-[var(--color-brand)]')} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${g.category}:${si}`)} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
                               >
                                 <span className="text-[9px] text-slate-300">⠿</span>
                                 {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
@@ -1176,7 +1204,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         onDragOver={overRow(`exp:${ei}`)}
                         onDrop={dropOnto('exp', reorderExps, ei)}
                         onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls(`exp:${ei}`, 'ring-2 ring-[var(--color-cta)]/50 border-[var(--color-cta)]/40')}`}
+                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls(`exp:${ei}`)}`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1199,7 +1227,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                               onDragOver={overRow(`bl:${ei}:${bi}`)}
                               onDrop={dropOnto(`bl:${ei}`, reorderBullets(exp.id), bi)}
                               onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
-                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${ei}:${bi}`, 'bg-[var(--color-brand-soft)] ring-1 ring-[var(--color-brand)]/40')}`}
+                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${ei}:${bi}`)}`}
                             >
                               <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none">⠿</span>
                               <input

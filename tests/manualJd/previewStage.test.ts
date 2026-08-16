@@ -74,3 +74,56 @@ describe('Manual JD · Preview Stage editable model', () => {
     expect(cv.experiences[0].bullets.every((b) => !b.ai)).toBe(true);
   });
 });
+// ── Drag & drop placement math (mirrors the handlers in ManualJdScreen) ──
+// dropOnto computes: insert = below ? to+1 : to; if (from < insert) insert--.
+// Then reorderArr splices out `from` and inserts at `insert`.
+function reorderArr<T>(arr: T[], from: number, to: number): T[] {
+  const next = [...arr];
+  const [x] = next.splice(from, 1);
+  next.splice(to, 0, x);
+  return next;
+}
+function dropIndex(from: number, to: number, below: boolean): number {
+  let insert = below ? to + 1 : to;
+  if (from < insert) insert -= 1;
+  return insert;
+}
+
+describe('Preview Stage · drag-drop placement', () => {
+  const list = ['A', 'B', 'C', 'D'];
+
+  it('drops on the top half of a row → lands BEFORE it', () => {
+    // Drag A onto C, release on top half: A should land before C → [B,A,C,D]
+    const insert = dropIndex(0, 2, false);
+    expect(reorderArr(list, 0, insert)).toEqual(['B', 'A', 'C', 'D']);
+  });
+
+  it('drops on the bottom half of a row → lands AFTER it', () => {
+    // Drag A onto C, release on bottom half: A should land after C → [B,C,A,D]
+    const insert = dropIndex(0, 2, true);
+    expect(reorderArr(list, 0, insert)).toEqual(['B', 'C', 'A', 'D']);
+  });
+
+  it('dragging DOWN lands at the exact hovered slot (no off-by-one)', () => {
+    // Drag A onto D, top half → after C, before D → [B,C,A,D]
+    const insert = dropIndex(0, 3, false);
+    expect(reorderArr(list, 0, insert)).toEqual(['B', 'C', 'A', 'D']);
+    // Drag A onto D, bottom half → last → [B,C,D,A]
+    const insert2 = dropIndex(0, 3, true);
+    expect(reorderArr(list, 0, insert2)).toEqual(['B', 'C', 'D', 'A']);
+  });
+
+  it('dragging UP lands at the exact hovered slot', () => {
+    // Drag D onto B, top half → [A,D,B,C]
+    const insert = dropIndex(3, 1, false);
+    expect(reorderArr(list, 3, insert)).toEqual(['A', 'D', 'B', 'C']);
+    // Drag D onto B, bottom half → [A,B,D,C]
+    const insert2 = dropIndex(3, 1, true);
+    expect(reorderArr(list, 3, insert2)).toEqual(['A', 'B', 'D', 'C']);
+  });
+
+  it('dropping back onto its own slot is a no-op', () => {
+    const insert = dropIndex(1, 1, false);
+    expect(reorderArr(list, 1, insert)).toEqual(list);
+  });
+});
