@@ -14,12 +14,7 @@
   <img src="https://img.shields.io/badge/Tailwind-4.x-06D6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4"/>
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT"/>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome"/>
-  <a href="https://ref.wisprflow.ai/atanu-biswas" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/badge/Affiliated%20by-Wispr%20Flow-7C3AED?style=for-the-badge&labelColor=5B21B6" alt="Affiliated by Wispr Flow"/>
-  </a>
 </p>
-
-> 💬 **Recommended:** dictate your prompts with **[Wispr Flow](https://ref.wisprflow.ai/atanu-biswas)** — turn speech into flawless text in Tailor CV and any other app, at 2× your typing speed.
 
 ---
 
