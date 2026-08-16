@@ -571,96 +571,114 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         )}
       </div>
 
-      {/* Compose cold email modal */}
-      {composeContact && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => !draftBusy && !sendBusy && closeCompose()}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
-              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Mail size={15} className="text-pink-500" /> Compose cold email
-              </h3>
-              <button onClick={closeCompose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer">
-                <X size={16} />
-              </button>
+      {/* ═══ Compose email — slide-in panel (right) ═══ */}
+      <div className={`rc-overlay ${composeContact ? 'open' : ''}`} onClick={() => !draftBusy && !sendBusy && closeCompose()}></div>
+      <aside
+        className={`rc-emailpanel ${composeContact ? 'open' : ''}`}
+        aria-label="Email workflow"
+        aria-hidden={!composeContact}
+      >
+        <div className="rc-email-head">
+          <span className="rc-email-ico">
+            <Mail size={17} />
+          </span>
+          <b>Email workflow</b>
+          <button onClick={closeCompose} className="rc-email-x" aria-label="Close">
+            <X size={17} />
+          </button>
+        </div>
+
+        <div className="rc-email-body">
+          {composeContact && (
+            <div className="rc-recipient">
+              <div className="rc-recipient-av">
+                {(composeContact.name || composeContact.company || '?').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <b>{composeContact.name || composeContact.company || 'Contact'}</b>
+                <span>{composeContact.email}{composeContact.company ? ` · ${composeContact.company}` : ''}</span>
+              </div>
             </div>
-            <div className="p-5 space-y-3 overflow-y-auto">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">To</label>
-                <input type="text" value={composeTo} onChange={(e) => setComposeTo(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Subject</label>
-                <input type="text" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Body</label>
-                <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 outline-none focus:border-blue-400 resize-none leading-relaxed" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Attach CV</label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => { setAttachMode(attachMode === 'master' ? 'none' : 'master'); setAttachFile(null); setComposeMsg(null); }}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
-                      attachMode === 'master' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
-                    }`}
-                  >
-                    <FileText size={13} /> Master CV
+          )}
+
+          <div>
+            <label className="rc-email-flabel">To</label>
+            <input type="text" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} className="rc-email-input" />
+          </div>
+
+          <div>
+            <label className="rc-email-flabel">Subject</label>
+            <input type="text" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} className="rc-email-input" />
+          </div>
+
+          <div>
+            <label className="rc-email-flabel">Body</label>
+            <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={9}
+              className="rc-email-input rc-email-body-input" placeholder="Type your message… or click Draft with AI" />
+          </div>
+
+          <div>
+            <label className="rc-email-flabel">Attach CV</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => { setAttachMode(attachMode === 'master' ? 'none' : 'master'); setAttachFile(null); setComposeMsg(null); }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
+                  attachMode === 'master' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                }`}
+              >
+                <FileText size={13} /> Master CV
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
+                  attachMode === 'file' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                }`}
+              >
+                <Upload size={13} /> From file manager
+              </button>
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg" className="hidden" onChange={pickAttachmentFile} />
+              {attachMode === 'master' && (
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
+                  <FileText size={12} /> <span className="truncate max-w-[180px]">{masterCvName || 'Master CV'}</span>
+                  <button type="button" onClick={() => setAttachMode('none')} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
+                    <X size={12} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-colors cursor-pointer ${
-                      attachMode === 'file' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
-                    }`}
-                  >
-                    <Upload size={13} /> From file manager
+                </span>
+              )}
+              {attachMode === 'file' && attachFile && (
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
+                  <FileText size={12} /> <span className="truncate max-w-[180px]">{attachFile.name}</span>
+                  <button type="button" onClick={() => { setAttachFile(null); setAttachMode('none'); }} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
+                    <X size={12} />
                   </button>
-                  <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg" className="hidden" onChange={pickAttachmentFile} />
-                  {attachMode === 'master' && (
-                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
-                      <FileText size={12} /> <span className="truncate max-w-[180px]">{masterCvName || 'Master CV'}</span>
-                      <button type="button" onClick={() => setAttachMode('none')} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
-                        <X size={12} />
-                      </button>
-                    </span>
-                  )}
-                  {attachMode === 'file' && attachFile && (
-                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold max-w-full">
-                      <FileText size={12} /> <span className="truncate max-w-[180px]">{attachFile.name}</span>
-                      <button type="button" onClick={() => { setAttachFile(null); setAttachMode('none'); }} className="text-blue-400 hover:text-red-600 cursor-pointer shrink-0" aria-label="Remove attachment">
-                        <X size={12} />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              </div>
-              {composeMsg && (
-                <p className={`text-[12px] font-semibold ${composeMsg.ok ? 'text-emerald-600' : 'text-red-600'}`}>{composeMsg.text}</p>
+                </span>
               )}
             </div>
-            <div className="flex items-center gap-2 px-5 py-3.5 border-t border-slate-200">
-              <button onClick={draftEmail} disabled={draftBusy || sendBusy}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12.5px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 cursor-pointer transition-colors">
-                {draftBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
-              </button>
-              <div className="flex-1" />
-              <button onClick={closeCompose} disabled={draftBusy || sendBusy}
-                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50 cursor-pointer">
-                Cancel
-              </button>
-              <button onClick={sendEmail} disabled={sendBusy || draftBusy || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors">
-                {sendBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
-              </button>
-            </div>
           </div>
+
+          {composeMsg && (
+            <p className={`text-[12px] font-semibold ${composeMsg.ok ? 'text-emerald-600' : 'text-red-600'}`}>{composeMsg.text}</p>
+          )}
         </div>
-      )}
+
+        <div className="rc-email-foot">
+          <button onClick={draftEmail} disabled={draftBusy || sendBusy}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12.5px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 cursor-pointer transition-colors">
+            {draftBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Draft with AI
+          </button>
+          <div className="flex-1" />
+          <button onClick={closeCompose} disabled={draftBusy || sendBusy}
+            className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50 cursor-pointer">
+            Cancel
+          </button>
+          <button onClick={sendEmail} disabled={sendBusy || draftBusy || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12.5px] font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 cursor-pointer transition-colors">
+            {sendBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Send
+          </button>
+        </div>
+      </aside>
 
       {/* Email history modal */}
       {historyFor && (
@@ -862,6 +880,29 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-fubtn { font-size: 10px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--muted); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
         .rc-fubtn:hover { border-color: var(--blue-border); color: var(--blue); }
         .rc-fubtn.ghost { border: 0; background: none; color: var(--faint); }
+
+        /* ── Email workflow — slide-in panel ── */
+        .rc-overlay{position:fixed; inset:0; background:rgba(15,23,42,.32); opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:70;}
+        .rc-overlay.open{opacity:1; pointer-events:auto;}
+        .rc-emailpanel{position:fixed; top:0; right:0; bottom:0; width:480px; max-width:94vw; background:#fff; z-index:71; display:flex; flex-direction:column;
+          transform:translateX(102%); transition:transform .3s cubic-bezier(.22,.68,0,1); box-shadow:-18px 0 50px -18px rgba(15,23,42,.3);}
+        .rc-emailpanel.open{transform:translateX(0);}
+        .rc-email-head{display:flex; align-items:center; gap:11px; padding:17px 20px; border-bottom:1px solid var(--border);}
+        .rc-email-ico{width:36px; height:36px; border-radius:11px; background:var(--blue-soft); color:var(--blue); border:1px solid var(--blue-border); display:inline-flex; align-items:center; justify-content:center;}
+        .rc-email-head b{font-size:14.5px; font-weight:800; flex:1; color:var(--text);}
+        .rc-email-x{width:34px; height:34px; border-radius:10px; border:0; background:none; color:var(--faint); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s ease;}
+        .rc-email-x:hover{background:#F1F5F9; color:var(--text);}
+        .rc-email-body{flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:14px;}
+        .rc-recipient{display:flex; align-items:center; gap:10px; background:#FAFAF9; border:1px solid var(--border); border-radius:12px; padding:10px 12px;}
+        .rc-recipient-av{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#7C3AED); color:#fff; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+        .rc-recipient b{display:block; font-size:12.5px; font-weight:800; color:var(--text);}
+        .rc-recipient span{font-size:11px; color:var(--faint);}
+        .rc-email-flabel{display:block; font-size:10.5px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px;}
+        .rc-email-input{width:100%; border:1.5px solid var(--border); border-radius:11px; padding:11px 13px; font-size:13px; color:var(--text); outline:none;
+          transition:border-color .18s ease, box-shadow .18s ease; background:#fff; font-family:inherit;}
+        .rc-email-input:focus{border-color:var(--blue); box-shadow:0 0 0 4px rgba(37,99,235,.1);}
+        .rc-email-body-input{resize:vertical; line-height:1.65; min-height:150px;}
+        .rc-email-foot{display:flex; align-items:center; gap:10px; padding:15px 20px; border-top:1px solid var(--border); background:#FBFCFE;}
       `}</style>
     </div>
   );
