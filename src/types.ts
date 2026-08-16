@@ -1,5 +1,5 @@
 export type JobState = 'pending' | 'matched' | 'tailored' | 'ready' | 'applied';
-export type JobSource = 'LinkedIn' | 'Indeed' | 'Naukri' | 'Glassdoor' | 'Upwork' | 'Arbeitnow' | 'SimplyHired' | 'Dice' | 'Reed' | 'RemoteOK' | 'WeWorkRemotely' | 'MyCareersFuture' | 'Cutshort' | 'Gupy' | 'JobsCh' | 'Daijob' | 'MyJobMag' | 'Custom';
+export type JobSource = 'LinkedIn' | 'LinkedInPosts' | 'Indeed' | 'Naukri' | 'Glassdoor' | 'Upwork' | 'Arbeitnow' | 'SimplyHired' | 'Dice' | 'Reed' | 'RemoteOK' | 'WeWorkRemotely' | 'MyCareersFuture' | 'Cutshort' | 'Gupy' | 'JobsCh' | 'Daijob' | 'MyJobMag' | 'Custom';
 
 export interface Job {
   id: string;
@@ -23,6 +23,7 @@ export interface Job {
   experienceLevel?: string;
   contractType?: string;
   companyUrl?: string;
+  applyUrl?: string; // external link found inside a LinkedIn post (job/apply URL)
   applyType?: string;
   state: JobState;
   

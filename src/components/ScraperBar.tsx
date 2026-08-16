@@ -40,6 +40,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
   const [contractType, setContractType] = useState('');
   const [maxJobsPerSource, setMaxJobsPerSource] = useState<number>(10);
   const [under10Applicants, setUnder10Applicants] = useState(false);
+  const [postsEnabled, setPostsEnabled] = useState(false);
   const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const [scrapeNewContacts, setScrapeNewContacts] = useState<{ name: string | null; email: string | null; phone: string | null; whatsapp: boolean; recruiterUrl: string | null }[]>([]);
   const [selectedSources, setSelectedSources] = useState<JobSource[]>(['LinkedIn']);
@@ -65,7 +66,7 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
     const result = await onScrape({
       keywords: keywords.trim(),
       location,
-      sources: selectedSources,
+      sources: postsEnabled ? ([...selectedSources, 'LinkedInPosts'] as JobSource[]) : selectedSources,
       datePostedFilter,
       jobType,
       maxJobsPerSource,
@@ -341,6 +342,20 @@ export const ScraperBar: React.FC<ScraperBarProps> = ({ onScrape, isLoading, api
                 className="accent-[var(--color-brand)] w-[15px] h-[15px] cursor-pointer"
               />
               <span className="text-[12px] font-semibold text-[var(--color-muted)] truncate">Under 10 applicants</span>
+            </label>
+          </div>
+
+          {/* LinkedIn Posts — last 24h */}
+          <div className="flex flex-col gap-[6px]">
+            <label className={fieldLabelCls}>Posts</label>
+            <label className="flex items-center gap-2 bg-white border border-[var(--color-hairline)] rounded-[10px] px-3 py-2.5 cursor-pointer transition-colors hover:border-[var(--color-violet-line,#E9D5FF)]" title="Search the last 24 hours of LinkedIn posts — recruiters often announce jobs in posts before/without formal listings. Results are added with a 'LinkedIn Posts' tag.">
+              <input
+                type="checkbox"
+                checked={postsEnabled}
+                onChange={(e) => setPostsEnabled(e.target.checked)}
+                className="accent-[#7C3AED] w-[15px] h-[15px] cursor-pointer"
+              />
+              <span className="text-[12px] font-semibold text-[var(--color-muted)] truncate">LinkedIn Posts (last 24h)</span>
             </label>
           </div>
         </div>

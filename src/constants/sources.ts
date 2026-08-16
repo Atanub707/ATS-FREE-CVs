@@ -21,6 +21,7 @@ export const SOURCES: Record<JobSource, SourceMeta> = {
   Upwork: { id: 'Upwork', label: 'Upwork', flag: '🌐', country: 'Global freelance', region: 'global', apifyActorId: 'valig~upwork-jobs-scraper', needsApify: true, pricePer1K: '$0.20' },
 
   // ── Built-in free scrapers ──
+  LinkedInPosts: { id: 'LinkedInPosts', label: 'LinkedIn Posts', flag: '📰', country: 'Global', region: 'global', pricePer1K: 'Free' },
   Arbeitnow: { id: 'Arbeitnow', label: 'Arbeitnow', flag: '🌍', country: 'Europe', region: 'eu' },
   SimplyHired: { id: 'SimplyHired', label: 'SimplyHired', flag: '🇺🇸', country: 'USA', region: 'us' },
   Dice: { id: 'Dice', label: 'Dice', flag: '🇺🇸', country: 'USA', region: 'us' },
