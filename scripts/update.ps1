@@ -38,6 +38,10 @@ for ($i = 1; $i -le 60; $i++) {
 if (-not $engineReady) { Fail 'The Docker engine did not become ready. Open Docker Desktop once, then run update.bat again.' }
 Ok 'Docker engine ready'
 
+if (-not (Test-Path (Join-Path $AppDir 'config.ini'))) {
+  New-Item -ItemType File -Path (Join-Path $AppDir 'config.ini') -Force | Out-Null
+}
+
 Say 'Refreshing the app…'
 docker compose -f (Join-Path $AppDir 'docker-compose.yml') up -d --build --pull missing
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose failed — see the output above.' }

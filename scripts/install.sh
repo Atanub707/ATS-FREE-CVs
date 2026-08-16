@@ -76,7 +76,11 @@ if [ ! -f "$APP_DIR/docker-compose.yml" ]; then
   ok "App downloaded to $APP_DIR"
 fi
 
-# ── 5. Run ──────────────────────────────────────────────────────────────────
+# ── 5. Prepare config.ini (Docker mounts a missing file as a DIRECTORY — that
+# would silently break settings saves; create the empty file first) ──────────
+if [ ! -f "$APP_DIR/config.ini" ]; then touch "$APP_DIR/config.ini"; fi
+
+# ── 6. Run ──────────────────────────────────────────────────────────────────
 echo "Starting Tailor CV…"
 docker compose -f "$APP_DIR/docker-compose.yml" up -d --pull missing || fail "docker compose failed — see the output above."
 ok "Tailor CV is running"

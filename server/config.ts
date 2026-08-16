@@ -108,6 +108,16 @@ export function loadConfig(): AppConfig {
 
 export function saveConfig(config: AppConfig): void {
   try {
+    // Docker bind-mount artifact: if the host had no config.ini when the
+    // container started, the mount point becomes an EMPTY DIRECTORY — every
+    // write fails with EISDIR and settings silently vanish on reload.
+    // Self-heal: remove the empty directory so the file can be created.
+    try {
+      if (fs.existsSync(CONFIG_FILE_PATH) && fs.statSync(CONFIG_FILE_PATH).isDirectory()) {
+        fs.rmdirSync(CONFIG_FILE_PATH);
+      }
+    } catch { /* ignore */ }
+
     // Merge instead of blind overwrite: a save that arrives with missing or
     // undefined sections (a partial UI payload) must never clobber the other
     // sections in the file with the literal string "undefined" — which once

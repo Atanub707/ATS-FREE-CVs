@@ -172,7 +172,14 @@ if (-not (Test-Path (Join-Path $AppDir 'docker-compose.yml'))) {
   Ok 'App downloaded'
 }
 
-# ── 6. Run ──────────────────────────────────────────────────────────────────
+# ── 6. Prepare config.ini ───────────────────────────────────────────────────
+# Create an EMPTY config.ini BEFORE compose up — otherwise Docker bind-mounts
+# the missing file as a directory and token saves silently fail later.
+if (-not (Test-Path (Join-Path $AppDir 'config.ini'))) {
+  New-Item -ItemType File -Path (Join-Path $AppDir 'config.ini') -Force | Out-Null
+}
+
+# ── 7. Run ──────────────────────────────────────────────────────────────────
 Say 'Starting Tailor CV…'
 docker compose -f (Join-Path $AppDir 'docker-compose.yml') up -d --pull missing
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose failed — see the output above.' }
@@ -198,7 +205,7 @@ Say "Done! Tailor CV is ready at $AppUrl"
 Say '  Sign in or continue as guest, then set your AI key:'
 Say '  top-right menu -> Settings -> Integrations -> LLM & AI'
 Say "  Stop it:     docker compose -f $(Join-Path $AppDir 'docker-compose.yml') down"
-Say '  Update:      run update.bat (or the same one-liner with update.ps1)'
-Say '  Uninstall:   run uninstall.bat'
+Say '  Update:      re-run this installer (it skips finished steps)'
+Say '  Uninstall:   stop Docker Desktop and delete the tailor-cv folder'
 Say '──────────────────────────────────────────────'
 Say ''

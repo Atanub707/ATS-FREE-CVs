@@ -25,6 +25,8 @@ echo "Pulling the latest code…"
 git -C "$APP_DIR" pull --ff-only || fail "Could not pull the update — check your connection."
 ok "Code updated"
 
+if [ ! -f "$APP_DIR/config.ini" ]; then touch "$APP_DIR/config.ini"; fi
+
 echo "Refreshing the app…"
 docker compose -f "$APP_DIR/docker-compose.yml" up -d --build --pull missing || fail "docker compose failed — see the output above."
 ok "Tailor CV updated and running"
