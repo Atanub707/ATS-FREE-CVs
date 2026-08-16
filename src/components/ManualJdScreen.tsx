@@ -1273,15 +1273,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
               >
                 <Download className="w-3 h-3" /> PDF
               </button>
-              {previewDragActive && (
-                <button
-                  type="button"
-                  onClick={() => downloadEdited('txt')}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer bg-white border border-[var(--color-hairline)] text-[var(--color-muted)] hover:bg-slate-50"
-                >
-                  <FileText className="w-3 h-3" /> TXT
-                </button>
-              )}
               <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">
                 {previewDragActive ? 'Your edited CV' : tailoredCv ? 'Drag to compare' : 'Original CV'}
               </span>
