@@ -824,9 +824,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               </button>
                             </div>
                           </div>
-                          <span className="st-flabel" htmlFor="st-liat">LinkedIn session cookie (optional — unlocks LinkedIn POSTS search)</span>
+                          <span className="st-flabel" htmlFor="st-liat">LinkedIn session cookie (no longer required)</span>
                           <div className="st-row">
-                            <div className="st-lbl"><label htmlFor="st-liat"><b>li_at cookie</b><span>LinkedIn → DevTools → Application → Cookies → li_at. Needed for the reliable LinkedIn Posts scraper (Apify actor). Your data, your machine.</span></label></div>
+                            <div className="st-lbl"><label htmlFor="st-liat"><b>li_at cookie</b><span>The LinkedIn Posts scraper now works WITHOUT a cookie (harvestapi actor). This field is kept for future use — you can leave it empty.</span></label></div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <input className={monoCls} id="st-liat" type={showLiAt ? 'text' : 'password'} value={formData.linkedin?.liAt || ''}
                                 onChange={(e) => setFormDataTouched({ ...formData, linkedin: { ...(formData.linkedin || { liAt: '' }), liAt: e.target.value } })} placeholder="AQED…" />

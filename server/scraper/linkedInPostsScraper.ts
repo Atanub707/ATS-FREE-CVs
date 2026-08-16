@@ -260,22 +260,27 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
 }
 
 // ── Apify layer (reliable keyword post search) ──────────────────────────────
-// LinkedIn POST search is login-gated — the free engines work without a
-// session, but the robust path is an Apify actor using the user's li_at
-// cookie. Used when both the Apify token AND the li_at cookie are configured.
-const APIFY_POSTS_ACTOR = 'wtrf/linkedin-search-scraper';
+// harvestapi/linkedin-post-search — "No Cookies" actor: keyword search over
+// LinkedIn posts WITHOUT a session cookie (free engines still work as the
+// no-token fallback). Budget-capped per search so monthly cost stays tiny.
+const APIFY_POSTS_ACTOR = 'harvestapi/linkedin-post-search';
 
 async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]> {
   const config = loadConfig();
   const token = config.apify.token?.trim();
-  const liAt = config.linkedin?.liAt?.trim();
-  if (!token || config.apify.enabled !== true || !liAt) return [];
+  if (!token || config.apify.enabled !== true) return [];
 
+  // Defensive input: send every plausible field name (the store page is
+  // JS-rendered, so the exact schema is verified on first real run — a
+  // rejected field surfaces in the error message).
   const input = {
     searchQuery: keywords,
+    keywords,
     contentType: 'posts',
+    searchMode: 'posts',
+    postsCount: Math.min(limit * 2, 40),
     resultsLimit: Math.min(limit * 2, 40),
-    sessionCookie: liAt,
+    maxPosts: Math.min(limit * 2, 40),
   };
   try {
     const res = await fetch(
@@ -293,9 +298,9 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
     const seen = new Set<string>();
     for (const item of items) {
       if (jobs.length >= limit) break;
-      const url = String(item.url || item.postUrl || '').split('?')[0];
-      const text = String(item.text || item.caption || item.description || '').trim();
-      const author = String(item.name || item.authorName || item.companyName || 'LinkedIn').trim();
+      const url = String(item.url || item.postUrl || item.post_url || '').split('?')[0];
+      const text = String(item.text || item.caption || item.description || item.postContent || item.post_content || item.content || '').trim();
+      const author = String(item.name || item.authorName || item.author_name || item.companyName || item.company_name || 'LinkedIn').trim();
       if (!url.includes('linkedin.com') || !text || seen.has(url)) continue;
       seen.add(url);
       const now = new Date().toISOString();
@@ -308,9 +313,9 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
         source: 'LinkedInPosts',
         description: text.slice(0, 3000),
         url,
-        postedDate: item.date ? new Date(item.date).toISOString() : undefined,
-        postedDateParsed: item.date ? String(item.date).slice(0, 10) : undefined,
-        applyUrl: item.externalUrl ? String(item.externalUrl) : undefined,
+        postedDate: (item.date || item.publishedAt || item.createdAt) ? new Date(item.date || item.publishedAt || item.createdAt).toISOString() : undefined,
+        postedDateParsed: (item.date || item.publishedAt || item.createdAt) ? String(item.date || item.publishedAt || item.createdAt).slice(0, 10) : undefined,
+        applyUrl: (item.externalUrl || item.applyUrl || item.link) ? String(item.externalUrl || item.applyUrl || item.link) : undefined,
         hashtags: extractHashtags(text),
         jobType: 'Post',
         state: 'pending',

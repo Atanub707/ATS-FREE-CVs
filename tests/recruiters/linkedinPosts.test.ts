@@ -6,7 +6,7 @@ const realFetch = globalThis.fetch;
 function mockConfig(overrides: Record<string, any> = {}) {
   vi.mocked(loadConfig).mockReturnValue({
     apify: { token: 'apify_api_test', enabled: true, referralUrl: '' },
-    linkedin: { liAt: 'AQED-test-cookie' },
+    linkedin: { liAt: '' },
     ...overrides,
   } as any);
 }
@@ -42,7 +42,7 @@ describe('LinkedInPostsScraper', () => {
     globalThis.fetch = realFetch;
   });
 
-  it('uses the Apify actor path when li_at + token are configured', async () => {
+  it('uses the Apify actor path when the token is configured (no cookie needed)', async () => {
     mockConfig();
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
@@ -69,11 +69,11 @@ describe('LinkedInPostsScraper', () => {
     // Actor URL used:
     const call = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
     expect(call).toContain('run-sync-get-dataset-items');
-    expect(call).toContain('wtrf/linkedin-search-scraper');
+    expect(call).toContain('harvestapi/linkedin-post-search');
   });
 
-  it('falls back to engines gracefully when no li_at cookie is configured', async () => {
-    mockConfig({ linkedin: { liAt: '' } });
+  it('falls back to engines gracefully when no Apify token is configured', async () => {
+    mockConfig({ apify: { token: '', enabled: false } });
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
       status: 200,

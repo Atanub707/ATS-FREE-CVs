@@ -47,12 +47,14 @@ DevSecOps Engineer · Senior DevSecOps Engineer · Cloud DevSecOps Engineer ·
 DevOps Security Engineer · Cloud Security Engineer · Application Security Engineer ·
 Platform Security Engineer
 
-## 5. Reliable path: Apify + li_at cookie
+## 5. Reliable path: Apify actor (no cookie needed)
 
-LinkedIn **post search is login-gated** — the free engines work without a session,
-but the robust route is an Apify actor (`wtrf/linkedin-search-scraper`) using the
-user's **`li_at` session cookie** (Settings → Integrations → Apify → li_at cookie).
-Flow: actor first → engines fallback.
+The robust route is **`harvestapi/linkedin-post-search`** — a "No Cookies" actor:
+keyword search over LinkedIn posts with just the user's existing **Apify token**
+(Settings → Integrations → Apify). No `li_at` session cookie required.
+Pricing: **from $1.50 / 1,000 posts** (~$2 all-in with Apify's platform fee;
+personal use ≈ $4–7/month, budget-capped per search).
+Flow: actor first → free engines fallback.
 
 ## 6. Implementation
 
