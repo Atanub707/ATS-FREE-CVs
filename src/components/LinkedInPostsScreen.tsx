@@ -229,13 +229,15 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
               <span className="lp-engine-dot">✦</span> Apify engine
               <span className="lp-engine-sub">your token · ~$0.20/search</span>
             </button>
-            {quota && (
+            {engine === 'apify' && quota ? (
               <span className={`lp-quota ${quota.remaining === 0 ? 'out' : ''}`}>
                 {quota.used}/{quota.quota} posts today
               </span>
-            )}
+            ) : engine === 'free' ? (
+              <span className="lp-quota free">Free · unlimited</span>
+            ) : null}
           </div>
-          <p className="lp-hint">Job postings only · last 24 hours · max 20 posts/day · results are added to your job list with a “LinkedIn Posts” tag</p>
+          <p className="lp-hint">Job postings only · last 24 hours · Apify engine: max 10 posts/day (resets at midnight) · Free engine: unlimited · results are added to your job list with a “LinkedIn Posts” tag</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
@@ -331,6 +333,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-engine-dot{font-size:13px; line-height:1;}
         .lp-quota{font-size:11px; font-weight:800; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:6px 13px;}
         .lp-quota.out{color:#DC2626; background:#FEF2F2; border-color:#FECACA;}
+        .lp-quota.free{color:#15803D; background:#F0FDF4; border-color:#BBF7D0;}
         .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
         .lp-setup{max-width:620px; margin:0 auto 22px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:15px 18px;}
         .lp-setup b{display:block; font-size:12.5px; font-weight:800; color:#92400E; margin-bottom:4px;}

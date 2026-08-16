@@ -576,7 +576,9 @@ async function startServer() {
     }
   });
 
-  // ── LinkedIn Posts (job postings, last 24h, 20/day per user) ──
+  // ── LinkedIn Posts (job postings, last 24h) ──
+  // Daily cap (20/day, resets at midnight) applies to the APIFY engine only —
+  // it protects the user's token spend. The FREE engine is unlimited.
   app.post('/api/linkedin-posts/search', async (req, res) => {
     try {
       const userId = getCurrentUserId();
@@ -586,10 +588,10 @@ async function startServer() {
       const engine = req.body?.engine === 'apify' ? 'apify' : 'free';
       const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 20));
       const quota = getPostsDailyUsage(userId);
-      if (quota.used >= quota.quota) {
+      if (engine === 'apify' && quota.used >= quota.quota) {
         return res.status(429).json({
           valid: false,
-          error: `Daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}.`,
+          error: `Apify daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
           quota,
         });
       }
@@ -605,7 +607,7 @@ async function startServer() {
       } as any);
       // Job-posting search only — anything else returns "not valid".
       if (posts.length === 0) {
-        const remaining = Math.max(0, quota.quota - quota.used);
+        const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : quota.quota;
         return res.status(200).json({
           valid: false,
           message: 'not valid — this search only works for job postings from the last 24 hours.',
@@ -616,12 +618,22 @@ async function startServer() {
           quota: { ...quota, remaining },
         });
       }
-      const { added } = saveNewJobs(posts as any);
-      const newUsed = addPostsDailyUsage(userId, posts.length);
+      // Apify engine: cap the search at the remaining daily quota (10/day max).
+      const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : posts.length;
+      const cappedPosts = engine === 'apify' ? posts.slice(0, remaining) : posts;
+      if (engine === 'apify' && cappedPosts.length === 0) {
+        return res.status(429).json({
+          valid: false,
+          error: `Apify daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
+          quota,
+        });
+      }
+      const { added } = saveNewJobs(cappedPosts as any);
+      const newUsed = engine === 'apify' ? addPostsDailyUsage(userId, cappedPosts.length) : quota.used;
       res.json({
         valid: true,
         debug: scraper.lastDebug,
-        posts: posts.map((p) => ({
+        posts: cappedPosts.map((p) => ({
           id: p.id,
           title: p.title,
           company: p.company,
@@ -632,7 +644,7 @@ async function startServer() {
           hashtags: p.hashtags || [],
         })),
         addedCount: added.length,
-        total: posts.length,
+        total: cappedPosts.length,
         quota: { used: newUsed, quota: quota.quota, remaining: Math.max(0, quota.quota - newUsed), resetAt: quota.resetAt },
       });
     } catch (err: any) {

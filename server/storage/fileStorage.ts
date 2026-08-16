@@ -495,7 +495,7 @@ function ensurePostsDailyTable(db: Database.Database): void {
   `);
 }
 
-export const POSTS_DAILY_QUOTA = 20;
+export const POSTS_DAILY_QUOTA = 10;
 
 function postsDayKey(): string {
   return new Date().toISOString().slice(0, 10);
