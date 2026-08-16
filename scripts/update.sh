@@ -25,6 +25,7 @@ echo "Pulling the latest code…"
 git -C "$APP_DIR" pull --ff-only || fail "Could not pull the update — check your connection."
 ok "Code updated"
 
+if [ -d "$APP_DIR/config.ini" ]; then rmdir "$APP_DIR/config.ini" 2>/dev/null || true; fi
 if [ ! -f "$APP_DIR/config.ini" ]; then touch "$APP_DIR/config.ini"; fi
 
 echo "Refreshing the app…"

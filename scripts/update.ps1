@@ -38,8 +38,13 @@ for ($i = 1; $i -le 60; $i++) {
 if (-not $engineReady) { Fail 'The Docker engine did not become ready. Open Docker Desktop once, then run update.bat again.' }
 Ok 'Docker engine ready'
 
-if (-not (Test-Path (Join-Path $AppDir 'config.ini'))) {
-  New-Item -ItemType File -Path (Join-Path $AppDir 'config.ini') -Force | Out-Null
+$cfgPath = Join-Path $AppDir 'config.ini'
+if (Test-Path $cfgPath) {
+  $cfgItem = Get-Item $cfgPath
+  if ($cfgItem.PSIsContainer) { Remove-Item $cfgPath -Force }  # Docker mount artifact
+}
+if (-not (Test-Path $cfgPath)) {
+  New-Item -ItemType File -Path $cfgPath -Force | Out-Null
 }
 
 Say 'Refreshing the app…'

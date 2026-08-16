@@ -123,16 +123,25 @@ then double-click again.
 
 ## 🔄 Updating Tailor CV
 
-New versions arrive regularly — update in one command:
+New versions arrive regularly — update in **one command** (your data — jobs, CV,
+tokens, history — is never touched):
 
-**macOS / Linux:**
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex
+```
+
+**macOS / Linux (Terminal):**
 ```bash
 curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash
 ```
 
-**Windows:** download `update.bat`, double-click it.
+**If you already installed and run the installer again**, it tells you the app is
+running — that's normal. Use the update command above instead.
 
-Updates keep your data (jobs, CV, history) — only the app code is refreshed.
+> **Tip:** if you saved tokens before and they disappeared after a reload, your
+> install hit an old Docker quirk where `config.ini` became an empty folder.
+> This update fixes it automatically — save your settings once more and they'll stick.
 
 ---
 

@@ -78,6 +78,7 @@ fi
 
 # ── 5. Prepare config.ini (Docker mounts a missing file as a DIRECTORY — that
 # would silently break settings saves; create the empty file first) ──────────
+if [ -d "$APP_DIR/config.ini" ]; then rmdir "$APP_DIR/config.ini" 2>/dev/null || true; fi
 if [ ! -f "$APP_DIR/config.ini" ]; then touch "$APP_DIR/config.ini"; fi
 
 # ── 6. Run ──────────────────────────────────────────────────────────────────

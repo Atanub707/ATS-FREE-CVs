@@ -52,7 +52,11 @@ if ($isAdmin) {
 try {
   $probe = Invoke-WebRequest -Uri $AppUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
   if ($probe.StatusCode -eq 200) {
-    Warn "Tailor CV is already running at $AppUrl - nothing to do."
+    Warn "Tailor CV is already running at $AppUrl."
+    Say 'To UPDATE to the latest version, paste this instead:'
+    Say ''
+    Say '  irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex'
+    Say ''
     Start-Process $AppUrl
     Read-Host 'Press Enter to close'
     return
@@ -175,8 +179,13 @@ if (-not (Test-Path (Join-Path $AppDir 'docker-compose.yml'))) {
 # ── 6. Prepare config.ini ───────────────────────────────────────────────────
 # Create an EMPTY config.ini BEFORE compose up — otherwise Docker bind-mounts
 # the missing file as a directory and token saves silently fail later.
-if (-not (Test-Path (Join-Path $AppDir 'config.ini'))) {
-  New-Item -ItemType File -Path (Join-Path $AppDir 'config.ini') -Force | Out-Null
+$cfgPath = Join-Path $AppDir 'config.ini'
+if (Test-Path $cfgPath) {
+  $cfgItem = Get-Item $cfgPath
+  if ($cfgItem.PSIsContainer) { Remove-Item $cfgPath -Force }  # Docker mount artifact
+}
+if (-not (Test-Path $cfgPath)) {
+  New-Item -ItemType File -Path $cfgPath -Force | Out-Null
 }
 
 # ── 7. Run ──────────────────────────────────────────────────────────────────
