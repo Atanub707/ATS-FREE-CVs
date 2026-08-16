@@ -179,6 +179,12 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <span><i></i> Posting</span>
               </div>
               <div className="ai-panel-body">
+                {roles.length === 0 && (
+                  <div className="ai-nodata">
+                    <span className="ai-nodata-ico"><Briefcase size={20} weight="duotone" /></span>
+                    <div><b>Your dashboard has no jobs yet</b><p>Search &amp; scrape jobs first (Search bar → Search Jobs), then come back — the interviewer works from your real postings.</p></div>
+                  </div>
+                )}
                 <div className="ai-field">
                   <label className="ai-flabel"><span className="ai-step-n">1</span> Which role from your dashboard?</label>
                   <div className="ai-rolechips">
@@ -209,7 +215,9 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
                       </button>
                     </div>
                     <div className="ai-postings-list">
-                      {jobOptions.length === 0 && <div className="ai-postings-empty">No postings found for this role in your dashboard yet — scrape jobs for “{role}” first, then come back.</div>}
+                      {jobOptions.length === 0 && (
+                        <div className="ai-postings-empty">{role ? `No postings found for “${role}” yet — scrape more jobs first.` : 'Pick a role above to see its postings.'}</div>
+                      )}
                       {jobOptions.map((j) => (
                         <button key={j.id} className={`ai-posting ${selectedJobs.includes(j.id) ? 'on' : ''}`} onClick={() => toggleJob(j.id)}>
                           <span className="ai-check"><CheckCircle size={11} weight="bold" /></span>
@@ -446,6 +454,10 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
         .ai-pt span{font-size:10.5px; color:var(--faint); font-weight:600;}
         .ai-postings-empty{font-size:12px; color:var(--faint); padding:18px; text-align:center;}
         .ai-pfield-hint{font-size:10.5px; color:var(--faint); margin-top:8px; line-height:1.5;}
+        .ai-nodata{display:flex; align-items:center; gap:13px; background:#FFF7ED; border:1px solid #FED7AA; border-radius:13px; padding:14px 16px; margin-bottom:22px;}
+        .ai-nodata-ico{width:40px; height:40px; border-radius:12px; background:#FFFBEB; color:#D97706; border:1px solid #FDE68A; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;}
+        .ai-nodata b{display:block; font-size:13px; font-weight:800; color:#92400E;}
+        .ai-nodata p{font-size:11.5px; color:#B45309; line-height:1.55; margin-top:2px;}
         .ai-error{align-self:center; font-size:12px; font-weight:700; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:10px 15px;}
         .ai-actions{display:flex; align-items:center; gap:14px; margin-top:22px; flex-wrap:wrap;}
         .ai-hint{font-size:11.5px; color:var(--faint); display:inline-flex; align-items:center; gap:6px; font-weight:600;}
