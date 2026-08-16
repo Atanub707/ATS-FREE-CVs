@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, MagnifyingGlass, ArrowSquareOut, Clock, Sparkle, PaperPlaneTilt } from '@phosphor-icons/react';
 
 interface PostResult {
@@ -22,6 +22,57 @@ const RELATIVE = (iso?: string): string => {
   return `${Math.round(ms / 86400000)} days ago`;
 };
 
+const DAY_LABEL = (iso?: string): string => {
+  if (!iso) return 'Unknown date';
+  const d = new Date(iso);
+  const now = new Date();
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return d.toLocaleDateString(undefined, { weekday: 'long' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+// Group saved posts by their (posted or saved) date, newest first.
+const groupByDay = (items: PostResult[]): { label: string; items: PostResult[] }[] => {
+  const groups = new Map<string, PostResult[]>();
+  for (const p of items) {
+    const key = DAY_LABEL(p.postedDate);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(p);
+  }
+  return [...groups.entries()].map(([label, list]) => ({ label, items: list }));
+};
+
+const PostCard: React.FC<{ p: PostResult }> = ({ p }) => (
+  <div className="lp-card">
+    <div className="lp-card-top">
+      <span className="lp-avatar">{p.company?.charAt(0)?.toUpperCase() || 'L'}</span>
+      <div className="lp-card-meta">
+        <b>{p.title}</b>
+        <span>{p.company}{p.postedDate ? ` · ${RELATIVE(p.postedDate)}` : ''}</span>
+      </div>
+    </div>
+    {p.description && <p className="lp-card-text">{p.description}</p>}
+    {p.hashtags && p.hashtags.length > 0 && (
+      <div className="lp-tags">
+        {p.hashtags.map((h) => <span key={h} className="lp-tag">{h}</span>)}
+      </div>
+    )}
+    <div className="lp-card-actions">
+      <a className="lp-link" href={p.url} target="_blank" rel="noreferrer">
+        Open post <ArrowSquareOut size={12} weight="bold" />
+      </a>
+      {p.applyUrl && (
+        <a className="lp-link apply" href={p.applyUrl} target="_blank" rel="noreferrer">
+          Apply link <ArrowSquareOut size={12} weight="bold" />
+        </a>
+      )}
+    </div>
+  </div>
+);
+
 export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<SearchState>('idle');
@@ -33,6 +84,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
   const [engine, setEngine] = useState<'free' | 'apify'>('free');
   const [quota, setQuota] = useState<{ used: number; quota: number; remaining: number; resetAt: string } | null>(null);
+  const [feed, setFeed] = useState<PostResult[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/config')
@@ -40,6 +93,34 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       .then((c) => setSetup({ cookie: !!(c?.linkedin?.liAt), apify: !!(c?.apify?.enabled && c?.apify?.token) }))
       .catch(() => setSetup(null));
   }, []);
+
+  // The saved feed persists in the database — surviving refresh. Loaded on
+  // mount, grouped by date, and refreshed after every search.
+  const loadFeed = useCallback(async () => {
+    try {
+      const res = await fetch('/api/jobs?source=LinkedInPosts&sortBy=createdAt&sortOrder=desc&page=1&limit=100');
+      if (!res.ok) return;
+      const d = await res.json();
+      setFeed(
+        (d.jobs || []).map((j: any) => ({
+          id: j.id,
+          title: j.title,
+          company: j.company,
+          url: j.url,
+          applyUrl: j.applyUrl,
+          postedDate: j.postedDate,
+          description: j.description,
+          hashtags: j.hashtags || [],
+        }))
+      );
+    } finally {
+      setFeedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
   const search = async (raw?: string) => {
     const q = (raw ?? query).trim();
@@ -65,6 +146,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       setDebug(d.debug || null);
       if (d.quota) setQuota(d.quota);
       setState('done');
+      loadFeed();
       if (d.valid === false) {
         setMessage('not valid — this search only works for job postings from the last 24 hours. Try a job role, e.g. "DevOps Engineer".');
       } else if (d.total === 0) {
@@ -170,33 +252,33 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
             </div>
             <div className="lp-grid">
               {posts.map((p) => (
-                <div className="lp-card" key={p.id}>
-                  <div className="lp-card-top">
-                    <span className="lp-avatar">{p.company?.charAt(0)?.toUpperCase() || 'L'}</span>
-                    <div className="lp-card-meta">
-                      <b>{p.title}</b>
-                      <span>{p.company}{p.postedDate ? ` · ${RELATIVE(p.postedDate)}` : ''}</span>
-                    </div>
-                  </div>
-                  {p.description && <p className="lp-card-text">{p.description}</p>}
-                  {p.hashtags && p.hashtags.length > 0 && (
-                    <div className="lp-tags">
-                      {p.hashtags.map((h) => <span key={h} className="lp-tag">{h}</span>)}
-                    </div>
-                  )}
-                  <div className="lp-card-actions">
-                    <a className="lp-link" href={p.url} target="_blank" rel="noreferrer">
-                      Open post <ArrowSquareOut size={12} weight="bold" />
-                    </a>
-                    {p.applyUrl && (
-                      <a className="lp-link apply" href={p.applyUrl} target="_blank" rel="noreferrer">
-                        Apply link <ArrowSquareOut size={12} weight="bold" />
-                      </a>
-                    )}
-                  </div>
-                </div>
+                <PostCard key={p.id} p={p} />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Persistent feed — saved in the DB, grouped by date, survives refresh */}
+        {!feedLoading && feed.length > 0 && (
+          <div className="lp-feed">
+            <div className="lp-feed-title">
+              <b>Your saved feed</b>
+              <span>{feed.length} posts saved · kept in the database</span>
+            </div>
+            {groupByDay(feed).map((g) => (
+              <div className="lp-feed-day" key={g.label}>
+                <div className="lp-feed-day-hdr">
+                  <span className="lp-feed-dot" aria-hidden="true"></span>
+                  <b>{g.label}</b>
+                  <em>{g.items.length} post{g.items.length === 1 ? '' : 's'}</em>
+                </div>
+                <div className="lp-grid">
+                  {g.items.map((p) => (
+                    <PostCard key={p.id} p={p} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -262,6 +344,15 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-results-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:0 2px;}
         .lp-results-head b{font-size:15px; font-weight:800;}
         .lp-results-head span{font-size:11px; font-weight:800; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:4px 12px;}
+        .lp-feed{max-width:900px; margin:44px auto 0; border-top:1px dashed #E2E8F0; padding-top:30px;}
+        .lp-feed-title{display:flex; align-items:baseline; gap:10px; margin-bottom:6px; padding:0 2px;}
+        .lp-feed-title b{font-size:16px; font-weight:800;}
+        .lp-feed-title span{font-size:11px; color:#94A3B8; font-weight:600;}
+        .lp-feed-day{margin-top:20px;}
+        .lp-feed-day-hdr{display:flex; align-items:center; gap:8px; margin-bottom:12px; padding:0 2px;}
+        .lp-feed-day-hdr b{font-size:12.5px; font-weight:800; color:#334155;}
+        .lp-feed-day-hdr em{font-size:10.5px; font-style:normal; font-weight:700; color:#94A3B8;}
+        .lp-feed-dot{width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,#7C3AED,#2563EB); flex-shrink:0;}
         .lp-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px;}
         .lp-card{background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:18px 19px; box-shadow:0 1px 3px rgba(15,23,42,.05);
           display:flex; flex-direction:column; gap:11px; transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;}

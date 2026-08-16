@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Job, ScraperParams } from '../../src/types.js';
 import { loadConfig } from '../config.js';
 
@@ -332,7 +333,7 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
       // The post often carries the actual JOB listing — prefer it as the apply link.
       const company = item.job?.subtitle ? String(item.job.subtitle).replace(/^Job by\s*/i, '') : author;
       jobs.push({
-        id: `linkedinpost-${Buffer.from(url).toString('base64url').slice(0, 24)}`,
+        id: `linkedinpost-${createHash('sha1').update(url).digest('base64url').slice(0, 20)}`,
         title: firstLine.slice(0, 110),
         company,
         location: String(item.job?.location || ''),
@@ -395,7 +396,7 @@ export class LinkedInPostsScraper {
 
       const now = new Date().toISOString();
       jobs.push({
-        id: `linkedinpost-${Buffer.from(url).toString('base64url').slice(0, 24)}`,
+        id: `linkedinpost-${createHash('sha1').update(url).digest('base64url').slice(0, 20)}`,
         title,
         company: post.author,
         location: '',
