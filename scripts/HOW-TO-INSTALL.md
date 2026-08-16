@@ -54,16 +54,33 @@ Tailor CV. First run may take a few minutes (Docker Desktop installs + engine st
 
 ---
 
-## 🪟 Windows — install (2 minutes)
+## 🪟 Windows — install (2 minutes, no technical knowledge needed)
 
-1. Download **`install.bat`** (right-click → *Save link as…*)
-2. Double-click it
-3. Click **Yes** on the single Windows UAC prompt
-4. Watch the colored progress lines — the browser opens Tailor CV when done
+**Step 1 — get the installer file:**
 
-**First time on a brand-new PC only:** Windows may need WSL2 (the engine behind Docker).
-The installer installs it automatically, then asks you to **restart once** and
-double-click `install.bat` again — it skips straight to starting the app.
+- Open the repository: **https://github.com/Atanub707/ATS-FREE-CVs**
+- Click the green **Code** button → **Download ZIP**
+- Open the downloaded ZIP and **extract it** anywhere (right-click → *Extract All…*) — e.g. into a folder on your Desktop
+
+**Step 2 — run it:**
+
+- Open the extracted folder → open the **`scripts`** folder
+- **Double-click `install.bat`**
+- If Windows shows *"Windows protected your PC"*: click **More info** → **Run anyway** (this is normal for any new free software — the file is checked by Windows and safe)
+- Click **Yes** on the one UAC prompt
+- Watch the colored progress lines — when done, **your browser opens Tailor CV automatically**
+
+> The installer does everything itself: installs Docker Desktop (like installing any app),
+> starts it, downloads Tailor CV, and opens the app. You never touch a terminal.
+
+**First time on a brand-new PC only:** Windows may ask to install **WSL2** (a small Windows
+component Docker needs). The installer does it automatically, then asks you to
+**restart your PC once** and **double-click `install.bat` again** — it continues from where
+it stopped and finishes in about a minute.
+
+**If double-clicking doesn't do anything:** the file may have downloaded with a `.txt`
+ending — rename it to `install.bat` (File Explorer → *View* → tick *File name extensions*),
+then double-click again.
 
 ---
 
