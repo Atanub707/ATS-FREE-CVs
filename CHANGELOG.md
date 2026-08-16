@@ -16,7 +16,7 @@
 ### 📢 LinkedIn Posts scraping (last 24h)
 - New **"LinkedIn Posts (last 24h)"** toggle in the Search bar — searches the last 24 hours of LinkedIn posts where recruiters announce jobs (multi-engine discovery: Google → DuckDuckGo → Bing, scoped to `site:linkedin.com/posts` + keywords).
 - Fetches each post (public, no login), extracts author, text, date and any external apply link — results land in the dashboard with a violet **"LinkedIn Posts"** tag and link to the post.
-- Free built-in source (`server/scraper/linkedInPostsScraper.ts`); search engines rate-limit datacenter IPs, so it works best from residential IPs (like the other built-in scrapers).
+- Free built-in source (`server/scraper/linkedInPostsScraper.ts`); search engines rate-limit datacenter IPs, so it works best from residential IPs (like the other built-in scrapers). The dashboard Search-bar toggle was removed (2026-08-16) — the dedicated screen is the only entry point.
 
 ### 🤖 AI Interview (JD-grounded — renamed from AI System, Personalize removed)
 - **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
