@@ -3,60 +3,20 @@
 ## v1.5.0 (2026-08-16)
 
 ### ✨ Features
-- **AI Interview** — a new "AI Interview" screen (navbar): mock interviews grounded in the real job descriptions you've scraped. Role picker with real job counts, multi-select postings with Select all, 7-question sessions, genuine rubric scoring (Accuracy/Depth/Structure/Examples with transparent dimension breakdowns), final scorecard + verdict, and a History panel (Manual-JD pattern).
-- **LinkedIn Posts screen** — find job announcements recruiters share as posts (last 24 hours): ChatGPT-style search, hashtag + hiring-keyword query engine, hashtag chips on results, posts saved to your job list with a violet tag. Optional reliable path via Apify actor + your li_at cookie.
-- **One-click installers** — Windows double-click (.bat) or PowerShell one-liner, macOS one-liner (curl | bash): install Docker Desktop, wait for the engine, download the app, open the browser. Update + uninstall scripts included. Full user guide in scripts/HOW-TO-INSTALL.md.
-- **Release notes system** — docs/RELEASE-TEMPLATE.md + scripts/release.sh: every version publishes structured notes (features/fixes/issues) automatically on tag push. No packages — users clone & run locally.
+- 
 
 ### 🐛 Fixes
-- Windows installer: PowerShell 7 stderr no longer kills the script (exit-code checks), Docker engine wait loop (up to 3 min) with WSL2 auto-repair, pending-reboot detection, elevated winget retry + official installer fallback.
-- LinkedIn Posts: decoding of DuckDuckGo/Bing redirect links, lnkd.in resolution, role-bucket rollups (DevOps variants merge into one count), posting picker shows the full DB list.
-- Interview scoring: no more inflated scores — rubric dimensions + word-count caps + deterministic overall.
-- Security: removed leaked Apify token file from git history (scrubbed), *.zip + config.ini blocked forever, gitleaks guard in CI.
+- 
 
 ### ⚠️ Known Issues
-- LinkedIn Posts free search may return nothing from datacenter IPs (search engines rate-limit); residential IPs work — or add the li_at cookie for the reliable path.
-- The repository must be Public for non-technical users to download/install without GitHub accounts.
+- 
 
 ### 🔄 Breaking Changes
-- The old generic AI chat (MCP tools, /api/chat) was removed — the AI Interview screen replaces it.
+- None.
 
 ### 📦 How to Update
-- **macOS/Linux:** re-run the installer or `scripts/update.sh` — data is untouched.
-- **Windows:** re-run the PowerShell one-liner or `install.bat` / `update.bat`.
+- Re-run your platform installer (install.sh / install.bat / the PowerShell one-liner) — data is untouched.
 
-
-### 📦 One-click installers (no code-signing needed)
-- **Windows:** double-click `scripts/install.bat` — installs Docker Desktop via winget (one UAC click), installs WSL2 on fresh machines (one reboot, then rerun), starts the engine, downloads the app, opens the browser.
-- **macOS/Linux:** `curl -fsSL …/scripts/install.sh | bash` — installs Docker Desktop via Homebrew if needed, waits for the engine, clones the app, runs compose, opens the browser.
-- Both are idempotent and only ever launch **Docker Desktop** (signed by Docker Inc) — no unsigned binaries, no SmartScreen/Gatekeeper warnings, $0/year in certificates.
-- README rewritten with a **Quick Start** section.
-
-### 📢 LinkedIn Posts screen (dedicated)
-- New **"LinkedIn Posts"** screen in the navbar — ChatGPT-style centered pill search bar (round corners, circular search icon on the right).
-- Search any role → scrapes the **last 24 hours** of LinkedIn posts → results as cards (author, post text, relative time, Open post + Apply link) → new posts saved to your job list with the violet tag.
-- API: `POST /api/linkedin-posts/search` (user-scoped, stores via the standard dedupe path).
-
-### 📢 LinkedIn Posts scraping (last 24h)
-- New **"LinkedIn Posts (last 24h)"** toggle in the Search bar — searches the last 24 hours of LinkedIn posts where recruiters announce jobs (multi-engine discovery: Google → DuckDuckGo → Bing, scoped to `site:linkedin.com/posts` + keywords).
-- Fetches each post (public, no login), extracts author, text, date and any external apply link — results land in the dashboard with a violet **"LinkedIn Posts"** tag and link to the post.
-- Free built-in source (`server/scraper/linkedInPostsScraper.ts`); search engines rate-limit datacenter IPs, so it works best from residential IPs (like the other built-in scrapers). The dashboard Search-bar toggle was removed (2026-08-16) — the dedicated screen is the only entry point.
-
-### 🤖 AI Interview (JD-grounded — renamed from AI System, Personalize removed)
-- **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
-- **Interview with AI** takes over the full screen: the interviewer asks 3 intro questions (role from your dashboard with real job counts, experience, optional pick a real posting), then runs a 7-question session where **every question is grounded in the actual job descriptions you scraped** (title/company + description excerpt in the prompt). Answers scored 0–10 with feedback; final scorecard with overall + verdict.
-- Role aggregation (`GET /api/interview/roles`), job picker (`GET /api/interview/jobs`), `ask()` gained a text mode (fixes the `json_object` rejection from opencode-go).
-- Answer options in the interview: **type and send**, or **"Recommended: use Wispr Flow"** — a button that opens the Wispr Flow affiliate link (ref.wisprflow.ai/atanu-biswas) so users can dictate their answers (replaces the placeholder "Speak (coming soon)").
-
-### 👤 Candidate job profile (Settings → Account)
-- Account-level job preferences kept off the CV: work mode (remote/onsite/hybrid/flexible), preferred locations (full country-state-city autocomplete, chip boxes), notice period + availability date, employment type, years of experience, current role/company, job search status, compensation (current + expected range + all ISO 4217 currencies), work authorization + sponsorship, relocation/travel willingness, languages (chip boxes with ISO 639-1 autocomplete), company size, and a free-text recruiter note.
-- The AI cold-email draft now weaves in availability (notice period) and work-mode fit from the profile alongside the Master CV journey — compensation is stored but never sent in emails.
-
-### 👥 Recruiters screen expansion
-- Stats header (total / with email / with phone / sent / companies), type filter chips (Recruiter · HR · Careers · Company), sort (newest / name / company / most jobs / recently emailed), load-more pagination.
-- Sticky notes per contact; follow-up reminders (+3d / +7d, overdue chips, "Mark done"); pipeline status (Replied · Interview · Offer · Rejected).
-- Email history per contact (sent/failed logs with subject, body, attachment, timestamp); saved email templates; WhatsApp deep links; batch cold-email queue (select → send sequentially) with bulk dismiss.
-- Email validity hint (format + domain MX check); source-job link on identity cards; CSV export of all contacts.
 
 ## v1.4.0 (2026-08-12)
 

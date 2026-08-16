@@ -36,7 +36,8 @@ DRY_RUN=false
 
 # ── 2. CHANGELOG section ────────────────────────────────────────────────────
 CHANGELOG="CHANGELOG.md"
-if ! awk "/^## ${VERSION}/{found=1} found" "$CHANGELOG" | grep -q "^## ${VERSION}"; then
+FOUND=$(awk "/^## ${VERSION}/{print 1; exit}" "$CHANGELOG")
+if [ -z "$FOUND" ]; then
   warn "No \"## ${VERSION}\" section in $CHANGELOG — scaffolding one from the template."
   TODAY=$(date +%Y-%m-%d)
   cat > /tmp/release-section.md <<EOF
