@@ -45,6 +45,7 @@ if ($isAdmin) {
   Ok 'Running with administrator rights'
 } else {
   Warn 'Not running as administrator — Windows will ask for permission when Docker installs. Click Yes.'
+  Warn 'Tip: for the smoothest install, right-click this window → "Run as administrator" and rerun.'
 }
 
 # ── 1. Already running? ─────────────────────────────────────────────────────
@@ -66,11 +67,37 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
   if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Fail 'winget is missing. Update Windows 10/11, or install Docker Desktop manually from https://www.docker.com/products/docker-desktop/'
   }
+
+  # Pending reboot is the #1 silent killer of Windows installers (exit -6).
+  $pending = Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue
+  if ($pending) {
+    Fail 'Windows has a pending reboot. Restart your PC first, then run the installer again — it will continue from here.'
+  }
+
+  # Attempt 1: winget (may need elevation)
   winget install -e --id Docker.DockerDesktop --accept-source-agreements --accept-package-agreements
-  if ($LASTEXITCODE -ne 0) { Fail 'Could not install Docker Desktop via winget.' }
+  if ($LASTEXITCODE -ne 0) {
+    # Attempt 2: same, but explicitly elevated (UAC prompt)
+    Warn "winget install failed (exit $LASTEXITCODE) — retrying as administrator…"
+    Start-Process winget -ArgumentList 'install','-e','--id','Docker.DockerDesktop','--accept-source-agreements','--accept-package-agreements' -Verb RunAs -Wait
+    if ($LASTEXITCODE -ne 0) {
+      # Attempt 3: the official Docker installer, silent + elevated
+      Warn 'Still failing — trying the official Docker Desktop installer directly…'
+      $installer = Join-Path $env:TEMP 'DockerDesktopInstaller.exe'
+      try {
+        Invoke-WebRequest -Uri 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe' -OutFile $installer -UseBasicParsing -ErrorAction Stop
+        Start-Process -FilePath $installer -ArgumentList 'install','--quiet','--accept-license','--accept-default-answers' -Verb RunAs -Wait
+      } catch {
+        $LASTEXITCODE = 1
+      }
+    }
+  }
+  if ($LASTEXITCODE -ne 0) {
+    Fail 'Could not install Docker Desktop automatically. Install it manually from https://www.docker.com/products/docker-desktop/ (click Yes on the prompt), then rerun this installer.'
+  }
 
   # First-time machines: WSL2 itself may be missing.
-  wsl --status *> $null
+  wsl --status 2>&1 | Out-Null
   if ($LASTEXITCODE -ne 0) {
     Warn 'WSL2 is missing — installing it now (this may take a few minutes).'
     wsl --install --no-distribution | Out-Host
