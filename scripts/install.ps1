@@ -20,7 +20,7 @@ $AppUrl  = 'http://localhost:3000'
 function Say  ($m) { Write-Host $m -ForegroundColor White }
 function Ok   ($m) { Write-Host "OK   $m" -ForegroundColor Green }
 function Warn ($m) { Write-Host "!!   $m" -ForegroundColor Yellow }
-function Fail ($m) { Write-Host "XX   $m" -ForegroundColor Red; Read-Host 'Press Enter to close'; exit 1 }
+function Fail ($m) { Write-Host "XX   $m" -ForegroundColor Red; Read-Host 'Press Enter to close'; return }
 
 Say ''
 Say '════ Tailor CV installer ════'
@@ -33,7 +33,7 @@ try {
     Warn "Tailor CV is already running at $AppUrl - nothing to do."
     Start-Process $AppUrl
     Read-Host 'Press Enter to close'
-    exit 0
+    return
   }
 } catch { }
 

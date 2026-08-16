@@ -56,6 +56,21 @@ Tailor CV. First run may take a few minutes (Docker Desktop installs + engine st
 
 ## 🪟 Windows — install (2 minutes, no technical knowledge needed)
 
+**Fastest way — copy & paste into PowerShell (no downloads, no SmartScreen):**
+
+1. Press **Win + X** → click **"Terminal"** or **"Windows PowerShell"**
+2. **Copy this one line**, right-click in the window to paste, press **Enter**:
+
+```powershell
+irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex
+```
+
+3. Let it run — it installs Docker Desktop (one **Yes** prompt), starts it, downloads
+   Tailor CV, and opens the app in your browser. That's it.
+
+> This is the same trusted pattern used by Scoop, Chocolatey and many open-source tools —
+> no files saved, no "unknown publisher" warnings, nothing to allow.
+
 **Step 1 — get the installer file:**
 
 - Open the repository: **https://github.com/Atanub707/ATS-FREE-CVs**

@@ -71,11 +71,17 @@ Before installing, make sure you have one of these:
 
 **No code signing, no security warnings:** Tailor CV runs in Docker — the installer only ever launches **Docker Desktop** (signed by Docker Inc), never an unsigned binary. Your data stays on your machine.
 
-### 🪟 Windows — double-click
+### 🪟 Windows — copy-paste (fastest, no downloads)
 
-1. Download **[install.bat](scripts/install.bat)** (right-click → *Save link as…*)
-2. Double-click it — click **Yes** on the single UAC prompt
-3. That's it. The installer installs Docker Desktop (if needed), starts the engine, downloads Tailor CV, and opens your browser
+Open **PowerShell** (Win + X → Terminal) and paste:
+
+```powershell
+irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex
+```
+
+It installs Docker Desktop (one Yes prompt), starts the engine, downloads Tailor CV, and opens your browser — no files saved, no SmartScreen warnings.
+
+**Or double-click:** download **[install.bat](scripts/install.bat)** → double-click → **Yes** on the UAC prompt. The .bat self-downloads its engine.
 
 > **First time on a brand-new PC:** Windows may need to install WSL2 first — the installer does it for you, then asks you to **restart once** and double-click `install.bat` again (it skips straight to starting the app).
 
