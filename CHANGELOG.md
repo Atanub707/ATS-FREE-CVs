@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 📦 One-click installers (no code-signing needed)
+- **Windows:** double-click `scripts/install.bat` — installs Docker Desktop via winget (one UAC click), installs WSL2 on fresh machines (one reboot, then rerun), starts the engine, downloads the app, opens the browser.
+- **macOS/Linux:** `curl -fsSL …/scripts/install.sh | bash` — installs Docker Desktop via Homebrew if needed, waits for the engine, clones the app, runs compose, opens the browser.
+- Both are idempotent and only ever launch **Docker Desktop** (signed by Docker Inc) — no unsigned binaries, no SmartScreen/Gatekeeper warnings, $0/year in certificates.
+- README rewritten with a **Quick Start** section.
+
 ### 🤖 AI Interview (JD-grounded — renamed from AI System, Personalize removed)
 - **AI System screen** replaces the generic chat: a landing with two 50/50 choices — **Interview with AI** and **Personalized AI Assistant** (coming soon).
 - **Interview with AI** takes over the full screen: the interviewer asks 3 intro questions (role from your dashboard with real job counts, experience, optional pick a real posting), then runs a 7-question session where **every question is grounded in the actual job descriptions you scraped** (title/company + description excerpt in the prompt). Answers scored 0–10 with feedback; final scorecard with overall + verdict.

@@ -65,11 +65,42 @@ Before installing, make sure you have one of these:
 
 ---
 
-## 🚀 Installation
+## 🚀 Installation — Quick Start
 
-Choose the method that works best for you.
+**No code signing, no security warnings:** Tailor CV runs in Docker — the installer only ever launches **Docker Desktop** (signed by Docker Inc), never an unsigned binary. Your data stays on your machine.
 
-### Method 1: Docker (Easiest — No Node.js Needed)
+### 🪟 Windows — double-click
+
+1. Download **[install.bat](scripts/install.bat)** (right-click → *Save link as…*)
+2. Double-click it — click **Yes** on the single UAC prompt
+3. That's it. The installer installs Docker Desktop (if needed), starts the engine, downloads Tailor CV, and opens your browser
+
+> **First time on a brand-new PC:** Windows may need to install WSL2 first — the installer does it for you, then asks you to **restart once** and double-click `install.bat` again (it skips straight to starting the app).
+
+### 🍎 macOS — one line in Terminal
+
+```bash
+curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh | bash
+```
+
+It installs Docker Desktop via Homebrew (if needed), waits for the engine, downloads Tailor CV, and opens your browser. Rerunning is safe — it skips completed steps.
+
+**What both installers do (idempotent):**
+
+| Step | What happens |
+|---|---|
+| 1 | Check for Docker → install Docker Desktop (winget / Homebrew — official channels) |
+| 2 | Start the engine and **wait until it's ready** (no manual "whale icon" watching) |
+| 3 | Download Tailor CV into `~/tailor-cv` (git clone) |
+| 4 | `docker compose up -d` → opens [http://localhost:3000](http://localhost:3000) |
+
+You'll land on the **sign-in screen**: **Create Account** (email + password, fully isolated workspace), **Sign In**, or **Guest** (instant workspace).
+
+---
+
+### Alternatives
+
+**Docker manual (any OS):**
 
 ```bash
 curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
@@ -77,46 +108,7 @@ unzip ats.zip && cd ATS-FREE-CVs-main
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you'll land on the **sign-in screen**:
-
-- **Create Account** — email + password account (each account = fully isolated workspace)
-- **Sign In** — return to your existing account
-- **Guest** — instant password-less workspace ("Guest 1", "Guest 2"…); existing guests are one click away
-
-> **Note:** Docker Desktop is required. [Download here](https://www.docker.com/products/docker-desktop/).
-
----
-
-### Method 2: One-Click Script (Mac / Linux)
-
-Open Terminal and paste:
-
-```bash
-curl -sL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/setup.sh | bash
-```
-
-The script will:
-1. Check for Node.js — if missing, installs it automatically
-2. Download the app
-3. Install dependencies
-4. Ask for your API key (optional — can be set later in Settings)
-5. Start the app and open your browser
-
-If you prefer to download and run manually:
-
-```bash
-# Download
-curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
-unzip ats.zip && cd ATS-FREE-CVs-main
-
-# Install & run
-npm install
-npm run dev
-```
-
----
-
-### Method 3: Manual Install (For Developers)
+**Developer mode (Node.js 18+, no Docker):**
 
 ```bash
 git clone https://github.com/Atanub707/ATS-FREE-CVs.git
