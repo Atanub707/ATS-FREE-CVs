@@ -10,3 +10,4 @@ data/
 config.ini
 *.sqlite
 *.sqlite.json
+*.zip
