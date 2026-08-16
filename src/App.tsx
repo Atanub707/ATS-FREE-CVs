@@ -9,6 +9,7 @@ import { ManualJdScreen } from './components/ManualJdScreen';
 import { JobPortalsScreen } from './components/JobPortalsScreen';
 import { RecruitersScreen } from './components/RecruitersScreen';
 import { AiSystemScreen } from './components/AiSystemScreen';
+import { LinkedInPostsScreen } from './components/LinkedInPostsScreen';
 import { OnboardingTour, startTour } from './components/OnboardingTour';
 import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
@@ -33,6 +34,7 @@ export default function App() {
   const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
   const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
   const [isAiSystemOpen, setIsAiSystemOpen] = useState(false);
+  const [isLinkedInPostsOpen, setIsLinkedInPostsOpen] = useState(false);
   const [recruiterBadge, setRecruiterBadge] = useState(0);
   const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
@@ -435,6 +437,7 @@ export default function App() {
               setIsRecruitersOpen(true);
             }}
             onOpenChat={() => setIsAiSystemOpen(true)}
+            onOpenLinkedInPosts={() => setIsLinkedInPostsOpen(true)}
             recruiterBadge={recruiterBadge}
             onTour={startTour}
           />
@@ -534,6 +537,7 @@ export default function App() {
 
           {/* AI Interview */}
           {isAiSystemOpen && <AiSystemScreen onClose={() => setIsAiSystemOpen(false)} />}
+          {isLinkedInPostsOpen && <LinkedInPostsScreen onClose={() => setIsLinkedInPostsOpen(false)} />}
         </>
       )}
     </div>

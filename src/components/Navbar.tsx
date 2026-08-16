@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, CaretRight, ChatCircleDots } from '@phosphor-icons/react';
+import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, CaretRight, ChatCircleDots, PaperPlaneTilt } from '@phosphor-icons/react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;
@@ -8,6 +8,7 @@ interface NavbarProps {
   onOpenJobPortals?: () => void;
   onOpenRecruiters?: () => void;
   onOpenChat?: () => void;
+  onOpenLinkedInPosts?: () => void;
   onTour?: () => void;
   recruiterBadge?: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
@@ -21,6 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenJobPortals,
   onOpenRecruiters,
   onOpenChat,
+  onOpenLinkedInPosts,
   onTour,
   recruiterBadge = 0,
   user,
@@ -124,6 +126,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <ChatCircleDots size={15} weight="duotone" style={{ color: '#7C3AED' }} />
             AI Interview
+          </button>
+
+          <button
+            onClick={() => onOpenLinkedInPosts?.()}
+            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[12.5px] font-semibold border border-[var(--color-hairline)] bg-white transition-colors cursor-pointer hover:bg-[#F5F3FF] hover:border-[#E9D5FF]"
+            title="LinkedIn Posts — job openings recruiters share as posts (last 24h)"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            <PaperPlaneTilt size={15} weight="duotone" style={{ color: '#7C3AED' }} />
+            LinkedIn Posts
           </button>
 
           <button

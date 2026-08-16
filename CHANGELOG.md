@@ -8,6 +8,11 @@
 - Both are idempotent and only ever launch **Docker Desktop** (signed by Docker Inc) — no unsigned binaries, no SmartScreen/Gatekeeper warnings, $0/year in certificates.
 - README rewritten with a **Quick Start** section.
 
+### 📢 LinkedIn Posts screen (dedicated)
+- New **"LinkedIn Posts"** screen in the navbar — ChatGPT-style centered pill search bar (round corners, circular search icon on the right).
+- Search any role → scrapes the **last 24 hours** of LinkedIn posts → results as cards (author, post text, relative time, Open post + Apply link) → new posts saved to your job list with the violet tag.
+- API: `POST /api/linkedin-posts/search` (user-scoped, stores via the standard dedupe path).
+
 ### 📢 LinkedIn Posts scraping (last 24h)
 - New **"LinkedIn Posts (last 24h)"** toggle in the Search bar — searches the last 24 hours of LinkedIn posts where recruiters announce jobs (multi-engine discovery: Google → DuckDuckGo → Bing, scoped to `site:linkedin.com/posts` + keywords).
 - Fetches each post (public, no login), extracts author, text, date and any external apply link — results land in the dashboard with a violet **"LinkedIn Posts"** tag and link to the post.

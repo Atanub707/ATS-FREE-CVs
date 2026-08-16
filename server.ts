@@ -106,6 +106,7 @@ import {
   backfillContacts,
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
+import { LinkedInPostsScraper } from './server/scraper/linkedInPostsScraper.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
@@ -570,6 +571,42 @@ async function startServer() {
       res.json({ success: true, profile: getCandidateProfile() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── LinkedIn Posts (last 24h) ──
+  app.post('/api/linkedin-posts/search', async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const keywords = String(req.body?.keywords || '').trim();
+      if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
+      const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 10));
+      const posts = await new LinkedInPostsScraper().scrape({
+        keywords,
+        location: '',
+        sources: [],
+        datePostedFilter: '24h',
+        jobType: 'all',
+        maxJobsPerSource: limit,
+      } as any);
+      const { added } = saveNewJobs(posts as any);
+      res.json({
+        posts: posts.map((p) => ({
+          id: p.id,
+          title: p.title,
+          company: p.company,
+          url: p.url,
+          applyUrl: p.applyUrl,
+          postedDate: p.postedDate,
+          description: (p.description || '').slice(0, 500),
+        })),
+        addedCount: added.length,
+        total: posts.length,
+      });
+    } catch (err: any) {
+      console.error('LinkedIn posts search error:', err);
+      res.status(500).json({ error: err?.message || 'Could not search LinkedIn posts.' });
     }
   });
 
