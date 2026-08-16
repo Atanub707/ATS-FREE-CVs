@@ -298,6 +298,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // the hook count never changes between renders.
   const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu' | 'atanu-pro'>(masterCv?.templateId || 'harvard');
 
+  // Drag & drop state — hooks MUST live before the isOpen guard or React
+  // will crash with "Rendered more hooks than during the previous render"
+  // when the screen opens (hook count changes between renders).
+  const dragStateRef = useRef<{ list: string; from: number } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
 
@@ -563,8 +569,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // accept drops that call `onMove(fromIdx, toIdx)` with the new order.
   // Handles reordering between visible rows only — hidden (AI-off) rows are
   // untouched because they aren't rendered (HTML5 DnD can't drop onto them).
-  const dragStateRef = useRef<{ list: string; from: number } | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
   const beginDrag = (listKey: string, from: number) => (e: React.DragEvent) => {
     dragStateRef.current = { list: listKey, from };
     e.dataTransfer.effectAllowed = 'move';
