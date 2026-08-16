@@ -37,17 +37,37 @@ async function getHtml(url: string, extraHeaders: Record<string, string> = {}): 
   return null;
 }
 
-function extractLinkedInPostUrls(html: string): string[] {
+export function extractLinkedInPostUrls(html: string): string[] {
   const urls = new Set<string>();
+  // 1. Direct hrefs (all engines sometimes expose them raw).
   for (const m of html.matchAll(/https:\/\/www\.linkedin\.com\/(?:posts\/[a-zA-Z0-9_-]+|feed\/update\/urn:li:activity:[0-9]+|company\/[a-zA-Z0-9._-]+\/posts\/[a-zA-Z0-9_-]+)/g)) {
     urls.add(m[0]);
   }
-  // Decode Google-redirect hrefs (`/url?q=...`) when present.
+  // 2. Google redirect: /url?q=https%3A%2F%2F...
   for (const m of html.matchAll(/href="\/url\?q=([^"&]+)/g)) {
     try {
       const u = decodeURIComponent(m[1]);
-      if (u.includes('linkedin.com/posts/')) urls.add(u.split('#')[0]);
+      if (u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/')) urls.add(u.split('#')[0]);
     } catch { /* skip */ }
+  }
+  // 3. DuckDuckGo redirect: /l/?uddg=https%3A%2F%2F...
+  for (const m of html.matchAll(/uddg=([^"&]+)/g)) {
+    try {
+      const u = decodeURIComponent(m[1]);
+      if (u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/')) urls.add(u.split('#')[0]);
+    } catch { /* skip */ }
+  }
+  // 4. Bing redirect: /ck/a?...&u=a1aHR0cHM6... (base64url of the target URL)
+  for (const m of html.matchAll(/[?&]u=a1([A-Za-z0-9_-]+)/g)) {
+    try {
+      const pad = m[1] + '='.repeat((4 - (m[1].length % 4)) % 4);
+      const u = Buffer.from(pad, 'base64url').toString('utf8');
+      if (u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/')) urls.add(u.split('#')[0]);
+    } catch { /* skip */ }
+  }
+  // 5. LinkedIn short links (lnkd.in) — resolved later via the post fetch redirect.
+  for (const m of html.matchAll(/https:\/\/lnkd\.in\/[a-zA-Z0-9]+/g)) {
+    urls.add(m[0]);
   }
   return [...urls];
 }
@@ -156,26 +176,26 @@ async function searchBing(keywords: string): Promise<string[]> {
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
-async function discoverPostUrls(keywords: string, limit: number): Promise<string[]> {
+async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls: string[]; queriesTried: number; linksFound: number }> {
   const queries = buildSearchQueries(keywords);
   const found = new Set<string>();
   const engines = [searchGoogle, searchDuckDuckGo, searchBing];
+  let queriesTried = 0;
 
-  // Rotate engines through the query set (max 5 engine hits per search — be a
+  // Rotate engines through the query set (max 8 engine hits per search — be a
   // good citizen) until we have enough posts or run out of queries.
-  let engineHits = 0;
   for (const query of queries) {
     if (found.size >= limit) break;
-    if (engineHits >= 5) break;
-    const engine = engines[engineHits % engines.length];
-    engineHits++;
+    if (queriesTried >= 8) break;
+    const engine = engines[queriesTried % engines.length];
+    queriesTried++;
     try {
       const urls = await engine(query);
       for (const u of urls) found.add(u);
-      await new Promise((r) => setTimeout(r, 400)); // polite pause between engine hits
+      await new Promise((r) => setTimeout(r, 600)); // polite pause between engine hits
     } catch { /* try next */ }
   }
-  return [...found];
+  return { urls: [...found], queriesTried, linksFound: found.size };
 }
 
 interface ParsedPost {
@@ -201,7 +221,15 @@ function parseRelativeTime(label: string): string | undefined {
 }
 
 async function fetchPost(url: string): Promise<ParsedPost | null> {
-  const html = await getHtml(url);
+  let target = url;
+  // Resolve LinkedIn short links (lnkd.in) to the real post page first.
+  if (target.includes('lnkd.in')) {
+    try {
+      const head = await fetch(target, { method: 'HEAD', headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      target = head.url || target;
+    } catch { /* keep original */ }
+  }
+  const html = await getHtml(target);
   if (!html) return null;
 
   const og = (prop: string) => html.match(new RegExp(`<meta[^>]+property="og:${prop}"[^>]+content="([^"]*)"`))?.[1]
@@ -231,12 +259,15 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
 }
 
 export class LinkedInPostsScraper {
+  lastDebug: { queriesTried: number; linksFound: number } = { queriesTried: 0, linksFound: 0 };
+
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
     if (!keywords) return [];
     const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 10));
 
-    const urls = await discoverPostUrls(keywords, limit);
+    const { urls, queriesTried, linksFound } = await discoverPostUrls(keywords, limit);
+    this.lastDebug = { queriesTried, linksFound };
     const jobs: Job[] = [];
     const seen = new Set<string>();
 

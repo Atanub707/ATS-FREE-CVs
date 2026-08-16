@@ -29,6 +29,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [addedCount, setAddedCount] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
 
   const search = async (raw?: string) => {
     const q = (raw ?? query).trim();
@@ -48,6 +49,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       if (!res.ok) throw new Error(d?.error || 'Search failed.');
       setPosts(d.posts || []);
       setAddedCount(d.addedCount || 0);
+      setDebug(d.debug || null);
       setState('done');
       if (d.total === 0) {
         setMessage('No LinkedIn posts found in the last 24 hours for this search. Recruiters may not have posted yet — try broader keywords or search again later.');
@@ -106,6 +108,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
 
         {error && <div className="lp-error">{error}</div>}
         {message && <div className="lp-msg">{message}</div>}
+        {state === 'done' && debug && debug.linksFound === 0 && (
+          <p className="lp-debug">Diagnostics: {debug.queriesTried} optimized queries tried across Google/DuckDuckGo/Bing · 0 LinkedIn post links returned by the engines. This usually means the engines rate-limited the request — try again in a minute.</p>
+        )}
 
         {state === 'done' && posts.length > 0 && (
           <div className="lp-results">
@@ -185,6 +190,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-spin{width:18px; height:18px; border-radius:50%; border:2.5px solid #DBEAFE; border-top-color:#2563EB; animation:lpRot .7s linear infinite; flex-shrink:0;}
         @keyframes lpRot{to{transform:rotate(360deg)}}
         .lp-hint{font-size:11px; color:#64748B; margin-top:12px; font-weight:600;}
+        .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
 
         .lp-error{align-self:center; font-size:12px; font-weight:700; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:10px 15px;}
         .lp-msg{max-width:620px; margin:26px auto 0; font-size:12.5px; font-weight:700; color:#475569; background:#fff;

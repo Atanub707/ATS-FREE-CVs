@@ -582,7 +582,8 @@ async function startServer() {
       const keywords = String(req.body?.keywords || '').trim();
       if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
       const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 10));
-      const posts = await new LinkedInPostsScraper().scrape({
+      const scraper = new LinkedInPostsScraper();
+      const posts = await scraper.scrape({
         keywords,
         location: '',
         sources: [],
@@ -592,6 +593,7 @@ async function startServer() {
       } as any);
       const { added } = saveNewJobs(posts as any);
       res.json({
+        debug: scraper.lastDebug,
         posts: posts.map((p) => ({
           id: p.id,
           title: p.title,
