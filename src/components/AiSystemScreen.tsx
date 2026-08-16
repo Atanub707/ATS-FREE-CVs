@@ -52,7 +52,12 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
     if (roles.length === 0) {
       fetch('/api/interview/roles')
         .then((r) => r.json())
-        .then((d) => setRoles(d.roles || []))
+        .then((d) => {
+          const list = d.roles || [];
+          setRoles(list);
+          // Auto-select the top role so the posting list shows immediately.
+          if (list.length > 0) setSelectedRole(list[0].label);
+        })
         .catch(() => setError('Could not load roles from your dashboard.'));
     }
   }, [roles.length]);
