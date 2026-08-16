@@ -187,6 +187,35 @@ jobs:
       - if: success()
         run: echo "✅ Windows build complete" >> $GITHUB_STEP_SUMMARY
 
+  # ──────────────────── RELEASE NOTES (tag push only, no packages) ────────
+  # When a v* tag is pushed, publish a notes-only GitHub Release extracted
+  # from the matching "## vX.Y.Z" section of CHANGELOG.md. No binaries,
+  # no Docker images — users clone & run locally.
+  release-notes:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          awk "/^## ${TAG}/{flag=1; next} /^## v/{if(flag) exit} flag" CHANGELOG.md | sed '/^$/d' > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "No CHANGELOG section for ${TAG} — add one following docs/RELEASE-TEMPLATE.md" >> /tmp/release-notes.md
+          fi
+          {
+            echo "body<<EOF"
+            cat /tmp/release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Publish release notes (no assets)
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.notes.outputs.body }}
+          generate_release_notes: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   docker:
     needs: [secrets, audit, trivy]
     runs-on: ubuntu-latest
