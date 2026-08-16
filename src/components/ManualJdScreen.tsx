@@ -974,7 +974,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
                   {/* ATS score card — how the tailored CV covers the JD */}
                   {diff && (
-                    <div className="shrink-0 mb-3">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-4 p-3 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
                         <div className="text-[28px] font-bold text-[var(--color-cta)] leading-none shrink-0">{diff.afterScore}%</div>
                         <div className="flex-1 min-w-0">
@@ -1019,12 +1019,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       </div>
                     </div>
                   )}
-                  <div className="text-[10px] font-semibold text-[var(--color-faint)] -mt-1 mb-2">
+
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+                  <div className="text-[10px] font-semibold text-[var(--color-faint)]">
                     {hideAI
                       ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
                       : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
 
                     {/* Professional Summary — Master CV style */}
                     <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
