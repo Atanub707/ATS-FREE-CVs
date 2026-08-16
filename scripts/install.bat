@@ -31,6 +31,17 @@ if not exist "%~dp0install.ps1" (
         pause
         exit /b 1
     )
+    rem Safety check: the downloaded file must be PowerShell, not an HTML/JS
+    rem error page (private repo or bot challenge). Verify its first line.
+    powershell -NoProfile -Command "$c = Get-Content '%~dp0install.ps1' -Raw -ErrorAction SilentlyContinue; if ($c -notmatch 'ErrorActionPreference|═══ Tailor CV') { Remove-Item '%~dp0install.ps1' -Force; exit 1 }" >nul 2>&1
+    if errorlevel 1 (
+        echo.
+        echo  XX The download was blocked (returned an HTML page instead of the
+        echo     installer). Make sure the repository is PUBLIC, then retry.
+        echo.
+        pause
+        exit /b 1
+    )
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"

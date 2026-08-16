@@ -65,8 +65,18 @@ Tailor CV. First run may take a few minutes (Docker Desktop installs + engine st
 irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex
 ```
 
-3. Let it run — it installs Docker Desktop (one **Yes** prompt), starts it, downloads
-   Tailor CV, and opens the app in your browser. That's it.
+3. Let it run — it installs Docker Desktop (one **Yes** prompt), starts it, waits for
+   the engine, downloads Tailor CV, and opens the app in your browser.
+
+> If you get a wall of errors like `The 'var' keyword is not supported...` or
+> `function redirect(...)` — that means the download returned an **HTML error page**
+> instead of the installer (usually because the repository is private or the network
+> blocked the direct download). Fix: make sure the repo is **Public**, or use this
+> **resilient version** which verifies the download and retries via the GitHub API:
+
+```powershell
+$u='https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1'; $p="$env:TEMP	ailorcv.ps1"; try { irm $u -OutFile $p -ErrorAction Stop } catch {}; $c = Get-Content $p -Raw -ErrorAction SilentlyContinue; if ($c -match 'ErrorActionPreference|Tailor CV') { iex $c } else { Write-Host 'Direct download blocked - fetching via API...'; $j = irm -Headers @{'User-Agent'='TailorCV'} 'https://api.github.com/repos/Atanub707/ATS-FREE-CVs/contents/scripts/install.ps1'; iex ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($j.content))) }
+```
 
 > This is the same trusted pattern used by Scoop, Chocolatey and many open-source tools —
 > no files saved, no "unknown publisher" warnings, nothing to allow.
