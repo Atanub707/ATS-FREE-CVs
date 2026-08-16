@@ -33,7 +33,17 @@ Say ''
 Say '════ Tailor CV installer ════'
 Say ''
 
-# ── 0. Already running? ─────────────────────────────────────────────────────
+# ── 0. Administrator privileges ─────────────────────────────────────────────
+# Installing Docker Desktop requires admin. winget will trigger the UAC prompt
+# either way, but warn up-front so the "click Yes" moment isn't a surprise.
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if ($isAdmin) {
+  Ok 'Running with administrator rights'
+} else {
+  Warn 'Not running as administrator — Windows will ask for permission when Docker installs. Click Yes.'
+}
+
+# ── 1. Already running? ─────────────────────────────────────────────────────
 try {
   $probe = Invoke-WebRequest -Uri $AppUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
   if ($probe.StatusCode -eq 200) {
