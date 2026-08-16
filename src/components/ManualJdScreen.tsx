@@ -957,7 +957,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
               ) : (
                 <div className="flex flex-col h-full min-h-0">
                   <div className="shrink-0 flex items-center justify-between gap-2 mb-3">
-                    <h2 className="text-[16px] font-bold text-[var(--color-ink)] flex items-center gap-2">
+                    <h2 className="text-[13px] font-bold text-[var(--color-ink)] flex items-center gap-2">
                       Preview · make it yours {stepBadge(3)}
                     </h2>
                     <button
@@ -975,8 +975,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   {/* ATS score card — how the tailored CV covers the JD */}
                   {diff && (
                     <div className="shrink-0 mb-3">
-                      <div className="flex items-center gap-4 p-4 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
-                        <div className="text-[36px] font-bold text-[var(--color-cta)] leading-none shrink-0">{diff.afterScore}%</div>
+                      <div className="flex items-center gap-4 p-3 bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-xl">
+                        <div className="text-[28px] font-bold text-[var(--color-cta)] leading-none shrink-0">{diff.afterScore}%</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-[var(--color-ink)]">
                             ATS score after tailoring{' '}
@@ -1019,12 +1019,12 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       </div>
                     </div>
                   )}
-                  <div className="text-[10.5px] font-semibold text-[var(--color-faint)] -mt-2 mb-3">
+                  <div className="text-[10px] font-semibold text-[var(--color-faint)] -mt-1 mb-2">
                     {hideAI
                       ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
                       : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
 
                     {/* Professional Summary — Master CV style */}
                     <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
@@ -1317,8 +1317,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   </div>
                 </div>
                 {/* Tags */}
-                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-faint)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-2.5 py-1 shadow-sm">ORIGINAL</span>
-                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-brand)] bg-[var(--color-brand-soft)]/95 border border-[var(--color-brand-line)] rounded-full px-2.5 py-1 shadow-sm">YOUR EDITED</span>
+                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-faint)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-2.5 py-1 shadow-sm">Master CV</span>
+                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-brand)] bg-[var(--color-brand-soft)]/95 border border-[var(--color-brand-line)] rounded-full px-2.5 py-1 shadow-sm">Tailored CV</span>
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-[10.5px] font-semibold text-[var(--color-muted)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-3 py-1.5 shadow-sm whitespace-nowrap">
                   ↔ Drag to compare Original vs your edited CV
                 </div>
@@ -1367,8 +1367,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   </div>
                 </div>
                 {/* Tags */}
-                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-faint)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-2.5 py-1 shadow-sm">ORIGINAL</span>
-                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-brand)] bg-[var(--color-brand-soft)]/95 border border-[var(--color-brand-line)] rounded-full px-2.5 py-1 shadow-sm">TAILORED</span>
+                <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-faint)] bg-white/95 border border-[var(--color-hairline)] rounded-full px-2.5 py-1 shadow-sm">Master CV</span>
+                <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold tracking-wide text-[var(--color-brand)] bg-[var(--color-brand-soft)]/95 border border-[var(--color-brand-line)] rounded-full px-2.5 py-1 shadow-sm">Tailored CV</span>
                 {cvLoadFailed && (
                   <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center">
                     <span className="text-[10.5px] font-semibold text-[var(--color-amber,#C2410C)] bg-[var(--color-amber-soft,#FFF7ED)]/95 border border-[var(--color-amber-line,#FED7AA)] rounded-full px-3 py-1.5 shadow-sm">
