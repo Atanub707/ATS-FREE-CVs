@@ -1,6 +1,30 @@
 # Changelog
 
-## Unreleased
+## v1.5.0 (2026-08-16)
+
+### ✨ Features
+- **AI Interview** — a new "AI Interview" screen (navbar): mock interviews grounded in the real job descriptions you've scraped. Role picker with real job counts, multi-select postings with Select all, 7-question sessions, genuine rubric scoring (Accuracy/Depth/Structure/Examples with transparent dimension breakdowns), final scorecard + verdict, and a History panel (Manual-JD pattern).
+- **LinkedIn Posts screen** — find job announcements recruiters share as posts (last 24 hours): ChatGPT-style search, hashtag + hiring-keyword query engine, hashtag chips on results, posts saved to your job list with a violet tag. Optional reliable path via Apify actor + your li_at cookie.
+- **One-click installers** — Windows double-click (.bat) or PowerShell one-liner, macOS one-liner (curl | bash): install Docker Desktop, wait for the engine, download the app, open the browser. Update + uninstall scripts included. Full user guide in scripts/HOW-TO-INSTALL.md.
+- **Release notes system** — docs/RELEASE-TEMPLATE.md + scripts/release.sh: every version publishes structured notes (features/fixes/issues) automatically on tag push. No packages — users clone & run locally.
+
+### 🐛 Fixes
+- Windows installer: PowerShell 7 stderr no longer kills the script (exit-code checks), Docker engine wait loop (up to 3 min) with WSL2 auto-repair, pending-reboot detection, elevated winget retry + official installer fallback.
+- LinkedIn Posts: decoding of DuckDuckGo/Bing redirect links, lnkd.in resolution, role-bucket rollups (DevOps variants merge into one count), posting picker shows the full DB list.
+- Interview scoring: no more inflated scores — rubric dimensions + word-count caps + deterministic overall.
+- Security: removed leaked Apify token file from git history (scrubbed), *.zip + config.ini blocked forever, gitleaks guard in CI.
+
+### ⚠️ Known Issues
+- LinkedIn Posts free search may return nothing from datacenter IPs (search engines rate-limit); residential IPs work — or add the li_at cookie for the reliable path.
+- The repository must be Public for non-technical users to download/install without GitHub accounts.
+
+### 🔄 Breaking Changes
+- The old generic AI chat (MCP tools, /api/chat) was removed — the AI Interview screen replaces it.
+
+### 📦 How to Update
+- **macOS/Linux:** re-run the installer or `scripts/update.sh` — data is untouched.
+- **Windows:** re-run the PowerShell one-liner or `install.bat` / `update.bat`.
+
 
 ### 📦 One-click installers (no code-signing needed)
 - **Windows:** double-click `scripts/install.bat` — installs Docker Desktop via winget (one UAC click), installs WSL2 on fresh machines (one reboot, then rerun), starts the engine, downloads the app, opens the browser.
