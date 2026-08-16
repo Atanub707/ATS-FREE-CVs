@@ -361,6 +361,9 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
           <span>Identity cards — emails, phones & LinkedIn from job descriptions.</span>
         </div>
         <div className="rc-spacer" />
+        <button className="rc-btn2 manual" onClick={openManualCompose} title="Compose a fresh email to any address — no contact needed">
+          <Mail size={13} /> Manual Email
+        </button>
         <span className="rc-count">{visible.length} contact{visible.length === 1 ? '' : 's'}</span>
       </header>
 
@@ -729,9 +732,6 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
       <div className="rc-actbar">
         <span className="rc-note-text">Emails are pulled from job descriptions you already scrape.</span>
         <div className="rc-spacer" />
-        <button className="rc-btn2 manual" onClick={openManualCompose} title="Compose a fresh email to any address — no contact needed">
-          <Mail size={13} /> Manual Email
-        </button>
         <button className={`rc-btn2 primary ${copiedAll ? 'copied' : ''}`} onClick={copyAll} disabled={!contacts.some((c) => c.email)}>
           {copiedAll ? <><CheckCircle2 size={14} /> Emails copied ✓</> : <><Copy size={14} /> Copy all emails</>}
         </button>
@@ -826,6 +826,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         .rc-btn2.primary:hover { filter: brightness(1.07); }
         .rc-btn2.copied { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
         .rc-btn2.manual { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); font-weight: 700; }
+        .rc-hdr .rc-btn2.manual { padding: 8px 14px; font-size: 12px; }
         .rc-btn2.manual:hover { background: #DBEAFE; }
         .rc-btn2:disabled { opacity: .55; cursor: not-allowed; }
         .rc-toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); background: var(--text); color: #FAFAF9; font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 70; }
