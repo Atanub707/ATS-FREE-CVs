@@ -532,7 +532,7 @@ export default function App() {
             focusRecruiter={recruiterFocus}
           />
 
-          {/* AI Assistant chat */}
+          {/* AI Interview */}
           {isAiSystemOpen && <AiSystemScreen onClose={() => setIsAiSystemOpen(false)} />}
         </>
       )}

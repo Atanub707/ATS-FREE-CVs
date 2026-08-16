@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Interview — Mockup v2 (Brand Theme)</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  /* ═══ Design tokens — Tailor CV brand theme (blue) ═══ */
+  :root{
+    --ink:#0F172A; --muted:#475569; --faint:#64748B; --hairline:#E2E8F0; --hairline2:#CBD5E1;
+    --brand:#2563EB; --brand-strong:#1D4ED8; --brand-line:#BFDBFE; --brand-soft:#EFF6FF;
+    --emerald:#059669; --emerald-soft:#ECFDF5; --emerald-line:#A7F3D0;
+    --amber:#D97706; --amber-soft:#FFFBEB; --amber-line:#FDE68A;
+    --bg:#F7F8FA; --card:#FFFFFF;
+    --sh-sm:0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+    --sh-md:0 4px 14px -6px rgba(15,23,42,.09), 0 2px 6px -3px rgba(15,23,42,.06);
+    --sh-lg:0 24px 55px -20px rgba(15,23,42,.25);
+    --r-lg:20px; --r-md:14px; --r-sm:10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased;}
+  button,input,select,textarea{font-family:inherit;}
+  button{cursor:pointer;}
+  svg{flex-shrink:0;}
+  :focus-visible{outline:2.5px solid var(--brand); outline-offset:2px; border-radius:8px;}
+  .mok{position:fixed; top:14px; right:16px; z-index:99; font-size:10.5px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,#F59E0B,#DC2626); border-radius:999px; padding:7px 14px; letter-spacing:.05em;
+    box-shadow:0 10px 22px -8px rgba(220,38,38,.55);}
+
+  /* ═══ App chrome ═══ */
+  .app{max-width:1280px; margin:0 auto; padding:0 28px 60px;}
+  .nav{display:flex; align-items:center; gap:14px; padding:20px 0 26px;}
+  .nav-logo{width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--brand),var(--brand-strong)); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; box-shadow:0 8px 20px -8px rgba(37,99,235,.6);}
+  .nav-t b{font-size:15px; font-weight:800; display:block; line-height:1.15; letter-spacing:-.01em;}
+  .nav-t span{font-size:11px; color:var(--faint); font-weight:500;}
+  .nav-spacer{flex:1;}
+  .nav-pill{display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:800; padding:10px 19px; border-radius:999px;
+    transition:all .22s ease; border:1.5px solid var(--hairline2); background:#fff; color:var(--muted); box-shadow:var(--sh-sm);}
+  .nav-pill:hover{border-color:var(--brand); color:var(--brand);}
+  .nav-pill.on{background:linear-gradient(135deg,var(--brand),var(--brand-strong)); border-color:transparent; color:#fff; box-shadow:0 10px 24px -10px rgba(37,99,235,.5);}
+
+  /* ═══ Screens ═══ */
+  .screen{display:none;}
+  .screen.active{display:block; animation:rise .32s cubic-bezier(.22,.68,0,1);}
+  @keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+
+  .iv{max-width:700px; margin:0 auto;}
+  .iv-head{display:flex; align-items:center; gap:13px; margin-bottom:20px;}
+  .iv-head .back{width:42px; height:42px; border-radius:13px; border:1.5px solid var(--hairline2); background:#fff; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; transition:all .2s ease; box-shadow:var(--sh-sm);}
+  .iv-head .back:hover{border-color:var(--brand); color:var(--brand); background:var(--brand-soft);}
+  .iv-head b{font-size:16px; font-weight:800;}
+  .iv-head span{display:block; font-size:11.5px; color:var(--faint); font-weight:500;}
+  .iv-head .progress{margin-left:auto; font-size:11px; font-weight:800; color:var(--faint);}
+  .iv-head .progress b{color:var(--brand);}
+
+  /* History button — Manual JD pattern (top-right of the screen) */
+  .hist-btn{display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border-radius:11px; font-size:12.5px; font-weight:800;
+    color:var(--muted); background:#fff; border:1.5px solid var(--hairline2); box-shadow:var(--sh-sm); transition:all .2s ease;}
+  .hist-btn:hover{border-color:var(--brand); color:var(--brand); background:var(--brand-soft);}
+  .hist-btn .cnt{font-size:10px; font-weight:800; color:var(--brand); background:var(--brand-soft); border:1px solid var(--brand-line); border-radius:999px; padding:2px 8px;}
+
+  /* ── Setup (landing is removed — this IS the entry) ── */
+  .panel{background:var(--card); border:1px solid var(--hairline); border-radius:var(--r-lg); box-shadow:var(--sh-md); overflow:hidden;}
+  .panel-head{display:flex; align-items:center; gap:14px; padding:22px 28px; border-bottom:1px solid #F1F5F9;}
+  .panel-ico{width:42px; height:42px; border-radius:13px; background:var(--brand-soft); color:var(--brand); border:1px solid var(--brand-line);
+    display:inline-flex; align-items:center; justify-content:center;}
+  .panel-head h3{font-size:16.5px; font-weight:800; letter-spacing:-.01em;}
+  .panel-head p{font-size:12px; color:var(--faint); margin-top:2px; line-height:1.5;}
+  .stepper{display:flex; gap:26px; padding:20px 28px 0;}
+  .stepper .st{display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--faint);}
+  .stepper .st i{width:24px; height:4px; border-radius:999px; background:var(--hairline2); transition:background .3s ease;}
+  .stepper .st.on{color:var(--brand);}
+  .stepper .st.on i{background:var(--brand);}
+  .panel-body{padding:24px 28px 28px;}
+  .field{margin-bottom:24px; padding-bottom:22px; border-bottom:1px solid #F1F5F9;}
+  .field:last-of-type{border-bottom:0; margin-bottom:0; padding-bottom:0;}
+  .flabel{display:flex; align-items:center; gap:9px; font-size:11px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.09em; margin-bottom:12px;}
+  .flabel .n{width:20px; height:20px; border-radius:7px; background:var(--brand); color:#fff; font-size:10.5px; display:inline-flex; align-items:center; justify-content:center;}
+  .flabel .opt{font-size:9.5px; font-weight:700; color:var(--faint); background:#F1F5F9; border-radius:999px; padding:3px 9px; letter-spacing:.04em; text-transform:none;}
+  .role-chip{display:flex; align-items:center; gap:11px; width:100%; padding:13px 16px; margin-bottom:9px; font-size:13px; font-weight:700; color:var(--muted);
+    background:#FAFAF9; border:1.5px solid var(--hairline); border-radius:13px; transition:all .18s ease; text-align:left; box-shadow:var(--sh-sm);}
+  .role-chip:hover{border-color:var(--brand); color:var(--brand); background:#F0F7FF;}
+  .role-chip.on{border-color:var(--brand); background:var(--brand-soft); color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+  .role-chip .check{width:22px; height:22px; border-radius:8px; background:#F1F5F9; color:transparent; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s ease;}
+  .role-chip.on .check{background:var(--brand); color:#fff;}
+  .role-chip .cnt{font-size:10.5px; color:var(--faint); font-weight:700; background:#fff; border:1px solid var(--hairline); border-radius:999px; padding:3px 10px; margin-left:auto;}
+  .role-chip.on .cnt{color:var(--brand); border-color:var(--brand-line);}
+  input[type=text],select{width:100%; padding:13px 15px; font-size:13px; color:var(--ink); background:#fff; border:1.5px solid var(--hairline2);
+    border-radius:12px; outline:none; transition:border-color .2s ease, box-shadow .2s ease;}
+  input[type=text]:focus,select:focus{border-color:var(--brand); box-shadow:0 0 0 4px rgba(37,99,235,.1);}
+  .actions{display:flex; align-items:center; gap:14px; margin-top:24px; flex-wrap:wrap;}
+  .hint{font-size:11.5px; color:var(--faint); display:inline-flex; align-items:center; gap:6px; font-weight:600;}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:9px; border:0; border-radius:13px; padding:14px 26px; font-size:13.5px; font-weight:800;
+    transition:filter .2s ease, transform .16s ease, box-shadow .22s ease;}
+  .btn:hover{filter:brightness(1.07);}
+  .btn:active{transform:scale(.98);}
+  .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand-strong)); color:#fff; box-shadow:0 14px 30px -10px rgba(37,99,235,.55);}
+  .btn.ghost{background:#fff; color:var(--muted); border:1.5px solid var(--hairline2); box-shadow:var(--sh-sm);}
+  .btn.ghost:hover{border-color:var(--brand); color:var(--brand); filter:none;}
+  .btn:disabled{opacity:.55; cursor:not-allowed;}
+
+  /* posting multi-select */
+  .sel-count{font-size:9.5px; font-weight:800; color:var(--brand); background:var(--brand-soft); border:1px solid var(--brand-line); border-radius:999px; padding:3px 10px; letter-spacing:.04em; text-transform:none;}
+  .postings-card{background:#FAFAF9; border:1.5px solid var(--hairline); border-radius:13px; overflow:hidden;}
+  .postings-all{border-bottom:1px solid var(--hairline); background:#fff;}
+  .all-row{display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; border:0; background:none; cursor:pointer; font-family:inherit; text-align:left; transition:background .18s ease;}
+  .all-row:hover{background:var(--brand-soft);}
+  .all-row .check{width:20px; height:20px; border-radius:7px; background:#F1F5F9; color:transparent; display:inline-flex; align-items:center; justify-content:center; transition:all .18s ease;}
+  .all-row.on .check{background:var(--brand); color:#fff;}
+  .all-row b{font-size:12.5px; font-weight:800; color:var(--ink); flex:1;}
+  .all-row .cnt{font-size:10.5px; font-weight:700; color:var(--faint); background:#F1F5F9; border-radius:999px; padding:3px 10px;}
+  .postings-list{max-height:210px; overflow-y:auto;}
+  .posting{display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; border:0; border-bottom:1px solid #F1F5F9; background:none; cursor:pointer; font-family:inherit; text-align:left; transition:background .18s ease;}
+  .posting:last-child{border-bottom:0;}
+  .posting:hover{background:#F0F7FF;}
+  .posting .check{width:18px; height:18px; border-radius:6px; background:#fff; border:1.5px solid var(--hairline2); color:transparent; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .18s ease;}
+  .posting.on .check{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .posting .pt{flex:1; min-width:0;}
+  .posting .pt b{display:block; font-size:12px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .posting .pt span{font-size:10.5px; color:var(--faint); font-weight:600;}
+  .pfield-hint{font-size:10.5px; color:var(--faint); margin-top:8px; line-height:1.5;}
+  /* ── Q&A ── */
+  .qa-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:0 4px;}
+  .qa-progress{font-size:12px; font-weight:800; color:var(--faint);}
+  .qa-progress b{color:var(--brand); font-size:14px;}
+  .qa-dots{display:flex; gap:5px;}
+  .qa-dots i{width:24px; height:5px; border-radius:999px; background:var(--hairline2); transition:background .3s ease;}
+  .qa-dots i.now{background:var(--brand);}
+  .qa-dots i.done{background:var(--brand-line);}
+  .q-card{background:var(--card); border:1.5px solid var(--brand-line); border-left:5px solid var(--brand); border-radius:var(--r-md);
+    padding:22px 24px; box-shadow:var(--sh-md); margin-bottom:16px;}
+  .q-tag{display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--brand); background:var(--brand-soft); border:1px solid var(--brand-line); border-radius:999px; padding:5px 13px; margin-bottom:14px;}
+  .q-text{font-size:15.5px; font-weight:700; line-height:1.7; letter-spacing:-.005em;}
+  .q-src{margin-top:16px; padding-top:14px; border-top:1px dashed #DBEAFE; font-size:11px; color:var(--faint); display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .q-src svg{color:var(--brand);}
+  .jd-chip{background:#F1F5F9; border:1px solid var(--hairline); border-radius:7px; padding:3px 9px; font-weight:700; color:var(--muted); font-size:10.5px;}
+  .answer-wrap{position:relative; margin-bottom:16px;}
+  .answer{width:100%; min-height:120px; padding:17px 19px 32px; font-size:13.5px; line-height:1.7; color:var(--ink); background:#fff;
+    border:1.5px solid var(--hairline2); border-radius:var(--r-md); resize:vertical; outline:none; transition:border-color .2s ease, box-shadow .2s ease; box-shadow:var(--sh-sm);}
+  .answer:focus{border-color:var(--brand); box-shadow:0 0 0 4px rgba(37,99,235,.08);}
+  .answer-meta{position:absolute; bottom:9px; left:18px; right:18px; display:flex; justify-content:space-between; font-size:10.5px; color:var(--faint); font-weight:600; pointer-events:none;}
+  .qa-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .btn.wispr{background:#0F172A; color:#fff; box-shadow:0 10px 24px -12px rgba(15,23,42,.6); text-decoration:none;}
+  .btn.wispr:hover{background:#1E293B; filter:none; box-shadow:0 14px 30px -12px rgba(15,23,42,.7);}
+  .w-logo{width:22px; height:22px; border-radius:7px; background:rgba(255,255,255,.16); color:#fff; font-size:10px; font-weight:800;
+    display:inline-flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.2);}
+  .score-pill{display:inline-flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:12px; font-weight:700; color:#047857;
+    background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:13px; padding:11px 15px; box-shadow:var(--sh-sm); animation:rise .3s ease;}
+  .score-pill > b{font-size:16px;}
+  .dims{display:inline-flex; gap:5px; flex-wrap:wrap;}
+  .dims em{font-style:normal; font-size:10px; font-weight:700; color:#047857; background:rgba(255,255,255,.75); border:1px solid var(--emerald-line); border-radius:999px; padding:3px 9px;}
+  .dims em b{color:#065F46;}
+  .pill-fb{font-size:11.5px; color:#065F46; font-weight:600; line-height:1.5;}
+
+  /* ── Scorecard ── */
+  .sc{background:var(--card); border:1px solid var(--hairline); border-radius:var(--r-lg); box-shadow:var(--sh-lg); padding:34px 34px 30px;}
+  .sc-head{display:flex; align-items:center; gap:22px; padding-bottom:24px; border-bottom:1px solid var(--hairline); margin-bottom:22px;}
+  .sc-ring{position:relative; width:92px; height:92px; border-radius:50%; background:conic-gradient(var(--emerald) 76%, var(--hairline2) 0);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;}
+  .sc-ring::after{content:''; position:absolute; width:72px; height:72px; border-radius:50%; background:var(--card);}
+  .sc-ring b{position:relative; z-index:1; font-size:22px; font-weight:800; color:#047857; line-height:1;}
+  .sc-ring span{position:relative; z-index:1; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-top:3px;}
+  .sc-head-txt{flex:1; min-width:0;}
+  .sc-role{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800; color:var(--brand); background:var(--brand-soft);
+    border:1px solid var(--brand-line); border-radius:999px; padding:5px 12px; margin-bottom:9px;}
+  .sc-head-txt h3{font-size:18px; font-weight:800; letter-spacing:-.015em;}
+  .sc-head-txt p{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.7;}
+  .sc-list-head{display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:7px;}
+  .sc-list-head svg{color:var(--brand);}
+  .sc-row{display:flex; align-items:flex-start; gap:13px; padding:14px 2px; border-bottom:1px solid #F1F5F9; transition:background .18s ease;}
+  .sc-row:hover{background:#FBFCFE;}
+  .sc-row:last-child{border-bottom:0;}
+  .sc-q{flex:1; font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.6; display:flex; gap:10px;}
+  .sc-q i{width:23px; height:23px; border-radius:8px; background:#F1F5F9; color:var(--faint); font-size:10.5px; font-weight:800; font-style:normal;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;}
+  .sc-score{font-size:12px; font-weight:800; color:#047857; background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:999px; padding:5px 12px; flex-shrink:0;}
+  .sc-score.low{color:var(--amber); background:var(--amber-soft); border-color:var(--amber-line);}
+
+  /* ── History slide-in panel (Manual JD pattern) ── */
+  .overlay{position:fixed; inset:0; background:rgba(15,23,42,.32); opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:80;}
+  .overlay.open{opacity:1; pointer-events:auto;}
+  .hpanel{position:fixed; top:0; right:0; bottom:0; width:440px; max-width:92vw; background:#fff; z-index:81; display:flex; flex-direction:column;
+    transform:translateX(102%); transition:transform .3s cubic-bezier(.22,.68,0,1); box-shadow:-18px 0 50px -18px rgba(15,23,42,.3);}
+  .hpanel.open{transform:translateX(0);}
+  .hpanel-head{display:flex; align-items:center; gap:10px; padding:18px 20px; border-bottom:1px solid var(--hairline);}
+  .hpanel-head .ico{width:34px; height:34px; border-radius:11px; background:var(--brand-soft); color:var(--brand); border:1px solid var(--brand-line); display:inline-flex; align-items:center; justify-content:center;}
+  .hpanel-head b{font-size:14.5px; font-weight:800; flex:1;}
+  .hpanel-head .cnt{font-size:10.5px; font-weight:800; color:var(--brand); background:var(--brand-soft); border:1px solid var(--brand-line); border-radius:999px; padding:3px 10px;}
+  .hpanel-head .x{width:34px; height:34px; border-radius:10px; border:0; background:none; color:var(--faint); display:inline-flex; align-items:center; justify-content:center; transition:all .2s ease;}
+  .hpanel-head .x:hover{background:#F1F5F9; color:var(--ink);}
+  .hpanel-body{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:9px;}
+  .h-empty{text-align:center; padding:44px 20px; color:var(--faint); font-size:12px; line-height:1.6;}
+  .h-empty .e-ico{width:44px; height:44px; border-radius:13px; background:#F1F5F9; color:var(--faint); display:inline-flex; align-items:center; justify-content:center; margin-bottom:10px;}
+  .h-row{width:100%; text-align:left; background:#fff; border:1px solid var(--hairline); border-radius:13px; padding:13px 14px; box-shadow:var(--sh-sm); transition:border-color .2s ease, box-shadow .2s ease;}
+  .h-row:hover{border-color:var(--brand-line); box-shadow:var(--sh-md);}
+  .h-row.open{border-color:var(--brand-line); box-shadow:var(--sh-md);}
+  .h-row-main{display:flex; align-items:center; gap:12px; width:100%; border:0; background:none; cursor:pointer; text-align:left; font-family:inherit;}
+  .ring{position:relative; width:44px; height:44px; border-radius:50%; background:conic-gradient(var(--emerald) 76%, var(--hairline2) 0); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .ring::after{content:''; position:absolute; width:33px; height:33px; border-radius:50%; background:#fff;}
+  .ring b{position:relative; z-index:1; font-size:12.5px; font-weight:800; color:#047857;}
+  .h-meta{flex:1; min-width:0;}
+  .h-meta b{display:block; font-size:13px; font-weight:800; margin-bottom:2px;}
+  .h-meta span{font-size:10.5px; color:var(--faint); display:inline-flex; align-items:center; gap:4px;}
+  .h-chev{color:var(--faint); transition:transform .22s ease;}
+  .h-row.open .h-chev{transform:rotate(90deg); color:var(--brand);}
+  .h-detail{display:none; padding-top:10px; margin-top:10px; border-top:1px solid #F1F5F9;}
+  .h-row.open .h-detail{display:block;}
+  .h-detail-head{font-size:9.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:4px;}
+  .h-q{display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #F8FAFC;}
+  .h-q:last-child{border-bottom:0;}
+  .h-q-text{flex:1; font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.5;}
+  .chip-score{font-size:11px; font-weight:800; color:#047857; background:var(--emerald-soft); border:1px solid var(--emerald-line); border-radius:999px; padding:3px 10px; flex-shrink:0;}
+  .chip-score.low{color:var(--amber); background:var(--amber-soft); border-color:var(--amber-line);}
+  .foot-note{margin-top:34px; text-align:center; font-size:11px; color:var(--faint);}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important; transition:none !important;}}
+</style>
+</head>
+<body>
+<div class="mok">HTML MOCKUP v2 — clickable · brand theme</div>
+
+<div class="app">
+  <nav class="nav">
+    <div class="nav-logo">T</div>
+    <div class="nav-t"><b>Tailor CV</b><span>AI Interview · Workspace</span></div>
+    <div class="nav-spacer"></div>
+    <button class="nav-pill">Job Portals</button>
+    <button class="nav-pill on">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      AI Interview
+    </button>
+    <button class="nav-pill">Recruiters</button>
+  </nav>
+
+  <!-- ═══════════ VIEW 1 · INTERVIEW SETUP (the entry — no landing) ═══════════ -->
+  <div class="screen active" id="view-setup">
+    <div class="iv">
+      <div class="iv-head">
+        <div><b>Interview setup</b><span>The interviewer asks you 3 quick questions to personalize the session</span></div>
+        <div class="progress" style="margin-left:auto"></div>
+        <button class="hist-btn" onclick="openHistory()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          History <span class="cnt">3</span>
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+          <div><h3>Before we begin</h3><p>Tell the interviewer about yourself — this shapes every question.</p></div>
+        </div>
+        <div class="stepper">
+          <span class="st on"><i></i> Role</span>
+          <span class="st"><i></i> Experience</span>
+          <span class="st"><i></i> Posting</span>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label class="flabel"><span class="n">1</span> Which role from your dashboard?</label>
+            <button class="role-chip on" onclick="pickRole(this);renderPostings(this.querySelector('.cnt').textContent.startsWith('DevOps') ? 'DevOps Engineer' : this.textContent.includes('Site Reliability') ? 'Site Reliability Engineer' : 'Cloud Engineer')"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>DevOps Engineer<span class="cnt">21 jobs</span></button>
+            <button class="role-chip" onclick="pickRole(this);renderPostings(this.querySelector('.cnt').textContent.startsWith('DevOps') ? 'DevOps Engineer' : this.textContent.includes('Site Reliability') ? 'Site Reliability Engineer' : 'Cloud Engineer')"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Site Reliability Engineer<span class="cnt">6 jobs</span></button>
+            <button class="role-chip" onclick="pickRole(this);renderPostings(this.querySelector('.cnt').textContent.startsWith('DevOps') ? 'DevOps Engineer' : this.textContent.includes('Site Reliability') ? 'Site Reliability Engineer' : 'Cloud Engineer')"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Cloud Engineer<span class="cnt">11 jobs</span></button>
+            <input type="text" placeholder="Or type another role…" style="margin-top:10px"/>
+          </div>
+          <div class="field">
+            <label class="flabel"><span class="n">2</span> Years of experience in this role</label>
+            <input type="text" placeholder="e.g. 4+ years" value="4+ years"/>
+          </div>
+          <div class="field">
+            <label class="flabel"><span class="n">3</span> Pick a real posting from your list
+              <span class="opt">optional</span>
+              <span class="sel-count" id="selCount">0 selected</span>
+            </label>
+            <div class="postings-card">
+              <div class="postings-all">
+                <button class="all-row" onclick="toggleAll(this)">
+                  <span class="check" id="allCheck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                  <b>Select all postings</b>
+                  <span class="cnt" id="allCnt">8 jobs in this list</span>
+                </button>
+              </div>
+              <div class="postings-list" id="postingsList">
+                <!-- populated by JS from the real dashboard jobs for the picked role -->
+              </div>
+            </div>
+            <p class="pfield-hint">The interviewer generates every question from the postings you pick — select the ones you want to be quizzed on.</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" onclick="show('view-qa')">Begin interview
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <span class="hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 7 questions · scored per answer · final verdict</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ VIEW 2 · Q&A ═══════════ -->
+  <div class="screen" id="view-qa">
+    <div class="iv">
+      <div class="iv-head">
+        <button class="back" onclick="show('view-setup')" aria-label="Back">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div><b>Interview with AI</b><span>Senior interviewer · DevOps Engineer</span></div>
+        <div class="progress"></div>
+        <button class="hist-btn" onclick="openHistory()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          History <span class="cnt">3</span>
+        </button>
+      </div>
+
+      <div class="qa-top">
+        <span class="qa-progress">Question <b>2</b> of 7</span>
+        <div class="qa-dots"><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="q-card">
+        <span class="q-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Interviewer</span>
+        <p class="q-text">Your dashboard shows the STACKIT Database posting requires Kubernetes, Terraform and GitLab CI. Describe how you would design a GitOps deployment pipeline for a multi-tenant Kubernetes cluster, and how you would handle rollbacks.</p>
+        <div class="q-src">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          From this JD:
+          <span class="jd-chip">STACKIT Database — DevOps Engineer</span>
+          <span class="jd-chip">Barcelona</span>
+          <span class="jd-chip">LinkedIn</span>
+        </div>
+      </div>
+
+      <div class="answer-wrap">
+        <textarea class="answer" id="answerBox" placeholder="Type your answer…" oninput="updateWords(this)">I would structure the pipeline with GitLab CI triggering on merge: build the image, run security scans with Trivy and SBOM generation, then promote through staging and production with ArgoCD sync and automated rollback on failed health checks.</textarea>
+        <div class="answer-meta"><span id="wordCount">34 words</span><span>Be specific — depth and examples count</span></div>
+      </div>
+
+      <div class="qa-actions">
+        <button class="btn primary" onclick="show('view-scorecard')">Submit answer
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <a class="btn wispr" href="https://ref.wisprflow.ai/atanu-biswas" target="_blank" rel="noreferrer" title="Stop texting, start speaking — dictate your answers with Wispr Flow">
+          <span class="w-logo">W</span> Stop texting, start speaking.
+        </a>
+        <span class="score-pill">
+          <b>7.4/10</b>
+          <span class="dims"><em><b>Acc</b> 8</em><em><b>Dep</b> 7</em><em><b>Str</b> 8</em><em><b>Ex</b> 6</em></span>
+          <span class="pill-fb">— Sound GitOps flow — add specifics on scan gating and rollback metrics.</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ VIEW 3 · SCORECARD ═══════════ -->
+  <div class="screen" id="view-scorecard">
+    <div class="iv">
+      <div class="iv-head">
+        <button class="back" onclick="show('view-setup')" aria-label="Back">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div><b>Interview complete</b><span>Senior interviewer · DevOps Engineer</span></div>
+        <div class="progress"></div>
+        <button class="hist-btn" onclick="openHistory()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          History <span class="cnt">3</span>
+        </button>
+      </div>
+
+      <div class="sc">
+        <div class="sc-head">
+          <div class="sc-ring"><b>7.6</b><span>overall</span></div>
+          <div class="sc-head-txt">
+            <span class="sc-role"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/></svg> DevOps Engineer</span>
+            <h3>Interview complete</h3>
+            <p>Strong systems thinking and clear pipeline design. Your GitOps and Terraform answers showed real depth; the weakest area was incident response under pressure — practice runbook-first thinking and multi-region failover specifics.</p>
+          </div>
+        </div>
+        <div class="sc-list-head">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          Question breakdown
+        </div>
+        <div class="sc-row"><span class="sc-q"><i>1</i> Design a GitOps deployment pipeline for multi-tenant Kubernetes</span><span class="sc-score">8/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>2</i> Walk me through Terraform state management at scale</span><span class="sc-score">8/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>3</i> A production incident hits your cluster at 3am — walk me through your response</span><span class="sc-score low">6/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>4</i> GitLab CI vs GitHub Actions for this team — what would you standardize on and why?</span><span class="sc-score">8/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>5</i> How would you improve the deploy pipeline of the STACKIT posting you picked?</span><span class="sc-score">7/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>6</i> Where does your 4+ years of experience show strongest in this stack?</span><span class="sc-score">9/10</span></div>
+        <div class="sc-row"><span class="sc-q"><i>7</i> What would you automate first if hired for the STACKIT role?</span><span class="sc-score">7/10</span></div>
+        <div class="actions" style="margin-top:24px">
+          <button class="btn primary" onclick="show('view-setup')">Done
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </button>
+          <button class="btn ghost" onclick="show('view-setup')">Take another interview</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ HISTORY PANEL (Manual JD pattern) ═══════════ -->
+  <div class="overlay" id="histOverlay" onclick="closeHistory()"></div>
+  <aside class="hpanel" id="histPanel" aria-label="Interview history">
+    <div class="hpanel-head">
+      <span class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+      <b>Interview history</b>
+      <span class="cnt">3 sessions</span>
+      <button class="x" onclick="closeHistory()" aria-label="Close history"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="hpanel-body">
+      <div class="h-row open">
+        <button class="h-row-main" onclick="this.parentElement.classList.toggle('open')">
+          <span class="ring"><b>7.6</b></span>
+          <span class="h-meta"><b>DevOps Engineer</b><span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aug 16, 2026 · 10:24 AM · 7 questions</span></span>
+          <span class="h-chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+        </button>
+        <div class="h-detail">
+          <div class="h-detail-head">Questions &amp; scores</div>
+          <div class="h-q"><span class="h-q-text">Design a GitOps deployment pipeline for multi-tenant Kubernetes</span><span class="chip-score">8/10</span></div>
+          <div class="h-q"><span class="h-q-text">Walk me through Terraform state management at scale</span><span class="chip-score">8/10</span></div>
+          <div class="h-q"><span class="h-q-text">A production incident hits your cluster at 3am — walk me through your response</span><span class="chip-score low">6/10</span></div>
+        </div>
+      </div>
+      <div class="h-row">
+        <button class="h-row-main" onclick="this.parentElement.classList.toggle('open')">
+          <span class="ring" style="background:conic-gradient(var(--amber) 52%, var(--hairline2) 0)"><b style="color:#B45309">5.2</b></span>
+          <span class="h-meta"><b>Cloud Engineer</b><span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aug 15, 2026 · 4:02 PM · 7 questions</span></span>
+          <span class="h-chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+        </button>
+        <div class="h-detail">
+          <div class="h-detail-head">Questions &amp; scores</div>
+          <div class="h-q"><span class="h-q-text">How would you design multi-region HA for a stateful workload?</span><span class="chip-score">6/10</span></div>
+          <div class="h-q"><span class="h-q-text">Walk me through a major outage you resolved end-to-end</span><span class="chip-score low">4/10</span></div>
+        </div>
+      </div>
+      <div class="h-row">
+        <button class="h-row-main" onclick="this.parentElement.classList.toggle('open')">
+          <span class="ring" style="background:conic-gradient(var(--emerald) 90%, var(--hairline2) 0)"><b style="color:#047857">8.9</b></span>
+          <span class="h-meta"><b>SRE</b><span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aug 12, 2026 · 11:47 AM · 7 questions</span></span>
+          <span class="h-chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+        </button>
+        <div class="h-detail">
+          <div class="h-detail-head">Questions &amp; scores</div>
+          <div class="h-q"><span class="h-q-text">Define an SLO for a checkout API and the error budget policy</span><span class="chip-score">9/10</span></div>
+          <div class="h-q"><span class="h-q-text">How do you make on-call sustainable for a small team?</span><span class="chip-score">9/10</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="foot-note">Tailor CV · AI Interview mockup v2 — brand blue theme · no landing · History button in top bar (Manual JD pattern)</div>
+
+<script>
+  function show(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function pickRole(el){
+    el.parentElement.querySelectorAll('.role-chip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+  }
+  function openHistory(){
+    document.getElementById('histOverlay').classList.add('open');
+    document.getElementById('histPanel').classList.add('open');
+  }
+  function closeHistory(){
+    document.getElementById('histOverlay').classList.remove('open');
+    document.getElementById('histPanel').classList.remove('open');
+  }
+
+  // Real postings from the user's dashboard (per role)
+  const POSTINGS = {
+    'DevOps Engineer': [
+      {t:'STACKIT Database — DevOps Engineer', c:'STACKIT · Barcelona'},
+      {t:'Secure Build, Release & Observability Engineer (m/f/d)', c:'T-Systems Iberia · Madrid'},
+      {t:'DevOps Engineer', c:'Sarvam · Bengaluru'},
+      {t:'Ingeniero/a DevOps', c:'IOON · Madrid'},
+      {t:'DevOps Openshift y Kubernetes', c:'GRUPO NS · Remote'},
+      {t:'DevOps Engineer', c:'Twenty · New York'},
+      {t:'DevOps Engineer', c:'Doghouse Recruitment · London'},
+      {t:'Cloud DevOps Engineer', c:'Thales · Paris'}
+    ],
+    'Site Reliability Engineer': [
+      {t:'SRE — Platform Reliability', c:'Doinsport · Marseille'},
+      {t:'SRE Engineer', c:'BETA · Berlin'},
+      {t:'Site Reliability Engineer', c:'Upstash · Remote'}
+    ],
+    'Cloud Engineer': [
+      {t:'Cloud Engineer — Azure', c:'Microsoft Partner · Amsterdam'},
+      {t:'Cloud Infrastructure Engineer', c:'Scaleway · Paris'},
+      {t:'Cloud DevOps Engineer', c:'Thales · Paris'}
+    ]
+  };
+  function renderPostings(role){
+    const list = document.getElementById('postingsList');
+    const jobs = POSTINGS[role] || [];
+    document.getElementById('allCnt').textContent = jobs.length + ' jobs in this list';
+    list.innerHTML = jobs.map((j, i) =>
+      '<button class="posting" data-i="' + i + '" onclick="togglePosting(this)">' +
+        '<span class="check"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' +
+        '<span class="pt"><b>' + j.t + '</b><span>' + j.c + '</span></span>' +
+      '</button>').join('');
+    document.getElementById('allCheck').parentElement.classList.remove('on');
+  }
+  function togglePosting(el){
+    el.classList.toggle('on');
+    const rows = document.querySelectorAll('.posting');
+    const on = rows.length > 0 && [...rows].every(r => r.classList.contains('on'));
+    document.getElementById('allCheck').parentElement.classList.toggle('on', on);
+    updateSelCount();
+  }
+  function toggleAll(el){
+    const on = !el.classList.contains('on');
+    el.classList.toggle('on', on);
+    document.querySelectorAll('.posting').forEach(p => p.classList.toggle('on', on));
+    updateSelCount();
+  }
+  function updateSelCount(){
+    const n = document.querySelectorAll('.posting.on').length;
+    document.getElementById('selCount').textContent = n + ' selected';
+  }
+
+  // pre-selected role on load → populate its real posting list
+  renderPostings('DevOps Engineer');
+
+  function updateWords(el){
+    const n = el.value.trim() ? el.value.trim().split(/\s+/).length : 0;
+    document.getElementById('wordCount').textContent = n + ' words';
+  }
+</script>
+</body>
+</html>

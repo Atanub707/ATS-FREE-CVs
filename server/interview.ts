@@ -134,12 +134,13 @@ function buildCvContext(): string {
   return `Candidate: ${cv.fullName}\nSummary: ${(cv.summary || '').slice(0, 500)}\nSkills: ${skills}\nRecent: ${exp}`;
 }
 
-export function startInterview(params: { role: string; experienceYears?: string; jobId?: string }): InterviewSession {
+export function startInterview(params: { role: string; experienceYears?: string; jobId?: string; jobIds?: string[] }): InterviewSession {
   const role = params.role.trim() || 'the target role';
   let jobs = getJobsForRole(role);
-  if (params.jobId) {
-    const picked = jobs.find((j) => j.id === params.jobId);
-    if (picked) jobs = [picked, ...jobs.filter((j) => j.id !== picked.id)].slice(0, 5);
+  const wanted = new Set<string>((params.jobIds?.length ? params.jobIds : params.jobId ? [params.jobId] : []));
+  if (wanted.size) {
+    const picked = jobs.filter((j) => wanted.has(j.id));
+    if (picked.length) jobs = [...picked, ...jobs.filter((j) => !wanted.has(j.id))].slice(0, 5);
   }
   const session: InterviewSession = {
     id: crypto.randomUUID(),

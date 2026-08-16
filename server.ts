@@ -668,7 +668,7 @@ async function startServer() {
       const session = startInterview({
         role,
         experienceYears: String(req.body?.experienceYears || ''),
-        jobId: req.body?.jobId ? String(req.body.jobId) : undefined,
+        jobIds: Array.isArray(req.body?.jobIds) ? req.body.jobIds.map(String) : req.body?.jobId ? [String(req.body.jobId)] : undefined,
       });
       const { question, jobTitle, company } = await askNextQuestion(session);
       res.json({ sessionId: session.id, question, jobTitle, company, questionIndex: 1, total: session.total });
