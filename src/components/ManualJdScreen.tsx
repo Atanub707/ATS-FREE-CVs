@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight, Wand2, Eye, PencilLine } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight, Wand2, Eye, PencilLine, GripVertical, Briefcase, Code, User, GraduationCap, FolderGit2 } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape, PdfCvShape } from './CvPdfPreview';
@@ -297,6 +297,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // Master CV's template). Declared here — BEFORE the isOpen guard — so
   // the hook count never changes between renders.
   const [previewTemplate, setPreviewTemplate] = useState<'harvard' | 'jake' | 'atanu' | 'atanu-pro'>(masterCv?.templateId || 'harvard');
+  // Preview zoom — same as the Master CV's live preview (default 75%).
+  const [previewZoom, setPreviewZoom] = useState<number>(75);
 
   // Drag & drop reordering — same mechanism as the Master CV screen
   // (draggable rows, drag index in state, splice on drop). Hooks MUST live
@@ -1123,132 +1125,215 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-                    {/* Summary */}
-                    <div className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)]">Professional Summary</h3>
+
+                    {/* Professional Summary — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px]">
+                          Master Professional Summary
+                        </h3>
                         <span className="text-[10px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-md px-1.5 py-0.5">editable</span>
                       </div>
                       <textarea
+                        rows={4}
                         value={editableCv.summary}
                         onChange={(e) => setSummary(e.target.value)}
-                        rows={4}
-                        className="w-full border border-[var(--color-hairline)] rounded-lg px-3 py-2 text-[12.5px] leading-relaxed text-[var(--color-muted)] bg-white outline-none focus:border-[var(--color-brand)] focus:ring-[3px] focus:ring-[var(--color-brand)]/12 transition-colors resize-y"
+                        placeholder="Professional background summary..."
+                        className="w-full bg-white border border-[var(--color-hairline)] rounded p-2.5 text-[var(--color-ink)] leading-relaxed focus:outline-none focus:ring-1 focus:ring-slate-900"
                       />
                     </div>
 
-                    {/* Skills */}
-                    <div className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)]">Key Skills</h3>
+                    {/* Key Skills — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                          <Code className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+                          <span>Technical Skills & Core Competencies</span>
+                        </h3>
                         <button
                           type="button"
                           onClick={() => { const v = prompt('Add your own skill:'); if (v?.trim()) addSkill(v); }}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] hover:bg-[#DBEAFE] cursor-pointer transition-colors"
+                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" /> Add
+                          <Plus className="w-3 h-3" />
+                          <span>Add Skill</span>
                         </button>
                       </div>
-                      <p className="text-[10px] font-semibold text-[var(--color-faint)] mb-2">Drag to reorder</p>
-                      {visibleSkillGroups.map((g) => (
-                        <div key={g.category} className="mb-2 last:mb-0">
-                          <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] mb-1.5">{g.category}</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {g.items.map((s, si) => (
-                              <span
-                                key={s.id}
-                                draggable
-                                onDragStart={(e) => handleSkillDragStart(e, g.category, si)}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleSkillDrop(e, g.category, si)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none cursor-grab active:cursor-grabbing transition-all ${dragSkill?.cat === g.category && dragSkill.idx === si ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
-                              >
-                                <span className="text-[9px] text-slate-300">⠿</span>
-                                {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
-                                {s.text}
-                                <button
-                                  type="button"
-                                  onClick={() => toggleSkill(s.id)}
-                                  aria-label={`Remove ${s.text}`}
-                                  className="ml-0.5 w-4.5 h-4.5 rounded-md border text-[10px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
+                      <div className="space-y-2">
+                        {visibleSkillGroups.map((g) => (
+                          <div key={g.category} className="flex items-start space-x-2 bg-white p-2 rounded border border-[var(--color-hairline)]">
+                            <input
+                              type="text"
+                              value={g.category}
+                              onChange={(e) => {
+                                const old = g.category;
+                                commitEdits({ ...editableCv, skills: editableCv.skills.map((gg) => (gg.category === old ? { ...gg, category: e.target.value } : gg)) });
+                              }}
+                              placeholder="Category Name"
+                              className="w-1/3 border border-[var(--color-hairline)] rounded px-2 py-1 font-bold text-[var(--color-ink)]"
+                            />
+                            <div className="flex-1 flex flex-wrap items-center gap-1.5">
+                              {g.items.map((s, si) => (
+                                <span
+                                  key={s.id}
+                                  draggable
+                                  onDragStart={(e) => handleSkillDragStart(e, g.category, si)}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleSkillDrop(e, g.category, si)}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border cursor-grab active:cursor-grabbing transition-all ${
+                                    dragSkill?.cat === g.category && dragSkill.idx === si ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''
+                                  } ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
                                 >
-                                  ✕
-                                </button>
-                              </span>
-                            ))}
-                            {g.items.length === 0 && (
-                              <p className="text-[11px] text-[var(--color-faint)]">No visible skills.</p>
-                            )}
+                                  <GripVertical className="w-2.5 h-2.5 text-[var(--color-faint)]" />
+                                  {s.ai && !hideAI && <Wand2 className="w-2.5 h-2.5 text-purple-500" />}
+                                  {s.text}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSkill(s.id)}
+                                    aria-label={`Remove ${s.text}`}
+                                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                              {g.items.length === 0 && <span className="text-[11px] text-[var(--color-faint)]">No visible skills.</span>}
+                            </div>
+                          </div>
+                        ))}
+                        {visibleSkillGroups.length === 0 && (
+                          <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Work Experience — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+                          <span>Work Experience History</span>
+                        </h3>
+                      </div>
+
+                      {editableCv.experiences.map((exp, ei) => (
+                        <div
+                          key={exp.id}
+                          draggable
+                          onDragStart={(e) => handleExpDragStart(e, ei)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleExpDrop(e, ei)}
+                          className={`bg-white p-3.5 rounded-lg border space-y-3 cursor-grab active:cursor-grabbing transition-all ${
+                            dragExpIdx === ei
+                              ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
+                              : 'border-[var(--color-hairline)] hover:border-[var(--color-brand-line)]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between pb-2 border-b border-[var(--color-hairline)]">
+                            <span className="font-bold text-[var(--color-muted)] text-[11px] flex items-center space-x-1.5">
+                              <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
+                              <span>Position #{ei + 1}</span>
+                            </span>
+                            <span className="text-[10px] font-semibold text-[var(--color-faint)]">{exp.company} · {exp.dates}</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Job Title</label>
+                              <input
+                                type="text"
+                                value={exp.title}
+                                onChange={(e) => setExpTitle(exp.id, e.target.value)}
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Company</label>
+                              <input
+                                type="text"
+                                value={exp.company}
+                                onChange={(e) => {
+                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, company: e.target.value } : x));
+                                  commitEdits({ ...editableCv, experiences: next });
+                                }}
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Location</label>
+                              <input
+                                type="text"
+                                value={exp.location || ''}
+                                onChange={(e) => {
+                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, location: e.target.value } : x));
+                                  commitEdits({ ...editableCv, experiences: next });
+                                }}
+                                placeholder="e.g. San Francisco, CA / Remote"
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Dates / Period</label>
+                              <input
+                                type="text"
+                                value={exp.dates}
+                                onChange={(e) => {
+                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, dates: e.target.value } : x));
+                                  commitEdits({ ...editableCv, experiences: next });
+                                }}
+                                placeholder="e.g. Jan 2021 - Present"
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[var(--color-faint)] text-[11px] mb-1 font-semibold">Responsibilities & Achievements</label>
+                            <div className="space-y-1.5">
+                              {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
+                                <div
+                                  key={b.id}
+                                  draggable
+                                  onDragStart={(e) => handleBulletDragStart(e, exp.id, bi)}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleBulletDrop(e, exp.id, bi)}
+                                  className={`flex items-center space-x-1.5 cursor-grab active:cursor-grabbing transition-all ${dragBullet?.expId === exp.id && dragBullet.idx === bi ? 'opacity-60 bg-blue-50 rounded' : ''}`}
+                                >
+                                  <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)] shrink-0" />
+                                  <input
+                                    type="text"
+                                    value={b.text}
+                                    onChange={(e) => setBullet(b.id, e.target.value)}
+                                    className="flex-1 border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                                  />
+                                  {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 shrink-0" />}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleBullet(b.id)}
+                                    className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer shrink-0"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                              {exp.bullets.filter((b) => !hideAI || !b.ai).length === 0 && (
+                                <p className="text-[11px] text-[var(--color-faint)]">No visible bullets for this role.</p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => { const v = prompt('Add your own bullet point:'); if (v?.trim()) addBullet(exp.id, v); }}
+                              className="mt-2 text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add Responsibility Bullet</span>
+                            </button>
                           </div>
                         </div>
                       ))}
-                      {visibleSkillGroups.length === 0 && (
-                        <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
-                      )}
                     </div>
 
-                    {/* Experience */}
-                    {editableCv.experiences.map((exp, ei) => (
-                      <div
-                        key={exp.id}
-                        draggable
-                        onDragStart={(e) => handleExpDragStart(e, ei)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleExpDrop(e, ei)}
-                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none cursor-grab active:cursor-grabbing transition-all ${dragExpIdx === ei ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''}`}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-[11px] text-slate-300 cursor-grab touch-none" title="Drag to reorder experience">⠿</span>
-                            <input
-                              value={exp.title}
-                              onChange={(e) => setExpTitle(exp.id, e.target.value)}
-                              placeholder="Job title"
-                              className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[13px] font-bold text-[var(--color-ink)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
-                            />
-                          </div>
-                          <span className="text-[10px] font-semibold text-[var(--color-faint)] whitespace-nowrap">{exp.company} · {exp.dates}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                          {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
-                            <div
-                              key={b.id}
-                              draggable
-                              onDragStart={(e) => handleBulletDragStart(e, exp.id, bi)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleBulletDrop(e, exp.id, bi)}
-                              className={`flex items-start gap-2 rounded-lg cursor-grab active:cursor-grabbing transition-all ${dragBullet?.expId === exp.id && dragBullet.idx === bi ? 'opacity-60 bg-blue-50' : ''}`}
-                            >
-                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none">⠿</span>
-                              <input
-                                value={b.text}
-                                onChange={(e) => setBullet(b.id, e.target.value)}
-                                className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[12px] text-[var(--color-muted)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
-                              />
-                              {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 mt-1.5 shrink-0" />}
-                              <button
-                                type="button"
-                                onClick={() => toggleBullet(b.id)}
-                                aria-label="Remove bullet"
-                                className="mt-1 w-5 h-5 rounded-md border text-[9px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                          {exp.bullets.filter((b) => !hideAI || !b.ai).length === 0 && (
-                            <p className="text-[11px] text-[var(--color-faint)]">No visible bullets for this role.</p>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { const v = prompt('Add your own bullet point:'); if (v?.trim()) addBullet(exp.id, v); }}
-                          className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Add your own bullet
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
@@ -1256,14 +1341,18 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
           </div>
         </section>
 
-        {/* RIGHT · CV Preview — original + tailored with sliding comparison */}
+        {/* RIGHT · CV Preview — Live PDF Preview (Master CV style) */}
         <section className="flex-1 min-w-0 bg-white border border-[var(--color-hairline)] border-l-0 rounded-r-[14px] overflow-hidden flex flex-col">
-          <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAF9]/80 flex items-center justify-between gap-2 shrink-0">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-soft)]0" /> CV Preview
+          <div className="px-5 py-3 border-b border-[var(--color-hairline)] bg-white/80 backdrop-blur-sm flex items-center justify-between gap-3 shrink-0">
+            <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-faint)] whitespace-nowrap">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-cta-soft)]0" />
+              </span>
+              <span>Live PDF Preview</span>
             </span>
             <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1 bg-white border border-[var(--color-hairline)] rounded-full p-0.5">
+              <div className="flex items-center gap-1 bg-white border border-[var(--color-hairline)] rounded-lg p-0.5">
                 {([
                   { id: 'harvard', label: 'Harvard' },
                   { id: 'jake', label: 'Jake' },
@@ -1274,7 +1363,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     type="button"
                     onClick={() => setPreviewTemplate(t.id)}
                     title={`Preview and download in the ${t.label} template`}
-                    className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded text-[10.5px] font-bold transition-colors cursor-pointer ${
                       previewTemplate === t.id ? 'bg-[var(--color-ink)] text-white' : 'text-[var(--color-faint)] hover:text-[var(--color-ink)]'
                     }`}
                   >
@@ -1287,11 +1376,11 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 onClick={previewDragActive ? () => downloadEdited('pdf') : () => download('pdf')}
                 disabled={previewDragActive ? !editableNewCv : !downloadToken}
                 title={previewDragActive ? 'Download the EDITED CV as PDF (in the selected template)' : downloadToken ? 'Download the tailored CV as PDF (in the selected template)' : 'Tailor your CV first to download'}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--color-ink)] text-white hover:bg-slate-700"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--color-ink)] text-white hover:bg-slate-700"
               >
                 <Download className="w-3 h-3" /> PDF
               </button>
-              <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">
+              <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-lg px-2 py-1">
                 {previewDragActive ? 'Your edited CV' : tailoredCv ? 'Drag to compare' : 'Original CV'}
               </span>
             </div>
@@ -1299,13 +1388,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
           <div className="relative flex-1 min-h-0 bg-[#F1F5F9]" ref={wrapRef}>
             {previewDragActive && editableNewCv ? (
-              <div className="absolute inset-0 overflow-y-auto bg-[#F1F5F9] p-3">
-                <CvPdfPreview cv={editableNewCv} template={previewTemplate} fitToWidth />
+              <div className="absolute inset-0 overflow-y-auto bg-[#F1F5F9] p-6">
+                <CvPdfPreview cv={editableNewCv} template={previewTemplate} zoom={previewZoom} />
               </div>
             ) : !tailoredCv ? (
               originalCv ? (
-                <div className="absolute inset-0 overflow-y-auto">
-                  <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />
+                <div className="absolute inset-0 overflow-y-auto p-6">
+                  <CvPdfPreview cv={originalCv} template={previewTemplate} zoom={previewZoom} />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-faint)]">
@@ -1322,7 +1411,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   onScroll={(e) => syncScroll(e.currentTarget, newScrollRef.current)}
                   className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
                 >
-                  {originalCv && <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />}
+                  {originalCv && <CvPdfPreview cv={originalCv} template={previewTemplate} zoom={previewZoom} />}
                 </div>
                 {/* TAILORED layer (clipped by the slider) */}
                 {newCv && (
@@ -1332,7 +1421,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     className="absolute inset-0 overflow-y-auto bg-[#F1F5F9]"
                     style={{ clipPath: `inset(0 0 0 ${cut}%)` }}
                   >
-                    <CvPdfPreview cv={newCv} template={previewTemplate} fitToWidth />
+                    <CvPdfPreview cv={newCv} template={previewTemplate} zoom={previewZoom} />
                   </div>
                 )}
                 {/* Handle */}
@@ -1362,6 +1451,34 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 )}
               </>
             )}
+          </div>
+
+          {/* Floating zoom control — bottom-right corner (Master CV style) */}
+          <div className="sticky bottom-4 ml-auto mr-4 w-fit flex items-center bg-white border border-[var(--color-hairline)] rounded-lg shadow-lg overflow-hidden" style={{ marginTop: '-40px' }}>
+            <button
+              type="button"
+              onClick={() => setPreviewZoom((z) => Math.max(40, z - 10))}
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
+              title="Zoom out"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewZoom(75)}
+              className="px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer tabular-nums"
+              title="Reset zoom to 75%"
+            >
+              {previewZoom}%
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewZoom((z) => Math.min(150, z + 10))}
+              className="px-2.5 py-1.5 text-[13px] font-extrabold text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
+              title="Zoom in"
+            >
+              +
+            </button>
           </div>
         </section>
       </div>
