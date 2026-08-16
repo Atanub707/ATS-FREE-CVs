@@ -282,7 +282,7 @@ Navbar **AI Interview** opens the mock-interview screen. A senior interviewer th
 - **Where:** `server/interview.ts` (role aggregation, JD question bank, rubric scoring, sessions), routes in `server.ts`, UI in `src/components/AiSystemScreen.tsx`.
 - **Tested:** `tests/recruiters/interview.test.ts` (role aggregation, JD-grounded question, rubric weights, word-count caps, scorecard).
 
-> The generic job-search chat (MCP tool chat) was removed from the UI (2026-08-15). `/api/chat` + the MCP tool loop remain server-side for future use. The "Personalized AI Assistant" option was removed from the AI screen (2026-08-15) — the screen is now **AI Interview** only.
+> The generic job-search chat (MCP tool chat) was fully removed (2026-08-15): UI, `/api/chat`, MCP tools and the tool loop were deleted. The screen is now **AI Interview** only.
 
 ## Candidate job profile
 

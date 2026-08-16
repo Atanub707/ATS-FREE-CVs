@@ -219,11 +219,8 @@ function fallbackParseCvFromText(rawText: string) {
 }
 
 import { ask } from './server/llm/llmAdapter.js';
-import { chatWithTools, SYSTEM_PROMPT, parseJobsBlock } from './server/llm/tools.js';
-import { CHAT_TOOLS, TOOL_EXECUTORS, getCvPdf } from './server/mcp/registry.js';
 import { startInterview, askNextQuestion, scoreAnswer, buildScorecard, getInterviewSession, getRoleOptions, getJobsForRole } from './server/interview.js';
 import { saveInterviewSession, getInterviewHistory, getInterviewSessionRecord } from './server/storage/fileStorage.js';
-import { createMcpPair, callMcpTool } from './server/mcp/server.js';
 import nodemailer from 'nodemailer';
 
 // Convert the stored Master CV into the TailoredCv shape the PDF generator
@@ -574,66 +571,6 @@ async function startServer() {
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
-  });
-
-  // ── AI Assistant chat (MCP-powered tool use) ──
-  app.post('/api/chat', async (req, res) => {
-    try {
-      const userId = getCurrentUserId();
-      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
-      const messages: { role: string; content: string }[] = Array.isArray(req.body?.messages) ? req.body.messages : [];
-      if (!messages.length) return res.status(400).json({ error: 'Messages are required.' });
-
-      const pair = createMcpPair();
-      const out = await chatWithTools({
-        system: SYSTEM_PROMPT,
-        messages: messages.map((m) => ({ role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant', content: String(m.content || '') })),
-        tools: CHAT_TOOLS,
-        toolExecutor: (name: string, args: any) => callMcpTool(pair, name, args),
-        maxRounds: 5,
-      });
-      const { text, jobs, cv } = parseJobsBlock(out.reply);
-      // Guard: if the model returned only the JSON block (or nothing), still
-      // show a real message instead of an empty bubble.
-      const replyText = text.trim() || (jobs.length ? `Here ${jobs.length === 1 ? 'is' : 'are'} ${jobs.length} matching job${jobs.length === 1 ? '' : 's'}:` : 'I could not find any results — try a different role, location, or scrape new jobs first.');
-      // Enrich the cards from the real DB (the model only reliably sends ids).
-      // Scores are only attached when the user explicitly asked for scoring
-      // (the model signals it with withScore: true) — plain job requests get
-      // clean cards with just title, company, location and the link.
-      const jobIndex = new Map((getAllJobs() as any[]).map((j) => [j.id, j]));
-      const enriched = jobs.slice(0, 10).map((j: any) => {
-        const found = jobIndex.get(j.id);
-        if (!found) return j;
-        const card: any = {
-          id: j.id,
-          title: found.title,
-          company: found.company,
-          location: found.location,
-          source: found.source,
-          url: found.url,
-          reason: j.reason || '',
-        };
-        if (j.withScore === true) {
-          card.score = found.gapAnalysis?.matchScore ?? null;
-        }
-        return card;
-      });
-      res.json({ reply: replyText, jobs: enriched, cv });
-    } catch (err: any) {
-      console.error('Chat error:', err);
-      res.status(500).json({ error: err?.message || 'Chat failed.' });
-    }
-  });
-
-  // Chat-generated CV PDF download (temp store, 10-min TTL)
-  app.get('/api/agent/cv/:token', (req, res) => {
-    const userId = getCurrentUserId();
-    if (!userId) return res.status(401).json({ error: 'Not signed in.' });
-    const buf = getCvPdf(req.params.token);
-    if (!buf) return res.status(404).json({ error: 'PDF not found or expired.' });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="Tailor-CV.pdf"');
-    res.send(buf);
   });
 
   // ── AI System · Interview (job-description grounded) ──

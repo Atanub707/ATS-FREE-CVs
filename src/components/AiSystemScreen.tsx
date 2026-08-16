@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, ChatCircleText, CheckCircle, Clock, ListChecks, Target, SuitcaseSimple, Briefcase, X, ClockCounterClockwise } from '@phosphor-icons/react';
+import { ArrowRight, ChatCircleText, CheckCircle, Clock, ListChecks, Target, SuitcaseSimple, Briefcase, X, ClockCounterClockwise } from '@phosphor-icons/react';
 
 interface RoleOption { label: string; count: number }
 interface JobOption { id: string; title: string; company: string }
