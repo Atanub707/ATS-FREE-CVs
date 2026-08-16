@@ -1200,13 +1200,13 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                                   className={`flex items-center space-x-1.5 cursor-grab active:cursor-grabbing transition-all ${dragBullet?.expId === exp.id && dragBullet.idx === bi ? 'opacity-60 bg-blue-50 rounded' : ''}`}
                                 >
                                   <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)] shrink-0" />
+                                  {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 shrink-0" title="AI-generated" />}
                                   <input
                                     type="text"
                                     value={b.text}
                                     onChange={(e) => setBullet(b.id, e.target.value)}
                                     className="flex-1 border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
                                   />
-                                  {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 shrink-0" />}
                                   <button
                                     type="button"
                                     onClick={() => toggleBullet(b.id)}
