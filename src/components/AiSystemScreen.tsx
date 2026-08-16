@@ -209,7 +209,7 @@ export const AiSystemScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
                       </button>
                     </div>
                     <div className="ai-postings-list">
-                      {jobOptions.length === 0 && <div className="ai-postings-empty">No matching postings with descriptions found for this role.</div>}
+                      {jobOptions.length === 0 && <div className="ai-postings-empty">No postings found for this role in your dashboard yet — scrape jobs for “{role}” first, then come back.</div>}
                       {jobOptions.map((j) => (
                         <button key={j.id} className={`ai-posting ${selectedJobs.includes(j.id) ? 'on' : ''}`} onClick={() => toggleJob(j.id)}>
                           <span className="ai-check"><CheckCircle size={11} weight="bold" /></span>

@@ -128,9 +128,11 @@ export function getRoleOptions(limit = 10): { label: string; count: number }[] {
 export function getJobsForRole(role: string, limit = 25): { id: string; title: string; company: string; description: string }[] {
   const target = normalizeRole(role);
   if (!target) return [];
+  // The FULL real list from the dashboard — every job matching the role in the
+  // database is shown, whether or not a description is stored. Questions for
+  // postings without a description fall back to general role questions.
   const jobs = (getAllJobs() as any[])
     .filter((j) => j?.title && normalizeRole(j.title) === target)
-    .filter((j) => j.description && j.description.trim().length > 50)
     .slice(0, limit)
     .map((j) => ({
       id: String(j.id),
