@@ -88,8 +88,23 @@ curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh
 
 It installs Docker Desktop via Homebrew (if needed), waits for the engine, downloads Tailor CV, and opens your browser. Rerunning is safe — it skips completed steps.
 
-**Updating:** re-run the same installer (it skips finished steps), or use the one-command updaters — `scripts/update.sh` (Mac) / `update.bat` (Windows).
-**Uninstalling:** `scripts/uninstall.sh` (Mac) / `uninstall.bat` (Windows) — removes the app + data; Docker stays.
+### 🔄 Updating
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex
+```
+
+**macOS / Linux (Terminal):**
+```bash
+curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash
+```
+
+Updates pull the latest code and rebuild — **your data (jobs, CV, tokens, history) is never touched**. If you accidentally re-run the installer instead, it tells you the app is already running — use the update command above.
+
+### 🗑️ Uninstalling
+
+**macOS / Linux:** `scripts/uninstall.sh` (or the uninstall one-liner) · **Windows:** `scripts/uninstall.bat` — removes the app + data; Docker stays.
 
 **What both installers do (idempotent):**
 
