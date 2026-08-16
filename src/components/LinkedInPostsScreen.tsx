@@ -134,7 +134,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       const res = await fetch('/api/linkedin-posts/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: q, limit: 20, engine }),
+        body: JSON.stringify({ keywords: q, limit: engine === 'apify' ? 100 : 20, engine }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -147,14 +147,15 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       if (d.quota) setQuota(d.quota);
       setState('done');
       loadFeed();
+      const window = engine === 'apify' ? '' : 'from the last 24 hours ';
       if (d.valid === false) {
-        setMessage('not valid — this search only works for job postings from the last 24 hours. Try a job role, e.g. "DevOps Engineer".');
+        setMessage('not valid — this search only works for job postings. Try a job role, e.g. "DevOps Engineer".');
       } else if (d.total === 0) {
-        setMessage('No job postings found in the last 24 hours for this search. Try broader keywords or search again later.');
+        setMessage(`No job postings found ${window}for this search. Try broader keywords or search again later.`);
       } else if (d.addedCount > 0) {
-        setMessage(`Found ${d.total} job postings from the last 24 hours — ${d.addedCount} new ones added to your job list.`);
+        setMessage(`Found ${d.total} job postings ${window}— ${d.addedCount} new ones added to your job list.`);
       } else {
-        setMessage(`Found ${d.total} job postings from the last 24 hours (all already in your job list).`);
+        setMessage(`Found ${d.total} job postings ${window}(all already in your job list).`);
       }
     } catch (e: any) {
       setError(e?.message || 'Could not search LinkedIn posts.');
@@ -227,17 +228,17 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
               title={setup?.apify ? 'Uses your Apify token (~$0.20 per search)' : 'Add your Apify token in Settings → Integrations to enable'}
             >
               <span className="lp-engine-dot">✦</span> Apify engine
-              <span className="lp-engine-sub">your token · ~$0.20/search</span>
+              <span className="lp-engine-sub">your token · $0.20/search · 100 posts</span>
             </button>
             {engine === 'apify' && quota ? (
               <span className={`lp-quota ${quota.remaining === 0 ? 'out' : ''}`}>
-                {quota.used}/{quota.quota} posts today
+                {quota.used}/{quota.quota} Apify search{quota.quota === 1 ? '' : 'es'} used today
               </span>
             ) : engine === 'free' ? (
               <span className="lp-quota free">Free · unlimited</span>
             ) : null}
           </div>
-          <p className="lp-hint">Job postings only · last 24 hours · Apify engine: max 10 posts/day (resets at midnight) · Free engine: unlimited · results are added to your job list with a “LinkedIn Posts” tag</p>
+          <p className="lp-hint">{engine === 'apify' ? 'Job postings only · up to ~100 posts · 1 Apify search/day (resets at midnight)' : 'Job postings only · last 24 hours · unlimited' } · results are added to your job list with a “LinkedIn Posts” tag</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
@@ -249,7 +250,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         {state === 'done' && posts.length > 0 && (
           <div className="lp-results">
             <div className="lp-results-head">
-              <b>{posts.length} job postings from the last 24 hours</b>
+              <b>{posts.length} job postings{engine === 'apify' ? ' (Apify engine)' : ' from the last 24 hours'}</b>
               <span>{addedCount > 0 ? `+${addedCount} new in your job list` : 'all already saved'}</span>
             </div>
             <div className="lp-grid">

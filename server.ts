@@ -586,12 +586,13 @@ async function startServer() {
       const keywords = String(req.body?.keywords || '').trim();
       if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
       const engine = req.body?.engine === 'apify' ? 'apify' : 'free';
-      const limit = Math.min(20, Math.max(1, Number(req.body?.limit) || 20));
+      // Apify: show all ~100 posts the actor fetched. Free: cap at 20.
+      const limit = Math.min(engine === 'apify' ? 100 : 20, Math.max(1, Number(req.body?.limit) || 20));
       const quota = getPostsDailyUsage(userId);
       if (engine === 'apify' && quota.used >= quota.quota) {
         return res.status(429).json({
           valid: false,
-          error: `Apify daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
+          error: `Apify daily limit reached: ${quota.quota} search used today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
           quota,
         });
       }
@@ -624,7 +625,7 @@ async function startServer() {
       if (engine === 'apify' && cappedPosts.length === 0) {
         return res.status(429).json({
           valid: false,
-          error: `Apify daily limit reached: ${quota.quota} job posts scraped today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
+          error: `Apify daily limit reached: ${quota.quota} search used today. Resets at ${new Date(quota.resetAt).toLocaleTimeString()}. Switch to the Free engine — it has no limit.`,
           quota,
         });
       }
@@ -633,7 +634,7 @@ async function startServer() {
       res.json({
         valid: true,
         debug: scraper.lastDebug,
-        posts: cappedPosts.map((p) => ({
+        posts: posts.map((p) => ({
           id: p.id,
           title: p.title,
           company: p.company,
@@ -644,7 +645,7 @@ async function startServer() {
           hashtags: p.hashtags || [],
         })),
         addedCount: added.length,
-        total: cappedPosts.length,
+        total: posts.length,
         quota: { used: newUsed, quota: quota.quota, remaining: Math.max(0, quota.quota - newUsed), resetAt: quota.resetAt },
       });
     } catch (err: any) {

@@ -483,7 +483,9 @@ function ensureCandidateProfileTable(db: Database.Database): void {
   `);
 }
 
-// ── LinkedIn Posts daily quota (20 job posts / rolling 24h) ──
+// ── LinkedIn Posts daily quota (1 Apify SEARCH per day) ──
+// The actor fetches ~100 posts per run and bills ~$0.20 — the daily brake is
+// on SEARCHES (spend), not on posts shown. Free engine is unlimited.
 function ensurePostsDailyTable(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS posts_daily_usage (
@@ -495,7 +497,7 @@ function ensurePostsDailyTable(db: Database.Database): void {
   `);
 }
 
-export const POSTS_DAILY_QUOTA = 10;
+export const POSTS_DAILY_QUOTA = 1;
 
 function postsDayKey(): string {
   return new Date().toISOString().slice(0, 10);

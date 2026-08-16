@@ -99,7 +99,7 @@ describe('LinkedInPostsScraper', () => {
     expect(calls.some((u) => u.includes('api.apify.com'))).toBe(false);
   });
 
-  it('filters out non-job posts ("not valid" material) and posts older than 24h', async () => {
+  it('filters out non-job posts ("not valid" material); keeps job posts of any age on Apify', async () => {
     mockConfig();
     const now = Date.now();
     const mixed = [
@@ -139,8 +139,10 @@ describe('LinkedInPostsScraper', () => {
       engine: 'apify',
     } as any);
 
-    expect(jobs).toHaveLength(1); // only the fresh job posting survives
-    expect(jobs[0].url).toContain('activity-999-JOB');
+    // The user pays for the full fetch, so the 30h-old JOB posting is kept.
+    expect(jobs).toHaveLength(2); // job posts kept regardless of age; news post dropped
+    expect(jobs.map((j) => j.url)).not.toContain('activity-999-NEWS');
+    expect(jobs.some((j) => j.url.includes('activity-999-OLD'))).toBe(true);
   });
 
   it('falls back to engines gracefully when no Apify token is configured', async () => {

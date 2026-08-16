@@ -298,8 +298,11 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
   const token = config.apify.token?.trim();
   if (!token || config.apify.enabled !== true) return [];
 
+  // Single query per run: the actor fetches ~100 posts (billed ~$0.20 at
+  // $2/1K) and has no limit input — a second query would double the cost
+  // (~$0.40) without doubling what we show. One run = one search = $0.20.
   const input = {
-    searchQueries: [keywords, `${keywords} hiring`],
+    searchQueries: [keywords],
   };
   try {
     const res = await fetch(
@@ -324,14 +327,15 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
       const jobUrl = item.job?.linkedinUrl ? String(item.job.linkedinUrl) : undefined;
       // Job-posting search only: keep posts that ARE job postings.
       if (!isJobPosting(text, !!jobUrl)) continue;
-      const postedRaw = item.postedAt?.date || item.postedAt?.timestamp || item.postedAt || item.date;
-      const postedIso = postedRaw ? new Date(postedRaw).toISOString() : undefined;
-      if (!isWithin24h(postedIso)) continue; // last 24h only
+      // NOTE: no 24h cut here — the user PAYS for all ~100 fetched posts, so
+      // they see all of them. (The Free engine keeps the 24h window.)
       seen.add(url);
       const now = new Date().toISOString();
       const firstLine = text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || text.slice(0, 110);
       // The post often carries the actual JOB listing — prefer it as the apply link.
       const company = item.job?.subtitle ? String(item.job.subtitle).replace(/^Job by\s*/i, '') : author;
+      const postedRaw = item.postedAt?.date || item.postedAt?.timestamp || item.postedAt || item.date;
+      const postedIso = postedRaw ? new Date(postedRaw).toISOString() : undefined;
       jobs.push({
         id: `linkedinpost-${createHash('sha1').update(url).digest('base64url').slice(0, 20)}`,
         title: firstLine.slice(0, 110),
@@ -363,7 +367,7 @@ export class LinkedInPostsScraper {
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
     if (!keywords) return [];
-    const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 20));
+    const limit = Math.min(100, Math.max(1, params.maxJobsPerSource || 20));
     // The user chooses the engine. Free (built-in engines, no token) is the
     // default — Apify is opt-in and charged to the user's own token.
     const engine: 'free' | 'apify' = params.engine || 'free';
