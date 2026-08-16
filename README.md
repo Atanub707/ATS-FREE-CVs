@@ -67,7 +67,7 @@ Before installing, make sure you have one of these:
 
 ## 🚀 Installation — Quick Start
 
-> 📖 **Read the full guide first:** [scripts/README.md](scripts/README.md) — explains the concept, install, update, uninstall and troubleshooting for both platforms.
+> 📖 **Read the full guide first:** [scripts/HOW-TO-INSTALL.md](scripts/HOW-TO-INSTALL.md) — explains the concept, install, update, uninstall and troubleshooting for both platforms.
 
 **No code signing, no security warnings:** Tailor CV runs in Docker — the installer only ever launches **Docker Desktop** (signed by Docker Inc), never an unsigned binary. Your data stays on your machine.
 
