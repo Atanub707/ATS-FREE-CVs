@@ -5,14 +5,15 @@
 #  Usage:  ./install.sh            (installs to ~/tailor-cv)
 #          ./install.sh /my/path   (installs to a custom folder)
 #
-#  What it does (idempotent — safe to rerun):
+#  What it does (idempotent — safe to re-run):
 #    1. Checks for Docker → installs Docker Desktop via Homebrew if missing
 #    2. Starts the Docker engine and waits until it is ready
 #    3. Downloads Tailor CV (git clone) if not present
 #    4. Runs `docker compose up -d` and opens the app in your browser
 #
 #  No code-signing needed: you run Docker Desktop (signed by Docker Inc),
-#  so macOS shows no warnings about this script's app.
+#  so macOS shows no warnings about this app.
+#  Full guide: see scripts/README.md
 # ═══════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -27,7 +28,14 @@ fail() { printf "${RED}✘ %s${NC}\n" "$*"; exit 1; }
 
 printf "${BOLD}\n═══ Tailor CV installer ═══\n${NC}\n"
 
-# ── 1. Docker CLI ───────────────────────────────────────────────────────────
+# ── 1. Port check — already running? ────────────────────────────────────────
+if curl -s -o /dev/null -m 2 "$APP_URL" 2>/dev/null; then
+  warn "Tailor CV is already running at $APP_URL — nothing to do."
+  open "$APP_URL" 2>/dev/null || true
+  exit 0
+fi
+
+# ── 2. Docker CLI ───────────────────────────────────────────────────────────
 if command -v docker >/dev/null 2>&1; then
   ok "Docker CLI found"
 else
@@ -44,7 +52,7 @@ fi
 # Compose v2 (bundled with Docker Desktop)?
 docker compose version >/dev/null 2>&1 || fail "docker compose v2 is missing — update Docker Desktop."
 
-# ── 2. Docker engine ────────────────────────────────────────────────────────
+# ── 3. Docker engine ────────────────────────────────────────────────────────
 if ! docker info >/dev/null 2>&1; then
   echo "Starting Docker Desktop…"
   open -a Docker 2>/dev/null || warn "Could not launch Docker Desktop — please start it manually."
@@ -59,7 +67,7 @@ if ! docker info >/dev/null 2>&1; then
   ok "Docker engine is ready"
 fi
 
-# ── 3. Get the app ──────────────────────────────────────────────────────────
+# ── 4. Get the app ──────────────────────────────────────────────────────────
 if [ ! -f "$APP_DIR/docker-compose.yml" ]; then
   echo "Downloading Tailor CV…"
   command -v git >/dev/null 2>&1 || fail "git is required. Install it (brew install git) and rerun."
@@ -68,7 +76,7 @@ if [ ! -f "$APP_DIR/docker-compose.yml" ]; then
   ok "App downloaded to $APP_DIR"
 fi
 
-# ── 4. Run ──────────────────────────────────────────────────────────────────
+# ── 5. Run ──────────────────────────────────────────────────────────────────
 echo "Starting Tailor CV…"
 docker compose -f "$APP_DIR/docker-compose.yml" up -d --pull missing || fail "docker compose failed — see the output above."
 ok "Tailor CV is running"
@@ -77,5 +85,11 @@ sleep 2
 echo "Opening $APP_URL in your browser…"
 open "$APP_URL" 2>/dev/null || true
 
-printf "${BOLD}\nDone! The app is running at ${GREEN}$APP_URL${NC}\n"
-echo "Tip: stop it later with:  docker compose -f $APP_DIR/docker-compose.yml down"
+printf "${BOLD}\n──────────────────────────────────────────────\n${NC}"
+printf "${BOLD}✅ Tailor CV is ready at ${GREEN}$APP_URL${NC}\n"
+printf "${BOLD}   Sign in or continue as guest, then set your AI key:\n"
+printf "${BOLD}   top-right menu → Settings → Integrations → LLM & AI${NC}\n"
+printf "${BOLD}   Stop it:  docker compose -f $APP_DIR/docker-compose.yml down\n"
+printf "${BOLD}   Update:   curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash\n"
+printf "${BOLD}   Uninstall: curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/uninstall.sh | bash\n"
+printf "${BOLD}──────────────────────────────────────────────\n${NC}"

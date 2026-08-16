@@ -26,6 +26,17 @@ Say ''
 Say '════ Tailor CV installer ════'
 Say ''
 
+# ── 0. Already running? ─────────────────────────────────────────────────────
+try {
+  $probe = Invoke-WebRequest -Uri $AppUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+  if ($probe.StatusCode -eq 200) {
+    Warn "Tailor CV is already running at $AppUrl - nothing to do."
+    Start-Process $AppUrl
+    Read-Host 'Press Enter to close'
+    exit 0
+  }
+} catch { }
+
 # ── 1. Docker CLI ───────────────────────────────────────────────────────────
 if (Get-Command docker -ErrorAction SilentlyContinue) {
   Ok 'Docker CLI found'
@@ -89,6 +100,12 @@ Start-Sleep -Seconds 2
 Start-Process $AppUrl
 
 Say ''
-Say "Done! The app is running at $AppUrl"
-Say "Tip: stop it later with:  docker compose -f $(Join-Path $AppDir 'docker-compose.yml') down"
+Say '──────────────────────────────────────────────'
+Say "Done! Tailor CV is ready at $AppUrl"
+Say '  Sign in or continue as guest, then set your AI key:'
+Say '  top-right menu -> Settings -> Integrations -> LLM & AI'
+Say "  Stop it:     docker compose -f $(Join-Path $AppDir 'docker-compose.yml') down"
+Say '  Update:      double-click update.bat'
+Say '  Uninstall:   double-click uninstall.bat'
+Say '──────────────────────────────────────────────'
 Say ''

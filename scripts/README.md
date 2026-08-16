@@ -1,0 +1,141 @@
+# Tailor CV — Installer Guide (macOS & Windows)
+
+Everything you need to install, update, and remove **Tailor CV** on your machine.
+No code-signing, no security warnings, no developer skills required.
+
+---
+
+## 📖 The concept (read this first — it explains everything)
+
+**Tailor CV is a web app that runs inside Docker.** You don't install an `.exe` or
+`.app` file — instead, the installer sets up **Docker Desktop** (the official, free,
+industry-standard tool from Docker Inc), and Tailor CV runs inside it.
+
+**Why no warnings?**
+- Windows/macOS show scary "unknown publisher" warnings for unsigned apps.
+- Because you run **Docker Desktop** (which IS officially signed and trusted),
+  your machine never sees an unsigned binary — so **no warnings, ever**.
+
+**What "installing" means here:** the installer does 4 things, in order:
+
+| Step | What happens |
+|---|---|
+| 1 | Checks for Docker → installs **Docker Desktop** if missing (official installer) |
+| 2 | Starts the Docker engine and **waits until it's ready** |
+| 3 | Downloads Tailor CV (from GitHub) into `~/tailor-cv` |
+| 4 | Starts the app and opens your browser at `http://localhost:3000` |
+
+Everything is **safe to re-run** — if a step already finished, it's skipped.
+
+**Requirements:** macOS 12+ or Windows 10 (1809+) / Windows 11 · ~3 GB free disk ·
+internet connection. Everything runs locally — your data never leaves your machine.
+
+---
+
+## 🍎 macOS — install (2 minutes)
+
+**Option A — one line in Terminal (recommended):**
+
+```bash
+curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh | bash
+```
+
+**Option B — manual:** download `install.sh` from GitHub, then in Terminal:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+**What you'll see:** green `✔` lines as each step finishes, then your browser opens
+Tailor CV. First run may take a few minutes (Docker Desktop installs + engine starts).
+
+> If Homebrew isn't installed, the script installs it first (one prompt, no password).
+
+---
+
+## 🪟 Windows — install (2 minutes)
+
+1. Download **`install.bat`** (right-click → *Save link as…*)
+2. Double-click it
+3. Click **Yes** on the single Windows UAC prompt
+4. Watch the colored progress lines — the browser opens Tailor CV when done
+
+**First time on a brand-new PC only:** Windows may need WSL2 (the engine behind Docker).
+The installer installs it automatically, then asks you to **restart once** and
+double-click `install.bat` again — it skips straight to starting the app.
+
+---
+
+## ▶️ Using Tailor CV
+
+- **Open it anytime:** [http://localhost:3000](http://localhost:3000)
+- **First sign-in:** Create an account (email+password) or **Continue as guest**
+- **Set your AI key (required for scoring):** top-right menu → **Settings → Integrations →
+  LLM & AI** → paste your key (OpenCode Go / Gemini / OpenAI / Anthropic / OpenRouter /
+  NVIDIA). Your key stays on your machine.
+- **Scrape jobs:** Search bar → type a role → **Search Jobs**
+- **Practice interviews:** top bar → **AI Interview** → pick a role → **Begin interview**
+
+---
+
+## 🔄 Updating Tailor CV
+
+New versions arrive regularly — update in one command:
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash
+```
+
+**Windows:** download `update.bat`, double-click it.
+
+Updates keep your data (jobs, CV, history) — only the app code is refreshed.
+
+---
+
+## 🗑️ Uninstalling
+
+Stops the app and removes all Tailor CV files (your data folder is removed too —
+export anything you need first). Docker Desktop itself stays installed.
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/uninstall.sh | bash
+```
+
+**Windows:** download `uninstall.bat`, double-click it.
+
+---
+
+## 🛠️ Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| *"The Docker engine did not start"* | Open **Docker Desktop** once, wait for the whale icon to stop animating, then re-run the installer |
+| *Port 3000 already in use* | Something else is on port 3000. Stop that program, or run Tailor CV on another port (edit `docker-compose.yml`: `"3000:3000"` → `"3001:3000"`, then `docker compose up -d`) |
+| *Windows asks to restart for WSL2* | Normal on fresh PCs. Restart, then double-click `install.bat` again — it continues from step 2 |
+| *"Homebrew not found" on Mac* | The script installs it automatically; if it fails, install manually: `brew install --cask docker` |
+| *App won't open after update* | Run the installer again — it's safe and skips finished steps |
+| *I want the app to stop* | `docker compose -f ~/tailor-cv/docker-compose.yml down` (Mac) — Windows: ask the installer's tip line |
+
+---
+
+## ❓ FAQ
+
+**Is my data private?** Yes — everything (jobs, CV, keys) lives on your machine.
+Tailor CV never sends your data anywhere except to the AI provider you chose with
+**your own key**.
+
+**Do I need a credit card?** No. Docker Desktop is free for personal use, Tailor CV
+is free and open-source (MIT).
+
+**Why not just a normal app installer?** Native installers need paid code-signing
+certificates (~$100–400/year) to avoid scary warnings. The Docker approach gives you
+a **warning-free install for $0** — the trade-off is Docker Desktop itself (~1 GB).
+
+**Which LLM key should I get?** Any of the six supported providers. OpenCode Go is
+pre-selected and quick to set up; Gemini has a generous free tier.
+
+**Can I move it to another computer?** Yes — run the installer there, then restore
+your `data` folder (it contains everything).

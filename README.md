@@ -67,6 +67,8 @@ Before installing, make sure you have one of these:
 
 ## 🚀 Installation — Quick Start
 
+> 📖 **Read the full guide first:** [scripts/README.md](scripts/README.md) — explains the concept, install, update, uninstall and troubleshooting for both platforms.
+
 **No code signing, no security warnings:** Tailor CV runs in Docker — the installer only ever launches **Docker Desktop** (signed by Docker Inc), never an unsigned binary. Your data stays on your machine.
 
 ### 🪟 Windows — double-click
@@ -84,6 +86,9 @@ curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh
 ```
 
 It installs Docker Desktop via Homebrew (if needed), waits for the engine, downloads Tailor CV, and opens your browser. Rerunning is safe — it skips completed steps.
+
+**Updating:** re-run the same installer (it skips finished steps), or use the one-command updaters — `scripts/update.sh` (Mac) / `update.bat` (Windows).
+**Uninstalling:** `scripts/uninstall.sh` (Mac) / `uninstall.bat` (Windows) — removes the app + data; Docker stays.
 
 **What both installers do (idempotent):**
 
