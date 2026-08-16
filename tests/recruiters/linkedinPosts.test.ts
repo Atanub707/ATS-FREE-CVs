@@ -19,17 +19,17 @@ import { loadConfig } from '../../server/config';
 
 const FAKE_ITEMS = [
   {
-    url: 'https://www.linkedin.com/posts/acme-hiring-devsecops-engineer-activity-7123456789012345678-ABCD',
-    text: 'We are hiring a #DevSecOps engineer! Join our team. #Kubernetes #CICD apply here',
-    name: 'ACME Recruiting',
-    date: new Date(Date.now() - 2 * 3600000).toISOString(),
-    externalUrl: 'https://acme.com/careers',
+    linkedinUrl: 'https://www.linkedin.com/posts/activity-7123456789012345678-ABCD',
+    content: 'We are hiring a #DevSecOps engineer! Join our team. #Kubernetes #CICD apply here',
+    author: { name: 'ACME Recruiting', linkedinUrl: 'https://www.linkedin.com/in/acme' },
+    postedAt: { timestamp: Date.now() - 2 * 3600000, date: new Date(Date.now() - 2 * 3600000).toISOString() },
+    job: { title: 'DevSecOps Engineer', linkedinUrl: 'https://www.linkedin.com/jobs/view/123', location: 'Remote', subtitle: 'Job by ACME Recruiting' },
   },
   {
-    url: 'https://www.linkedin.com/posts/beta-security-activity-7123456789012345678-EFGH',
-    text: 'Opening for a #CloudSecurity engineer with AWS + Terraform. Remote friendly.',
-    name: 'Beta Security',
-    date: new Date(Date.now() - 5 * 3600000).toISOString(),
+    linkedinUrl: 'https://www.linkedin.com/posts/activity-7123456789012345678-EFGH',
+    content: 'Opening for a #CloudSecurity engineer with AWS + Terraform. Remote friendly.',
+    author: { name: 'Beta Security' },
+    postedAt: { timestamp: Date.now() - 5 * 3600000 },
   },
 ];
 
@@ -63,13 +63,17 @@ describe('LinkedInPostsScraper', () => {
     expect(jobs[0].title).toContain('We are hiring');
     expect(jobs[0].company).toBe('ACME Recruiting');
     expect(jobs[0].hashtags).toContain('#DevSecOps');
-    expect(jobs[0].applyUrl).toBe('https://acme.com/careers');
+    expect(jobs[0].applyUrl).toBe('https://www.linkedin.com/jobs/view/123');
     expect(jobs[0].url).toContain('linkedin.com/posts');
+    expect(jobs[0].location).toBe('Remote');
     expect(jobs[0].source).toBe('LinkedInPosts');
-    // Actor URL used:
+    // Actor URL (tilde format) + verified input schema:
     const call = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
     expect(call).toContain('run-sync-get-dataset-items');
-    expect(call).toContain('harvestapi/linkedin-post-search');
+    expect(call).toContain('harvestapi~linkedin-post-search');
+    const body = JSON.parse(String(vi.mocked(globalThis.fetch).mock.calls[0][1]?.body));
+    expect(Array.isArray(body.searchQueries)).toBe(true);
+    expect(body.searchQueries[0]).toBe('DevSecOps');
   });
 
   it('falls back to engines gracefully when no Apify token is configured', async () => {

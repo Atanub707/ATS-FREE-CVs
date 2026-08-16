@@ -87,7 +87,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       </header>
 
       <div className="lp-body">
-        {setup && (!setup.cookie || !setup.apify) && (
+        {setup && !setup.apify && (
           <div className="lp-setup">
             <b>⚡ For reliable results, add your Apify token</b>
             <p>Search engines only index a fraction of LinkedIn posts. Paste your <b>Apify token</b> in <b>Settings → Integrations → Apify</b> — post search then runs through a dedicated LinkedIn posts actor (~$0.002/post, budget-capped) and reliably finds the last 24 hours. No LinkedIn cookie needed.</p>

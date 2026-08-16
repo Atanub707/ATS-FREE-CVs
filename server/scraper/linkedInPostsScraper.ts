@@ -262,25 +262,21 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
 // ── Apify layer (reliable keyword post search) ──────────────────────────────
 // harvestapi/linkedin-post-search — "No Cookies" actor: keyword search over
 // LinkedIn posts WITHOUT a session cookie (free engines still work as the
-// no-token fallback). Budget-capped per search so monthly cost stays tiny.
-const APIFY_POSTS_ACTOR = 'harvestapi/linkedin-post-search';
+// no-token fallback). Returns ~100 posts per run (~$0.20/run at $2/1K);
+// the client shows `limit` of them. Verified schema (2026-08-16):
+//   input:  { searchQueries: string[] }  (required)
+//   items:  linkedinUrl · content · author{name,linkedinUrl} ·
+//           postedAt{timestamp,date,postedAgoText} · job{title,linkedinUrl,
+//           location,subtitle,logoUrl} · socialContent · comments
+const APIFY_POSTS_ACTOR = 'harvestapi~linkedin-post-search';
 
 async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]> {
   const config = loadConfig();
   const token = config.apify.token?.trim();
   if (!token || config.apify.enabled !== true) return [];
 
-  // Defensive input: send every plausible field name (the store page is
-  // JS-rendered, so the exact schema is verified on first real run — a
-  // rejected field surfaces in the error message).
   const input = {
-    searchQuery: keywords,
-    keywords,
-    contentType: 'posts',
-    searchMode: 'posts',
-    postsCount: Math.min(limit * 2, 40),
-    resultsLimit: Math.min(limit * 2, 40),
-    maxPosts: Math.min(limit * 2, 40),
+    searchQueries: [keywords, `${keywords} hiring`],
   };
   try {
     const res = await fetch(
@@ -298,24 +294,28 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
     const seen = new Set<string>();
     for (const item of items) {
       if (jobs.length >= limit) break;
-      const url = String(item.url || item.postUrl || item.post_url || '').split('?')[0];
-      const text = String(item.text || item.caption || item.description || item.postContent || item.post_content || item.content || '').trim();
-      const author = String(item.name || item.authorName || item.author_name || item.companyName || item.company_name || 'LinkedIn').trim();
+      const url = String(item.linkedinUrl || item.url || item.postUrl || '').split('?')[0];
+      const text = String(item.content || item.text || item.description || item.postContent || '').trim();
+      const author = String(item.author?.name || item.authorName || item.companyName || 'LinkedIn').trim();
       if (!url.includes('linkedin.com') || !text || seen.has(url)) continue;
       seen.add(url);
       const now = new Date().toISOString();
       const firstLine = text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || text.slice(0, 110);
+      // The post often carries the actual JOB listing — prefer it as the apply link.
+      const jobUrl = item.job?.linkedinUrl ? String(item.job.linkedinUrl) : undefined;
+      const company = item.job?.subtitle ? String(item.job.subtitle).replace(/^Job by\s*/i, '') : author;
+      const postedRaw = item.postedAt?.date || item.postedAt?.timestamp || item.postedAt || item.date;
       jobs.push({
         id: `linkedinpost-${Buffer.from(url).toString('base64url').slice(0, 24)}`,
         title: firstLine.slice(0, 110),
-        company: author,
-        location: '',
+        company,
+        location: String(item.job?.location || ''),
         source: 'LinkedInPosts',
         description: text.slice(0, 3000),
         url,
-        postedDate: (item.date || item.publishedAt || item.createdAt) ? new Date(item.date || item.publishedAt || item.createdAt).toISOString() : undefined,
-        postedDateParsed: (item.date || item.publishedAt || item.createdAt) ? String(item.date || item.publishedAt || item.createdAt).slice(0, 10) : undefined,
-        applyUrl: (item.externalUrl || item.applyUrl || item.link) ? String(item.externalUrl || item.applyUrl || item.link) : undefined,
+        postedDate: postedRaw ? new Date(postedRaw).toISOString() : undefined,
+        postedDateParsed: postedRaw ? String(postedRaw).slice(0, 10) : undefined,
+        applyUrl: jobUrl || (item.externalUrl ? String(item.externalUrl) : undefined),
         hashtags: extractHashtags(text),
         jobType: 'Post',
         state: 'pending',
