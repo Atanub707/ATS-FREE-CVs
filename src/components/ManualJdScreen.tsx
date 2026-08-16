@@ -1186,11 +1186,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="text-center text-xs text-[var(--color-faint)] pb-3 pt-2 shrink-0">
-        © 2025 Tailor CV by Atanu. All rights reserved.
-      </footer>
-
       {/* History overlay */}
       {historyOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 flex justify-end">
