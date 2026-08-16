@@ -138,9 +138,18 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 // added (`skillsAdded`) and bullets it rewrote (`bulletRewrites`) get ai:true —
 // everything else is the user's original content and is never touched.
 // Skill categories are preserved so the preview + editor look like the Master CV.
-export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null): EditableCv {
+// Bullets are tagged by CONTENT comparison against the original Master CV, so
+// AI-rewritten AND AI-added bullets are both caught (the server's index-paired
+// bulletRewrites alone misses added bullets / index shifts).
+export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null, originalCv?: PdfCvShape | null): EditableCv {
   const aiSkills = new Set((diff?.addedAfter?.skillsAdded || []).map((s) => s.toLowerCase().trim()));
   const aiBullets = new Set((diff?.bulletRewrites || []).map((r) => (r.rewritten || '').toLowerCase().trim()));
+  const norm = (t: string) => String(t).toLowerCase().replace(/\s+/g, ' ').trim();
+  // Original highlights per experience (normalized) — a tailored bullet that
+  // matches its original wording is the user's content; anything else is AI.
+  const origHighlights: string[][] = (originalCv?.workExperience || []).map((we) =>
+    (we.highlights || []).map((h) => norm(h))
+  );
 
   const skills: EditableSkillGroup[] = (cv.technicalSkills || []).map((cat) => ({
     category: cat.category || 'Technical',
@@ -151,18 +160,33 @@ export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null): Edita
     })),
   }));
 
-  const experiences: EditableExp[] = (cv.workExperience || []).map((we) => ({
-    id: uid(),
-    title: we.title || '',
-    company: we.company || '',
-    location: we.location,
-    dates: we.dates || '',
-    bullets: (we.highlights || []).map((h) => ({
+  const experiences: EditableExp[] = (cv.workExperience || []).map((we, wi) => {
+    const originals = originalCv ? origHighlights[wi] || [] : null;
+    // Multiset match: consume each original once so reordered-but-unchanged
+    // bullets stay untagged while rewritten/added ones get tagged. Without the
+    // original CV we can only trust the server's diff (index-paired).
+    const remaining = originals ? [...originals] : null;
+    const isAi = (h: string) => {
+      const k = norm(h);
+      if (aiBullets.has(k)) return true; // server-confirmed rewrite
+      if (remaining === null) return false;
+      const at = remaining.indexOf(k);
+      if (at >= 0) { remaining.splice(at, 1); return false; }
+      return true; // not found in the original → AI-rewritten or AI-added
+    };
+    return {
       id: uid(),
-      text: h,
-      ai: aiBullets.has(String(h).toLowerCase().trim()),
-    })),
-  }));
+      title: we.title || '',
+      company: we.company || '',
+      location: we.location,
+      dates: we.dates || '',
+      bullets: (we.highlights || []).map((h) => ({
+        id: uid(),
+        text: h,
+        ai: isAi(h),
+      })),
+    };
+  });
 
   return {
     candidateName: cv.candidateName || '',
@@ -269,9 +293,10 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   useEffect(() => {
     if (tailoredCv && !editableCv) {
       const shape = compressedCvToPdfShape(tailoredCv);
-      setEditableCv(buildEditableCv(shape, savedDiffRef.current));
+      const orig = masterCv ? masterCvToPdfShape(masterCv) : null;
+      setEditableCv(buildEditableCv(shape, savedDiffRef.current, orig));
     }
-  }, [tailoredCv, editableCv]);
+  }, [tailoredCv, editableCv, masterCv]);
 
   useEffect(() => {
     if (editableCv) setEditableNewCv(editableCvToPdfShape(editableCv, hideAI));
@@ -978,7 +1003,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                             <PenLine className="w-4 h-4 text-[var(--color-cta)]" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-[16px] font-bold text-[var(--color-cta)] leading-none">+{reviewBullets.length}</div>
+                            <div className="text-[16px] font-bold text-[var(--color-cta)] leading-none">+{editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)}</div>
                             <div className="text-[9.5px] text-[var(--color-faint)] mt-1 leading-tight">Bullets rewritten</div>
                           </div>
                         </div>

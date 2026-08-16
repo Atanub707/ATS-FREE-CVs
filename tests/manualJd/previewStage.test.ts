@@ -73,6 +73,55 @@ describe('Manual JD · Preview Stage editable model', () => {
     expect(skillItems(cv).every((s: any) => !s.ai)).toBe(true);
     expect(cv.experiences[0].bullets.every((b) => !b.ai)).toBe(true);
   });
+
+  it('tags AI-ADDED bullets by content comparison against the original CV', () => {
+    // Tailored CV has the original 3 bullets PLUS a new AI-added one, and one
+    // rewritten. The diff only lists the rewrite — content comparison must
+    // also tag the added bullet.
+    const tailored: PdfCvShape = {
+      ...CV,
+      workExperience: [
+        {
+          title: 'Lead Cloud Engineer',
+          company: 'CloudCore',
+          dates: '2021 – Present',
+          highlights: [
+            'Led migration of 40+ services.',
+            'Automated security scanning across all pipelines.', // rewritten
+            'Designed IaC in Terraform.',
+            'Introduced supply-chain SBOM attestation.', // AI-ADDED, not in diff
+          ],
+        },
+      ],
+    };
+    const cv = buildEditableCv(tailored, { ...DIFF, bulletRewrites: [{ original: 'Built security scanning into CI.', rewritten: 'Automated security scanning across all pipelines.' }] } as any, CV);
+    const bullets = cv.experiences[0].bullets;
+    expect(bullets.find((b) => b.text === 'Led migration of 40+ services.')?.ai).toBe(false); // unchanged → user's
+    expect(bullets.find((b) => b.text === 'Designed IaC in Terraform.')?.ai).toBe(false); // unchanged
+    expect(bullets.find((b) => b.text === 'Automated security scanning across all pipelines.')?.ai).toBe(true); // rewritten
+    expect(bullets.find((b) => b.text === 'Introduced supply-chain SBOM attestation.')?.ai).toBe(true); // AI-added
+  });
+
+  it('keeps reordered-but-unchanged bullets untagged (multiset match)', () => {
+    const tailored: PdfCvShape = {
+      ...CV,
+      workExperience: [
+        {
+          title: 'Lead Cloud Engineer',
+          company: 'CloudCore',
+          dates: '2021 – Present',
+          highlights: [
+            'Designed IaC in Terraform.', // moved up, wording identical
+            'Led migration of 40+ services.',
+            'Built security scanning into CI.',
+          ],
+        },
+      ],
+    };
+    // No rewrite entries in the diff → content comparison is the only signal.
+    const cv = buildEditableCv(tailored, { ...DIFF, bulletRewrites: [] } as any, CV);
+    expect(cv.experiences[0].bullets.every((b) => !b.ai)).toBe(true);
+  });
 });
 // ── Drag & drop placement math (mirrors the handlers in ManualJdScreen) ──
 // dropOnto computes: insert = below ? to+1 : to; if (from < insert) insert--.
