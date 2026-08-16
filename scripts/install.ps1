@@ -78,9 +78,17 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
 # ── 2. Start Docker Desktop EXPLICITLY ──────────────────────────────────────
 # Installing Docker Desktop does NOT start the engine. Launch it by its full
 # path so the Linux engine (dockerDesktopLinuxEngine pipe) actually comes up.
+# NOTE: never let Docker's stderr become a fatal error (PowerShell 7 turns
+# native stderr into a terminating error under ErrorActionPreference=Stop) —
+# always check $LASTEXITCODE instead.
+function Test-DockerEngine {
+  docker info 2>&1 | Out-Null
+  return ($LASTEXITCODE -eq 0)
+}
+
 if (-not (Test-Path $DockerDesktopExe)) { $DockerDesktopExe = 'Docker Desktop' }
 $engineReady = $false
-if (docker info *> $null) {
+if (Test-DockerEngine) {
   $engineReady = $true
 } else {
   Say 'Starting Docker Desktop…'
@@ -88,22 +96,33 @@ if (docker info *> $null) {
 
   # ── 3. WAIT for the engine (not just the CLI) ─────────────────────────────
   # First launch: Docker service → WSL2 init → Linux VM → engine → named pipe.
-  # This can take 1–3 minutes. Poll docker info every 2s (90 attempts).
+  # This can take 1–3 minutes. Poll every 2s (90 attempts).
   Say 'Waiting for the Docker engine to be ready (first launch can take a few minutes)…'
+  $wslChecked = $false
   for ($i = 1; $i -le 90; $i++) {
-    if (docker info *> $null) { $engineReady = $true; break }
+    if (Test-DockerEngine) { $engineReady = $true; break }
     if ($i % 10 -eq 0) { Say "  still waiting… attempt $i/90" }
+    # "Docker Desktop is unable to start" often means WSL2 is missing on
+    # machines where Docker was installed before WSL. Check + fix once.
+    if ($i -eq 15 -and -not $wslChecked) {
+      $wslChecked = $true
+      wsl --status 2>&1 | Out-Null
+      if ($LASTEXITCODE -ne 0) {
+        Warn 'WSL2 missing — installing it (Docker needs it). May need a restart after this.'
+        wsl --install --no-distribution | Out-Host
+      }
+    }
     Start-Sleep -Seconds 2
   }
 }
 
 if (-not $engineReady) {
-  Fail 'The Docker engine did not become ready. Open Docker Desktop once, accept any first-run prompts, then run the installer again.'
+  Fail 'The Docker engine did not become ready. Open Docker Desktop once, accept any first-run prompts (or restart your PC if WSL2 was just installed), then run the installer again.'
 }
 Ok 'Docker engine is ready'
 
 # ── 4. Verify compose v2 (bundled with Docker Desktop) ──────────────────────
-docker compose version *> $null
+docker compose version 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail 'docker compose v2 is missing — update Docker Desktop.' }
 Ok 'docker compose v2 found'
 

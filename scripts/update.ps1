@@ -21,9 +21,14 @@ Ok 'Code updated'
 
 # Make sure the Docker engine is actually ready before compose (first
 # launch / after a reboot the engine needs time to come up).
+# NOTE: check $LASTEXITCODE — native stderr is fatal under Stop in PS7.
+function Test-DockerEngine {
+  docker info 2>&1 | Out-Null
+  return ($LASTEXITCODE -eq 0)
+}
 $engineReady = $false
 for ($i = 1; $i -le 60; $i++) {
-  if (docker info *> $null) { $engineReady = $true; break }
+  if (Test-DockerEngine) { $engineReady = $true; break }
   Start-Sleep -Seconds 2
 }
 if (-not $engineReady) { Fail 'The Docker engine did not become ready. Open Docker Desktop once, then run update.bat again.' }
