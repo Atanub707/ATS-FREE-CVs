@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MagnifyingGlass, ArrowSquareOut, Clock, Sparkle, PaperPlaneTilt } from '@phosphor-icons/react';
 
 interface PostResult {
@@ -30,6 +30,14 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
+  const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then((r) => r.json())
+      .then((c) => setSetup({ cookie: !!(c?.linkedin?.liAt), apify: !!(c?.apify?.enabled && c?.apify?.token) }))
+      .catch(() => setSetup(null));
+  }, []);
 
   const search = async (raw?: string) => {
     const q = (raw ?? query).trim();
@@ -79,6 +87,12 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       </header>
 
       <div className="lp-body">
+        {setup && (!setup.cookie || !setup.apify) && (
+          <div className="lp-setup">
+            <b>⚡ For reliable results, add your LinkedIn session cookie</b>
+            <p>Search engines only index a fraction of LinkedIn posts. Paste your <b>li_at cookie</b> (LinkedIn → DevTools → Application → Cookies) plus your <b>Apify token</b> in <b>Settings → Integrations → Apify</b> — post search then runs through LinkedIn directly and always finds the last 24 hours.</p>
+          </div>
+        )}
         <div className="lp-hero">
           <span className="lp-eyebrow"><Sparkle size={12} weight="fill" /> Real-time job posts</span>
           <h1>Find jobs shared as LinkedIn posts</h1>
@@ -191,6 +205,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         @keyframes lpRot{to{transform:rotate(360deg)}}
         .lp-hint{font-size:11px; color:#64748B; margin-top:12px; font-weight:600;}
         .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
+        .lp-setup{max-width:620px; margin:0 auto 22px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:15px 18px;}
+        .lp-setup b{display:block; font-size:12.5px; font-weight:800; color:#92400E; margin-bottom:4px;}
+        .lp-setup p{font-size:11.5px; color:#B45309; line-height:1.65;}
 
         .lp-error{align-self:center; font-size:12px; font-weight:700; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:10px 15px;}
         .lp-msg{max-width:620px; margin:26px auto 0; font-size:12.5px; font-weight:700; color:#475569; background:#fff;
