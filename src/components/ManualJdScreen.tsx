@@ -972,6 +972,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     </button>
                   </div>
 
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
                   {/* ATS score card — how the tailored CV covers the JD */}
                   {diff && (
                     <div className="space-y-2">
@@ -1020,7 +1021,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                     </div>
                   )}
 
-                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
                   <div className="text-[10px] font-semibold text-[var(--color-faint)]">
                     {hideAI
                       ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
