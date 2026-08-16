@@ -222,6 +222,9 @@ export interface AppConfig {
     enabled: boolean;
     referralUrl?: string;
   };
+  linkedin: {
+    liAt: string; // LinkedIn session cookie — unlocks reliable LinkedIn POSTS search (Apify actor)
+  };
   email: {
     host: string;
     port: number;

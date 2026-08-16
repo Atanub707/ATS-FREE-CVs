@@ -32,6 +32,9 @@ const DEFAULT_CONFIG: AppConfig = {
     enabled: false,
     referralUrl: 'https://console.apify.com/sign-up?fpr=xu9hcp',
   },
+  linkedin: {
+    liAt: '',
+  },
   email: {
     host: '',
     port: 587,
@@ -80,9 +83,10 @@ export function loadConfig(): AppConfig {
       apify: {
         token: parsed.apify?.token || '',
         enabled: String(parsed.apify?.enabled ?? 'false').toLowerCase() === 'true',
-        // ini keeps surrounding quotes when a value contains '=' (URLs) —
-        // strip them so the referral link stays clean.
         referralUrl: String(parsed.apify?.referralUrl || '').replace(/^"|"$/g, ''),
+      },
+      linkedin: {
+        liAt: String(parsed.linkedin?.liAt || '').replace(/^"|"$/g, ''),
       },
       email: {
         host: parsed.email?.host ?? DEFAULT_CONFIG.email.host,

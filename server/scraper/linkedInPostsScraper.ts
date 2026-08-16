@@ -1,4 +1,5 @@
 import { Job, ScraperParams } from '../../src/types.js';
+import { loadConfig } from '../config.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  LinkedIn Posts scraper (built-in, free)
@@ -258,14 +259,88 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
   return { author, text: text || title, date, applyUrl, hashtags: extractHashtags(text || title) };
 }
 
+// ── Apify layer (reliable keyword post search) ──────────────────────────────
+// LinkedIn POST search is login-gated — the free engines work without a
+// session, but the robust path is an Apify actor using the user's li_at
+// cookie. Used when both the Apify token AND the li_at cookie are configured.
+const APIFY_POSTS_ACTOR = 'wtrf/linkedin-search-scraper';
+
+async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]> {
+  const config = loadConfig();
+  const token = config.apify.token?.trim();
+  const liAt = config.linkedin?.liAt?.trim();
+  if (!token || config.apify.enabled !== true || !liAt) return [];
+
+  const input = {
+    searchQuery: keywords,
+    contentType: 'posts',
+    resultsLimit: Math.min(limit * 2, 40),
+    sessionCookie: liAt,
+  };
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/${APIFY_POSTS_ACTOR}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(240000) }
+    );
+    if (!res.ok) {
+      console.warn(`[LinkedInPosts] Apify actor returned ${res.status}`);
+      return [];
+    }
+    const items = await res.json();
+    if (!Array.isArray(items)) return [];
+
+    const jobs: Job[] = [];
+    const seen = new Set<string>();
+    for (const item of items) {
+      if (jobs.length >= limit) break;
+      const url = String(item.url || item.postUrl || '').split('?')[0];
+      const text = String(item.text || item.caption || item.description || '').trim();
+      const author = String(item.name || item.authorName || item.companyName || 'LinkedIn').trim();
+      if (!url.includes('linkedin.com') || !text || seen.has(url)) continue;
+      seen.add(url);
+      const now = new Date().toISOString();
+      const firstLine = text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || text.slice(0, 110);
+      jobs.push({
+        id: `linkedinpost-${Buffer.from(url).toString('base64url').slice(0, 24)}`,
+        title: firstLine.slice(0, 110),
+        company: author,
+        location: '',
+        source: 'LinkedInPosts',
+        description: text.slice(0, 3000),
+        url,
+        postedDate: item.date ? new Date(item.date).toISOString() : undefined,
+        postedDateParsed: item.date ? String(item.date).slice(0, 10) : undefined,
+        applyUrl: item.externalUrl ? String(item.externalUrl) : undefined,
+        hashtags: extractHashtags(text),
+        jobType: 'Post',
+        state: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    return jobs;
+  } catch (e: any) {
+    console.warn('[LinkedInPosts] Apify actor failed:', e?.message);
+    return [];
+  }
+}
+
 export class LinkedInPostsScraper {
-  lastDebug: { queriesTried: number; linksFound: number } = { queriesTried: 0, linksFound: 0 };
+  lastDebug: { queriesTried: number; linksFound: number; via?: string } = { queriesTried: 0, linksFound: 0 };
 
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
     if (!keywords) return [];
     const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 10));
 
+    // Reliable path first: Apify actor + user's LinkedIn session cookie.
+    const apifyJobs = await apifyPostsSearch(keywords, limit);
+    if (apifyJobs.length > 0) {
+      this.lastDebug = { queriesTried: 1, linksFound: apifyJobs.length, via: 'apify' };
+      return apifyJobs;
+    }
+
+    // Free path: multi-engine discovery (works without a cookie).
     const { urls, queriesTried, linksFound } = await discoverPostUrls(keywords, limit);
     this.lastDebug = { queriesTried, linksFound };
     const jobs: Job[] = [];

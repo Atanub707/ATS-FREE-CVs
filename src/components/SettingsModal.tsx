@@ -126,6 +126,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [showApify, setShowApify] = useState(false);
+  const [showLiAt, setShowLiAt] = useState(false);
   const [testState, setTestState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
   const [testMsg, setTestMsg] = useState('');
   const [savedToast, setSavedToast] = useState(false);
@@ -820,6 +821,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 onChange={(e) => setFormDataTouched({ ...formData, apify: { ...formData.apify, token: e.target.value } })} placeholder="apify_api_…" />
                               <button className="st-eye" type="button" onClick={() => setShowApify((v) => !v)} title="Show / hide">
                                 {showApify ? <EyeSlash size={16} /> : <Eye size={16} />}
+                              </button>
+                            </div>
+                          </div>
+                          <span className="st-flabel" htmlFor="st-liat">LinkedIn session cookie (optional — unlocks LinkedIn POSTS search)</span>
+                          <div className="st-row">
+                            <div className="st-lbl"><label htmlFor="st-liat"><b>li_at cookie</b><span>LinkedIn → DevTools → Application → Cookies → li_at. Needed for the reliable LinkedIn Posts scraper (Apify actor). Your data, your machine.</span></label></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <input className={monoCls} id="st-liat" type={showLiAt ? 'text' : 'password'} value={formData.linkedin?.liAt || ''}
+                                onChange={(e) => setFormDataTouched({ ...formData, linkedin: { ...(formData.linkedin || { liAt: '' }), liAt: e.target.value } })} placeholder="AQED…" />
+                              <button className="st-eye" type="button" onClick={() => setShowLiAt((v) => !v)} title="Show / hide">
+                                {showLiAt ? <EyeSlash size={16} /> : <Eye size={16} />}
                               </button>
                             </div>
                           </div>

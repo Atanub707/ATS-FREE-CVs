@@ -47,7 +47,14 @@ DevSecOps Engineer · Senior DevSecOps Engineer · Cloud DevSecOps Engineer ·
 DevOps Security Engineer · Cloud Security Engineer · Application Security Engineer ·
 Platform Security Engineer
 
-## 5. Implementation
+## 5. Reliable path: Apify + li_at cookie
+
+LinkedIn **post search is login-gated** — the free engines work without a session,
+but the robust route is an Apify actor (`wtrf/linkedin-search-scraper`) using the
+user's **`li_at` session cookie** (Settings → Integrations → Apify → li_at cookie).
+Flow: actor first → engines fallback.
+
+## 6. Implementation
 
 `server/scraper/linkedInPostsScraper.ts`:
 - `roleVariants(role)` — expands the searched role into posting-style variants.
