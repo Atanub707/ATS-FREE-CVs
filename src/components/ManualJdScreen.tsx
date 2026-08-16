@@ -105,6 +105,11 @@ export interface EditableItem {
   ai: boolean;
 }
 
+export interface EditableSkillGroup {
+  category: string;
+  items: EditableItem[];
+}
+
 export interface EditableExp {
   id: string;
   title: string;
@@ -119,7 +124,7 @@ export interface EditableCv {
   targetRole?: string;
   contactInfo: Record<string, string>;
   summary: string;
-  skills: EditableItem[];
+  skills: EditableSkillGroup[]; // categories preserved (matches Master CV preview)
   coreCompetencies: string[];
   experiences: EditableExp[];
   projects: any[];
@@ -132,16 +137,19 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 // Build the editable model from the tailored CV + the AI diff. Skills the AI
 // added (`skillsAdded`) and bullets it rewrote (`bulletRewrites`) get ai:true —
 // everything else is the user's original content and is never touched.
+// Skill categories are preserved so the preview + editor look like the Master CV.
 export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null): EditableCv {
   const aiSkills = new Set((diff?.addedAfter?.skillsAdded || []).map((s) => s.toLowerCase().trim()));
   const aiBullets = new Set((diff?.bulletRewrites || []).map((r) => (r.rewritten || '').toLowerCase().trim()));
 
-  const skills: EditableItem[] = [];
-  for (const cat of cv.technicalSkills || []) {
-    for (const s of cat.skills || []) {
-      skills.push({ id: uid(), text: s, ai: aiSkills.has(String(s).toLowerCase().trim()) });
-    }
-  }
+  const skills: EditableSkillGroup[] = (cv.technicalSkills || []).map((cat) => ({
+    category: cat.category || 'Technical',
+    items: (cat.skills || []).map((s) => ({
+      id: uid(),
+      text: s,
+      ai: aiSkills.has(String(s).toLowerCase().trim()),
+    })),
+  }));
 
   const experiences: EditableExp[] = (cv.workExperience || []).map((we) => ({
     id: uid(),
@@ -171,7 +179,7 @@ export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null): Edita
 }
 
 // Convert the (possibly edited, possibly AI-hidden) model back to a PdfCvShape
-// for the live preview and the edited-CV downloads.
+// for the live preview and the edited-CV downloads. Categories are preserved.
 export function editableCvToPdfShape(cv: EditableCv, hideAI: boolean): PdfCvShape {
   const keep = (x: EditableItem) => (hideAI && x.ai ? false : true);
   return {
@@ -179,7 +187,9 @@ export function editableCvToPdfShape(cv: EditableCv, hideAI: boolean): PdfCvShap
     targetRole: cv.targetRole,
     contactInfo: cv.contactInfo || {},
     professionalSummary: cv.summary || '',
-    technicalSkills: [{ category: 'Technical', skills: cv.skills.filter(keep).map((s) => s.text) }],
+    technicalSkills: cv.skills
+      .map((g) => ({ category: g.category, skills: g.items.filter(keep).map((s) => s.text) }))
+      .filter((g) => g.skills.length > 0),
     coreCompetencies: cv.coreCompetencies?.length ? cv.coreCompetencies : undefined,
     workExperience: cv.experiences
       .filter((e) => e.title || e.company)
@@ -412,17 +422,46 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   };
 
   const setSummary = (v: string) => { if (editableCv) commitEdits({ ...editableCv, summary: v }); };
+  const visibleSkillGroups = (editableCv?.skills || []).map((g) => ({
+    category: g.category,
+    items: g.items.filter((s) => !hideAI || !s.ai),
+  })).filter((g) => g.items.length > 0);
   const toggleSkill = (sid: string) => {
     if (!editableCv) return;
-    commitEdits({ ...editableCv, skills: editableCv.skills.filter((s) => s.id !== sid) });
+    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => ({ ...g, items: g.items.filter((s) => s.id !== sid) })) });
   };
   const addSkill = (text: string) => {
     if (!editableCv || !text.trim()) return;
-    commitEdits({ ...editableCv, skills: [...editableCv.skills, { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] });
+    const first = editableCv.skills[0];
+    commitEdits({ ...editableCv, skills: first ? editableCv.skills.map((g, idx) => (idx === 0 ? { ...g, items: [...g.items, { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] } : g)) : [{ category: 'Technical', items: [{ id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] }] });
+  };
+  const moveSkill = (gid: string, sid: string, dir: -1 | 1) => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      skills: editableCv.skills.map((g) => {
+        if (g.category !== gid) return g;
+        const idx = g.items.findIndex((s) => s.id === sid);
+        const to = idx + dir;
+        if (idx < 0 || to < 0 || to >= g.items.length) return g;
+        const items = [...g.items];
+        [items[idx], items[to]] = [items[to], items[idx]];
+        return { ...g, items };
+      }),
+    });
   };
   const setExpTitle = (eid: string, v: string) => {
     if (!editableCv) return;
     commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, title: v } : e)) });
+  };
+  const moveExp = (eid: string, dir: -1 | 1) => {
+    if (!editableCv) return;
+    const idx = editableCv.experiences.findIndex((e) => e.id === eid);
+    const to = idx + dir;
+    if (idx < 0 || to < 0 || to >= editableCv.experiences.length) return;
+    const exp = [...editableCv.experiences];
+    [exp[idx], exp[to]] = [exp[to], exp[idx]];
+    commitEdits({ ...editableCv, experiences: exp });
   };
   const setBullet = (bid: string, v: string) => {
     if (!editableCv) return;
@@ -432,9 +471,61 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     if (!editableCv) return;
     commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => ({ ...e, bullets: e.bullets.filter((b) => b.id !== bid) })) });
   };
+  const moveBullet = (eid: string, bid: string, dir: -1 | 1) => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      experiences: editableCv.experiences.map((e) => {
+        if (e.id !== eid) return e;
+        const idx = e.bullets.findIndex((b) => b.id === bid);
+        const to = idx + dir;
+        if (idx < 0 || to < 0 || to >= e.bullets.length) return e;
+        const bullets = [...e.bullets];
+        [bullets[idx], bullets[to]] = [bullets[to], bullets[idx]];
+        return { ...e, bullets };
+      }),
+    });
+  };
   const addBullet = (eid: string, text: string) => {
     if (!editableCv || !text.trim()) return;
     commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, bullets: [...e.bullets, { id: `bl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] } : e)) });
+  };
+
+  // Reorder a skill group's VISIBLE items by index → maps back onto the full
+  // (incl. hidden AI) list by walking the original order and swapping.
+  const reorderSkills = (catIdx: number) => (from: number, to: number) => {
+    if (!editableCv) return;
+    const g = editableCv.skills[catIdx];
+    if (!g) return;
+    const visible = g.items.filter((s) => !hideAI || !s.ai);
+    const next = reorderArr(visible, from, to);
+    // Rebuild full items preserving hidden-AI positions (map by index into
+    // the hideAI-filtered view of the ORIGINAL, stable because hidden stays put).
+    let v = 0;
+    const full = g.items.map((x) => (hideAI && x.ai ? x : next[v++]));
+    commitEdits({
+      ...editableCv,
+      skills: editableCv.skills.map((gg, i) => (i === catIdx ? { ...gg, items: full } : gg)),
+    });
+  };
+
+  const reorderBullets = (eid: string) => (from: number, to: number) => {
+    if (!editableCv) return;
+    const e = editableCv.experiences.find((x) => x.id === eid);
+    if (!e) return;
+    const visible = e.bullets.filter((b) => !hideAI || !b.ai);
+    const next = reorderArr(visible, from, to);
+    let v = 0;
+    const full = e.bullets.map((b) => (hideAI && b.ai ? b : next[v++]));
+    commitEdits({
+      ...editableCv,
+      experiences: editableCv.experiences.map((x) => (x.id === eid ? { ...x, bullets: full } : x)),
+    });
+  };
+
+  const reorderExps = (from: number, to: number) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, experiences: reorderArr(editableCv.experiences, from, to) });
   };
   const toggleHideAI = () => {
     const next = !hideAI;
@@ -465,7 +556,45 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     }
   };
 
-  const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
+    const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
+
+  // ── Drag & drop reordering (HTML5) ──────────────────────────────────
+  // One hook per list: returns handlers to make each row draggable and to
+  // accept drops that call `onMove(fromIdx, toIdx)` with the new order.
+  // Handles reordering between visible rows only — hidden (AI-off) rows are
+  // untouched because they aren't rendered (HTML5 DnD can't drop onto them).
+  const dragStateRef = useRef<{ list: string; from: number } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const beginDrag = (listKey: string, from: number) => (e: React.DragEvent) => {
+    dragStateRef.current = { list: listKey, from };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `${listKey}:${from}`);
+  };
+  const dropOnto = (listKey: string, onMove: (from: number, to: number) => void, to: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(null);
+    const st = dragStateRef.current;
+    if (st && st.list === listKey && st.from !== to) onMove(st.from, to);
+    dragStateRef.current = null;
+  };
+  const overRow = (rowKey: string | null) => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOver(rowKey);
+  };
+  const leaveRow = () => (e: React.DragEvent) => {
+    if (dragStateRef.current?.list) setDragOver(null);
+  };
+  const rowCls = (rowKey: string | null, selectedClassName = 'ring-2 ring-[var(--color-brand)]/60 border-[var(--color-brand)]') =>
+    `relative cursor-grab active:cursor-grabbing ${dragOver === rowKey ? selectedClassName : ''}`;
+
+  // Generic reorder for a flat array (returns a NEW order via onReorder).
+  const reorderArr = <T,>(arr: T[], from: number, to: number): T[] => {
+    const next = [...arr];
+    const [x] = next.splice(from, 1);
+    next.splice(to, 0, x);
+    return next;
+  };
 
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
@@ -964,7 +1093,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                   </div>
                   <div className="text-[10.5px] font-semibold text-[var(--color-faint)] -mt-2 mb-3">
                     {hideAI
-                      ? `Hiding ${editableCv.skills.filter((s) => s.ai).length + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
+                      ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
                       : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
@@ -994,43 +1123,81 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           <Plus className="w-3 h-3" /> Add
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {editableCv.skills.filter((s) => !hideAI || !s.ai).map((s) => (
-                          <span key={s.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}>
-                            {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
-                            {s.text}
-                            <button
-                              type="button"
-                              onClick={() => toggleSkill(s.id)}
-                              aria-label={`Remove ${s.text}`}
-                              className="ml-0.5 w-4.5 h-4.5 rounded-md border text-[10px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                        {editableCv.skills.filter((s) => !hideAI || !s.ai).length === 0 && (
-                          <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
-                        )}
-                      </div>
+                      <p className="text-[10px] font-semibold text-[var(--color-faint)] mb-2">Drag to reorder</p>
+                      {visibleSkillGroups.map((g, gi) => (
+                        <div key={g.category} className="mb-2 last:mb-0">
+                          <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] mb-1.5">{g.category}</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {g.items.map((s, si) => (
+                              <span
+                                key={s.id}
+                                draggable
+                                onDragStart={beginDrag(`sk:${gi}`, si)}
+                                onDragOver={overRow(`sk:${gi}:${si}`)}
+                                onDragLeave={leaveRow()}
+                                onDrop={dropOnto(`sk:${gi}`, reorderSkills(gi), si)}
+                                onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border select-none transition-shadow ${rowCls(`sk:${gi}:${si}`, 'ring-2 ring-[var(--color-brand)]/60 border-[var(--color-brand)]')} ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
+                              >
+                                <span className="text-[9px] text-slate-300">⠿</span>
+                                {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
+                                {s.text}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSkill(s.id)}
+                                  aria-label={`Remove ${s.text}`}
+                                  className="ml-0.5 w-4.5 h-4.5 rounded-md border text-[10px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ))}
+                            {g.items.length === 0 && (
+                              <p className="text-[11px] text-[var(--color-faint)]">No visible skills.</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {visibleSkillGroups.length === 0 && (
+                        <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
+                      )}
                     </div>
 
                     {/* Experience */}
-                    {editableCv.experiences.filter((e) => !hideAI || e.bullets.some((b) => !b.ai) || e.title || e.company).map((exp) => (
-                      <div key={exp.id} className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
+                    {editableCv.experiences.map((exp, ei) => (
+                      <div
+                        key={exp.id}
+                        draggable
+                        onDragStart={beginDrag('exp', ei)}
+                        onDragOver={overRow(`exp:${ei}`)}
+                        onDrop={dropOnto('exp', reorderExps, ei)}
+                        onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
+                        className={`border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3 select-none ${rowCls(`exp:${ei}`, 'ring-2 ring-[var(--color-cta)]/50 border-[var(--color-cta)]/40')}`}
+                      >
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <input
-                            value={exp.title}
-                            onChange={(e) => setExpTitle(exp.id, e.target.value)}
-                            placeholder="Job title"
-                            className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[13px] font-bold text-[var(--color-ink)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
-                          />
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-[11px] text-slate-300 cursor-grab" title="Drag to reorder experience">⠿</span>
+                            <input
+                              value={exp.title}
+                              onChange={(e) => setExpTitle(exp.id, e.target.value)}
+                              placeholder="Job title"
+                              className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[13px] font-bold text-[var(--color-ink)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
+                            />
+                          </div>
                           <span className="text-[10px] font-semibold text-[var(--color-faint)] whitespace-nowrap">{exp.company} · {exp.dates}</span>
                         </div>
                         <div className="space-y-1.5">
-                          {exp.bullets.filter((b) => !hideAI || !b.ai).map((b) => (
-                            <div key={b.id} className="flex items-start gap-2">
-                              <span className="mt-2 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                          {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
+                            <div
+                              key={b.id}
+                              draggable
+                              onDragStart={beginDrag(`bl:${ei}`, bi)}
+                              onDragOver={overRow(`bl:${ei}:${bi}`)}
+                              onDrop={dropOnto(`bl:${ei}`, reorderBullets(exp.id), bi)}
+                              onDragEnd={() => { setDragOver(null); dragStateRef.current = null; }}
+                              className={`flex items-start gap-2 rounded-lg ${rowCls(`bl:${ei}:${bi}`, 'bg-[var(--color-brand-soft)] ring-1 ring-[var(--color-brand)]/40')}`}
+                            >
+                              <span className="text-[9px] text-slate-300 mt-2 cursor-grab select-none">⠿</span>
                               <input
                                 value={b.text}
                                 onChange={(e) => setBullet(b.id, e.target.value)}

@@ -31,11 +31,15 @@ const DIFF = {
   bulletRewrites: [{ original: 'Old text', rewritten: 'Built security scanning into CI.' }],
 };
 
+// Flatten the categorized skill model for assertions.
+const skillItems = (cv: any) => cv.skills.flatMap((g: any) => g.items);
+
 describe('Manual JD · Preview Stage editable model', () => {
   it('tags AI-added skills and AI-rewritten bullets', () => {
     const cv = buildEditableCv(CV, DIFF as any);
-    expect(cv.skills.find((s) => s.text === 'SAST/DAST')?.ai).toBe(true);
-    expect(cv.skills.find((s) => s.text === 'Kubernetes')?.ai).toBe(false);
+    const items = skillItems(cv);
+    expect(items.find((s: any) => s.text === 'SAST/DAST')?.ai).toBe(true);
+    expect(items.find((s: any) => s.text === 'Kubernetes')?.ai).toBe(false);
     expect(cv.experiences[0].bullets.find((b) => b.text === 'Built security scanning into CI.')?.ai).toBe(true);
     expect(cv.experiences[0].bullets.find((b) => b.text === 'Led migration of 40+ services.')?.ai).toBe(false);
   });
@@ -47,10 +51,17 @@ describe('Manual JD · Preview Stage editable model', () => {
     expect(pdf.workExperience[0].highlights).toEqual(['Led migration of 40+ services.', 'Designed IaC in Terraform.']);
   });
 
+  it('preserves skill categories from the master CV', () => {
+    const cv = buildEditableCv(CV, DIFF as any);
+    expect(cv.skills[0].category).toBe('Technical');
+    const pdf = editableCvToPdfShape(cv, false);
+    expect(pdf.technicalSkills[0].category).toBe('Technical');
+  });
+
   it('shows AI items when hideAI is off and preserves edits', () => {
     const cv = buildEditableCv(CV, DIFF as any);
     cv.summary = 'My own summary.'; // simulated user edit
-    cv.skills.push({ id: 'x', text: 'Python', ai: false }); // user-added skill
+    cv.skills[0].items.push({ id: 'x', text: 'Python', ai: false }); // user-added skill
     const pdf = editableCvToPdfShape(cv, false);
     expect(pdf.professionalSummary).toBe('My own summary.');
     expect(pdf.technicalSkills[0].skills).toContain('Python');
@@ -59,7 +70,7 @@ describe('Manual JD · Preview Stage editable model', () => {
 
   it('handles a null diff (no AI tagging → everything is the user\u2019s)', () => {
     const cv = buildEditableCv(CV, null);
-    expect(cv.skills.every((s) => !s.ai)).toBe(true);
+    expect(skillItems(cv).every((s: any) => !s.ai)).toBe(true);
     expect(cv.experiences[0].bullets.every((b) => !b.ai)).toBe(true);
   });
 });
