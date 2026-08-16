@@ -2207,6 +2207,38 @@ Return valid JSON only, no markdown:
     }
   });
 
+  // ── Manual JD · Preview Stage download (EDITED cv) ──
+  // The Preview stage lets users edit the tailored CV and download the
+  // edited version, not just the server's original. Accepts the edited
+  // PdfCvShape + template + format from the client.
+  app.post('/api/analyze-jd/preview-download', async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const cv = req.body?.cv;
+      if (!cv || typeof cv !== 'object') return res.status(400).json({ error: 'Edited CV is required.' });
+      const format = req.body?.format === 'txt' ? 'txt' : 'pdf';
+      const requestedTemplate = req.body?.template;
+      const effectiveTemplate = requestedTemplate && ['harvard', 'jake', 'atanu', 'atanu-pro'].includes(requestedTemplate) ? requestedTemplate : 'harvard';
+      const safeName = (cv.candidateName || 'Candidate').replace(/ /g, '_');
+
+      if (format === 'txt') {
+        const textCv = generatePlainTextCv(cv);
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_edited.txt"`);
+        res.send(textCv);
+      } else {
+        const pdfBuffer = await generatePdfBuffer(cv, effectiveTemplate);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}_edited.pdf"`);
+        res.send(pdfBuffer);
+      }
+    } catch (err: any) {
+      console.error('Preview download error:', err);
+      res.status(500).json({ error: 'Failed to generate file.' });
+    }
+  });
+
   // ── Manual JD history (per user) ──
   app.get('/api/manual-jd/history', (req, res) => {
     res.json({ analyses: listManualAnalyses() });

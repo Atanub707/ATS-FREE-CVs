@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight, Wand2, Eye, PencilLine } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
-import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
+import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape, PdfCvShape } from './CvPdfPreview';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
@@ -93,6 +93,109 @@ function normalizeAdditions(missing: string[], missingKw: string[], jd: string):
 
 /* ───────────────── Main screen ───────────────── */
 
+// ── Preview Stage · editable CV model ───────────────────────────────────────
+// The Tailor stage produces a PdfCvShape. The Preview stage lets the user edit
+// it — triggering the model, they get a working inline editor. Every item
+// carries an `ai` flag so a one-tap toggle can hide everything the AI added
+// (skills + rewritten bullets) and show the user's own content.
+
+export interface EditableItem {
+  id: string;
+  text: string;
+  ai: boolean;
+}
+
+export interface EditableExp {
+  id: string;
+  title: string;
+  company: string;
+  location?: string;
+  dates: string;
+  bullets: EditableItem[];
+}
+
+export interface EditableCv {
+  candidateName: string;
+  targetRole?: string;
+  contactInfo: Record<string, string>;
+  summary: string;
+  skills: EditableItem[];
+  coreCompetencies: string[];
+  experiences: EditableExp[];
+  projects: any[];
+  education: any[];
+  certifications: any[];
+}
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// Build the editable model from the tailored CV + the AI diff. Skills the AI
+// added (`skillsAdded`) and bullets it rewrote (`bulletRewrites`) get ai:true —
+// everything else is the user's original content and is never touched.
+export function buildEditableCv(cv: PdfCvShape, diff: DiffPayload | null): EditableCv {
+  const aiSkills = new Set((diff?.addedAfter?.skillsAdded || []).map((s) => s.toLowerCase().trim()));
+  const aiBullets = new Set((diff?.bulletRewrites || []).map((r) => (r.rewritten || '').toLowerCase().trim()));
+
+  const skills: EditableItem[] = [];
+  for (const cat of cv.technicalSkills || []) {
+    for (const s of cat.skills || []) {
+      skills.push({ id: uid(), text: s, ai: aiSkills.has(String(s).toLowerCase().trim()) });
+    }
+  }
+
+  const experiences: EditableExp[] = (cv.workExperience || []).map((we) => ({
+    id: uid(),
+    title: we.title || '',
+    company: we.company || '',
+    location: we.location,
+    dates: we.dates || '',
+    bullets: (we.highlights || []).map((h) => ({
+      id: uid(),
+      text: h,
+      ai: aiBullets.has(String(h).toLowerCase().trim()),
+    })),
+  }));
+
+  return {
+    candidateName: cv.candidateName || '',
+    targetRole: cv.targetRole || '',
+    contactInfo: cv.contactInfo || {},
+    summary: cv.professionalSummary || '',
+    skills,
+    coreCompetencies: cv.coreCompetencies || [],
+    experiences,
+    projects: cv.projects || [],
+    education: cv.education || [],
+    certifications: cv.certifications || [],
+  };
+}
+
+// Convert the (possibly edited, possibly AI-hidden) model back to a PdfCvShape
+// for the live preview and the edited-CV downloads.
+export function editableCvToPdfShape(cv: EditableCv, hideAI: boolean): PdfCvShape {
+  const keep = (x: EditableItem) => (hideAI && x.ai ? false : true);
+  return {
+    candidateName: cv.candidateName || 'CANDIDATE NAME',
+    targetRole: cv.targetRole,
+    contactInfo: cv.contactInfo || {},
+    professionalSummary: cv.summary || '',
+    technicalSkills: [{ category: 'Technical', skills: cv.skills.filter(keep).map((s) => s.text) }],
+    coreCompetencies: cv.coreCompetencies?.length ? cv.coreCompetencies : undefined,
+    workExperience: cv.experiences
+      .filter((e) => e.title || e.company)
+      .map((e) => ({
+        title: e.title,
+        company: e.company,
+        location: e.location,
+        dates: e.dates,
+        highlights: e.bullets.filter(keep).map((b) => b.text),
+      })),
+    projects: cv.projects || [],
+    education: cv.education || [],
+    certifications: cv.certifications || [],
+  };
+}
+
 export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -119,9 +222,15 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [tailoredCv, setTailoredCv] = useState<any | null>(null);
   const [cvLoadFailed, setCvLoadFailed] = useState(false);
   const [cut, setCut] = useState(50);
+  // Preview stage: editable model built from the tailored CV, plus the live
+  // PdfCvShape derived from the current edits (drives the right-hand preview
+  // and the edited-CV downloads). `hideAI` toggles AI-tagged content off.
+  const [editableCv, setEditableCv] = useState<EditableCv | null>(null);
+  const [hideAI, setHideAI] = useState(false);
+  const [editableNewCv, setEditableNewCv] = useState<PdfCvShape | null>(null);
   // View step — lets users click a completed step in the stepper to go back.
   // Auto-follows the derived step whenever the flow advances.
-  const [viewStep, setViewStep] = useState<1 | 2 | 3>(1);
+  const [viewStep, setViewStep] = useState<1 | 2 | 3 | 4>(1);
   const draggingRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const oldScrollRef = useRef<HTMLDivElement>(null);
@@ -133,10 +242,30 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   }, [isOpen, historyOpen]);
 
   // Keep the view step in sync with the flow's natural progression.
+// Once the tailored CV loads, advance the user to the new Preview Stage (4);
+// the Tailor step stays clickable so the diff review is never lost.
   useEffect(() => {
-    const s = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
+    const s: 1 | 2 | 3 | 4 = !result ? 1 : !diff ? (tailoring ? 3 : 2) : tailoredCv && !tailoring ? 4 : 3;
     setViewStep(s);
-  }, [result, diff, tailoring]);
+  }, [result, diff, tailoring, tailoredCv]);
+
+  // Preview Stage: as soon as the tailored CV is available AND editing changes
+  // happen, derive the live preview shape used by the right-hand sheet + the
+  // edited downloads.
+  const savedDiffRef = useRef<DiffPayload | null>(null);
+  useEffect(() => { savedDiffRef.current = diff; }, [diff]);
+
+  // Build the editable model once the tailored CV graph opens.
+  useEffect(() => {
+    if (tailoredCv && !editableCv) {
+      const shape = compressedCvToPdfShape(tailoredCv);
+      setEditableCv(buildEditableCv(shape, savedDiffRef.current));
+    }
+  }, [tailoredCv, editableCv]);
+
+  useEffect(() => {
+    if (editableCv) setEditableNewCv(editableCvToPdfShape(editableCv, hideAI));
+  }, [editableCv, hideAI]);
 
   useEffect(() => {
     if (!tailoredCv) return;
@@ -204,6 +333,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       setDiff(a.diff || null);
       setHistoryId(a.id);
       setTailorError(false);
+      setEditableCv(null); setEditableNewCv(null); setHideAI(false);
       setHistoryOpen(false);
       const restoredToken = payload.downloadToken || `restored-${a.id}`;
       if ((a.tailored_cv || a.tailoredCv) && a.diff?.scoreBoost !== undefined) {
@@ -221,7 +351,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false);
+    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false); setEditableCv(null); setEditableNewCv(null); setHideAI(false);
     setShowAllMatched(false); setShowAllAdditions(false); setShowAllAddedSkills(false); setShowAllRewrites(false); setShowAllReview(false);
     try {
       const res = await fetch('/api/analyze-jd', {
@@ -273,6 +403,70 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     window.open(`/api/analyze-jd/download?token=${downloadToken}&format=${format}&template=${previewTemplate}`, '_blank');
   };
 
+  // ── Preview Stage · edit handlers ────────────────────────────────
+  // Every mutator rebuilds the derived PdfCvShape so the live sheet + the
+  // edited downloads always reflect the current edits.
+  const commitEdits = (next: EditableCv) => {
+    setEditableCv(next);
+    setEditableNewCv(editableCvToPdfShape(next, hideAI));
+  };
+
+  const setSummary = (v: string) => { if (editableCv) commitEdits({ ...editableCv, summary: v }); };
+  const toggleSkill = (sid: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, skills: editableCv.skills.filter((s) => s.id !== sid) });
+  };
+  const addSkill = (text: string) => {
+    if (!editableCv || !text.trim()) return;
+    commitEdits({ ...editableCv, skills: [...editableCv.skills, { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] });
+  };
+  const setExpTitle = (eid: string, v: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, title: v } : e)) });
+  };
+  const setBullet = (bid: string, v: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => ({ ...e, bullets: e.bullets.map((b) => (b.id === bid ? { ...b, text: v } : b)) })) });
+  };
+  const toggleBullet = (bid: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => ({ ...e, bullets: e.bullets.filter((b) => b.id !== bid) })) });
+  };
+  const addBullet = (eid: string, text: string) => {
+    if (!editableCv || !text.trim()) return;
+    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, bullets: [...e.bullets, { id: `bl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] } : e)) });
+  };
+  const toggleHideAI = () => {
+    const next = !hideAI;
+    setHideAI(next);
+    if (editableCv) setEditableNewCv(editableCvToPdfShape(editableCv, next));
+  };
+
+  // The edited CV downloads come from the CURRENT edits (Preview Stage), not
+  // the server's tailored copy.
+  const downloadEdited = async (format: 'pdf' | 'txt') => {
+    if (!editableNewCv) return;
+    try {
+      const res = await fetch('/api/analyze-jd/preview-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv: editableNewCv, format, template: previewTemplate }),
+      });
+      if (!res.ok) { alert('Could not generate the file.'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(editableNewCv.candidateName || 'CV').replace(/ /g, '_')}_edited.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('Download failed: ' + e.message);
+    }
+  };
+
+  const previewDragActive = viewStep === 4 && !!editableNewCv && !!tailoredCv;
+
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
   const matchedSkills = result?.gapAnalysis?.matchingSkills || [];
@@ -281,7 +475,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const visibleMatched = showAllMatched ? matchedSkills : matchedSkills.slice(0, CHIP_CAP);
   const visibleAdditions = showAllAdditions ? additions : additions.slice(0, CHIP_CAP);
   const displayScore = result?.matchScore ?? 0;
-  const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : 3;
+  const step = !result ? 1 : !diff ? (tailoring ? 3 : 2) : tailoredCv && !tailoring ? 4 : 3;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
   const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
   const clamp1: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
@@ -375,6 +569,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
           { n: 1 as const, label: 'Add JD', on: step >= 2, reachable: true },
           { n: 2 as const, label: 'Analysis', on: step >= 3, reachable: !!result },
           { n: 3 as const, label: 'Tailor', on: step >= 3 && !tailoring, reachable: !!diff },
+          { n: 4 as const, label: 'Preview', on: step >= 4 && !tailoring, reachable: !!editableNewCv },
         ].map((s, i) => {
           const isCurrent = viewStep === s.n;
           const canClick = !loading && !tailoring && s.reachable;
@@ -408,7 +603,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
             </span>
-            <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 3</span>
+            <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 4</span>
           </div>
 
           <div className="relative flex-1 min-h-0 overflow-hidden bg-white">
@@ -737,6 +932,138 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 )}
               </div>
             </div>
+
+            {/* PANEL 4 · Preview · edit */}
+            <div className={panelCls(4)}>
+              {!editableCv ? (
+                <div className="flex-1 flex items-center justify-center text-center px-6">
+                  <div>
+                    <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-[#F1F5F9] border border-[var(--color-hairline)] flex items-center justify-center">
+                      <PencilLine className="w-6 h-6 text-[var(--color-faint)]" />
+                    </div>
+                    <p className="text-sm font-semibold text-[var(--color-faint)]">Tailor your CV to unlock the editor</p>
+                    <p className="text-[11px] text-slate-300 mt-1">The AI-prepared CV becomes a fully editable draft here</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col h-full min-h-0">
+                  <div className="shrink-0 flex items-center justify-between gap-2 mb-3">
+                    <h2 className="text-[16px] font-bold text-[var(--color-ink)] flex items-center gap-2">
+                      Preview · make it yours {stepBadge(4)}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={toggleHideAI}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border transition-colors cursor-pointer ${
+                        hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-ink)]' : 'bg-[var(--color-brand-soft)] border-[var(--color-brand-line)] text-[var(--color-brand)]'
+                      }`}
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      {hideAI ? 'Show AI content' : 'Hide AI content'}
+                    </button>
+                  </div>
+                  <div className="text-[10.5px] font-semibold text-[var(--color-faint)] -mt-2 mb-3">
+                    {hideAI
+                      ? `Hiding ${editableCv.skills.filter((s) => s.ai).length + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
+                      : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+                    {/* Summary */}
+                    <div className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)]">Professional Summary</h3>
+                        <span className="text-[10px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-md px-1.5 py-0.5">editable</span>
+                      </div>
+                      <textarea
+                        value={editableCv.summary}
+                        onChange={(e) => setSummary(e.target.value)}
+                        rows={4}
+                        className="w-full border border-[var(--color-hairline)] rounded-lg px-3 py-2 text-[12.5px] leading-relaxed text-[var(--color-muted)] bg-white outline-none focus:border-[var(--color-brand)] focus:ring-[3px] focus:ring-[var(--color-brand)]/12 transition-colors resize-y"
+                      />
+                    </div>
+
+                    {/* Skills */}
+                    <div className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[12.5px] font-bold text-[var(--color-ink)]">Key Skills</h3>
+                        <button
+                          type="button"
+                          onClick={() => { const v = prompt('Add your own skill:'); if (v?.trim()) addSkill(v); }}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[var(--color-brand)] bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] hover:bg-[#DBEAFE] cursor-pointer transition-colors"
+                        >
+                          <Plus className="w-3 h-3" /> Add
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {editableCv.skills.filter((s) => !hideAI || !s.ai).map((s) => (
+                          <span key={s.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold border ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}>
+                            {s.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500" />}
+                            {s.text}
+                            <button
+                              type="button"
+                              onClick={() => toggleSkill(s.id)}
+                              aria-label={`Remove ${s.text}`}
+                              className="ml-0.5 w-4.5 h-4.5 rounded-md border text-[10px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                        {editableCv.skills.filter((s) => !hideAI || !s.ai).length === 0 && (
+                          <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Experience */}
+                    {editableCv.experiences.filter((e) => !hideAI || e.bullets.some((b) => !b.ai) || e.title || e.company).map((exp) => (
+                      <div key={exp.id} className="border border-[var(--color-hairline)] rounded-xl bg-[#FAFAF9]/50 p-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <input
+                            value={exp.title}
+                            onChange={(e) => setExpTitle(exp.id, e.target.value)}
+                            placeholder="Job title"
+                            className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[13px] font-bold text-[var(--color-ink)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
+                          />
+                          <span className="text-[10px] font-semibold text-[var(--color-faint)] whitespace-nowrap">{exp.company} · {exp.dates}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {exp.bullets.filter((b) => !hideAI || !b.ai).map((b) => (
+                            <div key={b.id} className="flex items-start gap-2">
+                              <span className="mt-2 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                              <input
+                                value={b.text}
+                                onChange={(e) => setBullet(b.id, e.target.value)}
+                                className="flex-1 min-w-0 border border-transparent rounded-lg px-2 py-1 text-[12px] text-[var(--color-muted)] bg-transparent outline-none focus:border-[var(--color-brand)] focus:bg-white transition-colors"
+                              />
+                              {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 mt-1.5 shrink-0" />}
+                              <button
+                                type="button"
+                                onClick={() => toggleBullet(b.id)}
+                                aria-label="Remove bullet"
+                                className="mt-1 w-5 h-5 rounded-md border text-[9px] font-bold cursor-pointer transition-colors shrink-0 bg-white border-[var(--color-hairline)] text-[var(--color-faint)] hover:text-[var(--color-danger)] hover:border-[#FECACA]"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          {exp.bullets.filter((b) => !hideAI || !b.ai).length === 0 && (
+                            <p className="text-[11px] text-[var(--color-faint)]">No visible bullets for this role.</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { const v = prompt('Add your own bullet point:'); if (v?.trim()) addBullet(exp.id, v); }}
+                          className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--color-brand)] hover:text-[var(--color-brand)] cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add your own bullet
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
@@ -768,21 +1095,34 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
               </div>
               <button
                 type="button"
-                onClick={() => download('pdf')}
-                disabled={!downloadToken}
-                title={downloadToken ? 'Download the tailored CV as PDF (in the selected template)' : 'Tailor your CV first to download'}
+                onClick={previewDragActive ? () => downloadEdited('pdf') : () => download('pdf')}
+                disabled={previewDragActive ? !editableNewCv : !downloadToken}
+                title={previewDragActive ? 'Download the EDITED CV as PDF (in the selected template)' : downloadToken ? 'Download the tailored CV as PDF (in the selected template)' : 'Tailor your CV first to download'}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--color-ink)] text-white hover:bg-slate-700"
               >
                 <Download className="w-3 h-3" /> PDF
               </button>
+              {previewDragActive && (
+                <button
+                  type="button"
+                  onClick={() => downloadEdited('txt')}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors cursor-pointer bg-white border border-[var(--color-hairline)] text-[var(--color-muted)] hover:bg-slate-50"
+                >
+                  <FileText className="w-3 h-3" /> TXT
+                </button>
+              )}
               <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">
-                {tailoredCv ? 'Drag to compare' : 'Original CV'}
+                {previewDragActive ? 'Your edited CV' : tailoredCv ? 'Drag to compare' : 'Original CV'}
               </span>
             </div>
           </div>
 
           <div className="relative flex-1 min-h-0 bg-[#F1F5F9]" ref={wrapRef}>
-            {!tailoredCv ? (
+            {previewDragActive && editableNewCv ? (
+              <div className="absolute inset-0 overflow-y-auto bg-[#F1F5F9] p-3">
+                <CvPdfPreview cv={editableNewCv} template={previewTemplate} fitToWidth />
+              </div>
+            ) : !tailoredCv ? (
               originalCv ? (
                 <div className="absolute inset-0 overflow-y-auto">
                   <CvPdfPreview cv={originalCv} template={previewTemplate} fitToWidth />
