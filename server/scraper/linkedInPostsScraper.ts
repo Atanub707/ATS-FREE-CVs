@@ -3,13 +3,17 @@ import { Job, ScraperParams } from '../../src/types.js';
 // ═══════════════════════════════════════════════════════════════════════════
 //  LinkedIn Posts scraper (built-in, free)
 //
-//  Recruiters post jobs as LinkedIn posts. This scraper:
-//    1. Discovers recent posts via search engines (Google → DuckDuckGo → Bing)
-//       scoped to `site:linkedin.com/posts` + keywords + "past 24 hours".
-//    2. Fetches each post page — LinkedIn post pages are publicly viewable
-//       WITHOUT login.
-//    3. Extracts author, text, date and any external link from the post.
+//  Recruiters post jobs as LinkedIn posts (social-media style: hashtags +
+//  hiring phrases + links) — NOT formal listings. This scraper:
+//    1. Expands the searched role into posting-style variants and builds a
+//       set of OPTIMIZED queries: hashtag queries, hiring-keyword queries,
+//       tech combos, remote-first modifiers (1–3 tags/keywords per query).
+//    2. Discovers recent posts via search engines (Google → DuckDuckGo → Bing)
+//       scoped to site:linkedin.com/posts + "past 24 hours".
+//    3. Fetches each post page (publicly viewable WITHOUT login), extracts
+//       author, text, hashtags, date and external apply link.
 //
+//  Strategy + research: docs/linkedin-posts-research.md
 //  NOTE: search engines rate-limit datacenter IPs — like the other built-in
 //  scrapers, this works reliably from residential IPs (the user's machine).
 // ═══════════════════════════════════════════════════════════════════════════
@@ -55,8 +59,85 @@ const dateRangeParam = (): string => {
   return `${f(yesterday)}..${f(now)}`;
 };
 
+// ── Query strategy (from docs/linkedin-posts-research.md) ───────────────────
+
+// Common hiring-intent phrases seen in recruiter job posts.
+const HIRING_WORDS = ['hiring', 'we are hiring', "we're hiring", 'looking for', 'openings', 'job opening', 'opportunity', 'apply', 'open position', 'now hiring'];
+
+// Role posting variants: "DevSecOps" → the ways recruiters tag/name it in posts.
+const ROLE_VARIANTS: Record<string, string[]> = {
+  devsecops: ['DevSecOps', 'DevSecOps Engineer', 'DevSecOps Jobs', 'Cloud DevSecOps', 'DevOps Security Engineer', 'Security Engineer', 'Application Security Engineer', 'Platform Security Engineer'],
+  devops: ['DevOps', 'DevOps Engineer', 'DevOps Jobs', 'Cloud DevOps', 'DevOps Engineer Remote', 'Senior DevOps Engineer'],
+  cloud: ['Cloud Engineer', 'Cloud Security Engineer', 'Cloud DevOps Engineer', 'Cloud Engineer Remote'],
+  security: ['Security Engineer', 'Application Security Engineer', 'Cloud Security Engineer', 'Security Automation'],
+  sre: ['SRE', 'Site Reliability Engineer', 'SRE Engineer'],
+  platform: ['Platform Engineer', 'Platform Security Engineer'],
+  data: ['Data Engineer', 'Data Engineering Jobs'],
+  backend: ['Backend Engineer', 'Backend Developer'],
+  frontend: ['Frontend Engineer', 'Frontend Developer'],
+  fullstack: ['Full Stack Engineer', 'Full Stack Developer'],
+  qa: ['QA Engineer', 'QA Automation'],
+  network: ['Network Engineer'],
+};
+
+export function roleVariants(role: string): string[] {
+  const r = role.toLowerCase();
+  for (const [key, variants] of Object.entries(ROLE_VARIANTS)) {
+    if (r.includes(key)) return variants;
+  }
+  // Unknown role → sensible posting-style variants of the raw query.
+  const base = role.trim();
+  return [base, `${base} Engineer`, `${base} Jobs`, `${base} hiring`];
+}
+
+// Tech keywords for combo queries (per role family).
+const TECH_COMBOS: Record<string, string[]> = {
+  devsecops: ['Kubernetes', 'CI/CD', 'SAST', 'DAST', 'SCA', 'Terraform', 'AWS', 'Azure', 'GCP', 'Docker', 'GitLab', 'Jenkins', 'GitHub Actions'],
+  devops: ['Kubernetes', 'CI/CD', 'Terraform', 'AWS', 'Azure', 'GCP', 'Docker', 'GitLab', 'Jenkins', 'GitHub Actions', 'Helm', 'Linux'],
+  cloud: ['AWS', 'Azure', 'GCP', 'Kubernetes', 'Terraform', 'Docker', 'CI/CD'],
+  default: ['Remote', 'Hiring', 'Jobs', 'Openings'],
+};
+
+// Build the optimized query set: 1–3 hashtags OR 2–3 keywords per query.
+export function buildSearchQueries(role: string): string[] {
+  const variants = roleVariants(role);
+  const r = role.toLowerCase();
+  const combos = TECH_COMBOS[Object.keys(TECH_COMBOS).find((k) => r.includes(k)) || 'default'] || TECH_COMBOS.default;
+  const queries: string[] = [];
+
+  // 1. Hashtag queries (1–3 tags).
+  const tags = variants.slice(0, 4).map((v) => `#${v.replace(/\s+/g, '')}`);
+  queries.push(tags.slice(0, 2).join(' '), `${tags[0] || ''} #Hiring`, `${tags[0] || ''} #NowHiring`, `${tags[1] || tags[0] || ''} #JobOpening`);
+
+  // 2. Role + hiring-intent keyword (2–3 keywords per query).
+  for (const v of variants.slice(0, 4)) {
+    queries.push(`"${v}" ${HIRING_WORDS[0]}`);
+    queries.push(`"${v}" ${HIRING_WORDS[3]}`);
+    queries.push(`"${v}" ${HIRING_WORDS[4]}`);
+  }
+
+  // 3. Tech combos (role + technology).
+  for (const t of combos.slice(0, 4)) {
+    queries.push(`${variants[0]} ${t}`);
+  }
+
+  // 4. Remote-first modifiers.
+  queries.push(`"${variants[0]}" Remote`, `"${variants[0]}" Remote India`, `${variants[0]} openings`);
+
+  // Dedupe + cap (don't spam engines).
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const q of queries) {
+    const clean = q.replace(/\s+/g, ' ').trim();
+    if (!clean || seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(clean);
+  }
+  return out.slice(0, 14);
+}
+
 async function searchGoogle(keywords: string): Promise<string[]> {
-  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords} (hiring OR job OR opening)`);
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://www.google.com/search?q=${q}&tbs=qdr:d&num=20&gbv=1`, {
     Cookie: 'CONSENT=YES+cb.20240101-01-p0.en+FX+111; SOCS=CAESEwgDEgk2NzM5NzcwMzUaAmVuIAEaBgiA_LyaBg',
   });
@@ -64,25 +145,35 @@ async function searchGoogle(keywords: string): Promise<string[]> {
 }
 
 async function searchDuckDuckGo(keywords: string): Promise<string[]> {
-  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords} (hiring OR job OR opening)`);
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://html.duckduckgo.com/html/?q=${q}&df=${dateRangeParam()}`);
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
 async function searchBing(keywords: string): Promise<string[]> {
-  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords} (hiring OR job OR opening)`);
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://www.bing.com/search?q=${q}&filters=ex1%3A%22ez5_19890_19890%22&count=20`);
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
-async function discoverPostUrls(keywords: string): Promise<string[]> {
+async function discoverPostUrls(keywords: string, limit: number): Promise<string[]> {
+  const queries = buildSearchQueries(keywords);
   const found = new Set<string>();
-  for (const search of [searchGoogle, searchDuckDuckGo, searchBing]) {
+  const engines = [searchGoogle, searchDuckDuckGo, searchBing];
+
+  // Rotate engines through the query set (max 5 engine hits per search — be a
+  // good citizen) until we have enough posts or run out of queries.
+  let engineHits = 0;
+  for (const query of queries) {
+    if (found.size >= limit) break;
+    if (engineHits >= 5) break;
+    const engine = engines[engineHits % engines.length];
+    engineHits++;
     try {
-      const urls = await search(keywords);
+      const urls = await engine(query);
       for (const u of urls) found.add(u);
-      if (found.size >= 8) break; // enough — stop hitting engines
-    } catch { /* try next engine */ }
+      await new Promise((r) => setTimeout(r, 400)); // polite pause between engine hits
+    } catch { /* try next */ }
   }
   return [...found];
 }
@@ -92,6 +183,12 @@ interface ParsedPost {
   text: string;
   date?: string;
   applyUrl?: string;
+  hashtags: string[];
+}
+
+export function extractHashtags(text: string): string[] {
+  const tags = [...new Set(text.match(/#[A-Za-z0-9_]+/g) || [])].slice(0, 8);
+  return tags;
 }
 
 function parseRelativeTime(label: string): string | undefined {
@@ -130,7 +227,7 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
   const applyUrl = ext && !ext.includes('linkedin.com') ? ext.split('?')[0] : undefined;
 
   if (!text && !title) return null;
-  return { author, text: text || title, date, applyUrl };
+  return { author, text: text || title, date, applyUrl, hashtags: extractHashtags(text || title) };
 }
 
 export class LinkedInPostsScraper {
@@ -139,7 +236,7 @@ export class LinkedInPostsScraper {
     if (!keywords) return [];
     const limit = Math.min(20, Math.max(1, params.maxJobsPerSource || 10));
 
-    const urls = await discoverPostUrls(keywords);
+    const urls = await discoverPostUrls(keywords, limit);
     const jobs: Job[] = [];
     const seen = new Set<string>();
 
@@ -164,6 +261,7 @@ export class LinkedInPostsScraper {
         postedDate: post.date,
         postedDateParsed: post.date ? new Date(post.date).toISOString().slice(0, 10) : undefined,
         applyUrl: post.applyUrl,
+        hashtags: post.hashtags,
         jobType: 'Post',
         state: 'pending',
         createdAt: now,

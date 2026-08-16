@@ -600,6 +600,7 @@ async function startServer() {
           applyUrl: p.applyUrl,
           postedDate: p.postedDate,
           description: (p.description || '').slice(0, 500),
+          hashtags: p.hashtags || [],
         })),
         addedCount: added.length,
         total: posts.length,

@@ -9,6 +9,7 @@ interface PostResult {
   applyUrl?: string;
   postedDate?: string;
   description?: string;
+  hashtags?: string[];
 }
 
 type SearchState = 'idle' | 'searching' | 'done' | 'error';
@@ -123,6 +124,11 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
                     </div>
                   </div>
                   {p.description && <p className="lp-card-text">{p.description}</p>}
+                  {p.hashtags && p.hashtags.length > 0 && (
+                    <div className="lp-tags">
+                      {p.hashtags.map((h) => <span key={h} className="lp-tag">{h}</span>)}
+                    </div>
+                  )}
                   <div className="lp-card-actions">
                     <a className="lp-link" href={p.url} target="_blank" rel="noreferrer">
                       Open post <ArrowSquareOut size={12} weight="bold" />
@@ -198,6 +204,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-card-meta{min-width:0;}
         .lp-card-meta b{display:block; font-size:13px; font-weight:800; line-height:1.35;}
         .lp-card-meta span{font-size:11px; color:#64748B; display:inline-flex; align-items:center; gap:5px;}
+        .lp-tags{display:flex; flex-wrap:wrap; gap:6px;}
+        .lp-tag{font-size:10.5px; font-weight:800; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:3px 10px;}
         .lp-card-text{font-size:12px; color:#475569; line-height:1.6; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
         .lp-card-actions{display:flex; gap:9px; margin-top:auto; padding-top:2px;}
         .lp-link{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:800; color:#2563EB; text-decoration:none;

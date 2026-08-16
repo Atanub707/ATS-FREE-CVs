@@ -24,6 +24,7 @@ export interface Job {
   contractType?: string;
   companyUrl?: string;
   applyUrl?: string; // external link found inside a LinkedIn post (job/apply URL)
+  hashtags?: string[]; // hashtags found in a LinkedIn post text
   applyType?: string;
   state: JobState;
   
