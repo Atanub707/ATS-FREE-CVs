@@ -31,7 +31,6 @@ export function mapLlmError(err: any): LlmErrorInfo {
   // Gemini throws e.g. "400 INVALID_ARGUMENT: API key not valid. ..."
   const statusMatch = message.match(/\b(401|403)\b/);
   const mentionsKey = /api\s*key/i.test(message);
-  const invalidKeyHint = /(api key (not valid|invalid|expired|no longer active)|invalid api key|401|403)/i.test(message);
   if (statusMatch || (mentionsKey && /\b(400|401|403|invalid|expired|not valid)\b/i.test(message))) {
     return { code: 'invalid_key', status: 401, message: INVALID_KEY_MESSAGE };
   }

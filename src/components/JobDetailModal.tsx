@@ -21,11 +21,6 @@ import {
   Calendar,
   TrendingUp,
   FileInput,
-  Mail,
-  Phone,
-  Github,
-  Globe,
-  Award,
   Printer,
   Users,
 } from 'lucide-react';
@@ -41,33 +36,7 @@ interface JobDetailModalProps {
   cvTemplate?: TemplateId;
 }
 
-function formatSocialLink(type: 'linkedin' | 'github' | 'website' | 'email' | 'phone', value: string): string {
-  if (!value) return '';
-  const val = String(value).trim();
-  if (type === 'email') return val.startsWith('mailto:') ? val : `mailto:${val}`;
-  if (type === 'phone') return val.startsWith('tel:') ? val : `tel:${val.replace(/[^\d+]/g, '')}`;
 
-  if (type === 'linkedin') {
-    if (/^https?:\/\//i.test(val)) return val;
-    if (val.toLowerCase().includes('linkedin.com')) return `https://${val}`;
-    const handle = val.replace(/^in\//i, '').replace(/^\//, '');
-    return `https://linkedin.com/in/${handle}`;
-  }
-
-  if (type === 'github') {
-    if (/^https?:\/\//i.test(val)) return val;
-    if (val.toLowerCase().includes('github.com')) return `https://${val}`;
-    const handle = val.replace(/^\//, '');
-    return `https://github.com/${handle}`;
-  }
-
-  if (type === 'website') {
-    if (/^https?:\/\//i.test(val)) return val;
-    return `https://${val}`;
-  }
-
-  return val;
-}
 
 export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   job,

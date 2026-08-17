@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, CaretRight, ChatCircleDots, PaperPlaneTilt } from '@phosphor-icons/react';
+import { IdentificationBadge, SlidersHorizontal, FileText, SignOut, CaretDown, GlobeSimple, Question, Tray, ChatCircleDots, PaperPlaneTilt } from '@phosphor-icons/react';
 
 interface NavbarProps {
   onOpenMasterCv: () => void;

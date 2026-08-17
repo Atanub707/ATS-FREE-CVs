@@ -1,41 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MasterCv, TemplateId, CV_TEMPLATES } from '../types';
 import { llmErrorMessage } from '../lib/llmError';
-import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS } from '../constants/suggestions';
-import { searchLocations } from '../lib/locations';
-import { DateRangePicker } from './DateRangePicker';
-import { TagInput } from './TagInput';
 import { MasterCvEditor } from './MasterCvEditor';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape } from './CvPdfPreview';
-import {
-  X,
-  Save,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  User,
-  Briefcase,
-  GraduationCap,
-  Code,
-  Sparkles,
-  Loader2,
-  Upload,
-  Linkedin,
-  Github,
-  Globe,
-  Award,
-  FolderGit2,
-  GripVertical,
-  History,
-  TrendingUp,
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  FileDown,
-  FileText,
-  ArrowLeft,
-} from 'lucide-react';
+import { X, Save, CheckCircle2, Sparkles, Loader2, History, ChevronDown, FileDown, FileText, ArrowLeft, User, AlertTriangle } from 'lucide-react';
 
 interface MasterCvScreenProps {
   isOpen: boolean;
@@ -51,7 +20,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   onSaveMasterCv,
 }) => {
   const [formData, setFormData] = useState<MasterCv>(masterCv);
-  const [masterCvLocationOptions, setMasterCvLocationOptions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -61,23 +29,7 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   const [tplMenuPos, setTplMenuPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const tplBtnRef = useRef<HTMLButtonElement>(null);
 
-  const [rawPasteText, setRawPasteText] = useState('');
-  const [isParsingText, setIsParsingText] = useState(false);
-  const [showPasteBox, setShowPasteBox] = useState(false);
-  const [parseError, setParseError] = useState<string | null>(null);
-  const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [downloadFilename, setDownloadFilename] = useState(masterCv.downloadFilename || masterCv.fullName.replace(/ /g, '_') + '_CV');
-  const [skillGaps, setSkillGaps] = useState<{ skill: string; count: number; totalScored: number }[]>([]);
-  const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
-  const [showGaps, setShowGaps] = useState(false);
-  const [gapsLoading, setGapsLoading] = useState(false);
-  const [gapsAddedMsg, setGapsAddedMsg] = useState<string | null>(null);
-
-  const [summarySuggestions, setSummarySuggestions] = useState<{ label: string; text: string }[]>([]);
-  const [isImprovingSummary, setIsImprovingSummary] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const wasOpenRef = useRef(false);
 
@@ -87,8 +39,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
       setSavedSuccess(false);
-      setSummarySuggestions([]);
-      setSummaryError(null);
       setSaveError(null);
       let cancelled = false;
       (async () => {
@@ -111,170 +61,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
     }
     wasOpenRef.current = isOpen;
   }, [isOpen, masterCv]);
-
-  const fetchSkillGaps = async () => {
-    setGapsLoading(true);
-    try {
-      const res = await fetch('/api/cv/skill-gaps');
-      if (res.ok) {
-        const data = await res.json();
-        setSkillGaps(data.gaps || []);
-      }
-    } catch { /* ignore */ }
-    setGapsLoading(false);
-  };
-
-  const handleAskAiSummary = async () => {
-    if (!formData.summary.trim()) {
-      setSummaryError('Write a brief summary first, then ask AI to improve it.');
-      return;
-    }
-    setIsImprovingSummary(true);
-    setSummaryError(null);
-    setSummarySuggestions([]);
-    try {
-      const res = await fetch('/api/cv/improve-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          summary: formData.summary,
-          experiences: formData.experiences,
-          skills: formData.skills,
-          certifications: formData.certifications,
-          fullName: formData.fullName,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSummarySuggestions(data.options || []);
-      } else {
-        const err = await res.json();
-        setSummaryError(err.error || 'Failed to generate suggestions.');
-      }
-    } catch {
-      setSummaryError('AI request failed. Please try again.');
-    }
-    setIsImprovingSummary(false);
-  };
-
-  const applySummarySuggestion = (text: string) => {
-    setFormData({ ...formData, summary: text });
-    setSummarySuggestions([]);
-  };
-
-  const toggleGap = (skill: string) => {
-    setSelectedGaps((prev) => {
-      const next = new Set(prev);
-      if (next.has(skill)) next.delete(skill);
-      else next.add(skill);
-      return next;
-    });
-  };
-
-  const addSelectedGapsToCv = async () => {
-    if (selectedGaps.size === 0) return;
-    const updated = { ...formData };
-    const newSkills: string[] = Array.from(selectedGaps);
-    const skillsCat = updated.skills.find((s) => s.category.toLowerCase().includes('skill') || s.category === 'Core Competencies');
-    if (skillsCat) {
-      const normalized = newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1));
-      const existing = new Set(skillsCat.items.map((i) => i.toLowerCase()));
-      skillsCat.items = [...normalized.filter((n) => !existing.has(n.toLowerCase())), ...skillsCat.items];
-    } else {
-      updated.skills = [{ category: 'Core Competencies', items: newSkills.map((s) => s.charAt(0).toUpperCase() + s.slice(1)) }, ...updated.skills];
-    }
-    setFormData(updated);
-    setSkillGaps((prev) => prev.filter((g) => !selectedGaps.has(g.skill)));
-    setSelectedGaps(new Set());
-    await onSaveMasterCv(updated);
-    setGapsAddedMsg(`Added ${newSkills.length} skill${newSkills.length > 1 ? 's' : ''} and saved to profile.`);
-    setTimeout(() => setGapsAddedMsg(null), 4000);
-  };
-
-  const handleParseRawText = async () => {
-    if (!rawPasteText.trim()) return;
-    setIsParsingText(true);
-    setParseError(null);
-    setExtractedFileName(null);
-    try {
-      const res = await fetch('/api/cv/parse-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText: rawPasteText }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        let errMsg = 'Failed to extract resume details';
-        try {
-          const errJson = JSON.parse(text);
-          errMsg = errJson.error || errJson.message || errMsg;
-        } catch {
-          if (text && text.length < 300) errMsg = text;
-        }
-        throw new Error(errMsg);
-      }
-
-      const data = await res.json();
-      if (data.success && data.cv) {
-        setFormData(data.cv);
-        setShowPasteBox(false);
-        setRawPasteText('');
-        setExtractedFileName('Pasted Raw Text');
-      } else {
-        setParseError(data.error || 'Failed to extract resume details');
-      }
-    } catch (err: any) {
-      setParseError(err.message || 'Error communicating with server');
-    } finally {
-      setIsParsingText(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsParsingText(true);
-    setParseError(null);
-    setExtractedFileName(null);
-
-    const bodyData = new FormData();
-    bodyData.append('resume', file);
-
-    try {
-      const res = await fetch('/api/cv/upload-file', {
-        method: 'POST',
-        body: bodyData,
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        let errMsg = 'Failed to extract resume from file';
-        try {
-          const errJson = JSON.parse(text);
-          errMsg = errJson.error || errJson.message || errMsg;
-        } catch {
-          if (text && text.length < 300) errMsg = text;
-        }
-        throw new Error(errMsg);
-      }
-
-      const data = await res.json();
-      if (data.success && data.cv) {
-        setFormData(data.cv);
-        setExtractedFileName(file.name);
-      } else {
-        setParseError(data.error || 'Failed to extract resume from file');
-      }
-    } catch (err: any) {
-      setParseError(err.message || 'Error uploading resume file');
-    } finally {
-      setIsParsingText(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -417,202 +203,6 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
         onSaveMasterCv(data.cv);
       }
     } catch { /* ignore */ }
-  };
-
-  const updateExperienceResponsibility = (expIdx: number, respIdx: number, val: string) => {
-    const updated = { ...formData };
-    updated.experiences[expIdx].responsibilities[respIdx] = val;
-    setFormData(updated);
-  };
-
-  const addExperienceResponsibility = (expIdx: number) => {
-    const updated = { ...formData };
-    updated.experiences[expIdx].responsibilities.push('New responsibility or key achievement...');
-    setFormData(updated);
-  };
-
-  const removeExperienceResponsibility = (expIdx: number, respIdx: number) => {
-    const updated = { ...formData };
-    updated.experiences[expIdx].responsibilities.splice(respIdx, 1);
-    setFormData(updated);
-  };
-
-  const addExperience = () => {
-    const updated = { ...formData };
-    updated.experiences = [{
-      id: `exp-${Date.now()}`,
-      title: 'Job Title',
-      company: 'Company Name',
-      location: 'Remote / City, State',
-      dates: '2022 - Present',
-      responsibilities: ['Key responsibility or major accomplishment...'],
-    }, ...updated.experiences];
-    setFormData(updated);
-  };
-
-  const removeExperience = (expIdx: number) => {
-    const updated = { ...formData };
-    updated.experiences.splice(expIdx, 1);
-    setFormData(updated);
-  };
-
-  const addEducation = () => {
-    const updated = { ...formData };
-    if (!updated.education) updated.education = [];
-    updated.education = [{
-      id: `edu-${Date.now()}`,
-      degree: 'B.S. Computer Science',
-      institution: 'University Name',
-      dates: '2018 - 2022',
-      details: 'Major in Software Engineering',
-    }, ...updated.education];
-    setFormData(updated);
-  };
-
-  const removeEducation = (eduIdx: number) => {
-    const updated = { ...formData };
-    updated.education.splice(eduIdx, 1);
-    setFormData(updated);
-  };
-
-  const addSkillCategory = () => {
-    const updated = { ...formData };
-    updated.skills = [{
-      category: 'New Category',
-      items: ['Skill 1', 'Skill 2'],
-    }, ...updated.skills];
-    setFormData(updated);
-  };
-
-  const removeSkillCategory = (skIdx: number) => {
-    const updated = { ...formData };
-    updated.skills.splice(skIdx, 1);
-    setFormData(updated);
-  };
-
-  const addProject = () => {
-    const newProject = {
-      id: `proj-${Date.now()}`,
-      name: 'Project Name',
-      description: 'Key project description, highlights, and results...',
-      technologies: ['React', 'Node.js', 'TypeScript'],
-      link: '',
-      dates: '2023',
-    };
-    setFormData((prev) => ({
-      ...prev,
-      projects: [newProject, ...(prev.projects || [])],
-    }));
-  };
-
-  const [dragProjectIdx, setDragProjectIdx] = useState<number | null>(null);
-  const [dragExpIdx, setDragExpIdx] = useState<number | null>(null);
-
-  const handleProjectDragStart = (e: React.DragEvent, idx: number) => {
-    setDragProjectIdx(idx);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleProjectDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleProjectDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault();
-    if (dragProjectIdx === null || dragProjectIdx === targetIdx) {
-      setDragProjectIdx(null);
-      return;
-    }
-    setFormData((prev) => {
-      const projects = [...(prev.projects || [])];
-      const [moved] = projects.splice(dragProjectIdx, 1);
-      projects.splice(targetIdx, 0, moved);
-      return { ...prev, projects };
-    });
-    setDragProjectIdx(null);
-  };
-
-  const handleExpDragStart = (e: React.DragEvent, idx: number) => {
-    setDragExpIdx(idx);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleExpDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleExpDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault();
-    if (dragExpIdx === null || dragExpIdx === targetIdx) {
-      setDragExpIdx(null);
-      return;
-    }
-    setFormData((prev) => {
-      const experiences = [...prev.experiences];
-      const [moved] = experiences.splice(dragExpIdx, 1);
-      experiences.splice(targetIdx, 0, moved);
-      return { ...prev, experiences };
-    });
-    setDragExpIdx(null);
-  };
-
-  const removeProject = (pIdx: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      projects: (prev.projects || []).filter((_, i) => i !== pIdx),
-    }));
-  };
-
-  const addCertification = () => {
-    const updated = { ...formData };
-    if (!updated.certifications) updated.certifications = [];
-    updated.certifications = [{
-      id: `cert-${Date.now()}`,
-      name: 'AWS Certified Solutions Architect',
-      issuer: 'Amazon Web Services',
-      date: '2023',
-      link: '',
-    }, ...updated.certifications];
-    setFormData(updated);
-  };
-
-  const removeCertification = (cIdx: number) => {
-    const updated = { ...formData };
-    if (updated.certifications) {
-      updated.certifications.splice(cIdx, 1);
-      setFormData(updated);
-    }
-  };
-
-  const [dragCertIdx, setDragCertIdx] = useState<number | null>(null);
-
-  if (!isOpen) return null;
-
-  const handleCertDragStart = (e: React.DragEvent, idx: number) => {
-    setDragCertIdx(idx);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleCertDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleCertDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault();
-    if (dragCertIdx === null || dragCertIdx === targetIdx) {
-      setDragCertIdx(null);
-      return;
-    }
-    setFormData((prev) => {
-      const certs = [...(prev.certifications || [])];
-      const [moved] = certs.splice(dragCertIdx, 1);
-      certs.splice(targetIdx, 0, moved);
-      return { ...prev, certifications: certs };
-    });
-    setDragCertIdx(null);
   };
 
   return (

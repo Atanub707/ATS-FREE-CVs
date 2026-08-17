@@ -36,7 +36,7 @@ const RECOMMENDED = new Set(['LinkedIn Jobs', 'Wellfound (AngelList)']);
 export const JobPortalsScreen: React.FC<JobPortalsScreenProps> = ({ isOpen, onClose }) => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
-  const [featured, setFeatured] = useState(true);
+  const [featured] = useState(true);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
 
   // Load bookmarks when the screen opens

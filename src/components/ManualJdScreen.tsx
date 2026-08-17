@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, TrendingUp, Plus, PenLine, Ban, ChevronsLeftRight, Wand2, Eye, PencilLine, GripVertical, Briefcase, Code, User, GraduationCap, FolderGit2 } from 'lucide-react';
+import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, ArrowRight, History, Trash2, AlertTriangle, Plus, PenLine, Ban, ChevronsLeftRight, Wand2, PencilLine } from 'lucide-react';
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape, PdfCvShape } from './CvPdfPreview';
@@ -279,7 +279,6 @@ export function editorShapeToEditableCv(editor: MasterCv, prev: EditableCv): Edi
   (prev.skills || []).forEach((g) => g.items.forEach((x) => prevSkills.set(x.text, x.ai)));
   const prevBullets = new Map<string, boolean>();
   (prev.experiences || []).forEach((e) => e.bullets.forEach((b) => prevBullets.set(b.text, b.ai)));
-  const norm = (t: string) => String(t).toLowerCase().trim();
 
   return {
     candidateName: editor.fullName || '',
@@ -330,7 +329,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [diff, setDiff] = useState<DiffPayload | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
-  const [removedPoints, setRemovedPoints] = useState<Set<string>>(new Set());
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -340,9 +338,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [tailorError, setTailorError] = useState(false);
   const [showAllMatched, setShowAllMatched] = useState(false);
   const [showAllAdditions, setShowAllAdditions] = useState(false);
-  const [showAllAddedSkills, setShowAllAddedSkills] = useState(false);
-  const [showAllRewrites, setShowAllRewrites] = useState(false);
-  const [showAllReview, setShowAllReview] = useState(false);
   const [tailoredCv, setTailoredCv] = useState<any | null>(null);
   const [cvLoadFailed, setCvLoadFailed] = useState(false);
   const [cut, setCut] = useState(50);
@@ -429,9 +424,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // Drag & drop reordering — same mechanism as the Master CV screen
   // (draggable rows, drag index in state, splice on drop). Hooks MUST live
   // before the isOpen guard or React crashes when the screen opens.
-  const [dragExpIdx, setDragExpIdx] = useState<number | null>(null);
-  const [dragSkill, setDragSkill] = useState<{ cat: string; idx: number } | null>(null);
-  const [dragBullet, setDragBullet] = useState<{ expId: string; idx: number } | null>(null);
 
   // Closed screen → render nothing (Back / X buttons call onClose).
   if (!isOpen) return null;
@@ -474,7 +466,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       const missing = gap.missingSkills || [];
       const missingKw = gap.missingKeywords || [];
       setSelectedSkills(new Set([...missing, ...missingKw]));
-      setRemovedPoints(new Set());
       setDiff(a.diff || null);
       setHistoryId(a.id);
       setTailorError(false);
@@ -497,7 +488,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
     setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false); setEditableCv(null); setEditableNewCv(null); setEditorShape(null); setHideAI(false);
-    setShowAllMatched(false); setShowAllAdditions(false); setShowAllAddedSkills(false); setShowAllRewrites(false); setShowAllReview(false);
+    setShowAllMatched(false); setShowAllAdditions(false);
     try {
       const res = await fetch('/api/analyze-jd', {
         method: 'POST',
@@ -510,7 +501,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       const missing = (data.gapAnalysis?.missingSkills || []);
       const missingKw = (data.gapAnalysis?.missingKeywords || []);
       setSelectedSkills(new Set([...missing, ...missingKw]));
-      setRemovedPoints(new Set());
       if (data.historyId) setHistoryId(data.historyId);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -551,204 +541,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   // ── Preview Stage · edit handlers ────────────────────────────────
   // Every mutator rebuilds the derived PdfCvShape so the live sheet + the
   // edited downloads always reflect the current edits.
-  const commitEdits = (next: EditableCv) => {
-    setEditableCv(next);
-    setEditableNewCv(editableCvToPdfShape(next, hideAI));
-  };
 
-  const setSummary = (v: string) => { if (editableCv) commitEdits({ ...editableCv, summary: v }); };
-
-  // ── Contact info (Master CV parity) ──
-  const setContact = (key: string, v: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, contactInfo: { ...editableCv.contactInfo, [key]: v } });
-  };
-  const setName = (v: string) => { if (editableCv) commitEdits({ ...editableCv, candidateName: v }); };
-
-  // ── Education (Master CV parity) ──
-  const setEducation = (ei: number, key: string, v: string) => {
-    if (!editableCv) return;
-    const education = editableCv.education.map((e, i) => (i === ei ? { ...e, [key]: v } : e));
-    commitEdits({ ...editableCv, education });
-  };
-  const removeEducation = (ei: number) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, education: editableCv.education.filter((_, i) => i !== ei) });
-  };
-
-  // ── Projects (Master CV parity) ──
-  const setProject = (pi: number, key: string, v: string) => {
-    if (!editableCv) return;
-    const projects = editableCv.projects.map((p, i) => (i === pi ? { ...p, [key]: v } : p));
-    commitEdits({ ...editableCv, projects });
-  };
-  const removeProject = (pi: number) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, projects: editableCv.projects.filter((_, i) => i !== pi) });
-  };
-
-  // ── Add handlers (Master CV parity: prepend a new blank entry) ──
-  const addSkillCategory = () => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      skills: [{ category: 'New Category', items: [{ id: `skg-${Date.now()}`, text: 'Skill 1', ai: false }] }, ...editableCv.skills],
-    });
-  };
-  const removeSkillCategory = (catName: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, skills: editableCv.skills.filter((g) => g.category !== catName) });
-  };
-  const setSkillCategoryName = (oldName: string, v: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => (g.category === oldName ? { ...g, category: v } : g)) });
-  };
-  const setSkillItems = (catName: string, items: string[]) => {
-    if (!editableCv) return;
-    // TagInput hands back plain strings; preserve the AI flag of kept skills
-    // and mark anything new (typed by the user) as their own content.
-    const nextItems = items.map((t) => {
-      const existing = editableCv.skills.find((g) => g.category === catName)?.items.find((s) => s.text === t);
-      return existing ? existing : { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: t, ai: false };
-    });
-    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => (g.category === catName ? { ...g, items: nextItems } : g)) });
-  };
-  const addExperience = () => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      experiences: [
-        { id: `exp-${Date.now()}`, title: 'Job Title', company: 'Company Name', location: 'Remote / City, State', dates: '2022 - Present', bullets: [{ id: `bl-${Date.now()}`, text: 'Key responsibility or major accomplishment...', ai: false }] },
-        ...editableCv.experiences,
-      ],
-    });
-  };
-  const removeExperience = (eid: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, experiences: editableCv.experiences.filter((e) => e.id !== eid) });
-  };
-  const addEducation = () => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      education: [{ degree: 'B.S. Computer Science', institution: 'University Name', dates: '2018 - 2022', details: '' }, ...editableCv.education],
-    });
-  };
-  const addProject = () => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      projects: [{ name: 'Project Name', description: 'Key project description, highlights, and results...', technologies: [], link: '', dates: '' }, ...editableCv.projects],
-    });
-  };
-
-  const visibleSkillGroups = (editableCv?.skills || []).map((g) => ({
-    category: g.category,
-    items: g.items.filter((s) => !hideAI || !s.ai),
-  })).filter((g) => g.items.length > 0);
-  const toggleSkill = (sid: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => ({ ...g, items: g.items.filter((s) => s.id !== sid) })) });
-  };
-  const addSkill = (text: string) => {
-    if (!editableCv || !text.trim()) return;
-    const first = editableCv.skills[0];
-    commitEdits({ ...editableCv, skills: first ? editableCv.skills.map((g, idx) => (idx === 0 ? { ...g, items: [...g.items, { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] } : g)) : [{ category: 'Technical', items: [{ id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] }] });
-  };
-  const moveSkill = (gid: string, sid: string, dir: -1 | 1) => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      skills: editableCv.skills.map((g) => {
-        if (g.category !== gid) return g;
-        const idx = g.items.findIndex((s) => s.id === sid);
-        const to = idx + dir;
-        if (idx < 0 || to < 0 || to >= g.items.length) return g;
-        const items = [...g.items];
-        [items[idx], items[to]] = [items[to], items[idx]];
-        return { ...g, items };
-      }),
-    });
-  };
-  const setExpTitle = (eid: string, v: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, title: v } : e)) });
-  };
-  const moveExp = (eid: string, dir: -1 | 1) => {
-    if (!editableCv) return;
-    const idx = editableCv.experiences.findIndex((e) => e.id === eid);
-    const to = idx + dir;
-    if (idx < 0 || to < 0 || to >= editableCv.experiences.length) return;
-    const exp = [...editableCv.experiences];
-    [exp[idx], exp[to]] = [exp[to], exp[idx]];
-    commitEdits({ ...editableCv, experiences: exp });
-  };
-  const setBullet = (bid: string, v: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => ({ ...e, bullets: e.bullets.map((b) => (b.id === bid ? { ...b, text: v } : b)) })) });
-  };
-  const toggleBullet = (bid: string) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => ({ ...e, bullets: e.bullets.filter((b) => b.id !== bid) })) });
-  };
-  const moveBullet = (eid: string, bid: string, dir: -1 | 1) => {
-    if (!editableCv) return;
-    commitEdits({
-      ...editableCv,
-      experiences: editableCv.experiences.map((e) => {
-        if (e.id !== eid) return e;
-        const idx = e.bullets.findIndex((b) => b.id === bid);
-        const to = idx + dir;
-        if (idx < 0 || to < 0 || to >= e.bullets.length) return e;
-        const bullets = [...e.bullets];
-        [bullets[idx], bullets[to]] = [bullets[to], bullets[idx]];
-        return { ...e, bullets };
-      }),
-    });
-  };
-  const addBullet = (eid: string, text: string) => {
-    if (!editableCv || !text.trim()) return;
-    commitEdits({ ...editableCv, experiences: editableCv.experiences.map((e) => (e.id === eid ? { ...e, bullets: [...e.bullets, { id: `bl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: text.trim(), ai: false }] } : e)) });
-  };
-
-  // Reorder a skill group's VISIBLE items by index → maps back onto the full
-  // (incl. hidden AI) list by walking the original order and swapping.
-  // The group is matched by CATEGORY (not index) because the rendered group
-  // list is filtered — empty categories shift the visible indices.
-  const reorderSkills = (catName: string, from: number, to: number) => {
-    if (!editableCv) return;
-    const g = editableCv.skills.find((x) => x.category === catName);
-    if (!g) return;
-    const visible = g.items.filter((s) => !hideAI || !s.ai);
-    const next = reorderArr(visible, from, to);
-    // Rebuild full items preserving hidden-AI positions (map by index into
-    // the hideAI-filtered view of the ORIGINAL, stable because hidden stays put).
-    let v = 0;
-    const full = g.items.map((x) => (hideAI && x.ai ? x : next[v++]));
-    commitEdits({
-      ...editableCv,
-      skills: editableCv.skills.map((gg) => (gg.category === catName ? { ...gg, items: full } : gg)),
-    });
-  };
-
-  const reorderBullets = (eid: string, from: number, to: number) => {
-    if (!editableCv) return;
-    const e = editableCv.experiences.find((x) => x.id === eid);
-    if (!e) return;
-    const visible = e.bullets.filter((b) => !hideAI || !b.ai);
-    const next = reorderArr(visible, from, to);
-    let v = 0;
-    const full = e.bullets.map((b) => (hideAI && b.ai ? b : next[v++]));
-    commitEdits({
-      ...editableCv,
-      experiences: editableCv.experiences.map((x) => (x.id === eid ? { ...x, bullets: full } : x)),
-    });
-  };
-
-  const reorderExps = (from: number, to: number) => {
-    if (!editableCv) return;
-    commitEdits({ ...editableCv, experiences: reorderArr(editableCv.experiences, from, to) });
-  };
   const toggleHideAI = () => {
     const next = !hideAI;
     setHideAI(next);
@@ -780,61 +573,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
     const previewDragActive = viewStep === 3 && !!editableNewCv && !!tailoredCv;
 
-  // ── Drag & drop reordering — IDENTICAL mechanism to the Master CV screen ──
-  // draggable row → onDragStart stores the index → onDragOver allows the drop
-  // → onDrop splices the item to the target slot. No dataTransfer, no state
-  // churn during the drag, works reliably with inputs/buttons in the row.
-  const handleDragStart = (e: React.DragEvent, idx: number) => {
-    e.dataTransfer.effectAllowed = 'move';
-    return idx; // stored by the caller in its own state
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleExpDragStart = (e: React.DragEvent, idx: number) => {
-    setDragExpIdx(idx);
-    handleDragStart(e, idx);
-  };
-  const handleExpDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault();
-    if (dragExpIdx === null || dragExpIdx === targetIdx) { setDragExpIdx(null); return; }
-    reorderExps(dragExpIdx, targetIdx);
-    setDragExpIdx(null);
-  };
-
-  const handleSkillDragStart = (e: React.DragEvent, cat: string, idx: number) => {
-    setDragSkill({ cat, idx });
-    handleDragStart(e, idx);
-  };
-  const handleSkillDrop = (e: React.DragEvent, cat: string, targetIdx: number) => {
-    e.preventDefault();
-    if (!dragSkill || dragSkill.cat !== cat || dragSkill.idx === targetIdx) { setDragSkill(null); return; }
-    reorderSkills(cat, dragSkill.idx, targetIdx);
-    setDragSkill(null);
-  };
-
-  const handleBulletDragStart = (e: React.DragEvent, expId: string, idx: number) => {
-    setDragBullet({ expId, idx });
-    handleDragStart(e, idx);
-  };
-  const handleBulletDrop = (e: React.DragEvent, expId: string, targetIdx: number) => {
-    e.preventDefault();
-    if (!dragBullet || dragBullet.expId !== expId || dragBullet.idx === targetIdx) { setDragBullet(null); return; }
-    reorderBullets(expId, dragBullet.idx, targetIdx);
-    setDragBullet(null);
-  };
-
-  // Generic reorder for a flat array (returns a NEW order via onReorder).
-  const reorderArr = <T,>(arr: T[], from: number, to: number): T[] => {
-    const next = [...arr];
-    const [x] = next.splice(from, 1);
-    next.splice(to, 0, x);
-    return next;
-  };
-
   const missing = result?.gapAnalysis?.missingSkills || [];
   const missingKw = result?.gapAnalysis?.missingKeywords || [];
   const matchedSkills = result?.gapAnalysis?.matchingSkills || [];
@@ -845,19 +583,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const displayScore = result?.matchScore ?? 0;
   const step = !result ? 1 : !diff ? 2 : tailoredCv && !tailoring ? 3 : 2;
   const reviewSkills: string[] = diff ? diff.addedAfter.skillsAdded || [] : [];
-  const reviewBullets: { original: string; rewritten: string }[] = diff?.bulletRewrites || [];
-  const clamp1: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
-  const clamp2: React.CSSProperties = { ...clamp1, WebkitLineClamp: 2 };
-  const ADDED_CAP = 8;
-  const REWRITE_CAP = 4;
-  const REVIEW_CAP = 3;
-  const visibleAddedSkills = showAllAddedSkills ? reviewSkills : reviewSkills.slice(0, ADDED_CAP);
-  const visibleRewrites = showAllRewrites ? reviewBullets : reviewBullets.slice(0, REWRITE_CAP);
-  const reviewItems: { kind: 'skill' | 'bullet'; key: string; label: string; original?: string }[] = [
-    ...reviewSkills.map((s) => ({ kind: 'skill' as const, key: `skill:${s}`, label: s })),
-    ...reviewBullets.map((br, bi) => ({ kind: 'bullet' as const, key: `bullet:${bi}`, label: br.rewritten, original: br.original })),
-  ];
-  const visibleReview = showAllReview ? reviewItems : reviewItems.slice(0, REVIEW_CAP);
 
   const SKILL_PALETTE = [
     { bg: 'bg-[var(--color-brand-soft)]', border: 'border-[var(--color-brand-line)]', text: 'text-[var(--color-brand)]', checkBg: 'bg-[var(--color-brand)]' },
@@ -1133,7 +858,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                 )}
               </div>
             </div>
-
 
             {/* PANEL 3 · Preview · edit (score + editor) */}
             <div className={panelCls(3)}>

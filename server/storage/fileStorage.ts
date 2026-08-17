@@ -38,7 +38,6 @@ export interface ContactEmail { id: string; recipient: string; subject: string; 
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const JSON_FILE_PATH = path.join(DATA_DIR, 'jobs.json');
-const MASTER_CV_PATH = path.join(DATA_DIR, 'master_cv.json');
 const SQLITE_DB_PATH = path.join(DATA_DIR, 'ats_jobs.sqlite');
 const LEGACY_PRIMARY_JSON = path.join(DATA_DIR, 'ats_jobs.sqlite.json');
 

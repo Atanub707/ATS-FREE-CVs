@@ -79,7 +79,6 @@ export class MyCareersFutureScraper extends BaseScraper {
           const salary = item.salary;
           let salaryText: string | undefined;
           if (salary?.minimum && salary?.maximum) {
-            const currency = 'SGD';
             salaryText = `SGD ${Number(salary.minimum).toLocaleString()} - ${Number(salary.maximum).toLocaleString()} / ${salary.type?.salaryType || 'month'}`;
           }
 

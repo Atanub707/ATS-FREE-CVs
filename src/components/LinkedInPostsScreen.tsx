@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, MagnifyingGlass, ArrowSquareOut, Clock, Sparkle, PaperPlaneTilt } from '@phosphor-icons/react';
+import { X, MagnifyingGlass, ArrowSquareOut, Sparkle } from '@phosphor-icons/react';
 
 interface PostResult {
   id: string;
@@ -82,8 +82,6 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
-  const [engine, setEngine] = useState<'free' | 'apify'>('free');
-  const [quota, setQuota] = useState<{ used: number; quota: number; remaining: number; resetAt: string } | null>(null);
   const [feed, setFeed] = useState<PostResult[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
 
@@ -138,16 +136,14 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       });
       const d = await res.json();
       if (!res.ok) {
-        if (d?.quota) setQuota(d.quota);
         throw new Error(d?.error || 'Search failed.');
       }
       setPosts(d.posts || []);
       setAddedCount(d.addedCount || 0);
       setDebug(d.debug || null);
-      if (d.quota) setQuota(d.quota);
       setState('done');
       loadFeed();
-      const window = engine === 'apify' ? '' : 'from the last 24 hours ';
+      const window = 'from the last 24 hours ';
       if (d.valid === false) {
         setMessage(d.discoveryFailed
           ? `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
@@ -233,7 +229,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         {state === 'done' && posts.length > 0 && (
           <div className="lp-results">
             <div className="lp-results-head">
-              <b>{posts.length} job postings{engine === 'apify' ? ' (Apify engine)' : ' from the last 24 hours'}</b>
+              <b>{posts.length} job postings from the last 24 hours</b>
               <span>{addedCount > 0 ? `+${addedCount} new in your job list` : 'all already saved'}</span>
             </div>
             <div className="lp-grid">

@@ -104,10 +104,6 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
         ...(parsed.technicalSkills || []).flatMap((t: any) => t.skills || []),
       ].join(' ').toLowerCase();
 
-      const allKeywords = [...new Set([
-        ...(parsed.inExperience || []),
-        ...(parsed.inSkills || []),
-      ])].filter((k: string) => k);
 
       // Normalize both sides (lowercase, strip punctuation) so "NodeJS"
       // matches "Node.js", "CI/CD" matches "CI CD", etc.
@@ -203,77 +199,4 @@ Return valid JSON only — NO markdown, NO code fences, pure JSON:
     }
   }
 
-  private fallbackTailorCv(job: Job, masterCv: MasterCv): TailoredCv {
-    const candidateTitle = masterCv.experiences[0]?.title || masterCv.summary?.split(/[.,\n]/)[0]?.trim() || job.title;
-    const missingSkills = job.gapAnalysis?.missingSkills || [];
-    const missingKeywords = job.gapAnalysis?.missingKeywords || [];
-    const allMissing = [...missingSkills, ...missingKeywords];
-
-    const tailoredExperiences = masterCv.experiences.map((exp) => ({
-      title: exp.title,
-      company: exp.company,
-      location: exp.location,
-      dates: exp.dates,
-      highlights: exp.responsibilities.map((r) =>
-        `${r} (Optimized for ${job.title} requirements at ${job.company}).`
-      ),
-    }));
-
-    const rephrasedCount = tailoredExperiences.reduce((acc, curr) => acc + curr.highlights.length, 0);
-    const beforeScore = job.matchScore || job.gapAnalysis?.matchScore || 50;
-    const fillRatio = Math.min(allMissing.length / (allMissing.length + 5), 0.9);
-    const afterScore = Math.round(beforeScore + fillRatio * (100 - beforeScore));
-    const scoreBoost = afterScore - beforeScore;
-
-    return {
-      candidateName: masterCv.fullName,
-      contactInfo: {
-        email: masterCv.email,
-        phone: masterCv.phone,
-        location: masterCv.location,
-        linkedin: masterCv.linkedin,
-        github: masterCv.github,
-        website: masterCv.website,
-      },
-      targetRole: candidateTitle,
-      professionalSummary: `Experienced ${candidateTitle} professional. ${masterCv.summary}`,
-      coreCompetencies: ['Full-Stack Engineering', 'System Architecture', 'ATS Optimization', 'Agile Development'],
-      workExperience: tailoredExperiences,
-      education: masterCv.education,
-      technicalSkills: masterCv.skills.map((s) => ({ category: s.category, skills: s.items })),
-      projects: masterCv.projects || [],
-      certifications: (masterCv.certifications || []).map((c) =>
-        typeof c === 'string' ? c : `${c.name}${c.issuer ? ' (' + c.issuer + ')' : ''}`
-      ),
-      rephraseHighlightsCount: rephrasedCount,
-      keywordsIncorporated: allMissing,
-        audit: {
-        beforeScore,
-        afterScore,
-        scoreBoost,
-        scoreBreakdown: {
-          alreadyMatched: beforeScore,
-          newlyIntegrated: scoreBoost,
-          remainingGap: 100 - afterScore,
-        },
-        missingBefore: {
-          skills: missingSkills,
-          keywords: missingKeywords,
-        },
-        addedAfter: {
-          keywordsIncorporated: allMissing,
-          keywordsInExperience: allMissing,
-          keywordsInSkills: [],
-          rephrasedHighlightsCount: rephrasedCount,
-          skillsAdded: missingSkills,
-        },
-        notIntegrable: missingKeywords,
-        auditNotes: [
-          `Maintained candidate's title as "${candidateTitle}" (not changed to "${job.title}").`,
-          `Fallback mode: incorporated keywords into experience descriptions.`,
-          `Rephrased ${rephrasedCount} experience bullet points.`,
-        ],
-      },
-    };
-  }
 }

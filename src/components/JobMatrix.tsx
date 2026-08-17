@@ -371,8 +371,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   setSearchTerm,
   sourceFilter,
   setSourceFilter,
-  sortBy,
-  setSortBy,
   page,
   setPage,
   pageSize,
@@ -385,7 +383,6 @@ export const JobMatrix: React.FC<JobMatrixProps> = ({
   onDeleteJob,
   onUpdateStatus,
   onClearAll,
-  loadingJobIds,
   scoreMessages,
   tailorMessages,
 }) => {

@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Sparkles, Loader2, Upload, CheckCircle2, Plus, Trash2, GripVertical, Briefcase, Code, FolderGit2, GraduationCap, Award, User, TrendingUp, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { MasterCv } from '../types';
-import { llmErrorMessage } from '../lib/llmError';
 import { PREDEFINED_ROLES, PREDEFINED_KEYWORDS } from '../constants/suggestions';
 import { searchLocations } from '../lib/locations';
 import { DateRangePicker } from './DateRangePicker';

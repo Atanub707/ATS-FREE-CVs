@@ -37,12 +37,6 @@ interface RecruitersScreenProps {
   focusRecruiter?: { name?: string | null; url?: string | null } | null;
 }
 
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,var(--color-brand),#7C3AED)',
-  'linear-gradient(135deg,#F59E0B,#EF4444)',
-  'linear-gradient(135deg,var(--color-cta),#0EA5E9)',
-];
-
 const PIPELINE: Array<{ value: string | null; label: string }> = [
   { value: null, label: 'No status' },
   { value: 'replied', label: 'Replied' },

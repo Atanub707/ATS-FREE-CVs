@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, KeyRound, ShieldQuestion, User, Users, Lock, Search, Sparkles, Inbox, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, KeyRound, User, Users, Lock, Search, Sparkles, Inbox, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
 import { RECOVERY_QUESTIONS } from '../constants/recoveryQuestions';
 
 interface LoginScreenProps {
