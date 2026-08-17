@@ -205,6 +205,8 @@ export const MasterCvScreen: React.FC<MasterCvScreenProps> = ({
     } catch { /* ignore */ }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-40 bg-white text-[var(--color-ink)] flex">
       {/* LEFT: EDITOR */}
