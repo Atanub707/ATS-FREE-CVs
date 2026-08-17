@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { ScraperBar } from './components/ScraperBar';
 import { JobMatrix } from './components/JobMatrix';
@@ -15,7 +16,39 @@ import { LoginScreen } from './components/LoginScreen';
 import { Job, JobState, MasterCv, AppConfig, JobSource, TemplateId } from './types';
 import { llmErrorMessage } from './lib/llmError';
 
+// Dedicated URL routes — each screen has its own path so a reload (or a
+// shared link) lands back on the SAME screen instead of the dashboard.
+export const SCREEN_ROUTES: Record<string, string> = {
+  '/': 'dashboard',
+  '/settings': 'settings',
+  '/recruiters': 'recruiters',
+  '/master-cv': 'master-cv',
+  '/manual-jd': 'manual-jd',
+  '/job-portals': 'job-portals',
+  '/ai-interview': 'ai-interview',
+  '/linkedin-posts': 'linkedin-posts',
+};
+
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { pathname } = location;
+  // Screen visibility is URL-driven: the path decides which screen is open.
+  // Reloading /recruiters → path is /recruiters → Recruiters screen opens.
+  const isSettingsOpen = pathname === '/settings';
+  const isRecruitersOpen = pathname === '/recruiters';
+  const isMasterCvOpen = pathname === '/master-cv';
+  const isManualJdOpen = pathname === '/manual-jd';
+  const isJobPortalsOpen = pathname === '/job-portals';
+  const isAiSystemOpen = pathname === '/ai-interview';
+  const isLinkedInPostsOpen = pathname === '/linkedin-posts';
+  const goHome = useCallback(() => navigate('/'), [navigate]);
+
+  // Unknown paths (stale bookmarks, typos) land on the dashboard instead of
+  // a blank screen. Done BEFORE any screen renders.
+  const knownPaths = ['/', '/settings', '/recruiters', '/master-cv', '/manual-jd', '/job-portals', '/ai-interview', '/linkedin-posts'];
+  if (!knownPaths.includes(pathname)) return <Navigate to="/" replace />;
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [masterCv, setMasterCv] = useState<MasterCv | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -27,14 +60,8 @@ export default function App() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [selectedJobTab, setSelectedJobTab] = useState<'details' | 'gap' | 'tailored'>('details');
 
-  // Drawers and Modals
-  const [isMasterCvOpen, setIsMasterCvOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isManualJdOpen, setIsManualJdOpen] = useState(false);
-  const [isJobPortalsOpen, setIsJobPortalsOpen] = useState(false);
-  const [isRecruitersOpen, setIsRecruitersOpen] = useState(false);
-  const [isAiSystemOpen, setIsAiSystemOpen] = useState(false);
-  const [isLinkedInPostsOpen, setIsLinkedInPostsOpen] = useState(false);
+  // Drawers and Modals — visibility comes from the URL above; these hold
+  // transient payloads only.
   const [recruiterBadge, setRecruiterBadge] = useState(0);
   const [recruiterFocus, setRecruiterFocus] = useState<{ name?: string | null; url?: string | null } | null>(null);
 
@@ -392,6 +419,7 @@ export default function App() {
     setMasterCv(null);
     setJobs([]);
     setSelectedJob(null);
+    navigate('/');
   };
 
   // Save Config Handler
@@ -428,16 +456,16 @@ export default function App() {
           <Navbar
             user={currentUser}
             onLogout={handleLogout}
-            onOpenMasterCv={() => setIsMasterCvOpen(true)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenManualJd={() => setIsManualJdOpen(true)}
-            onOpenJobPortals={() => setIsJobPortalsOpen(true)}
+            onOpenMasterCv={() => navigate('/master-cv')}
+            onOpenSettings={() => navigate('/settings')}
+            onOpenManualJd={() => navigate('/manual-jd')}
+            onOpenJobPortals={() => navigate('/job-portals')}
             onOpenRecruiters={() => {
               setRecruiterBadge(0);
-              setIsRecruitersOpen(true);
+              navigate('/recruiters');
             }}
-            onOpenChat={() => setIsAiSystemOpen(true)}
-            onOpenLinkedInPosts={() => setIsLinkedInPostsOpen(true)}
+            onOpenChat={() => navigate('/ai-interview')}
+            onOpenLinkedInPosts={() => navigate('/linkedin-posts')}
             recruiterBadge={recruiterBadge}
             onTour={startTour}
           />
@@ -468,7 +496,7 @@ export default function App() {
               pageSize={pageSize}
               setPageSize={setPageSize}
               onSelectJob={(job) => { setSelectedJob(job); setSelectedJobTab('details'); }}
-            onOpenRecruiter={(job) => { setRecruiterFocus({ name: job.recruiterName, url: job.recruiterUrl }); setIsRecruitersOpen(true); }}
+            onOpenRecruiter={(job) => { setRecruiterFocus({ name: job.recruiterName, url: job.recruiterUrl }); navigate('/recruiters'); }}
               onSelectTailoredReview={(job) => { setSelectedJob(job); setSelectedJobTab('tailored'); }}
               onMatchJob={handleMatchJob}
               onTailorJob={handleTailorJob}
@@ -493,11 +521,11 @@ export default function App() {
             cvTemplate={(masterCv?.templateId || 'harvard') as TemplateId}
           />
 
-          {/* Master Candidate CV — full screen */}
+          {/* Master Candidate CV — full screen (always mounted, URL-driven) */}
           {masterCv && (
             <MasterCvScreen
               isOpen={isMasterCvOpen}
-              onClose={() => setIsMasterCvOpen(false)}
+              onClose={goHome}
               masterCv={masterCv}
               onSaveMasterCv={handleSaveMasterCv}
             />
@@ -507,37 +535,37 @@ export default function App() {
           {config && (
             <SettingsModal
               isOpen={isSettingsOpen}
-              onClose={() => setIsSettingsOpen(false)}
+              onClose={goHome}
               config={config}
               onSaveConfig={handleSaveConfig}
               user={currentUser}
-              onOpenMasterCv={() => setIsMasterCvOpen(true)}
+              onOpenMasterCv={() => navigate('/master-cv')}
             />
           )}
 
           {/* Manual JD — full screen */}
           <ManualJdScreen
             isOpen={isManualJdOpen}
-            onClose={() => setIsManualJdOpen(false)}
+            onClose={goHome}
             masterCv={masterCv}
           />
 
           {/* Job Portals Directory — full screen */}
           <JobPortalsScreen
             isOpen={isJobPortalsOpen}
-            onClose={() => setIsJobPortalsOpen(false)}
+            onClose={goHome}
           />
 
           {/* Recruiters — emails found in job descriptions */}
           <RecruitersScreen
             isOpen={isRecruitersOpen}
-            onClose={() => setIsRecruitersOpen(false)}
+            onClose={goHome}
             focusRecruiter={recruiterFocus}
           />
 
           {/* AI Interview */}
-          {isAiSystemOpen && <AiSystemScreen onClose={() => setIsAiSystemOpen(false)} />}
-          {isLinkedInPostsOpen && <LinkedInPostsScreen onClose={() => setIsLinkedInPostsOpen(false)} />}
+          {isAiSystemOpen && <AiSystemScreen onClose={goHome} />}
+          {isLinkedInPostsOpen && <LinkedInPostsScreen onClose={goHome} />}
         </>
       )}
     </div>
