@@ -134,7 +134,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       const res = await fetch('/api/linkedin-posts/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: q, limit: engine === 'apify' ? 100 : 20, engine }),
+        body: JSON.stringify({ keywords: q, limit: 20, engine: 'free' }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -181,7 +181,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         {setup && !setup.apify && (
           <div className="lp-setup">
             <b>⚡ Free engine is active — no token needed</b>
-            <p>Search runs through built-in search engines (Google/DuckDuckGo/Bing), free and unlimited up to your daily 20-post budget. For more reliable results, add your <b>Apify token</b> in <b>Settings → Integrations → Apify</b> and switch to the Apify engine — you control your own token and its cost (~$0.20/search).</p>
+            <p>Search runs through built-in search engines (Google/DuckDuckGo/Bing) — free and unlimited. The paid Apify engine is coming later.</p>
           </div>
         )}
         <div className="lp-hero">
@@ -209,36 +209,17 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
             </button>
           </form>
 
-          {/* Engine toggle: Free (built-in, no token) vs Apify (user's token) */}
+          {/* Engine indicator — Free engine active. Apify engine is locked for
+              now (unlock later); the toggle stays hidden until it ships. */}
           <div className="lp-engine" role="group" aria-label="Search engine">
-            <button
-              type="button"
-              className={`lp-engine-btn ${engine === 'free' ? 'on' : ''}`}
-              onClick={() => setEngine('free')}
-              disabled={busy}
-            >
+            <span className="lp-engine-btn on" aria-current="true">
               <span className="lp-engine-dot">◉</span> Free engine
               <span className="lp-engine-sub">built-in · no token</span>
-            </button>
-            <button
-              type="button"
-              className={`lp-engine-btn ${engine === 'apify' ? 'on' : ''}`}
-              onClick={() => setEngine('apify')}
-              disabled={busy || !setup?.apify}
-              title={setup?.apify ? 'Uses your Apify token (~$0.20 per search)' : 'Add your Apify token in Settings → Integrations to enable'}
-            >
-              <span className="lp-engine-dot">✦</span> Apify engine
-              <span className="lp-engine-sub">your token · $0.20/search · 100 posts</span>
-            </button>
-            {engine === 'apify' && quota ? (
-              <span className={`lp-quota ${quota.remaining === 0 ? 'out' : ''}`}>
-                {quota.used}/{quota.quota} Apify search{quota.quota === 1 ? '' : 'es'} used today
-              </span>
-            ) : engine === 'free' ? (
-              <span className="lp-quota free">Free · unlimited</span>
-            ) : null}
+            </span>
+            <span className="lp-quota free">Free · unlimited</span>
+            <span className="lp-engine-locked" title="Apify engine will unlock later">✦ Apify engine — coming soon</span>
           </div>
-          <p className="lp-hint">{engine === 'apify' ? 'Job postings only · up to ~100 posts · 1 Apify search/day (resets at midnight)' : 'Job postings only · last 24 hours · unlimited' } · results are added to your job list with a “LinkedIn Posts” tag</p>
+          <p className="lp-hint">Job postings only · last 24 hours · unlimited · results are added to your job list with a “LinkedIn Posts” tag</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
@@ -335,6 +316,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-quota{font-size:11px; font-weight:800; color:#7C3AED; background:#F5F3FF; border:1px solid #E9D5FF; border-radius:999px; padding:6px 13px;}
         .lp-quota.out{color:#DC2626; background:#FEF2F2; border-color:#FECACA;}
         .lp-quota.free{color:#15803D; background:#F0FDF4; border-color:#BBF7D0;}
+        .lp-engine-locked{font-size:11px; font-weight:800; color:#94A3B8; background:#F1F5F9; border:1px dashed #CBD5E1; border-radius:999px; padding:6px 13px; cursor:not-allowed;}
         .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
         .lp-setup{max-width:620px; margin:0 auto 22px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:15px 18px;}
         .lp-setup b{display:block; font-size:12.5px; font-weight:800; color:#92400E; margin-bottom:4px;}
