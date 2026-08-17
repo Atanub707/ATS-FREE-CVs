@@ -14,7 +14,7 @@ export interface SuggestionDomain {
 // Job titles — ~1,000, across every industry
 // ────────────────────────────────────────────────────────────────────────────
 
-export const JOB_TITLES: string[] = [
+const JOB_TITLES: string[] = [
   // ── DevOps, SRE & Cloud ──
   'DevOps Engineer', 'Senior DevOps Engineer', 'Junior DevOps Engineer', 'DevOps Architect', 'DevOps Manager',
   'DevSecOps Engineer', 'DevSecOps Architect', 'DevSecOps Manager',
@@ -692,7 +692,7 @@ export const SKILLS: string[] = [
 // Trending (shown when the search box is empty)
 // ────────────────────────────────────────────────────────────────────────────
 
-export const TRENDING_ROLES = [
+const TRENDING_ROLES = [
   'DevOps Engineer',
   'DevSecOps Engineer',
   'Site Reliability Engineer (SRE)',
@@ -707,7 +707,7 @@ export const TRENDING_ROLES = [
   'Product Manager',
 ];
 
-export const TRENDING_KEYWORDS = [
+const TRENDING_KEYWORDS = [
   'Docker',
   'Kubernetes',
   'AWS',

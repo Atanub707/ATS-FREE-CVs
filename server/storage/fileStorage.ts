@@ -43,7 +43,7 @@ const LEGACY_PRIMARY_JSON = path.join(DATA_DIR, 'ats_jobs.sqlite.json');
 
 // Request-scoped identity: the middleware wraps each request with the
 // authenticated user id, and storage functions resolve the current user from it.
-export const authContext = new AsyncLocalStorage<{ userId: string }>();
+const authContext = new AsyncLocalStorage<{ userId: string }>();
 
 export function getCurrentUserId(): string {
   return authContext.getStore()?.userId || '';
@@ -202,7 +202,7 @@ export function getUserById(id: string): User | undefined {
 }
 
 // ─────────────────── Database ───────────────────
-export const DEFAULT_MASTER_CV: MasterCv = {
+const DEFAULT_MASTER_CV: MasterCv = {
   fullName: 'Alex Mercer',
   email: 'alex.mercer.dev@example.com',
   phone: '+1 (555) 234-5678',
@@ -496,7 +496,7 @@ function ensurePostsDailyTable(db: Database.Database): void {
   `);
 }
 
-export const POSTS_DAILY_QUOTA = 1;
+const POSTS_DAILY_QUOTA = 1;
 
 function postsDayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -800,27 +800,6 @@ export function getAllJobs(): Job[] {
   const userId = getCurrentUserId();
   if (!userId) return [];
   return getJobsForUser(userId);
-}
-
-export function saveAllJobs(jobs: Job[]): void {
-  const userId = getCurrentUserId();
-  if (!userId) return;
-  try {
-    const d = getDb();
-    const insert = d.prepare('INSERT OR REPLACE INTO jobs (id, user_id, data) VALUES (?, ?, ?)');
-    const existing = new Set((d.prepare('SELECT id FROM jobs WHERE user_id = ?').all(userId) as { id: string }[]).map((r) => r.id));
-    const tx = d.transaction(() => {
-      for (const job of jobs) {
-        insert.run(job.id, userId, JSON.stringify(job));
-        existing.delete(job.id);
-      }
-      const del = d.prepare('DELETE FROM jobs WHERE id = ? AND user_id = ?');
-      for (const gone of existing) del.run(gone, userId);
-    });
-    tx();
-  } catch (err) {
-    console.error('Error saving jobs:', err);
-  }
 }
 
 export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number; newContacts: HrContact[] } {

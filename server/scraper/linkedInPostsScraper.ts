@@ -41,7 +41,7 @@ async function getHtml(url: string, extraHeaders: Record<string, string> = {}): 
   return null;
 }
 
-export function extractLinkedInPostUrls(html: string): string[] {
+function extractLinkedInPostUrls(html: string): string[] {
   const urls = new Set<string>();
   // 1. Direct hrefs (all engines sometimes expose them raw).
   for (const m of html.matchAll(/https:\/\/www\.linkedin\.com\/(?:posts\/[a-zA-Z0-9_-]+|feed\/update\/urn:li:activity:[0-9]+|company\/[a-zA-Z0-9._-]+\/posts\/[a-zA-Z0-9_-]+)/g)) {
@@ -104,7 +104,7 @@ const ROLE_VARIANTS: Record<string, string[]> = {
   network: ['Network Engineer'],
 };
 
-export function roleVariants(role: string): string[] {
+function roleVariants(role: string): string[] {
   const r = role.toLowerCase();
   for (const [key, variants] of Object.entries(ROLE_VARIANTS)) {
     if (r.includes(key)) return variants;
@@ -123,7 +123,7 @@ const TECH_COMBOS: Record<string, string[]> = {
 };
 
 // Build the optimized query set: 1–3 hashtags OR 2–3 keywords per query.
-export function buildSearchQueries(role: string): string[] {
+function buildSearchQueries(role: string): string[] {
   const variants = roleVariants(role);
   const r = role.toLowerCase();
   const combos = TECH_COMBOS[Object.keys(TECH_COMBOS).find((k) => r.includes(k)) || 'default'] || TECH_COMBOS.default;
@@ -364,13 +364,13 @@ export function isJobPosting(text: string, hasJobLink = false): boolean {
 
 // Strict "last 24 hours" cut: known dates older than 24h are dropped.
 const CUTOFF_24H_MS = 24 * 3600000;
-export function isWithin24h(iso?: string): boolean {
+function isWithin24h(iso?: string): boolean {
   if (!iso) return true; // unknown date → keep (engines are already 24h-scoped)
   const t = new Date(iso).getTime();
   return !Number.isNaN(t) && Date.now() - t <= CUTOFF_24H_MS;
 }
 
-export function extractHashtags(text: string): string[] {
+function extractHashtags(text: string): string[] {
   const tags = [...new Set(text.match(/#[A-Za-z0-9_]+/g) || [])].slice(0, 8);
   return tags;
 }

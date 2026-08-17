@@ -89,7 +89,7 @@ export const CV_TEMPLATE_GEOMETRY: Record<TemplateId, CvTemplateGeometry> = {
   },
 };
 
-export function cvTemplateGeometry(template: TemplateId): CvTemplateGeometry {
+function cvTemplateGeometry(template: TemplateId): CvTemplateGeometry {
   return CV_TEMPLATE_GEOMETRY[template] || CV_TEMPLATE_GEOMETRY.harvard;
 }
 

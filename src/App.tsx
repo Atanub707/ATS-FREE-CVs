@@ -18,17 +18,6 @@ import { llmErrorMessage } from './lib/llmError';
 
 // Dedicated URL routes — each screen has its own path so a reload (or a
 // shared link) lands back on the SAME screen instead of the dashboard.
-export const SCREEN_ROUTES: Record<string, string> = {
-  '/': 'dashboard',
-  '/settings': 'settings',
-  '/recruiters': 'recruiters',
-  '/master-cv': 'master-cv',
-  '/manual-jd': 'manual-jd',
-  '/job-portals': 'job-portals',
-  '/ai-interview': 'ai-interview',
-  '/linkedin-posts': 'linkedin-posts',
-};
-
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();

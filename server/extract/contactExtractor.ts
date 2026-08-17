@@ -160,12 +160,6 @@ function cleanContext(preceding: string): string {
   return preceding.replace(/\s+/g, ' ').trim().slice(-90).trim();
 }
 
-export function extractContacts(description: string | undefined | null): ExtractedContact[] {
-  const text = (description || '').replace(/\r/g, '');
-  if (!text.trim()) return [];
-  return extractContactsFrom(text, '');
-}
-
 export function extractContactsFrom(text: string, company: string): ExtractedContact[] {
   if (!text.trim()) return [];
 

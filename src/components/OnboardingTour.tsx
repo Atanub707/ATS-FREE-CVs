@@ -66,7 +66,7 @@ export function startTour(): void {
   d.drive();
 }
 
-export function shouldShowTour(): boolean {
+function shouldShowTour(): boolean {
   return localStorage.getItem(TOUR_FLAG) !== '1';
 }
 

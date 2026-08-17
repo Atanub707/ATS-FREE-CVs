@@ -6,10 +6,6 @@
 const cache = new Map<string, { allowed: boolean; fetchedAt: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
-export function robotsCacheClear(): void {
-  cache.clear();
-}
-
 async function fetchRobotsTxt(domain: string): Promise<string | null> {
   try {
     const res = await fetch(`https://${domain}/robots.txt`, {
