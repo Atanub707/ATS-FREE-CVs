@@ -170,7 +170,7 @@ maxRetries=3
 | Auth | Local accounts · scrypt · httpOnly cookies |
 | Email | nodemailer (your own SMTP) |
 | Documents | pdfkit (PDF) · mammoth + pdf-parse (import) |
-| Build / CI | Vite · esbuild · GitHub Actions (gitleaks → audit → Trivy → auto-release) |
+| Build | Vite · esbuild |
 
 ---
 

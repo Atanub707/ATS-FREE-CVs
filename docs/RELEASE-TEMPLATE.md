@@ -1,9 +1,7 @@
 # Release Template — Tailor CV
 
-> **Use this template for EVERY version release.** The CI pipeline
-> (`.github/workflows/build.yml` → `release-notes` job) publishes the notes
-> automatically when a `v*` tag is pushed — the notes are extracted from the
-> matching `## vX.Y.Z` section in `CHANGELOG.md`.
+> **Use this template for EVERY version release.** Release notes are written
+> into the matching `## vX.Y.Z` section in `CHANGELOG.md`.
 >
 > **To release a new version:**
 > 1. Add a `## vX.Y.Z (YYYY-MM-DD)` section at the top of `CHANGELOG.md` following this template

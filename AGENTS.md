@@ -23,8 +23,6 @@ npm audit --audit-level=high
 npx vite build
 ```
 
-A git **pre-push hook** enforces the same gate automatically. If the hook is installed (`.githooks/pre-push` + `git config core.hooksPath .githooks`), a failed check blocks the push entirely — the commit stays local until the issue is fixed.
-
 ## Push checklist (manual confirmation)
 
 Before `git push origin main`:
@@ -41,10 +39,3 @@ Before `git push origin main`:
 - Never commit `config.ini`, `.env`, API keys, tokens, or passwords.
 - `config.ini` is gitignored and user-local — it is mounted into Docker, never committed.
 - If a secret was ever committed, treat it as compromised: rotate it, remove from history, and warn on startup (see server.ts COMPROMISED_KEYS).
-- gitleaks runs in CI — the pre-push hook also rejects pushes containing secrets.
-
-## CI/CD
-
-- GitHub Actions (`build.yml`) runs on every push to main: gitleaks → npm audit → Trivy → build → release (v* tag) + Docker push.
-- The pipeline is a hard gate: security failures stop the build.
-- Release notes are auto-extracted from CHANGELOG.md (see workflow).
