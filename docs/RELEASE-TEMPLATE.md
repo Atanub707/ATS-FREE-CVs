@@ -30,8 +30,8 @@
 - _Anything that changes behavior, config, or data. If none: "None."_
 
 ## 📦 How to Update
-- **macOS / Linux:** re-run the installer — `curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh | bash` (skips completed steps)
-- **Windows:** re-run the PowerShell one-liner — `irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex`
+- **macOS / Linux:** re-run the installer — `curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh | bash` (skips completed steps)
+- **Windows:** re-run the PowerShell one-liner — `irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.ps1 | iex`
 - **Your data is untouched** — jobs, CV, and history stay on your machine.
 
 ## 🙏 Thanks

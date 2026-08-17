@@ -102,4 +102,4 @@ ok "Tagged $VERSION"
 git push origin main
 git push origin "$VERSION"
 ok "Pushed main + $VERSION — CI will publish the release notes."
-printf "${BOLD}Release published: ${GREEN}https://github.com/Atanub707/ATS-FREE-CVs/releases/tag/${VERSION}${NC}\n"
+printf "${BOLD}Release published: ${GREEN}https://github.com/Atanub707/Tailor-AI/releases/tag/${VERSION}${NC}\n"

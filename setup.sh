@@ -54,17 +54,17 @@ fi
 echo -e "✓ ${GREEN}Node.js $(node -v)${NC} — ready"
 
 # Download (always via curl, no git needed)
-if [ -d "ATS-FREE-CVs" ]; then
-  cd ATS-FREE-CVs
+if [ -d "Tailor-AI" ]; then
+  cd Tailor-AI
   echo -e "✓ Using existing folder"
 else
   echo ""
   echo -e "Downloading..."
-  curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o /tmp/ats.zip
+  curl -sL https://github.com/Atanub707/Tailor-AI/archive/main.zip -o /tmp/ats.zip
   unzip -q /tmp/ats.zip -d /tmp/ats-extract
-  mv /tmp/ats-extract/ATS-FREE-CVs-main ./ATS-FREE-CVs
+  mv /tmp/ats-extract/Tailor-AI-main ./Tailor-AI
   rm -rf /tmp/ats.zip /tmp/ats-extract
-  cd ATS-FREE-CVs
+  cd Tailor-AI
   echo -e "✓ ${GREEN}Downloaded${NC}"
 fi
 

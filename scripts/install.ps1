@@ -24,7 +24,7 @@ $ErrorActionPreference = 'Continue'
 $PSNativeCommandUseErrorActionPreference = $false
 
 $AppDir  = Join-Path $env:USERPROFILE 'tailor-cv'
-$RepoUrl = 'https://github.com/Atanub707/ATS-FREE-CVs.git'
+$RepoUrl = 'https://github.com/Atanub707/Tailor-AI.git'
 $AppUrl  = 'http://localhost:3000'
 $DockerDesktopExe = Join-Path ${env:ProgramFiles} 'Docker\Docker\Docker Desktop.exe'
 
@@ -55,7 +55,7 @@ try {
     Warn "Tailor CV is already running at $AppUrl."
     Say 'To UPDATE to the latest version, paste this instead:'
     Say ''
-    Say '  irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex'
+    Say '  irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/update.ps1 | iex'
     Say ''
     Start-Process $AppUrl
     Read-Host 'Press Enter to close'

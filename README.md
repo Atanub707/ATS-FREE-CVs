@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Atanub707/ATS-FREE-CVs/raw/main/media/screenshot.png" width="100%" alt="Tailor CV Dashboard"/>
+  <img src="https://github.com/Atanub707/Tailor-AI/raw/main/media/screenshot.png" width="100%" alt="Tailor CV Dashboard"/>
 </p>
 
 <h1 align="center">Tailor CV</h1>
@@ -48,16 +48,28 @@ A self-hosted job-hunting tool that:
 
 > 📖 Full guide: [scripts/HOW-TO-INSTALL.md](scripts/HOW-TO-INSTALL.md) — install, update, uninstall, troubleshooting.
 
+### Quick command menu
+
+Pick what you want to do, pick your OS, copy the command, paste it into **PowerShell** (Windows) or **Terminal** (macOS/Linux):
+
+| What you want | Windows — PowerShell | macOS / Linux — Terminal |
+|---|---|---|
+| **Install** | `irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.ps1 \| iex` | `curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh \| bash` |
+| **Update** | `irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/update.ps1 \| iex` | `curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/update.sh \| bash` |
+| **Uninstall** | `irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/uninstall.ps1 \| iex` | `curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/uninstall.sh \| bash` |
+
+> **Which terminal?** Windows users: open **PowerShell** (Start → type "PowerShell" → Enter). macOS/Linux users: open **Terminal**. Copy the command from the matching column and paste it — press Enter and the script runs.
+
 **Windows — paste into PowerShell:**
 
 ```powershell
-irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.ps1 | iex
 ```
 
 **macOS / Linux — paste into Terminal:**
 
 ```bash
-curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh | bash
+curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh | bash
 ```
 
 The installer is **idempotent**: checks/installs Docker Desktop, starts the engine, downloads Tailor CV, and opens `http://localhost:3000`. Re-run it anytime — finished steps are skipped. No code-signing, no SmartScreen warnings.
@@ -65,12 +77,12 @@ The installer is **idempotent**: checks/installs Docker Desktop, starts the engi
 ### Update
 
 ```powershell
-# Windows
-irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex
+# Windows — PowerShell
+irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/update.ps1 | iex
 ```
 ```bash
-# macOS / Linux
-curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash
+# macOS / Linux — Terminal
+curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/update.sh | bash
 ```
 
 ### Uninstall
@@ -81,13 +93,13 @@ curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh 
 
 ```bash
 # Docker manual
-curl -sL https://github.com/Atanub707/ATS-FREE-CVs/archive/main.zip -o ats.zip
-unzip ats.zip && cd ATS-FREE-CVs-main
+curl -sL https://github.com/Atanub707/Tailor-AI/archive/main.zip -o ats.zip
+unzip ats.zip && cd Tailor-AI-main
 docker compose up -d
 
 # Developer mode (Node 18+, no Docker)
-git clone https://github.com/Atanub707/ATS-FREE-CVs.git
-cd ATS-FREE-CVs && npm install && npm run dev
+git clone https://github.com/Atanub707/Tailor-AI.git
+cd Tailor-AI && npm install && npm run dev
 ```
 
 ---

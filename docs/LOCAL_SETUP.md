@@ -15,8 +15,8 @@ folder to a fully working app.
 ## Step 1 — Get the code
 
 ```bash
-git clone https://github.com/Atanub707/ATS-FREE-CVs.git
-cd ATS-FREE-CVs
+git clone https://github.com/Atanub707/Tailor-AI.git
+cd Tailor-AI
 ```
 
 ## Step 2 — Install dependencies

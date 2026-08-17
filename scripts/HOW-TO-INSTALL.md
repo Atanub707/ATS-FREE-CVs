@@ -37,7 +37,7 @@ internet connection. Everything runs locally — your data never leaves your mac
 **Option A — one line in Terminal (recommended):**
 
 ```bash
-curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.sh | bash
+curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh | bash
 ```
 
 **Option B — manual:** download `install.sh` from GitHub, then in Terminal:
@@ -62,7 +62,7 @@ Tailor CV. First run may take a few minutes (Docker Desktop installs + engine st
 2. **Copy this one line**, right-click in the window to paste, press **Enter**:
 
 ```powershell
-irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.ps1 | iex
 ```
 
 3. Let it run — it installs Docker Desktop (one **Yes** prompt), starts it, waits for
@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/instal
 > **resilient version** which verifies the download and retries via the GitHub API:
 
 ```powershell
-$u='https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/install.ps1'; $p="$env:TEMP	ailorcv.ps1"; try { irm $u -OutFile $p -ErrorAction Stop } catch {}; $c = Get-Content $p -Raw -ErrorAction SilentlyContinue; if ($c -match 'ErrorActionPreference|Tailor CV') { iex $c } else { Write-Host 'Direct download blocked - fetching via API...'; $j = irm -Headers @{'User-Agent'='TailorCV'} 'https://api.github.com/repos/Atanub707/ATS-FREE-CVs/contents/scripts/install.ps1'; iex ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($j.content))) }
+$u='https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.ps1'; $p="$env:TEMP	ailorcv.ps1"; try { irm $u -OutFile $p -ErrorAction Stop } catch {}; $c = Get-Content $p -Raw -ErrorAction SilentlyContinue; if ($c -match 'ErrorActionPreference|Tailor CV') { iex $c } else { Write-Host 'Direct download blocked - fetching via API...'; $j = irm -Headers @{'User-Agent'='TailorCV'} 'https://api.github.com/repos/Atanub707/Tailor-AI/contents/scripts/install.ps1'; iex ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($j.content))) }
 ```
 
 > This is the same trusted pattern used by Scoop, Chocolatey and many open-source tools —
@@ -83,7 +83,7 @@ $u='https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/instal
 
 **Step 1 — get the installer file:**
 
-- Open the repository: **https://github.com/Atanub707/ATS-FREE-CVs**
+- Open the repository: **https://github.com/Atanub707/Tailor-AI**
 - Click the green **Code** button → **Download ZIP**
 - Open the downloaded ZIP and **extract it** anywhere (right-click → *Extract All…*) — e.g. into a folder on your Desktop
 
@@ -128,12 +128,12 @@ tokens, history — is never touched):
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/Atanub707/ATS-FREE-CVs/main/scripts/update.ps1 | iex
+irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/update.ps1 | iex
 ```
 
 **macOS / Linux (Terminal):**
 ```bash
-curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash
+curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/update.sh | bash
 ```
 
 **If you already installed and run the installer again**, it tells you the app is
@@ -152,7 +152,7 @@ export anything you need first). Docker Desktop itself stays installed.
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/uninstall.sh | bash
+curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/uninstall.sh | bash
 ```
 
 **Windows:** download `uninstall.bat`, double-click it.

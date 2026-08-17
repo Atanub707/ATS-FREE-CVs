@@ -18,7 +18,7 @@
 set -euo pipefail
 
 APP_DIR="${1:-$HOME/tailor-cv}"
-REPO_URL="https://github.com/Atanub707/ATS-FREE-CVs.git"
+REPO_URL="https://github.com/Atanub707/Tailor-AI.git"
 APP_URL="http://localhost:3000"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BOLD='\033[1m'; NC='\033[0m'
@@ -95,6 +95,6 @@ printf "${BOLD}✅ Tailor CV is ready at ${GREEN}$APP_URL${NC}\n"
 printf "${BOLD}   Sign in or continue as guest, then set your AI key:\n"
 printf "${BOLD}   top-right menu → Settings → Integrations → LLM & AI${NC}\n"
 printf "${BOLD}   Stop it:  docker compose -f $APP_DIR/docker-compose.yml down\n"
-printf "${BOLD}   Update:   curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/update.sh | bash\n"
-printf "${BOLD}   Uninstall: curl -fsSL https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/uninstall.sh | bash\n"
+printf "${BOLD}   Update:   curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/update.sh | bash\n"
+printf "${BOLD}   Uninstall: curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/uninstall.sh | bash\n"
 printf "${BOLD}──────────────────────────────────────────────\n${NC}"

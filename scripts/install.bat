@@ -17,7 +17,7 @@ echo.
 echo  ═══ Tailor CV installer ═══
 echo.
 
-set "ENGINE_URL=https://github.com/Atanub707/ATS-FREE-CVs/raw/main/scripts/install.ps1"
+set "ENGINE_URL=https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.ps1"
 
 if not exist "%~dp0install.ps1" (
     echo Downloading the installer engine (one time)...
