@@ -456,6 +456,36 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   };
 
   const setSummary = (v: string) => { if (editableCv) commitEdits({ ...editableCv, summary: v }); };
+
+  // ── Contact info (Master CV parity) ──
+  const setContact = (key: string, v: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, contactInfo: { ...editableCv.contactInfo, [key]: v } });
+  };
+  const setName = (v: string) => { if (editableCv) commitEdits({ ...editableCv, candidateName: v }); };
+
+  // ── Education (Master CV parity) ──
+  const setEducation = (ei: number, key: string, v: string) => {
+    if (!editableCv) return;
+    const education = editableCv.education.map((e, i) => (i === ei ? { ...e, [key]: v } : e));
+    commitEdits({ ...editableCv, education });
+  };
+  const removeEducation = (ei: number) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, education: editableCv.education.filter((_, i) => i !== ei) });
+  };
+
+  // ── Projects (Master CV parity) ──
+  const setProject = (pi: number, key: string, v: string) => {
+    if (!editableCv) return;
+    const projects = editableCv.projects.map((p, i) => (i === pi ? { ...p, [key]: v } : p));
+    commitEdits({ ...editableCv, projects });
+  };
+  const removeProject = (pi: number) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, projects: editableCv.projects.filter((_, i) => i !== pi) });
+  };
+
   const visibleSkillGroups = (editableCv?.skills || []).map((g) => ({
     category: g.category,
     items: g.items.filter((s) => !hideAI || !s.ai),
@@ -1034,6 +1064,54 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
                   </div>
 
+                    {/* Contact Information — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                          <User className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+                          <span>Contact Information</span>
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[var(--color-faint)] text-[11px]">Full Name</label>
+                          <input
+                            type="text"
+                            value={editableCv.candidateName}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[var(--color-faint)] text-[11px]">Email Address</label>
+                          <input
+                            type="text"
+                            value={editableCv.contactInfo.email || ''}
+                            onChange={(e) => setContact('email', e.target.value)}
+                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[var(--color-faint)] text-[11px]">Phone Number</label>
+                          <input
+                            type="text"
+                            value={editableCv.contactInfo.phone || ''}
+                            onChange={(e) => setContact('phone', e.target.value)}
+                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[var(--color-faint)] text-[11px]">Location</label>
+                          <input
+                            type="text"
+                            value={editableCv.contactInfo.location || ''}
+                            onChange={(e) => setContact('location', e.target.value)}
+                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Professional Summary — Master CV style */}
                     <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
                       <div className="flex items-center justify-between">
@@ -1240,6 +1318,108 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           </div>
                         </div>
                       ))}
+                    </div>
+
+                    {/* Education History — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+                          <span>Education History</span>
+                        </h3>
+                      </div>
+                      {(editableCv.education || []).map((edu, ei) => (
+                        <div key={ei} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[var(--color-muted)] text-[11px]">Degree #{ei + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeEducation(ei)}
+                              className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Degree / Qualification</label>
+                              <input
+                                type="text"
+                                value={edu.degree || ''}
+                                onChange={(e) => setEducation(ei, 'degree', e.target.value)}
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Institution / University</label>
+                              <input
+                                type="text"
+                                value={edu.institution || ''}
+                                onChange={(e) => setEducation(ei, 'institution', e.target.value)}
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--color-faint)] text-[11px]">Dates / Graduation Year</label>
+                              <input
+                                type="text"
+                                value={edu.dates || ''}
+                                onChange={(e) => setEducation(ei, 'dates', e.target.value)}
+                                placeholder="Pick start & end date"
+                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(editableCv.education || []).length === 0 && (
+                        <p className="text-[11px] text-[var(--color-faint)]">No education entries.</p>
+                      )}
+                    </div>
+
+                    {/* Featured Projects — Master CV style */}
+                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                          <FolderGit2 className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+                          <span>Featured Projects & Portfolio</span>
+                        </h3>
+                      </div>
+                      {(editableCv.projects || []).map((proj, pi) => (
+                        <div key={pi} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[var(--color-muted)] text-[11px]">Project #{pi + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeProject(pi)}
+                              className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div>
+                            <label className="block text-[var(--color-faint)] text-[11px]">Project Name</label>
+                            <input
+                              type="text"
+                              value={proj.name || ''}
+                              onChange={(e) => setProject(pi, 'name', e.target.value)}
+                              className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[var(--color-faint)] text-[11px]">Description</label>
+                            <textarea
+                              rows={2}
+                              value={proj.description || ''}
+                              onChange={(e) => setProject(pi, 'description', e.target.value)}
+                              className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {(editableCv.projects || []).length === 0 && (
+                        <p className="text-[11px] text-[var(--color-faint)]">No projects.</p>
+                      )}
                     </div>
 
                   </div>
