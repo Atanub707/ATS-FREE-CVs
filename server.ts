@@ -609,9 +609,15 @@ async function startServer() {
       // Job-posting search only — anything else returns "not valid".
       if (posts.length === 0) {
         const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : quota.quota;
+        // RESEARCH: distinguish "engines blocked/rate-limited" from "engines
+        // found links but none were job postings in the last 24h".
+        const discoveryFailed = scraper.lastDebug.linksFound === 0;
         return res.status(200).json({
           valid: false,
-          message: 'not valid — this search only works for job postings from the last 24 hours.',
+          discoveryFailed,
+          message: discoveryFailed
+            ? `Search engines returned no results from this server — likely rate-limited or blocked (${scraper.lastDebug.queriesTried} queries tried). Try again in a minute.`
+            : 'not valid — engines found posts but none were job postings from the last 24 hours. Try broader keywords.',
           debug: scraper.lastDebug,
           posts: [],
           addedCount: 0,

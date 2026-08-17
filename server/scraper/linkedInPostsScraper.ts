@@ -166,6 +166,52 @@ async function searchGoogle(keywords: string): Promise<string[]> {
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
+// RESEARCH (2026-08-17): Google's SERP returns a JS anti-bot challenge from
+// datacenter IPs (gbv=1 is deprecated and irrelevant). The reliable free
+// source is Google News RSS, which HONORS `site:linkedin.com/posts`, returns
+// ~100 fresh items, and carries the full hiring-post text (with lnkd.in apply
+// links) even when the direct post URL is a Google-News token.
+// Each GNRSS item → a "synthetic" candidate: title is the full post text,
+// pubDate is the exact post time, and any http(s) apply link is lifted from
+// the text. These pass through isJobPosting + isWithin24h in the caller.
+interface GnCandidate { text: string; pubDate?: string; applyUrl?: string; link: string }
+
+function extractGnItems(html: string): GnCandidate[] {
+  const out: GnCandidate[] = [];
+  for (const m of html.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const it = m[1];
+    const title = it.match(/<title>([^<]*)<\/title>/)?.[1] || '';
+    const pubDate = it.match(/<pubDate>([^<]*)<\/pubDate>/)?.[1] || '';
+    const link = it.match(/<link>([^<]*)<\/link>/)?.[1] || '';
+    if (!title) continue;
+    // Unescape basic XML entities.
+    const text = title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+    const applyUrl = text.match(/https?:\/\/(?!www\.linkedin\.com)[^\s"'<>)]+/i)?.[0]?.replace(/[).,;:]+$/, '').split('?')[0];
+    out.push({ text, pubDate: pubDate || undefined, applyUrl, link });
+  }
+  return out;
+}
+
+async function searchGoogleNewsRss(keywords: string): Promise<{ urls: string[]; candidates: GnCandidate[] }> {
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
+  // `when:1d` restricts to the last day — matches the 24h requirement server-side.
+  const html = await getHtml(`https://news.google.com/rss/search?q=${q}+when:1d&hl=en-US&gl=US&ceid=US:en`);
+  if (!html) return { urls: [], candidates: [] };
+  const candidates = extractGnItems(html);
+  // Direct post URLs (when GNRSS exposes them) still flow through the normal
+  // post-fetch path; candidates power synthetic posts.
+  return { urls: extractLinkedInPostUrls(html), candidates };
+}
+
+// r.jina.ai renders JS SERPs to plain HTML — unblocks DDG/Bing from
+// datacenter IPs (free tier: 20 RPM anonymous; ~500 RPM with a free key).
+// Google domains are blocked anonymously, so this is for DDG/Bing only.
+async function searchJinaDuckDuckGo(keywords: string): Promise<string[]> {
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
+  const html = await getHtml(`https://r.jina.ai/https://html.duckduckgo.com/html/?q=${q}`);
+  return html ? extractLinkedInPostUrls(html) : [];
+}
+
 async function searchDuckDuckGo(keywords: string): Promise<string[]> {
   const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://html.duckduckgo.com/html/?q=${q}&df=${dateRangeParam()}`);
@@ -178,26 +224,41 @@ async function searchBing(keywords: string): Promise<string[]> {
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
-async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls: string[]; queriesTried: number; linksFound: number }> {
+type EngineResult = { urls: string[]; candidates: GnCandidate[] };
+
+async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls: string[]; candidates: GnCandidate[]; queriesTried: number; linksFound: number; enginesUsed: number }> {
   const queries = buildSearchQueries(keywords);
   const found = new Set<string>();
-  const engines = [searchGoogle, searchDuckDuckGo, searchBing];
+  const candidates: GnCandidate[] = [];
+  // RESEARCH-ORDERED engines: GNRSS (works from any IP, ~100 items) first,
+  // then the jina proxy (renders DDG, no captcha), then direct engines only
+  // as a last resort (DDG hard-captchas after ~1 hit/IP, Bing drops `site:`).
+  const engines: ((q: string) => Promise<EngineResult>)[] = [
+    async (q) => await searchGoogleNewsRss(q),
+    async (q) => ({ urls: await searchJinaDuckDuckGo(q), candidates: [] }),
+    async (q) => ({ urls: await searchGoogle(q), candidates: [] }),
+    async (q) => ({ urls: await searchDuckDuckGo(q), candidates: [] }),
+    async (q) => ({ urls: await searchBing(q), candidates: [] }),
+  ];
   let queriesTried = 0;
+  let enginesUsed = new Set<number>();
+  const MAX_HITS = 12; // more coverage than before, but load is on tolerant sources
+  const PAUSE_MS = 1000;
 
-  // Rotate engines through the query set (max 8 engine hits per search — be a
-  // good citizen) until we have enough posts or run out of queries.
   for (const query of queries) {
     if (found.size >= limit) break;
-    if (queriesTried >= 8) break;
+    if (queriesTried >= MAX_HITS) break;
     const engine = engines[queriesTried % engines.length];
     queriesTried++;
+    enginesUsed.add(queriesTried % engines.length);
     try {
-      const urls = await engine(query);
+      const { urls, candidates: cands } = await engine(query);
       for (const u of urls) found.add(u);
-      await new Promise((r) => setTimeout(r, 600)); // polite pause between engine hits
+      candidates.push(...cands);
     } catch { /* try next */ }
+    await new Promise((r) => setTimeout(r, PAUSE_MS)); // polite pause between hits
   }
-  return { urls: [...found], queriesTried, linksFound: found.size };
+  return { urls: [...found], candidates, queriesTried, linksFound: found.size, enginesUsed: enginesUsed.size };
 }
 
 interface ParsedPost {
@@ -247,10 +308,12 @@ function parseRelativeTime(label: string): string | undefined {
 async function fetchPost(url: string): Promise<ParsedPost | null> {
   let target = url;
   // Resolve LinkedIn short links (lnkd.in) to the real post page first.
+  // RESEARCH: lnkd.in returns 403 on HEAD but 200 on GET (and exposes the
+  // real target in the redirect interstitial), so resolve with GET/follow.
   if (target.includes('lnkd.in')) {
     try {
-      const head = await fetch(target, { method: 'HEAD', headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
-      target = head.url || target;
+      const res = await fetch(target, { method: 'GET', headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      target = res.url && !res.url.includes('lnkd.in') ? res.url : target;
     } catch { /* keep original */ }
   }
   const html = await getHtml(target);
@@ -262,21 +325,39 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
   const title = og('title').replace(/ \| LinkedIn$/i, '').trim();
   const text = og('description').trim();
 
-  // Author: og:title is often "Firstname Lastname on LinkedIn"
-  const author = title.split(' on LinkedIn')[0].trim() || 'LinkedIn';
-
-  // Date: prefer the visible "X hours ago" label, then ISO dates.
-  let date: string | undefined;
-  const rel = html.match(/(\d+ (?:minute|hour|day)s? ago)/i)?.[1];
-  if (rel) date = parseRelativeTime(rel);
-  if (!date) {
-    const iso = html.match(/datetime="([^"]+)"/)?.[1];
-    if (iso) date = new Date(iso).toISOString();
+  // Author (guest pages): og:title is "<post text> | <AUTHOR> | <N> comments".
+  // Take the middle " | " segment (fallback: "on LinkedIn" split, then name).
+  let author = 'LinkedIn';
+  const pipeParts = title.split(' | ').map((p) => p.trim()).filter(Boolean);
+  if (pipeParts.length >= 2 && pipeParts[1] && !/^\d+ comments?$/i.test(pipeParts[pipeParts.length - 1] || '')) {
+    author = pipeParts[1];
+  } else if (title.includes(' on LinkedIn')) {
+    author = title.split(' on LinkedIn')[0].trim() || author;
   }
 
-  // External link (the job/apply URL recruiters put in the post).
-  const ext = html.match(/<a[^>]+href="(https?:\/\/(?!www\.linkedin\.com)[^"]+)"[^>]*>[^<]*<\/a>/)?.[1];
-  const applyUrl = ext && !ext.includes('linkedin.com') ? ext.split('?')[0] : undefined;
+  // Date (guest pages): there is NO "X hours ago" label and NO datetime=
+  // attribute — the only date is JSON-LD `datePublished` (exact ISO).
+  let date: string | undefined;
+  const rel = html.match(/(\d+ (?:minute|hour|day)s? ago)/i)?.[1];
+  if (rel) {
+    date = parseRelativeTime(rel);
+  } else {
+    const ld = html.match(/"datePublished"\s*:\s*"([^"]+)"/)?.[1];
+    if (ld) date = new Date(ld).toISOString();
+    const iso = html.match(/datetime="([^"]+)"/)?.[1];
+    if (!date && iso) date = new Date(iso).toISOString();
+  }
+
+  // Apply/job link: on guest pages the post's links live INSIDE the
+  // og:description text (lnkd.in, goo.gle, ibm.co, sforce.co, …), not as
+  // <a href> anchors. Prefer an explicit external anchor first, then scan
+  // the text for the first non-LinkedIn http(s) URL.
+  const extAnchor = html.match(/<a[^>]+href="(https?:\/\/(?!www\.linkedin\.com)[^"]+)"[^>]*>[^<]*<\/a>/)?.[1];
+  let applyUrl = extAnchor && !extAnchor.includes('linkedin.com') ? extAnchor.split('?')[0] : undefined;
+  if (!applyUrl) {
+    const inText = text.match(/https?:\/\/(?!www\.linkedin\.com|lnkd\.in)[^\s"'<>)]+/i)?.[0];
+    if (inText) applyUrl = inText.replace(/[).,;:]+$/, '').split('?')[0];
+  }
 
   if (!text && !title) return null;
   return { author, text: text || title, date, applyUrl, hashtags: extractHashtags(text || title) };
@@ -362,7 +443,7 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
 }
 
 export class LinkedInPostsScraper {
-  lastDebug: { queriesTried: number; linksFound: number; via?: string } = { queriesTried: 0, linksFound: 0 };
+  lastDebug: { queriesTried: number; linksFound: number; via?: string; enginesUsed?: number } = { queriesTried: 0, linksFound: 0 };
 
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
@@ -381,11 +462,13 @@ export class LinkedInPostsScraper {
     }
 
     // Free path: multi-engine discovery (works without a cookie or token).
-    const { urls, queriesTried, linksFound } = await discoverPostUrls(keywords, limit);
-    this.lastDebug = { queriesTried, linksFound };
+    const { urls, candidates, queriesTried, linksFound, enginesUsed } = await discoverPostUrls(keywords, limit);
+    this.lastDebug = { queriesTried, linksFound, enginesUsed };
     const jobs: Job[] = [];
     const seen = new Set<string>();
+    const now = new Date().toISOString();
 
+    // Direct post URLs → fetch + parse the real post page.
     for (const url of urls) {
       if (jobs.length >= limit) break;
       const post = await fetchPost(url);
@@ -398,7 +481,6 @@ export class LinkedInPostsScraper {
       if (seen.has(title.toLowerCase())) continue;
       seen.add(title.toLowerCase());
 
-      const now = new Date().toISOString();
       jobs.push({
         id: `linkedinpost-${createHash('sha1').update(url).digest('base64url').slice(0, 20)}`,
         title,
@@ -411,6 +493,40 @@ export class LinkedInPostsScraper {
         postedDateParsed: post.date ? new Date(post.date).toISOString().slice(0, 10) : undefined,
         applyUrl: post.applyUrl,
         hashtags: post.hashtags,
+        jobType: 'Post',
+        state: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Synthetic posts from Google News RSS titles (full post text + pubDate +
+    // embedded apply link). Google News often only exposes a token link, so
+    // the post is reconstructed from its own text — the apply link is used as
+    // the job URL when the token link isn't a real post page.
+    for (const cand of candidates) {
+      if (jobs.length >= limit) break;
+      if (!isJobPosting(cand.text)) continue;
+      const candDate = cand.pubDate ? new Date(cand.pubDate).toISOString() : undefined;
+      if (!isWithin24h(candDate)) continue; // last 24h only
+      const firstLine = cand.text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || cand.text.slice(0, 90);
+      const title = firstLine.slice(0, 110);
+      const dedupeKey = (title + '|' + (cand.applyUrl || '')).toLowerCase();
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      const idUrl = cand.applyUrl || cand.link;
+      jobs.push({
+        id: `linkedinpost-${createHash('sha1').update(idUrl).digest('base64url').slice(0, 20)}`,
+        title,
+        company: '',
+        location: '',
+        source: 'LinkedInPosts',
+        description: cand.text.slice(0, 3000),
+        url: cand.link,
+        postedDate: candDate,
+        postedDateParsed: candDate ? candDate.slice(0, 10) : undefined,
+        applyUrl: cand.applyUrl,
+        hashtags: extractHashtags(cand.text),
         jobType: 'Post',
         state: 'pending',
         createdAt: now,

@@ -97,7 +97,7 @@ describe('LinkedInPostsScraper', () => {
     expect(jobs).toEqual([]);
     const calls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
     expect(calls.some((u) => u.includes('api.apify.com'))).toBe(false);
-  });
+  }, 30000);
 
   it('filters out non-job posts ("not valid" material); keeps job posts of any age on Apify', async () => {
     mockConfig();
@@ -164,5 +164,5 @@ describe('LinkedInPostsScraper', () => {
 
     expect(jobs).toEqual([]);
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThan(0);
-  });
+  }, 30000);
 });

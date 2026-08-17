@@ -149,7 +149,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       loadFeed();
       const window = engine === 'apify' ? '' : 'from the last 24 hours ';
       if (d.valid === false) {
-        setMessage('not valid — this search only works for job postings. Try a job role, e.g. "DevOps Engineer".');
+        setMessage(d.discoveryFailed
+          ? `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
+          : 'No recent job postings matched this search. Try a broader job role, e.g. "DevOps Engineer".');
       } else if (d.total === 0) {
         setMessage(`No job postings found ${window}for this search. Try broader keywords or search again later.`);
       } else if (d.addedCount > 0) {
@@ -225,7 +227,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         {error && <div className="lp-error">{error}</div>}
         {message && <div className="lp-msg">{message}</div>}
         {state === 'done' && debug && debug.linksFound === 0 && (
-          <p className="lp-debug">Diagnostics: {debug.queriesTried} optimized queries tried across Google/DuckDuckGo/Bing · 0 LinkedIn post links returned by the engines. This usually means the engines rate-limited the request — try again in a minute.</p>
+          <p className="lp-debug">Diagnostics: {debug.queriesTried} queries tried · {debug.enginesUsed ?? 0} engine(s) reached · {debug.linksFound} LinkedIn post links returned. Sources: Google News RSS + DuckDuckGo/Bing (via render proxy) — retry in a minute if the engines are rate-limiting.</p>
         )}
 
         {state === 'done' && posts.length > 0 && (
