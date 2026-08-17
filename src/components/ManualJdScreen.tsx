@@ -3,7 +3,7 @@ import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, Arro
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape, PdfCvShape } from './CvPdfPreview';
-import { TagInput } from './TagInput';
+import { MasterCvEditor } from './MasterCvEditor';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
@@ -231,6 +231,95 @@ export function editableCvToPdfShape(cv: EditableCv, hideAI: boolean): PdfCvShap
   };
 }
 
+// ── Adapter: Manual JD's editable model ↔ Master CV editor shape ──────────
+// The Preview stage reuses the EXACT Master CV editor component, so the
+// tailored CV is converted into a MasterCv-shape object for editing and the
+// editor's changes are mapped back onto the editable model (AI flags from the
+// tailored diff are preserved).
+export function editableCvToEditorShape(cv: EditableCv): MasterCv {
+  return {
+    fullName: cv.candidateName || '',
+    email: cv.contactInfo?.email || '',
+    phone: cv.contactInfo?.phone || '',
+    location: cv.contactInfo?.location || '',
+    summary: cv.summary || '',
+    skills: (cv.skills || []).map((g) => ({ category: g.category, items: g.items.map((x) => x.text) })),
+    experiences: (cv.experiences || []).map((e) => ({
+      id: e.id,
+      title: e.title,
+      company: e.company,
+      location: e.location,
+      dates: e.dates,
+      responsibilities: e.bullets.map((b) => b.text),
+    })),
+    projects: (cv.projects || []).map((p) => ({
+      id: p?.id,
+      name: p?.name || '',
+      description: p?.description || '',
+      technologies: p?.technologies || [],
+      link: p?.link || '',
+      dates: p?.dates || '',
+    })),
+    education: (cv.education || []).map((e) => ({
+      id: e?.id,
+      degree: e?.degree || '',
+      institution: e?.institution || '',
+      dates: e?.dates || '',
+      details: e?.details || '',
+    })),
+    certifications: (cv.certifications || []).map((c) =>
+      typeof c === 'string' ? { id: `cert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: c, issuer: '', date: '', link: '' } : { id: c?.id, name: c?.name || '', issuer: c?.issuer || '', date: c?.date || '', link: c?.link || '' }
+    ),
+  };
+}
+
+export function editorShapeToEditableCv(editor: MasterCv, prev: EditableCv): EditableCv {
+  // Preserve AI flags by matching text (skills + bullets); new text = user's.
+  const prevSkills = new Map<string, boolean>();
+  (prev.skills || []).forEach((g) => g.items.forEach((x) => prevSkills.set(x.text, x.ai)));
+  const prevBullets = new Map<string, boolean>();
+  (prev.experiences || []).forEach((e) => e.bullets.forEach((b) => prevBullets.set(b.text, b.ai)));
+  const norm = (t: string) => String(t).toLowerCase().trim();
+
+  return {
+    candidateName: editor.fullName || '',
+    targetRole: prev.targetRole,
+    contactInfo: {
+      ...(prev.contactInfo || {}),
+      email: editor.email,
+      phone: editor.phone,
+      location: editor.location,
+    },
+    summary: editor.summary || '',
+    skills: (editor.skills || []).map((g) => ({
+      category: g.category || 'Technical',
+      items: g.items.map((text) => ({ id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text, ai: prevSkills.get(text) ?? false })),
+    })),
+    coreCompetencies: prev.coreCompetencies,
+    experiences: (editor.experiences || []).map((e) => ({
+      id: e.id || `exp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: e.title,
+      company: e.company,
+      location: e.location,
+      dates: e.dates,
+      bullets: (e.responsibilities || []).map((text) => ({ id: `bl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text, ai: prevBullets.get(text) ?? false })),
+    })),
+    projects: editor.projects || [],
+    education: editor.education || [],
+    certifications: editor.certifications || [],
+  };
+}
+
+// AI-lookup callbacks so the shared editor can ✦-tag AI content in Manual JD.
+export function makeAiLookups(prev: EditableCv) {
+  const skills = new Set((prev.skills || []).flatMap((g) => g.items.filter((x) => x.ai).map((x) => x.text.toLowerCase().trim())));
+  const bullets = new Set((prev.experiences || []).flatMap((e) => e.bullets.filter((b) => b.ai).map((b) => b.text.toLowerCase().trim())));
+  return {
+    skill: (t: string) => skills.has(String(t).toLowerCase().trim()),
+    bullet: (t: string) => bullets.has(String(t).toLowerCase().trim()),
+  };
+}
+
 export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose, masterCv }) => {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -263,6 +352,9 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const [editableCv, setEditableCv] = useState<EditableCv | null>(null);
   const [hideAI, setHideAI] = useState(false);
   const [editableNewCv, setEditableNewCv] = useState<PdfCvShape | null>(null);
+  // Mirror of the editable model in the Master CV editor shape; changes from
+  // the shared editor flow back through editorShapeToEditableCv.
+  const [editorShape, setEditorShape] = useState<MasterCv | null>(null);
   // View step — lets users click a completed step in the stepper to go back.
   // Auto-follows the derived step whenever the flow advances.
   const [viewStep, setViewStep] = useState<1 | 2 | 3>(1);
@@ -295,13 +387,21 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
     if (tailoredCv && !editableCv) {
       const shape = compressedCvToPdfShape(tailoredCv);
       const orig = masterCv ? masterCvToPdfShape(masterCv) : null;
-      setEditableCv(buildEditableCv(shape, savedDiffRef.current, orig));
+      const cv = buildEditableCv(shape, savedDiffRef.current, orig);
+      setEditableCv(cv);
+      setEditorShape(editableCvToEditorShape(cv));
     }
   }, [tailoredCv, editableCv, masterCv]);
 
   useEffect(() => {
     if (editableCv) setEditableNewCv(editableCvToPdfShape(editableCv, hideAI));
   }, [editableCv, hideAI]);
+
+  // Shared-editor changes → map back onto the editable model.
+  const onEditorChange = (next: MasterCv) => {
+    setEditorShape(next);
+    if (editableCv) setEditableCv(editorShapeToEditableCv(next, editableCv));
+  };
 
   useEffect(() => {
     if (!tailoredCv) return;
@@ -378,7 +478,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
       setDiff(a.diff || null);
       setHistoryId(a.id);
       setTailorError(false);
-      setEditableCv(null); setEditableNewCv(null); setHideAI(false);
+      setEditableCv(null); setEditableNewCv(null); setEditorShape(null); setHideAI(false);
       setHistoryOpen(false);
       const restoredToken = payload.downloadToken || `restored-${a.id}`;
       if ((a.tailored_cv || a.tailoredCv) && a.diff?.scoreBoost !== undefined) {
@@ -396,7 +496,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   const handleAnalyze = async () => {
     if (!title.trim() || !description.trim()) return;
-    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false); setEditableCv(null); setEditableNewCv(null); setHideAI(false);
+    setLoading(true); setError(''); setTailorError(false); setResult(null); setDiff(null); setDownloadToken(null); setTailoredCv(null); setCvLoadFailed(false); setEditableCv(null); setEditableNewCv(null); setEditorShape(null); setHideAI(false);
     setShowAllMatched(false); setShowAllAdditions(false); setShowAllAddedSkills(false); setShowAllRewrites(false); setShowAllReview(false);
     try {
       const res = await fetch('/api/analyze-jd', {
@@ -1116,379 +1216,20 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
                   <div className="text-[10px] font-semibold text-[var(--color-faint)]">
                     {hideAI
-                      ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((s) => s.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown`
-                      : 'Items a ✦ mark were added or rewritten by AI for this job — delete what you don\u2019t want'}
+                      ? `Hiding ${editableCv.skills.reduce((a, g) => a + g.items.filter((x) => x.ai).length, 0) + editableCv.experiences.reduce((a, e) => a + e.bullets.filter((b) => b.ai).length, 0)} AI items — only your own content is shown. The editor always shows your full CV.`
+                      : 'Items a ✦ mark were added or rewritten by AI for this job — the editor below is the same as Master CV.'}
                   </div>
 
-                    {/* Contact Information — Master CV style */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                          <User className="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                          <span>Contact Information</span>
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[var(--color-faint)] text-[11px]">Full Name</label>
-                          <input
-                            type="text"
-                            value={editableCv.candidateName}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[var(--color-faint)] text-[11px]">Email Address</label>
-                          <input
-                            type="text"
-                            value={editableCv.contactInfo.email || ''}
-                            onChange={(e) => setContact('email', e.target.value)}
-                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[var(--color-faint)] text-[11px]">Phone Number</label>
-                          <input
-                            type="text"
-                            value={editableCv.contactInfo.phone || ''}
-                            onChange={(e) => setContact('phone', e.target.value)}
-                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[var(--color-faint)] text-[11px]">Location</label>
-                          <input
-                            type="text"
-                            value={editableCv.contactInfo.location || ''}
-                            onChange={(e) => setContact('location', e.target.value)}
-                            className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Professional Summary — Master CV style */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px]">
-                          Master Professional Summary
-                        </h3>
-                      </div>
-                      <textarea
-                        rows={4}
-                        value={editableCv.summary}
-                        onChange={(e) => setSummary(e.target.value)}
-                        placeholder="Professional background summary..."
-                        className="w-full bg-white border border-[var(--color-hairline)] rounded p-2.5 text-[var(--color-ink)] leading-relaxed focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-
-                    {/* Technical Skills — Master CV exact: category + TagInput + Add Category */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                          <Code className="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                          <span>Technical Skills & Core Competencies</span>
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={addSkillCategory}
-                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Skill Category</span>
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {(editableCv.skills || []).map((g) => (
-                          <div key={g.category} className="flex items-center space-x-2 bg-white p-2 rounded border border-[var(--color-hairline)]">
-                            <input
-                              type="text"
-                              value={g.category}
-                              onChange={(e) => setSkillCategoryName(g.category, e.target.value)}
-                              placeholder="Category Name"
-                              className="w-1/3 border border-[var(--color-hairline)] rounded px-2 py-1 font-bold text-[var(--color-ink)]"
-                            />
-                            <TagInput
-                              value={g.items.map((x) => x.text)}
-                              onChange={(items) => setSkillItems(g.category, items)}
-                              placeholder="Type a skill and press comma (,) or Enter…"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeSkillCategory(g.category)}
-                              className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-[10.5px] font-semibold text-[var(--color-faint)]">Skills with a ✦ were added by AI for this job — remove any you don't genuinely have.</div>
-                    </div>
-
-                    {/* Work Experience — Master CV style */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                          <Briefcase className="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                          <span>Work Experience History</span>
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={addExperience}
-                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Position</span>
-                        </button>
-                      </div>
-
-                      {editableCv.experiences.map((exp, ei) => (
-                        <div
-                          key={exp.id}
-                          draggable
-                          onDragStart={(e) => handleExpDragStart(e, ei)}
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleExpDrop(e, ei)}
-                          className={`bg-white p-3.5 rounded-lg border space-y-3 cursor-grab active:cursor-grabbing transition-all ${
-                            dragExpIdx === ei
-                              ? 'border-blue-400 ring-2 ring-blue-200 opacity-70'
-                              : 'border-[var(--color-hairline)] hover:border-[var(--color-brand-line)]'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between pb-2 border-b border-[var(--color-hairline)]">
-                            <span className="font-bold text-[var(--color-muted)] text-[11px] flex items-center space-x-1.5">
-                              <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
-                              <span>Position #{ei + 1}</span>
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-[10px] font-semibold text-[var(--color-faint)]">{exp.company} · {exp.dates}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeExperience(exp.id)}
-                                className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Job Title</label>
-                              <input
-                                type="text"
-                                value={exp.title}
-                                onChange={(e) => setExpTitle(exp.id, e.target.value)}
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Company</label>
-                              <input
-                                type="text"
-                                value={exp.company}
-                                onChange={(e) => {
-                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, company: e.target.value } : x));
-                                  commitEdits({ ...editableCv, experiences: next });
-                                }}
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Location</label>
-                              <input
-                                type="text"
-                                value={exp.location || ''}
-                                onChange={(e) => {
-                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, location: e.target.value } : x));
-                                  commitEdits({ ...editableCv, experiences: next });
-                                }}
-                                placeholder="e.g. San Francisco, CA / Remote"
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Dates / Period</label>
-                              <input
-                                type="text"
-                                value={exp.dates}
-                                onChange={(e) => {
-                                  const next = editableCv.experiences.map((x) => (x.id === exp.id ? { ...x, dates: e.target.value } : x));
-                                  commitEdits({ ...editableCv, experiences: next });
-                                }}
-                                placeholder="e.g. Jan 2021 - Present"
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[var(--color-faint)] text-[11px] mb-1 font-semibold">Responsibilities & Achievements</label>
-                            <div className="space-y-1.5">
-                              {exp.bullets.filter((b) => !hideAI || !b.ai).map((b, bi) => (
-                                <div
-                                  key={b.id}
-                                  draggable
-                                  onDragStart={(e) => handleBulletDragStart(e, exp.id, bi)}
-                                  onDragOver={handleDragOver}
-                                  onDrop={(e) => handleBulletDrop(e, exp.id, bi)}
-                                  className={`flex items-center space-x-1.5 cursor-grab active:cursor-grabbing transition-all ${dragBullet?.expId === exp.id && dragBullet.idx === bi ? 'opacity-60 bg-blue-50 rounded' : ''}`}
-                                >
-                                  <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)] shrink-0" />
-                                  {b.ai && !hideAI && <Wand2 className="w-3 h-3 text-purple-500 shrink-0" title="AI-generated" />}
-                                  <input
-                                    type="text"
-                                    value={b.text}
-                                    onChange={(e) => setBullet(b.id, e.target.value)}
-                                    className="flex-1 border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleBullet(b.id)}
-                                    className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer shrink-0"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              ))}
-                              {exp.bullets.filter((b) => !hideAI || !b.ai).length === 0 && (
-                                <p className="text-[11px] text-[var(--color-faint)]">No visible bullets for this role.</p>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => { const v = prompt('Add your own bullet point:'); if (v?.trim()) addBullet(exp.id, v); }}
-                              className="mt-2 text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span>Add Responsibility Bullet</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Education History — Master CV style */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                          <GraduationCap className="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                          <span>Education History</span>
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={addEducation}
-                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Education</span>
-                        </button>
-                      </div>
-                      {(editableCv.education || []).map((edu, ei) => (
-                        <div key={ei} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[var(--color-muted)] text-[11px]">Degree #{ei + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeEducation(ei)}
-                              className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Degree / Qualification</label>
-                              <input
-                                type="text"
-                                value={edu.degree || ''}
-                                onChange={(e) => setEducation(ei, 'degree', e.target.value)}
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Institution / University</label>
-                              <input
-                                type="text"
-                                value={edu.institution || ''}
-                                onChange={(e) => setEducation(ei, 'institution', e.target.value)}
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[var(--color-faint)] text-[11px]">Dates / Graduation Year</label>
-                              <input
-                                type="text"
-                                value={edu.dates || ''}
-                                onChange={(e) => setEducation(ei, 'dates', e.target.value)}
-                                placeholder="Pick start & end date"
-                                className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {(editableCv.education || []).length === 0 && (
-                        <p className="text-[11px] text-[var(--color-faint)]">No education entries.</p>
-                      )}
-                    </div>
-
-                    {/* Featured Projects — Master CV style */}
-                    <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
-                          <FolderGit2 className="w-3.5 h-3.5 text-[var(--color-muted)]" />
-                          <span>Featured Projects & Portfolio</span>
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={addProject}
-                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Project</span>
-                        </button>
-                      </div>
-                      {(editableCv.projects || []).map((proj, pi) => (
-                        <div key={pi} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[var(--color-muted)] text-[11px]">Project #{pi + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeProject(pi)}
-                              className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <div>
-                            <label className="block text-[var(--color-faint)] text-[11px]">Project Name</label>
-                            <input
-                              type="text"
-                              value={proj.name || ''}
-                              onChange={(e) => setProject(pi, 'name', e.target.value)}
-                              className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)] font-bold"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[var(--color-faint)] text-[11px]">Description</label>
-                            <textarea
-                              rows={2}
-                              value={proj.description || ''}
-                              onChange={(e) => setProject(pi, 'description', e.target.value)}
-                              className="w-full border border-[var(--color-hairline)] rounded px-2 py-1 text-[var(--color-ink)]"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      {(editableCv.projects || []).length === 0 && (
-                        <p className="text-[11px] text-[var(--color-faint)]">No projects.</p>
-                      )}
-                    </div>
+                  {/* Shared Master CV editor — identical to the Master CV screen */}
+                  {editorShape && (
+                    <MasterCvEditor
+                      value={editorShape}
+                      onChange={onEditorChange}
+                      onPersist={async (cv) => { onEditorChange(cv); await Promise.resolve(); return true; }}
+                      aiSkillLookup={makeAiLookups(editableCv).skill}
+                      aiBulletLookup={makeAiLookups(editableCv).bullet}
+                    />
+                  )}
 
                   </div>
                 </div>

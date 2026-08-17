@@ -176,3 +176,46 @@ describe('Preview Stage · drag-drop placement', () => {
     expect(reorderArr(list, 1, insert)).toEqual(list);
   });
 });
+
+// ── Shared Master CV editor adapter round-trip ──
+import { editableCvToEditorShape, editorShapeToEditableCv, makeAiLookups } from '../../src/components/ManualJdScreen';
+
+const ED = (() => {
+  const base = buildEditableCv(CV, DIFF as any);
+  base.candidateName = 'Aarav Sharma';
+  base.contactInfo = { email: 'a@b.com', phone: '+1', location: 'Kolkata' };
+  base.experiences[0].bullets[1].ai = true; // 'Built security scanning into CI.' is AI-rewritten
+  return base;
+})();
+
+describe('Manual JD · Shared Master CV editor adapter', () => {
+  it('converts editable model → editor shape (MasterCv) and back, preserving AI flags', () => {
+    const editor = editableCvToEditorShape(ED);
+    expect(editor.fullName).toBe('Aarav Sharma');
+    expect(editor.email).toBe('a@b.com');
+    expect(editor.experiences[0].responsibilities).toContain('Led migration of 40+ services.');
+
+    const back = editorShapeToEditableCv(editor, ED);
+    expect(back.candidateName).toBe('Aarav Sharma');
+    expect(back.contactInfo.email).toBe('a@b.com');
+    expect(back.experiences[0].bullets.find((b) => b.text === 'Built security scanning into CI.')?.ai).toBe(true);
+    expect(back.experiences[0].bullets.find((b) => b.text === 'Led migration of 40+ services.')?.ai).toBe(false);
+  });
+
+  it('marks new skills/bullets typed in the editor as user content (not AI)', () => {
+    const editor = editableCvToEditorShape(ED);
+    editor.skills[0].items.push('Rust'); // user adds via TagInput
+    editor.experiences[0].responsibilities.push('My own bullet.'); // user adds
+    const back = editorShapeToEditableCv(editor, ED);
+    expect(back.skills[0].items.find((s) => s.text === 'Rust')?.ai).toBe(false);
+    expect(back.experiences[0].bullets.find((b) => b.text === 'My own bullet.')?.ai).toBe(false);
+  });
+
+  it('makeAiLookups tags AI content for the shared editor', () => {
+    const lu = makeAiLookups(ED);
+    expect(lu.skill('SAST/DAST')).toBe(true);
+    expect(lu.skill('Kubernetes')).toBe(false);
+    expect(lu.bullet('Built security scanning into CI.')).toBe(true);
+    expect(lu.bullet('Led migration of 40+ services.')).toBe(false);
+  });
+});
