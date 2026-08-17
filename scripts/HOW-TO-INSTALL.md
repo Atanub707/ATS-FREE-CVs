@@ -121,6 +121,21 @@ then double-click again.
 
 ---
 
+## ▶️ Starting the app again (after closing it)
+
+The app **never "closes" like a normal program** — it keeps running in the background
+inside Docker, and your data stays there. You only ever need to **reopen the page**:
+
+| Situation | What to do |
+|---|---|
+| **You closed the browser tab / window** | Just open **http://localhost:3000** again — the app is still running |
+| **You rebooted your PC / Mac** | The app **auto-starts** with Docker Desktop (its `restart: unless-stopped` setting). Once Docker Desktop has finished starting (whale icon stops animating), open **http://localhost:3000** |
+| **Docker Desktop is not running** | Open **Docker Desktop** first, wait for it to start, then open **http://localhost:3000** |
+| **You (or Docker) stopped the container manually** | Run: `docker start ats-cv-tailor` (or `docker compose up -d` inside the app folder, e.g. `~/tailor-cv` on macOS) |
+
+**No start command is needed for normal use** — after a reboot you just open
+http://localhost:3000 once Docker Desktop is up. The container restarts itself.
+
 ## 🔄 Updating Tailor CV
 
 New versions arrive regularly — update in **one command** (your data — jobs, CV,

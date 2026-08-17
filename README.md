@@ -74,6 +74,8 @@ curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh | 
 
 The installer is **idempotent**: checks/installs Docker Desktop, starts the engine, downloads Tailor CV, and opens `http://localhost:3000`. Re-run it anytime — finished steps are skipped. No code-signing, no SmartScreen warnings.
 
+**Start the app again later:** the app runs in Docker in the background, so there's no start command — after closing the tab or rebooting, just open **http://localhost:3000** once Docker Desktop is running (the app auto-starts with Docker).
+
 ### Update
 
 ```powershell
