@@ -82,13 +82,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-30 bg-white" style={{ borderBottom: '1px solid var(--color-hairline)' }}>
       <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 h-[74px] flex items-center justify-between gap-4">
-        {/* Brand lockup: [T] Tailor CV / CREATED BY | Atanu */}
+        {/* Brand lockup: [icon] Tailor AI / CREATED BY | Atanu */}
         <div className="flex items-center gap-4 min-w-0">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-[13px] flex items-center justify-center text-white font-extrabold text-[21px] tracking-tight" style={{ background: 'var(--color-brand)' }}>
-            T
-          </div>
+          <img src="/branding/tailor-ai-logo.svg" alt="Tailor AI" className="w-auto h-[26px] sm:h-[30px] shrink-0" />
           <div className="flex flex-col justify-center leading-none min-w-0">
-            <h1 className="text-[20px] sm:text-[23px] font-bold tracking-[-0.02em] leading-none truncate">Tailor CV</h1>
+            <h1 className="sr-only">Tailor AI</h1>
             <div className="mt-[6px] flex items-baseline gap-[8px]">
               <span className="text-[9.5px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--color-faint)' }}>Created by</span>
               <span className="text-[11px]" style={{ color: 'var(--color-hairline2)' }}>|</span>

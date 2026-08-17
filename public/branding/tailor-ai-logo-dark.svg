@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64" fill="none">
+  <g transform="translate(8 8)">
+    <path d="M0 0 H32 V12 H27 V40 H13 V12 H0 Z" fill="#FFFFFF"/>
+    <path d="M25 0 H32 V12 Z" fill="#60A5FA"/>
+    <rect x="30" y="19" width="7" height="3" rx="1.5" fill="#60A5FA"/>
+    <rect x="30" y="26" width="7" height="3" rx="1.5" fill="#60A5FA"/>
+    <rect x="30" y="33" width="7" height="3" rx="1.5" fill="#60A5FA"/>
+  </g>
+  <text x="64" y="42" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">Tailor</text>
+  <text x="172" y="42" font-family="Plus Jakarta Sans, Inter, Arial, sans-serif" font-size="30" font-weight="700" fill="#60A5FA">AI</text>
+</svg>
