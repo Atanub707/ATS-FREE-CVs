@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { LinkedInPostsScraper } from '../../server/scraper/linkedInPostsScraper';
+import { LinkedInPostsScraper, discoverPostUrls, setScraperPause, isJobPosting } from '../../server/scraper/linkedInPostsScraper';
 
 const realFetch = globalThis.fetch;
+
+const GNRSS_ITEM = (title: string) =>
+  `<rss><channel><item><title>${title}</title><link>https://news.google.com/rss/articles/token1</link><pubDate>${new Date().toISOString()}</pubDate></item></channel></rss>`;
 
 function mockConfig(overrides: Record<string, any> = {}) {
   vi.mocked(loadConfig).mockReturnValue({
@@ -165,4 +168,67 @@ describe('LinkedInPostsScraper', () => {
     expect(jobs).toEqual([]);
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThan(0);
   }, 30000);
+
+  it('calls Google News RSS for EVERY query (not just the first engine slot)', async () => {
+    setScraperPause(0);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('We are hiring a Frontend Engineer! Apply now') } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const res = await discoverPostUrls('Frontend Engineer', 20);
+
+    const gnrssCalls = vi.mocked(globalThis.fetch).mock.calls.filter((c) => String(c[0]).includes('news.google.com')).length;
+    expect(gnrssCalls).toBe(res.queriesTried);
+    expect(gnrssCalls).toBeGreaterThan(1);
+    expect(res.candidates.length).toBeGreaterThan(1);
+  }, 30000);
+
+  it('falls back to other engines only when GNRSS returns empty, and skips engines that failed once', async () => {
+    setScraperPause(0);
+    const calls: string[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('news.google.com')) return { ok: true, status: 200, text: async () => '<rss><channel></channel></rss>' } as any;
+      if (url.includes('html.duckduckgo.com') && !url.includes('r.jina.ai')) {
+        // Direct DDG: fails once, must be skipped afterwards.
+        return { ok: true, status: 200, text: async () => '<html>nothing</html>' } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html>nothing</html>' } as any;
+    });
+
+    await discoverPostUrls('QA Engineer', 20);
+
+    // Direct DDG (no jina proxy) is called at most once — after it returns
+    // empty it is marked broken and skipped for the rest of the run.
+    const ddgDirect = calls.filter((u) => u.includes('html.duckduckgo.com') && !u.includes('r.jina.ai')).length;
+    expect(ddgDirect).toBeLessThanOrEqual(1);
+  }, 30000);
+
+  it('stops discovery early once raw material exceeds ~2x the target limit', async () => {
+    setScraperPause(0);
+    const items = Array.from({ length: 60 }, (_, i) => `We are hiring Engineer #${i} now — apply`);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        const rss = items.map((t, i) => `<item><title>${t}</title><link>https://www.linkedin.com/posts/company-${i}</link><pubDate>${new Date().toISOString()}</pubDate></item>`).join('');
+        return { ok: true, status: 200, text: async () => `<rss><channel>${rss}</channel></rss>` } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const res = await discoverPostUrls('DevOps Engineer', 20);
+
+    expect(res.queriesTried).toBe(1);
+    expect(res.candidates.length).toBeGreaterThanOrEqual(40);
+  }, 30000);
+
+  it('isJobPosting keeps any-role hiring posts, drops non-job content', () => {
+    expect(isJobPosting('We are hiring a Data Engineer! Join our team', false)).toBe(true);
+    expect(isJobPosting('Excited to share our Q3 results with our community', false)).toBe(false);
+  });
 });

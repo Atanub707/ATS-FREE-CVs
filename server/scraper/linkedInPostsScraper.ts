@@ -10,8 +10,10 @@ import { loadConfig } from '../config.js';
 //    1. Expands the searched role into posting-style variants and builds a
 //       set of OPTIMIZED queries: hashtag queries, hiring-keyword queries,
 //       tech combos, remote-first modifiers (1–3 tags/keywords per query).
-//    2. Discovers recent posts via search engines (Google → DuckDuckGo → Bing)
-//       scoped to site:linkedin.com/posts + "past 24 hours".
+//    2. Runs Google News RSS against EVERY query (the only engine that works
+//       from any IP — no captcha, honors site: + when:1d, ~100 items) and
+//       falls back to DDG/Bing/Google/company-pages only when a query comes
+//       back empty; engines that return nothing are skipped for the run.
 //    3. Fetches each post page (publicly viewable WITHOUT login), extracts
 //       author, text, hashtags, date and external apply link.
 //
@@ -269,39 +271,71 @@ async function searchCompanyHomes(keywords: string): Promise<string[]> {
 
 type EngineResult = { urls: string[]; candidates: GnCandidate[] };
 
-async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls: string[]; candidates: GnCandidate[]; queriesTried: number; linksFound: number; enginesUsed: number }> {
+// Polite pause between engine hits (tests can lower it).
+let PAUSE_MS = 1000;
+export function setScraperPause(ms: number): void {
+  PAUSE_MS = Math.max(0, ms);
+}
+
+export async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls: string[]; candidates: GnCandidate[]; queriesTried: number; linksFound: number; enginesUsed: number }> {
   const queries = buildSearchQueries(keywords);
   const found = new Set<string>();
   const candidates: GnCandidate[] = [];
-  // RESEARCH-ORDERED engines: GNRSS (works from any IP, ~100 items) first,
-  // then the jina proxy (renders DDG, no captcha), then direct engines only
-  // as a last resort (DDG hard-captchas after ~1 hit/IP, Bing drops `site:`).
-  const engines: ((q: string) => Promise<EngineResult>)[] = [
-    async (q) => await searchGoogleNewsRss(q),
-    async (q) => ({ urls: await searchJinaDuckDuckGo(q), candidates: [] }),
-    async (q) => ({ urls: await searchJinaBing(q), candidates: [] }),
-    async (q) => ({ urls: await searchCompanyHomes(q), candidates: [] }),
-    async (q) => ({ urls: await searchGoogle(q), candidates: [] }),
-    async (q) => ({ urls: await searchDuckDuckGo(q), candidates: [] }),
-    async (q) => ({ urls: await searchBing(q), candidates: [] }),
+  // RESEARCH (docs/linkedin-posts-research.md): GNRSS is the ONLY engine that
+  // reliably works from any IP — no captcha, honors site: + when:1d, ~100
+  // fresh items per query. So it is tried for EVERY query, and the other
+  // engines are fallbacks used only when a query comes back empty. Engines
+  // that return nothing are marked broken and skipped for the rest of the
+  // run (they mostly fail from datacenter IPs: Google anti-bot, DDG
+  // hard-captcha, Bing drops site:).
+  const fallbackEngines: ((q: string) => Promise<string[]>)[] = [
+    searchJinaDuckDuckGo,
+    searchJinaBing,
+    searchCompanyHomes,
+    searchGoogle,
+    searchDuckDuckGo,
+    searchBing,
   ];
   let queriesTried = 0;
-  let enginesUsed = new Set<number>();
-  const MAX_HITS = 14; // more coverage than before, but load is on tolerant sources
-  const PAUSE_MS = 1000;
+  const enginesUsed = new Set<number>([0]); // 0 = GNRSS (always tried first)
+  const broken = new Set<number>();
+  const MAX_HITS = 14;
+  // Raw-material cap: stop early once we hold ~2× the target in UNVALIDATED
+  // links + candidates (validation happens in scrape()). found.size alone is
+  // NOT a good stop signal — most discovered URLs fail isJobPosting /
+  // isWithin24h or the guest-page fetch 403s (DevSecOps: 45 links → 0 posts).
+  const rawCap = limit * 2;
 
   for (const query of queries) {
-    if (found.size >= limit) break;
     if (queriesTried >= MAX_HITS) break;
-    const engine = engines[queriesTried % engines.length];
+    if (found.size >= rawCap && candidates.length >= rawCap) break;
     queriesTried++;
-    enginesUsed.add(queriesTried % engines.length);
+    let urls: string[] = [];
+    let cands: GnCandidate[] = [];
     try {
-      const { urls, candidates: cands } = await engine(query);
-      for (const u of urls) found.add(u);
-      candidates.push(...cands);
-    } catch { /* try next */ }
-    await new Promise((r) => setTimeout(r, PAUSE_MS)); // polite pause between hits
+      const r = await searchGoogleNewsRss(query);
+      urls = r.urls;
+      cands = r.candidates;
+    } catch { /* treat as empty → fallback */ }
+    if (!urls.length && !cands.length) {
+      for (let i = 0; i < fallbackEngines.length; i++) {
+        if (broken.has(i)) continue;
+        try {
+          const fu = await fallbackEngines[i](query);
+          if (fu.length) {
+            enginesUsed.add(i + 1);
+            for (const u of fu) found.add(u);
+            break;
+          }
+          broken.add(i); // returned nothing → skip next time
+        } catch {
+          broken.add(i); // threw → skip next time
+        }
+      }
+    }
+    for (const u of urls) found.add(u);
+    candidates.push(...cands);
+    await new Promise((r) => setTimeout(r, PAUSE_MS));
   }
   return { urls: [...found], candidates, queriesTried, linksFound: found.size, enginesUsed: enginesUsed.size };
 }
