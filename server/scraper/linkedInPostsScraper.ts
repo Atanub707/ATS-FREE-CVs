@@ -212,6 +212,15 @@ async function searchJinaDuckDuckGo(keywords: string): Promise<string[]> {
   return html ? extractLinkedInPostUrls(html) : [];
 }
 
+// jina-rendered Bing: renders Bing's JS + keeps the u=a1 base64url redirects
+// the extractor already decodes. Bing's direct HTML silently drops `site:`
+// and uses an opaque redirect the extractor can't read — via jina it works.
+async function searchJinaBing(keywords: string): Promise<string[]> {
+  const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
+  const html = await getHtml(`https://r.jina.ai/https://www.bing.com/search?q=${q}&count=20`);
+  return html ? extractLinkedInPostUrls(html) : [];
+}
+
 async function searchDuckDuckGo(keywords: string): Promise<string[]> {
   const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://html.duckduckgo.com/html/?q=${q}&df=${dateRangeParam()}`);
@@ -222,6 +231,40 @@ async function searchBing(keywords: string): Promise<string[]> {
   const q = encodeURIComponent(`site:linkedin.com/posts ${keywords}`);
   const html = await getHtml(`https://www.bing.com/search?q=${q}&filters=ex1%3A%22ez5_19890_19890%22&count=20`);
   return html ? extractLinkedInPostUrls(html) : [];
+}
+
+// RESEARCH (Track B): a LinkedIn company home page (e.g. /company/microsoft/)
+// publicly exposes ~8 fresh post URLs without login — a reliable free
+// discovery surface. For common engineering employers we fetch their home
+// pages and collect the post links; combined across several companies this
+// adds a solid trickle of fresh recruiting posts.
+const COMPANY_POST_PAGES: Record<string, string[]> = {
+  default: [
+    'amazon', 'microsoft', 'google', 'meta', 'netflix', 'apple',
+    'infosys', 'tcs', 'accenture', 'cognizant', 'wipro', 'deloitte', 'ibm',
+    'oracle', 'salesforce', 'vmware', 'atlassian', 'datadog', 'splunk', 'palantir',
+  ],
+  devsecops: ['amazon', 'microsoft', 'google', 'oracle', 'salesforce', 'vmware', 'splunk', 'crowdstrike', 'paloaltonetworks', 'okta'],
+  devops: ['amazon', 'microsoft', 'google', 'netflix', 'atlassian', 'datadog', 'hashicorp', 'gitlab', 'digitalocean', 'cloudflare'],
+  cloud: ['amazon', 'microsoft', 'google', 'oracle', 'salesforce', 'cloudflare', 'digitalocean', 'ibm'],
+  security: ['crowdstrike', 'paloaltonetworks', 'okta', 'splunk', 'zscaler', 'sentinelone', 'cyberark', 'microsoft'],
+  data: ['snowflake', 'databricks', 'datadog', 'confluent', 'mongodb', 'elastic', 'amazon'],
+  backend: ['amazon', 'microsoft', 'google', 'stripe', 'stripe', 'cloudflare', 'datadog', 'gitlab'],
+};
+
+async function searchCompanyHomes(keywords: string): Promise<string[]> {
+  const r = keywords.toLowerCase();
+  let companies = COMPANY_POST_PAGES.default;
+  for (const key of ['devsecops', 'devops', 'cloud', 'security', 'data', 'backend']) {
+    if (r.includes(key)) { companies = COMPANY_POST_PAGES[key]; break; }
+  }
+  const found = new Set<string>();
+  for (const c of companies.slice(0, 4)) { // 4 company pages per search — polite
+    const html = await getHtml(`https://www.linkedin.com/company/${c}/`, { Cookie: 'lang=v=2&lang=en-us' });
+    if (html) for (const u of extractLinkedInPostUrls(html)) found.add(u);
+    await new Promise((r2) => setTimeout(r2, 700));
+  }
+  return [...found];
 }
 
 type EngineResult = { urls: string[]; candidates: GnCandidate[] };
@@ -236,13 +279,15 @@ async function discoverPostUrls(keywords: string, limit: number): Promise<{ urls
   const engines: ((q: string) => Promise<EngineResult>)[] = [
     async (q) => await searchGoogleNewsRss(q),
     async (q) => ({ urls: await searchJinaDuckDuckGo(q), candidates: [] }),
+    async (q) => ({ urls: await searchJinaBing(q), candidates: [] }),
+    async (q) => ({ urls: await searchCompanyHomes(q), candidates: [] }),
     async (q) => ({ urls: await searchGoogle(q), candidates: [] }),
     async (q) => ({ urls: await searchDuckDuckGo(q), candidates: [] }),
     async (q) => ({ urls: await searchBing(q), candidates: [] }),
   ];
   let queriesTried = 0;
   let enginesUsed = new Set<number>();
-  const MAX_HITS = 12; // more coverage than before, but load is on tolerant sources
+  const MAX_HITS = 14; // more coverage than before, but load is on tolerant sources
   const PAUSE_MS = 1000;
 
   for (const query of queries) {
@@ -308,12 +353,16 @@ function parseRelativeTime(label: string): string | undefined {
 async function fetchPost(url: string): Promise<ParsedPost | null> {
   let target = url;
   // Resolve LinkedIn short links (lnkd.in) to the real post page first.
-  // RESEARCH: lnkd.in returns 403 on HEAD but 200 on GET (and exposes the
-  // real target in the redirect interstitial), so resolve with GET/follow.
+  // RESEARCH: lnkd.in returns 403 on HEAD but 200 on GET, has NO Location
+  // header, and shows an interstitial page containing the real destination
+  // as an <a href> — extract it so the fetched page (and apply link) resolves.
   if (target.includes('lnkd.in')) {
     try {
-      const res = await fetch(target, { method: 'GET', headers: { 'User-Agent': UA }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
-      target = res.url && !res.url.includes('lnkd.in') ? res.url : target;
+      const res = await fetch(target, { method: 'GET', headers: { 'User-Agent': UA }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+      const body = await res.text();
+      const href = body.match(/href="(https?:\/\/(?!www\.linkedin\.com|licdn\.com|lnkd\.in)[^"]+)"/)?.[1];
+      if (href) target = href;
+      else if (res.url && !res.url.includes('lnkd.in')) target = res.url;
     } catch { /* keep original */ }
   }
   const html = await getHtml(target);
