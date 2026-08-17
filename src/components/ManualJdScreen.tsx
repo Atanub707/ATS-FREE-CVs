@@ -3,6 +3,7 @@ import { X, ArrowLeft, Loader2, Sparkles, Download, FileText, CheckCircle2, Arro
 import { llmErrorMessage } from '../lib/llmError';
 import { MasterCv } from '../types';
 import { CvPdfPreview, masterCvToPdfShape, compressedCvToPdfShape, PdfCvShape } from './CvPdfPreview';
+import { TagInput } from './TagInput';
 
 interface ManualJdScreenProps {
   isOpen: boolean;
@@ -484,6 +485,61 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
   const removeProject = (pi: number) => {
     if (!editableCv) return;
     commitEdits({ ...editableCv, projects: editableCv.projects.filter((_, i) => i !== pi) });
+  };
+
+  // ── Add handlers (Master CV parity: prepend a new blank entry) ──
+  const addSkillCategory = () => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      skills: [{ category: 'New Category', items: [{ id: `skg-${Date.now()}`, text: 'Skill 1', ai: false }] }, ...editableCv.skills],
+    });
+  };
+  const removeSkillCategory = (catName: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, skills: editableCv.skills.filter((g) => g.category !== catName) });
+  };
+  const setSkillCategoryName = (oldName: string, v: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => (g.category === oldName ? { ...g, category: v } : g)) });
+  };
+  const setSkillItems = (catName: string, items: string[]) => {
+    if (!editableCv) return;
+    // TagInput hands back plain strings; preserve the AI flag of kept skills
+    // and mark anything new (typed by the user) as their own content.
+    const nextItems = items.map((t) => {
+      const existing = editableCv.skills.find((g) => g.category === catName)?.items.find((s) => s.text === t);
+      return existing ? existing : { id: `sk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text: t, ai: false };
+    });
+    commitEdits({ ...editableCv, skills: editableCv.skills.map((g) => (g.category === catName ? { ...g, items: nextItems } : g)) });
+  };
+  const addExperience = () => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      experiences: [
+        { id: `exp-${Date.now()}`, title: 'Job Title', company: 'Company Name', location: 'Remote / City, State', dates: '2022 - Present', bullets: [{ id: `bl-${Date.now()}`, text: 'Key responsibility or major accomplishment...', ai: false }] },
+        ...editableCv.experiences,
+      ],
+    });
+  };
+  const removeExperience = (eid: string) => {
+    if (!editableCv) return;
+    commitEdits({ ...editableCv, experiences: editableCv.experiences.filter((e) => e.id !== eid) });
+  };
+  const addEducation = () => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      education: [{ degree: 'B.S. Computer Science', institution: 'University Name', dates: '2018 - 2022', details: '' }, ...editableCv.education],
+    });
+  };
+  const addProject = () => {
+    if (!editableCv) return;
+    commitEdits({
+      ...editableCv,
+      projects: [{ name: 'Project Name', description: 'Key project description, highlights, and results...', technologies: [], link: '', dates: '' }, ...editableCv.projects],
+    });
   };
 
   const visibleSkillGroups = (editableCv?.skills || []).map((g) => ({
@@ -1118,7 +1174,6 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px]">
                           Master Professional Summary
                         </h3>
-                        <span className="text-[10px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-md px-1.5 py-0.5">editable</span>
                       </div>
                       <textarea
                         rows={4}
@@ -1129,7 +1184,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       />
                     </div>
 
-                    {/* Key Skills — Master CV style */}
+                    {/* Technical Skills — Master CV exact: category + TagInput + Add Category */}
                     <div className="bg-[#FAFAF9] p-4 rounded-lg border border-[var(--color-hairline)] space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-[var(--color-ink)] uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
@@ -1138,59 +1193,39 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                         </h3>
                         <button
                           type="button"
-                          onClick={() => { const v = prompt('Add your own skill:'); if (v?.trim()) addSkill(v); }}
+                          onClick={addSkillCategory}
                           className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>Add Skill</span>
+                          <span>Add Skill Category</span>
                         </button>
                       </div>
                       <div className="space-y-2">
-                        {visibleSkillGroups.map((g) => (
-                          <div key={g.category} className="flex items-start space-x-2 bg-white p-2 rounded border border-[var(--color-hairline)]">
+                        {(editableCv.skills || []).map((g) => (
+                          <div key={g.category} className="flex items-center space-x-2 bg-white p-2 rounded border border-[var(--color-hairline)]">
                             <input
                               type="text"
                               value={g.category}
-                              onChange={(e) => {
-                                const old = g.category;
-                                commitEdits({ ...editableCv, skills: editableCv.skills.map((gg) => (gg.category === old ? { ...gg, category: e.target.value } : gg)) });
-                              }}
+                              onChange={(e) => setSkillCategoryName(g.category, e.target.value)}
                               placeholder="Category Name"
                               className="w-1/3 border border-[var(--color-hairline)] rounded px-2 py-1 font-bold text-[var(--color-ink)]"
                             />
-                            <div className="flex-1 flex flex-wrap items-center gap-1.5">
-                              {g.items.map((s, si) => (
-                                <span
-                                  key={s.id}
-                                  draggable
-                                  onDragStart={(e) => handleSkillDragStart(e, g.category, si)}
-                                  onDragOver={handleDragOver}
-                                  onDrop={(e) => handleSkillDrop(e, g.category, si)}
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border cursor-grab active:cursor-grabbing transition-all ${
-                                    dragSkill?.cat === g.category && dragSkill.idx === si ? 'border-blue-400 ring-2 ring-blue-200 opacity-70' : ''
-                                  } ${hideAI ? 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]' : s.ai ? 'bg-[#F5F3FF] border-[#E9D5FF] text-[var(--color-brand)]' : 'bg-white border-[var(--color-hairline)] text-[var(--color-muted)]'}`}
-                                >
-                                  <GripVertical className="w-2.5 h-2.5 text-[var(--color-faint)]" />
-                                  {s.ai && !hideAI && <Wand2 className="w-2.5 h-2.5 text-purple-500" />}
-                                  {s.text}
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleSkill(s.id)}
-                                    aria-label={`Remove ${s.text}`}
-                                    className="text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </span>
-                              ))}
-                              {g.items.length === 0 && <span className="text-[11px] text-[var(--color-faint)]">No visible skills.</span>}
-                            </div>
+                            <TagInput
+                              value={g.items.map((x) => x.text)}
+                              onChange={(items) => setSkillItems(g.category, items)}
+                              placeholder="Type a skill and press comma (,) or Enter…"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeSkillCategory(g.category)}
+                              className="p-1 text-[var(--color-faint)] hover:text-[var(--color-danger)] cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         ))}
-                        {visibleSkillGroups.length === 0 && (
-                          <p className="text-[11px] text-[var(--color-faint)]">No visible skills — add your own.</p>
-                        )}
                       </div>
+                      <div className="text-[10.5px] font-semibold text-[var(--color-faint)]">Skills with a ✦ were added by AI for this job — remove any you don't genuinely have.</div>
                     </div>
 
                     {/* Work Experience — Master CV style */}
@@ -1200,6 +1235,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           <Briefcase className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                           <span>Work Experience History</span>
                         </h3>
+                        <button
+                          type="button"
+                          onClick={addExperience}
+                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Position</span>
+                        </button>
                       </div>
 
                       {editableCv.experiences.map((exp, ei) => (
@@ -1220,7 +1263,16 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                               <GripVertical className="w-3.5 h-3.5 text-[var(--color-faint)]" />
                               <span>Position #{ei + 1}</span>
                             </span>
-                            <span className="text-[10px] font-semibold text-[var(--color-faint)]">{exp.company} · {exp.dates}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] font-semibold text-[var(--color-faint)]">{exp.company} · {exp.dates}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeExperience(exp.id)}
+                                className="text-[var(--color-faint)] hover:text-[var(--color-danger)] p-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1327,6 +1379,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           <GraduationCap className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                           <span>Education History</span>
                         </h3>
+                        <button
+                          type="button"
+                          onClick={addEducation}
+                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Education</span>
+                        </button>
                       </div>
                       {(editableCv.education || []).map((edu, ei) => (
                         <div key={ei} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
@@ -1384,6 +1444,14 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                           <FolderGit2 className="w-3.5 h-3.5 text-[var(--color-muted)]" />
                           <span>Featured Projects & Portfolio</span>
                         </h3>
+                        <button
+                          type="button"
+                          onClick={addProject}
+                          className="text-[11px] font-semibold text-[var(--color-brand)] hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Project</span>
+                        </button>
                       </div>
                       {(editableCv.projects || []).map((proj, pi) => (
                         <div key={pi} className="bg-white p-3 rounded-lg border border-[var(--color-hairline)] space-y-2">
