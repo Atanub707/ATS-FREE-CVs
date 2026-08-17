@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.6.0 (2026-08-17)
+
+### ✨ Features
+- **Manual JD restructured to 3 steps** (Add JD → Analyze → Preview): Tailor + Review merged into Preview; "Generate Tailor CV" button; ATS score card (before→after, skills added, bullets rewritten, skipped) at the top of the Preview editor.
+- **Preview editor now reuses the exact Master CV editor** (shared `MasterCvEditor` component): Contact Information, Master Professional Summary + ✦ Ask AI, Work Experience (Position #N cards, drag), Education, Technical Skills with comma/Enter TagInput + suggestions + Add Skill Category, Featured Projects, Certifications, Skill Gaps. AI-added items are labeled with `✦ AI` badges; upload banner and Skill Gaps are hidden in the Manual JD Preview.
+- **Compact segmented stage navigation** in the Manual JD header (Add JD → Analyze → Preview) + full-bleed left/right split.
+- **Dedicated URLs for every screen** via react-router: `/settings`, `/recruiters`, `/master-cv`, `/manual-jd`, `/job-portals`, `/ai-interview`, `/linkedin-posts`. Reload or a shared link lands back on the SAME screen (was: always the dashboard); Back returns home; unknown paths redirect to `/`.
+- **LinkedIn Posts free search now works** (research-driven): Google News RSS primary (synthetic posts from full post titles + date), r.jina.ai render proxy for DuckDuckGo/Bing, LinkedIn public company-home discovery, direct-engine fallbacks. Verified live: 12 real job posts per search, no token/cookie.
+- **LinkedIn Posts Apify engine locked** (shown as "coming soon") — free engine is the active path; Apify + daily quota kept intact for later unlock.
+
+### 🐛 Fixes
+- Manual JD: Preview fully scrollable (score card no longer pinned); drag-and-drop reordering uses the same proven mechanism as the Master CV editor; bullet AI-tagging by content comparison vs the original Master CV (catches AI-added AND rewritten bullets); fixed a crash on opening the screen (hooks order).
+- LinkedIn Posts: lnkd.in links resolve via GET + interstitial extraction (HEAD returned 403); guest post author/date/apply-link parsing fixed (og:title " | " split, JSON-LD `datePublished`, links from text).
+- Manual JD: removed footer copyright; compare tags renamed "Master CV" / "Tailored CV"; AI tag moved to the left of bullet points.
+
+### ⚠️ Known Issues
+- Free LinkedIn Posts carry full text + date; live apply links appear only when the source exposes a direct URL or text link (Google News truncates titles).
+- Nothing from a datacenter IP is 100% reliable for free engine search — the 7-engine redundancy is the mitigation.
+
+### 🔄 Breaking Changes
+- URL routes changed (screens now have dedicated paths); old bookmark to the dashboard root still works.
+
+### 📦 How to Update
+- Re-run your platform installer (install.sh / install.bat / the PowerShell one-liner) — data is untouched.
+
 ## v1.5.0 (2026-08-16)
 
 ### ✨ Features
