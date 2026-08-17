@@ -19,12 +19,18 @@ interface MasterCvEditorProps {
   // Master CV screen). Manual JD passes a local-only persister.
   onPersist?: (cv: MasterCv) => Promise<boolean>;
   // Optional AI markers: when provided, items matching these lookups get a
-  // ✦ badge (used by Manual JD to highlight AI-added content).
+  // labeled badge (✦ AI) — used by Manual JD to highlight AI-added content.
   aiSkillLookup?: (text: string) => boolean;
   aiBulletLookup?: (text: string) => boolean;
+  // Hide the resume upload/parse banner — Manual JD Preview doesn't offer
+  // resume import (the CV is already tailored); Master CV shows it.
+  hideUpload?: boolean;
+  // Hide the market skill-gaps panel (Master CV only; Manual JD fills gaps
+  // through the tailor itself).
+  hideSkillGaps?: boolean;
 }
 
-export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange, onPersist, aiSkillLookup, aiBulletLookup }) => {
+export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange, onPersist, aiSkillLookup, aiBulletLookup, hideUpload = false, hideSkillGaps = false }) => {
   const formData = value;
   const setFormData = (next: MasterCv | ((prev: MasterCv) => MasterCv)) => {
     onChange(typeof next === 'function' ? (next as (prev: MasterCv) => MasterCv)(formData) : next);
@@ -338,11 +344,15 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
     setDragCertIdx(null);
   };
 
-  const aiMark = (fn?: (t: string) => boolean, t?: string) => (fn && t && fn(t) ? <span className="inline-block ml-1 text-[10px] font-bold text-purple-600 align-middle" title="AI-generated">✦</span> : null);
+  const aiMark = (fn?: (t: string) => boolean, t?: string) =>
+    fn && t && fn(t) ? (
+      <span className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide text-purple-700 bg-purple-100 border border-purple-200 align-middle shrink-0" title="AI-generated">✦ AI</span>
+    ) : null;
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-[var(--color-ink)]">
-      {/* File Upload & Quick Paste Auto-Extract Banner */}
+      {/* File Upload & Quick Paste Auto-Extract Banner (hidden on Manual JD) */}
+      {!hideUpload && (
       <div className="bg-[var(--color-brand-soft)] border border-[var(--color-brand-line)] p-4 rounded-xl text-blue-900 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -399,10 +409,11 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
                   <><Sparkles className="w-3.5 h-3.5" /><span>Auto-Fill Form Fields</span></>
                 )}
               </button>
-            </div>
-          </div>
-        )}
-      </div>
+             </div>
+           </div>
+         )}
+       </div>
+      )}
 
       {/* Predefined Datalists for Master CV */}
       <datalist id="mastercv-locations">
@@ -600,7 +611,10 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
           ))}
         </div>
         {aiSkillLookup && (
-          <div className="text-[10.5px] font-semibold text-[var(--color-faint)]">✦ marks skills added by AI — remove any you don't genuinely have.</div>
+          <div className="text-[10.5px] font-semibold text-[var(--color-faint)]">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide text-purple-700 bg-purple-100 border border-purple-200 mr-1">✦ AI</span>
+            Skills added by AI for this job — remove any you don't genuinely have. New skills you type are yours.
+          </div>
         )}
       </div>
 
@@ -686,7 +700,8 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
         ))}
       </div>
 
-      {/* Skill Gaps Section */}
+      {/* Skill Gaps Section (Master CV only) */}
+      {!hideSkillGaps && (
       <div className="bg-[#FAFAF9] border border-[var(--color-hairline)] rounded-lg overflow-hidden">
         <button type="button" onClick={() => { if (!showGaps) fetchSkillGaps(); setShowGaps(!showGaps); }} className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-[var(--color-ink)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer">
           <div className="flex items-center space-x-2">
@@ -735,6 +750,7 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
           </div>
         )}
       </div>
+      )}
     </form>
   );
 };

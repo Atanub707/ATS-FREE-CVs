@@ -1228,6 +1228,8 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
                       onPersist={async (cv) => { onEditorChange(cv); await Promise.resolve(); return true; }}
                       aiSkillLookup={makeAiLookups(editableCv).skill}
                       aiBulletLookup={makeAiLookups(editableCv).bullet}
+                      hideUpload
+                      hideSkillGaps
                     />
                   )}
 
