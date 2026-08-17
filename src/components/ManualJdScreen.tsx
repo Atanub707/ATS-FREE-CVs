@@ -724,67 +724,74 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
 
   return (
     <div className="fixed inset-0 z-40 bg-[#FAFAF9] text-[var(--color-muted)] flex flex-col font-sans">
-      {/* Page header */}
-      <header className="px-5 sm:px-8 py-4 border-b border-[var(--color-hairline)] bg-white flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer shrink-0">
-            <ArrowLeft className="w-4 h-4" /> Back
+      {/* Page header — title left, compact segmented stages center, actions right */}
+      <header className="px-4 sm:px-5 py-2.5 border-b border-[var(--color-hairline)] bg-white flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button onClick={onClose} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer shrink-0">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-[var(--color-ink)] leading-tight">Manual JD</h1>
-            <p className="text-[10.5px] text-[var(--color-faint)] font-medium">Paste a job description — get a tailored CV in 3 simple steps.</p>
+            <h1 className="text-[13px] font-bold text-[var(--color-ink)] leading-tight">Manual JD</h1>
+            <p className="text-[10px] text-[var(--color-faint)] font-medium">Paste a JD — get a tailored CV</p>
           </div>
         </div>
+
+        {/* Compact segmented stages — one row, no wasted space */}
+        <div className="flex-1 flex items-center justify-center min-w-0">
+          <div className="inline-flex items-center bg-[#F1F5F9] border border-[var(--color-hairline)] rounded-[10px] p-[3px] gap-[2px]">
+            {[
+              { n: 1 as const, label: 'Add JD', on: step >= 2, reachable: true },
+              { n: 2 as const, label: 'Analyze', on: step >= 3, reachable: !!result },
+              { n: 3 as const, label: 'Preview', on: step >= 3 && !tailoring, reachable: !!editableNewCv },
+            ].map((s, i) => {
+              const isCurrent = viewStep === s.n;
+              const canClick = !loading && !tailoring && s.reachable;
+              return (
+                <React.Fragment key={s.n}>
+                  {i > 0 && <span className="text-[10px] text-[#CBD5E1] select-none">→</span>}
+                  <button
+                    type="button"
+                    onClick={() => canClick && setViewStep(s.n)}
+                    disabled={!canClick}
+                    title={canClick ? `Go to ${s.label}` : undefined}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-[6px] rounded-lg text-[11.5px] font-bold border-0 transition-colors whitespace-nowrap ${
+                      isCurrent
+                        ? 'bg-white text-[var(--color-brand)] shadow-[0_1px_3px_rgba(15,23,42,.12)]'
+                        : s.on
+                          ? 'bg-transparent text-[var(--color-muted)]'
+                          : 'bg-transparent text-[var(--color-faint)] cursor-default'
+                    } ${canClick ? 'cursor-pointer hover:text-[var(--color-ink)]' : ''}`}
+                  >
+                    <span className={`w-[17px] h-[17px] rounded-[6px] inline-flex items-center justify-center text-[10px] font-extrabold ${s.on && !isCurrent ? 'bg-[var(--color-ink)] text-white' : isCurrent ? 'bg-[var(--color-brand)] text-white' : 'bg-[#E2E8F0] text-[var(--color-faint)]'}`}>{s.on ? '✓' : s.n}</span>
+                    {s.label}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer">
-            <History className="w-4 h-4" /> History
+          <button onClick={openHistory} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[var(--color-muted)] bg-white border border-[var(--color-hairline)] hover:bg-[#FAFAF9] transition-colors cursor-pointer">
+            <History className="w-3.5 h-3.5" /> History
           </button>
-          <button onClick={onClose} aria-label="Close" className="w-10 h-10 inline-flex items-center justify-center rounded-lg text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} aria-label="Close" className="w-9 h-9 inline-flex items-center justify-center rounded-lg text-[var(--color-faint)] hover:bg-[var(--color-brand-soft)] transition-colors cursor-pointer">
+            <X className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Workflow stepper — completed steps are clickable to go back */}
-      <div className="px-5 sm:px-8 pt-4 flex items-center justify-center gap-2 flex-wrap shrink-0">
-        {[
-          { n: 1 as const, label: 'Add JD', on: step >= 2, reachable: true },
-          { n: 2 as const, label: 'Analysis', on: step >= 3, reachable: !!result },
-          { n: 3 as const, label: 'Preview', on: step >= 3 && !tailoring, reachable: !!editableNewCv },
-        ].map((s, i) => {
-          const isCurrent = viewStep === s.n;
-          const canClick = !loading && !tailoring && s.reachable;
-          return (
-            <React.Fragment key={s.n}>
-              {i > 0 && <ArrowRight className="w-3 h-3 text-slate-300" />}
-              <button
-                type="button"
-                onClick={() => canClick && setViewStep(s.n)}
-                disabled={!canClick}
-                title={canClick ? `Go back to ${s.label}` : undefined}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-                  s.on ? 'bg-[var(--color-ink)] border-slate-900 text-white' : isCurrent ? 'bg-[var(--color-brand)] border-blue-600 text-white' : 'bg-white border-[var(--color-hairline)] text-[var(--color-faint)]'
-                } ${canClick ? 'cursor-pointer hover:opacity-85' : 'cursor-default'}`}
-              >
-                <span className={`w-4.5 h-4.5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${s.on || isCurrent ? 'bg-white/25' : 'bg-[#F1F5F9] text-[var(--color-faint)]'}`}>{s.on ? '✓' : s.n}</span>
-                {s.label}
-              </button>
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {error && <p className="px-4 sm:px-5 pt-2 text-[12px] text-[var(--color-danger)]">{error}</p>}
 
-      {error && <p className="px-5 sm:px-8 pt-3 text-[12px] text-[var(--color-danger)]">{error}</p>}
-
-      {/* ── 50/50 stage: left = workspace, right = CV comparison ── */}
-      <div className="flex-1 min-h-0 p-4 sm:p-5 flex gap-0">
+      {/* ── Full-bleed split: left = workspace, right = CV preview ── */}
+      <div className="flex-1 min-h-0 flex gap-0">
         {/* LEFT · Workspace */}
-        <section className="flex-1 min-w-0 bg-white border border-[var(--color-hairline)] rounded-l-[14px] overflow-hidden flex flex-col">
+        <section className="flex-1 min-w-0 bg-white border-r border-[var(--color-hairline)] overflow-hidden flex flex-col">
           <div className="px-4 py-2.5 border-b border-[var(--color-hairline)] bg-[#FAFAF9]/80 flex items-center justify-between shrink-0">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-faint)] flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Workspace · {viewStep === 3 ? 'Preview & Edit' : viewStep === 2 ? 'Analysis' : 'Add JD'}
             </span>
-            <span className="text-[10.5px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 3</span>
+            <span className="text-[10px] font-bold text-[var(--color-faint)] bg-white border border-[var(--color-hairline)] rounded-full px-2 py-0.5">Step {viewStep} of 3</span>
           </div>
 
           <div className="relative flex-1 min-h-0 overflow-hidden bg-white">
@@ -1243,7 +1250,7 @@ export const ManualJdScreen: React.FC<ManualJdScreenProps> = ({ isOpen, onClose,
         </section>
 
         {/* RIGHT · CV Preview — Live PDF Preview (Master CV style) */}
-        <section className="flex-1 min-w-0 bg-white border border-[var(--color-hairline)] border-l-0 rounded-r-[14px] overflow-hidden flex flex-col">
+        <section className="flex-1 min-w-0 bg-white overflow-hidden flex flex-col">
           <div className="px-5 py-3 border-b border-[var(--color-hairline)] bg-white/80 backdrop-blur-sm flex items-center justify-between gap-3 shrink-0">
             <span className="inline-flex items-center space-x-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--color-faint)] whitespace-nowrap">
               <span className="relative flex h-2 w-2">
