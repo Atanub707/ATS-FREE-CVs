@@ -625,7 +625,7 @@ async function startServer() {
             discoveryFailed,
             message: discoveryFailed
               ? `Scrapling sidecar found no post links (${sidecar.debug?.queriesTried ?? 0} queries tried). Try again in a minute or switch to the Free engine.`
-              : 'not valid — Scrapling found posts but none were job postings from the last 24 hours. Try broader keywords.',
+              : `Scrapling found ${sidecar.debug?.linksFound ?? 0} posts but none were job postings from the last 24 hours — the search index for this keyword is stale right now. Retry later or try a different role.`,
             debug,
             posts: [],
             addedCount: 0,

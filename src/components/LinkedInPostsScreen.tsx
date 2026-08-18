@@ -147,11 +147,14 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       loadFeed();
       const window = 'from the last 24 hours ';
       if (d.valid === false) {
-        setMessage(d.discoveryFailed
-          ? engine === 'scrapling'
-            ? `Scrapling sidecar found no post links (${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute or switch to the Free engine.`
-            : `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
-          : 'No recent job postings matched this search. Try a broader job role, e.g. "DevOps Engineer".');
+        // Prefer the server's precise, engine-aware message (it distinguishes
+        // "engines rate-limited/blocked" from "found posts but all older than
+        // 24h") — fall back to a generic hint only if the server omitted it.
+        setMessage(d.message || (
+          d.discoveryFailed
+            ? `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
+            : 'No recent job postings matched this search. Try a broader job role, e.g. "DevOps Engineer".'
+        ));
       } else if (d.total === 0) {
         setMessage(`No job postings found ${window}for this search. Try broader keywords or search again later.`);
       } else if (d.addedCount > 0) {
