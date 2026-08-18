@@ -254,6 +254,100 @@ describe('LinkedInPostsScraper', () => {
     expect(jobs.filter((x) => x.title.startsWith('We are hiring a Network Engineer')).length).toBe(1);
   }, 30000);
 
+  it('resolves via the company page when the truncated text names the company (deterministic, engines never called)', async () => {
+    setScraperPause(0);
+    const searchCalls: string[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        // GNRSS: truncated title naming the company + Google token link.
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('Exo Edge is currently hiring for Network Engineers - LinkedIn') } as any;
+      }
+      if (url.includes('linkedin.com/company/exo-edge/')) {
+        // The company home page publicly exposes its recent post URLs.
+        return { ok: true, status: 200, text: async () => '<a href="https://www.linkedin.com/posts/exoedge_network-hiring-1234567890">post</a>' } as any;
+      }
+      if (url.includes('linkedin.com/posts/exoedge')) {
+        const desc = 'Exo Edge is currently hiring for Network Engineers and DevOps Engineers! Full details: send your CV to psharma1@exoedge.com';
+        return {
+          ok: true, status: 200,
+          text: async () =>
+            `<html><head>` +
+            `<meta property="og:title" content="Exo Edge is currently hiring | Palak Sharma">` +
+            `<meta property="og:description" content="${desc}">` +
+            `</head></html>`,
+        } as any;
+      }
+      if (url.includes('search') || url.includes('google.com') || url.includes('duckduckgo') || url.includes('bing')) searchCalls.push(url);
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const s = new LinkedInPostsScraper();
+    const jobs = await s.scrape({ keywords: 'Network Engineer', maxJobsPerSource: 5, engine: 'free' } as any);
+
+    const j = jobs.find((x) => x.description.includes('psharma1@exoedge.com'));
+    expect(j).toBeDefined();
+    expect(j!.url).toContain('linkedin.com/posts/exoedge');
+    expect(j!.recruiterName).toBe('Palak Sharma');
+    expect(j!.replacesUrl).toContain('news.google.com');
+    // Discovery's fallback engines run per-query (enrichment), but the
+    // RESOLUTION never queried a search engine — no call carries the post's
+    // own phrase ("Exo Edge...").
+    expect(searchCalls.some((u) => u.includes('Exo'))).toBe(false);
+  }, 30000);
+
+  it('falls back to the JSON-LD articleBody when the post page has no og:description', async () => {
+    setScraperPause(0);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('Acme Corp is hiring a Data Engineer - LinkedIn') } as any;
+      }
+      if (url.includes('google.com/search')) {
+        return { ok: true, status: 200, text: async () => '<a href="/url?q=https%3A%2F%2Fwww.linkedin.com%2Fposts%2Facme_data-hiring-1234567890">x</a>' } as any;
+      }
+      if (url.includes('linkedin.com/posts/acme')) {
+        return {
+          ok: true, status: 200,
+          text: async () =>
+            `<html><head>` +
+            `<meta property="og:title" content="Acme Corp is hiring a Data Engineer | John Doe">` +
+            `<script type="application/ld+json">{"@type":"Article","articleBody":"Acme Corp is hiring a Data Engineer. Send your CV to hr@acme.com today!\\n\\n#Hiring #DataEngineer"}</script>` +
+            `</head></html>`,
+        } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const s = new LinkedInPostsScraper();
+    const jobs = await s.scrape({ keywords: 'Data Engineer', maxJobsPerSource: 5, engine: 'free' } as any);
+
+    const j = jobs.find((x) => x.description.includes('hr@acme.com'));
+    expect(j).toBeDefined();
+    expect(j!.description).toContain('#Hiring');
+    expect(j!.recruiterName).toBe('John Doe');
+  }, 30000);
+
+  it('stores the truncated synthetic text WITHOUT the " - LinkedIn" suffix when resolution is impossible', async () => {
+    setScraperPause(0);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('We are hiring a Frontend Engineer! Apply now: https://jobs.example.com/apply - LinkedIn') } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const s = new LinkedInPostsScraper();
+    const jobs = await s.scrape({ keywords: 'Frontend Engineer', maxJobsPerSource: 5, engine: 'free' } as any);
+
+    expect(jobs.length).toBeGreaterThan(0);
+    for (const j of jobs) {
+      expect(j.description.endsWith(' - LinkedIn')).toBe(false);
+      expect(j.description).toContain('We are hiring a Frontend Engineer');
+    }
+  }, 30000);
+
   it('falls back when GNRSS returns empty, and skips engines that failed once', async () => {
     setScraperPause(0);
     const calls: string[] = [];

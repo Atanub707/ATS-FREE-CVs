@@ -25,6 +25,7 @@ export interface Job {
   companyUrl?: string;
   applyUrl?: string; // external link found inside a LinkedIn post (job/apply URL)
   hashtags?: string[]; // hashtags found in a LinkedIn post text
+  replacesUrl?: string; // scraper bookkeeping: the Google-News token URL of the truncated job this full-text job replaces
   applyType?: string;
   state: JobState;
   

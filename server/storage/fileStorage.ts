@@ -884,7 +884,7 @@ export function getInterviewSessionRecord(id: string): StoredInterview | null {
 
 // ─────────────────── HR / Recruiter contacts ───────────────────
 
-function upsertContactsFromJob(job: Job): HrContact[] {
+export function upsertContactsFromJob(job: Job): HrContact[] {
   const userId = getCurrentUserId();
   if (!userId) return [];
   const d = getDb();

@@ -104,6 +104,7 @@ import {
   getContactStats,
   listContactsCsv,
   backfillContacts,
+  upsertContactsFromJob,
   getPostsDailyUsage,
   addPostsDailyUsage,
 } from './server/storage/fileStorage.js';
@@ -1277,13 +1278,39 @@ Return valid JSON only — NO markdown, NO code fences:
 
       // Descriptions are stored exactly as scraped — the user runs these
       // sources with their own official Apify key, so no contact stripping.
-      const { added, skipped, newContacts } = saveNewJobs(scrapedJobs);
+      //
+      // Truncated LinkedIn-post jobs stored by earlier runs (Google-News
+      // token links, ~210-char titles) get UPGRADED IN PLACE when this run
+      // resolves their real post URL: full description (recruiter email/phone),
+      // real URL, recruiter name. Kept as one job — no duplicate.
+      const all = getAllJobs();
+      const toUpgrade: Job[] = [];
+      const toSave: Job[] = [];
+      for (const j of scrapedJobs) {
+        if (j.replacesUrl && all.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase())) toUpgrade.push(j);
+        else toSave.push(j);
+      }
+      const { added, skipped, newContacts } = saveNewJobs(toSave.map((j) => ({ ...j, replacesUrl: undefined })));
+      let upgradedCount = 0;
+      for (const job of toUpgrade) {
+        const existing = all.find((e) => e.url?.toLowerCase() === job.replacesUrl.toLowerCase());
+        if (!existing) continue;
+        const { replacesUrl: _replaced, ...full } = job;
+        updateJobInStorage({ ...existing, ...full, id: existing.id });
+        try {
+          upsertContactsFromJob({ ...existing, ...full, id: existing.id });
+        } catch (err) {
+          console.error('Error extracting contacts from upgraded job:', err);
+        }
+        upgradedCount++;
+      }
 
       res.json({
         success: true,
         scrapedTotal: scrapedJobs.length,
         addedCount: added.length,
         skippedDuplicates: skipped,
+        upgradedCount,
         filteredOutCount,
         skippedSources: ScraperFactory.lastSkippedSources,
         newContacts: newContacts.map((c) => ({

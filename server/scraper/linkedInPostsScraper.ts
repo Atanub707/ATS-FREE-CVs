@@ -367,7 +367,8 @@ interface ParsedPost {
 // thought-leadership) is dropped and the caller reports "not valid".
 const JOB_TEXT_SIGNALS =
   /\b(hiring|now hiring|we are hiring|we're hiring|looking for|openings?|job opening|open position|apply (now|here|today)|recruit(ing|er)?|opportunity|position|vacancy|join (us|our|the))\b|\b#?(hiring|nowhiring|jobopening|jobs|job)\b/i;
-const ROLE_HINT = /\b(engineer|developer|architect|analyst|manager|lead|specialist|consultant|scientist|designer|admin|devops|sre|security|cloud|backend|frontend|full[- ]?stack|qa)\b/i;
+// Plural-safe: posts say "Engineers"/"Developers" as often as the singular.
+const ROLE_HINT = /\b(engineers?|developers?|architects?|analysts?|managers?|leads?|specialists?|consultants?|scientists?|designers?|admins?|devops|sres?|security|clouds?|backends?|frontends?|full[- ]?stacks?|qas?)\b/i;
 
 export function isJobPosting(text: string, hasJobLink = false): boolean {
   if (hasJobLink) return true; // apify items carry a real job listing
@@ -403,13 +404,65 @@ function parseRelativeTime(label: string): string | undefined {
 // titles truncated to ~210 chars ("...- LinkedIn"). Recruiters put their
 // email/phone at the END of long posts, so the truncated title never shows
 // them. The full text only exists on the REAL post page (guest-accessible,
-// full og:description — verified). Resolve the real URL by searching for a
-// distinctive quoted phrase of the post's own text, then fetch the page.
+// full og:description — verified). Two resolution channels:
+//   1. COMPANY PAGES (deterministic, no search engines): many hiring posts
+//      are COMPANY posts, and every company home page (guest-accessible,
+//      unthrottled) exposes ~10 recent post URLs. When the truncated text
+//      names the company ("Exo Edge is currently hiring..."), fetch the
+//      company page and pick the post matching the candidate phrase. This
+//      works even while every search engine is rate-limited.
+//   2. SEARCH ENGINES: resolve the real URL by searching for a distinctive
+//      quoted phrase of the post's own text, then fetch the page. Needed
+//      for personal posts whose text never names a company.
 const GOOGLE_COOKIE =
   'CONSENT=YES+cb.20240101-01-p0.en+FX+111; SOCS=CAESEwgDEgk2NzM5NzcwMzUaAmVuIAEaBgiA_LyaBg';
 
+const COMPANY_NAME_STOPWORDS = new Set(['team', 'our', 'the', 'us', 'we', 'this', 'your', 'a', 'an']);
+
+function companyNameFromText(text: string): string | null {
+  const m =
+    text.match(/([A-Z][A-Za-z0-9&.' -]{1,35}?)\s+(?:is|are)\s+(?:currently\s+)?(?:hiring|looking)/i) ||
+    text.match(/\b(?:at|join)\s+([A-Z][A-Za-z0-9&.'-]{2,35}?)\b/i);
+  if (!m) return null;
+  const name = m[1].replace(/\s+the$/i, '').trim();
+  if (name.length < 2 || name.length > 36) return null;
+  // Leading articles ("The Kraft Group") are part of the name — only the
+  // FIRST SIGNIFICANT word is checked against stopwords.
+  const firstWord = name.replace(/^The\s+/i, '').split(/\s+/)[0].replace(/[^A-Za-z]/g, '').toLowerCase();
+  if (COMPANY_NAME_STOPWORDS.has(firstWord)) return null;
+  return name;
+}
+
+function companySlugVariants(name: string): string[] {
+  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const out = [slug(name)];
+  const withoutThe = name.replace(/^The\s+/i, '').trim();
+  if (withoutThe && withoutThe !== name) out.push(slug(withoutThe));
+  const stripped = name.replace(/\b(inc|llc|ltd|group|pvt|pty|solutions|technologies|technology|tech|consultancy|consulting|services|systems|labs?)\b.*$/i, '').trim();
+  if (stripped && stripped !== name) out.push(slug(stripped));
+  return [...new Set(out)].slice(0, 3);
+}
+
+async function resolveViaCompanyPages(text: string): Promise<string | null> {
+  const name = companyNameFromText(text);
+  if (!name) return null;
+  const candPhrase = distinctivePhrase(text);
+  for (const slug of companySlugVariants(name)) {
+    const html = await getHtml(`https://www.linkedin.com/company/${slug}/`, { Cookie: 'lang=v=2&lang=en-us' });
+    if (!html) continue;
+    for (const u of extractLinkedInPostUrls(html).slice(0, 10)) {
+      const post = await fetchPost(u);
+      if (!post) continue;
+      if (distinctivePhrase(post.text).startsWith(candPhrase)) return u;
+      await new Promise((r) => setTimeout(r, PAUSE_MS));
+    }
+  }
+  return null;
+}
+
 function distinctivePhrase(text: string): string {
   let t = text
+    .replace(/\s*[-–—|]\s*LinkedIn\s*$/i, '') // GNRSS truncation suffix noise
     .replace(/#[A-Za-z0-9_]+/g, ' ')
     .replace(/https?:\/\/\S+/g, ' ')
     .replace(/[^\p{L}\p{N}\s'\-–—:;,()]/gu, ' ') // strip emojis + symbols
@@ -429,6 +482,12 @@ async function resolveRealPostUrl(text: string): Promise<string | null> {
   if (phrase.length < 20) return null;
   const cached = resolutionCache.get(phrase);
   if (cached !== undefined) return cached;
+  // Deterministic channel first: company pages work while engines are down.
+  const viaCompany = await resolveViaCompanyPages(text);
+  if (viaCompany) {
+    resolutionCache.set(phrase, viaCompany);
+    return viaCompany;
+  }
   const siteQuery = `site:linkedin.com/posts "${phrase}"`;
   // Bing's direct HTML silently drops site: — the plain phrase still hits.
   const plainQuery = `"${phrase}"`;
@@ -498,7 +557,20 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
     ?? html.match(new RegExp(`<meta[^>]+content="([^"]*)"[^>]+property="og:${prop}"`))?.[1] ?? '';
 
   const title = og('title').replace(/ \| LinkedIn$/i, '').trim();
-  const text = og('description').trim();
+  let text = og('description').trim();
+  if (!text) {
+    // Some post pages omit og:description — the JSON-LD articleBody carries
+    // the same full body (verified: identical content, escaped newlines).
+    const ab = html.match(/"articleBody"\s*:\s*"([^"]+)"/)?.[1];
+    if (ab) {
+      text = ab
+        .replace(/\\n/g, '\n').replace(/\\r/g, '')
+        .replace(/\\u003c/g, '<').replace(/\\u003e/g, '>').replace(/\\"/g, '"')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+        .trim();
+    }
+  }
 
   // Author (guest pages): og:title is "<post text> | <AUTHOR> | <N> comments"
   // or "<post text> | <AUTHOR>" — take the second " | " segment, unless it is
@@ -685,8 +757,11 @@ export class LinkedInPostsScraper {
     // Full-text resolution: GNRSS titles are truncated (~210 chars), so the
     // recruiter email/phone at the tail of long posts is missing. Before
     // falling back to the truncated synthetic text, try to resolve the REAL
-    // post page (bounded per run) — full og:description with email/phone.
-    let resolutionsLeft = 5;
+    // post page (company page first, then search engines; bounded per run) —
+    // full og:description with email/phone. Resolved jobs carry replacesUrl
+    // (the token) so the server upgrades any previously-stored truncated
+    // copy IN PLACE instead of leaving a duplicate.
+    let resolutionsLeft = 12;
     for (const cand of candidates) {
       if (jobs.length >= limit) break;
       if (!isJobPosting(cand.text)) continue;
@@ -721,6 +796,7 @@ export class LinkedInPostsScraper {
                 applyUrl: post.applyUrl,
                 hashtags: post.hashtags,
                 recruiterName: post.author,
+                replacesUrl: cand.link,
                 jobType: 'Post',
                 state: 'pending',
                 createdAt: now,
@@ -738,7 +814,7 @@ export class LinkedInPostsScraper {
         company: '',
         location: '',
         source: 'LinkedInPosts',
-        description: cand.text.slice(0, 3000),
+        description: cand.text.replace(/\s+-\s*LinkedIn\s*$/i, '').slice(0, 3000),
         url: cand.link,
         postedDate: candDate,
         postedDateParsed: candDate ? candDate.slice(0, 10) : undefined,
