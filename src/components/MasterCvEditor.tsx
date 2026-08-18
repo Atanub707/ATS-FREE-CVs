@@ -458,6 +458,18 @@ export const MasterCvEditor: React.FC<MasterCvEditorProps> = ({ value, onChange,
               ))}
             </div>
           </div>
+          <div>
+            <label className="block text-[var(--color-muted)] font-medium mb-1">Portfolio (Website)</label>
+            <input type="url" value={formData.website || ''} onChange={(e) => setFormData({ ...formData, website: e.target.value })} placeholder="https://yourportfolio.com" className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label className="block text-[var(--color-muted)] font-medium mb-1">LinkedIn</label>
+            <input type="url" value={formData.linkedin || ''} onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })} placeholder="https://linkedin.com/in/yourname" className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label className="block text-[var(--color-muted)] font-medium mb-1">GitHub</label>
+            <input type="url" value={formData.github || ''} onChange={(e) => setFormData({ ...formData, github: e.target.value })} placeholder="https://github.com/yourname" className="w-full bg-white border border-[var(--color-hairline)] rounded px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-slate-900" />
+          </div>
         </div>
       </div>
 

@@ -132,402 +132,8 @@ export function generatePdfBuffer(cv: TailoredCv, template: string = 'harvard'):
   if (template === 'atanu-pro') {
     return generateAtanuProPdf(cv);
   }
-
-  // ── Template styles (must match src/components/CvPdfPreview.tsx CV_TEMPLATE_STYLES) ──
-  const TEMPLATES: Record<string, { accent: string; nameSize: number; roleColor: string; ruleWidth: number; bodySize: number; bulletSize: number; sectionGap: number; expTitleSize: number }> = {
-    'harvard': { accent: '#2F54EB', nameSize: 18, roleColor: '#374151', ruleWidth: 0.75, bodySize: 9.5, bulletSize: 9.5, sectionGap: 10, expTitleSize: 10 },
-    'compact-executive': { accent: '#1E3A5F', nameSize: 15, roleColor: '#475569', ruleWidth: 0.5, bodySize: 8.5, bulletSize: 8.5, sectionGap: 7, expTitleSize: 9 },
-  };
-  const t = TEMPLATES[template] || TEMPLATES.harvard;
-
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({
-      size: 'LETTER',
-      margins: {
-        top: 0.6 * 72, // 43.2 pt
-        bottom: 0.6 * 72,
-        left: 0.75 * 72, // 54 pt
-        right: 0.75 * 72,
-      },
-    });
-
-    const buffers: Buffer[] = [];
-    doc.on('data', (chunk) => buffers.push(chunk));
-    doc.on('end', () => resolve(Buffer.concat(buffers)));
-    doc.on('error', (err) => reject(err));
-
-    const leftMargin = 0.75 * 72; // 54 pt
-    const rightMargin = 8.5 * 72 - 0.75 * 72; // 558 pt
-    const contentWidth = rightMargin - leftMargin; // 504 pt
-
-    // Page-break safety helper
-    const ensurePageSpace = (neededHeight: number) => {
-      if (doc.y + neededHeight > 730) {
-        doc.addPage();
-        doc.y = 43.2;
-      }
-    };
-
-    // 1. Candidate Name (template-sized, centered)
-    doc.x = leftMargin;
-    const candidateName = sanitizeText(cv.candidateName).toUpperCase() || 'CANDIDATE NAME';
-    ensurePageSpace(30);
-    doc.font('Helvetica-Bold').fontSize(t.nameSize).fillColor('#111827').text(candidateName, leftMargin, doc.y, {
-      align: 'center',
-      width: contentWidth,
-    });
-    doc.moveDown(0.1);
-
-    // Target Role
-    if (cv.targetRole) {
-      const targetRole = sanitizeText(cv.targetRole);
-      if (targetRole) {
-        doc.font('Helvetica-Bold').fontSize(10).fillColor(t.roleColor).text(targetRole, leftMargin, doc.y, {
-          align: 'center',
-          width: contentWidth,
-        });
-        doc.moveDown(0.15);
-      }
-    }
-
-    // 2. Contact Line: Clean centered text line with bullet separators and clickable links
-    const contactLinks = getContactLinks(cv);
-    if (contactLinks.length > 0) {
-      ensurePageSpace(20);
-      doc.font('Helvetica').fontSize(9);
-
-      const sep = '   •   ';
-      const sepWidth = doc.widthOfString(sep);
-
-      // Measure total width of all contact items + separators
-      const itemsMeasured = contactLinks
-        .map((item) => {
-          const cleanLabel = sanitizeText(item.label);
-          if (!cleanLabel) return null;
-          const w = doc.widthOfString(cleanLabel);
-          return { item, cleanLabel, w };
-        })
-        .filter((x): x is { item: typeof contactLinks[0]; cleanLabel: string; w: number } => x !== null);
-
-      if (itemsMeasured.length > 0) {
-        let totalWidth = itemsMeasured.reduce((sum, el) => sum + el.w, 0);
-        totalWidth += (itemsMeasured.length - 1) * sepWidth;
-
-        const currentY = doc.y;
-        let currentX = leftMargin + Math.max(0, (contentWidth - totalWidth) / 2);
-
-        itemsMeasured.forEach(({ item, cleanLabel, w }, idx) => {
-          const normUrl = item.url ? normalizeUrl(item.url) : undefined;
-          if (normUrl) {
-            doc.fillColor('#0055BB').text(cleanLabel, currentX, currentY, { lineBreak: false });
-            doc.link(currentX, currentY, w, 10, normUrl);
-          } else {
-            doc.fillColor('#374151').text(cleanLabel, currentX, currentY, { lineBreak: false });
-          }
-          currentX += w;
-
-          if (idx < itemsMeasured.length - 1) {
-            doc.fillColor('#9CA3AF').text(sep, currentX, currentY, { lineBreak: false });
-            currentX += sepWidth;
-          }
-        });
-
-        doc.x = leftMargin;
-        doc.y = currentY + 14;
-      }
-    }
-
-    // Helper to render section header: template accent, ALL CAPS Bold with solid horizontal rule
-    const renderSectionHeader = (title: string) => {
-      ensurePageSpace(30);
-      doc.x = leftMargin;
-      doc.moveDown(0.2);
-      const headY = doc.y;
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor(t.accent).text(sanitizeText(title).toUpperCase(), leftMargin, headY, {
-        width: contentWidth,
-      });
-      const ruleY = doc.y + 1;
-      doc.moveTo(leftMargin, ruleY).lineTo(rightMargin, ruleY).lineWidth(t.ruleWidth).strokeColor(t.accent).stroke();
-      doc.y = ruleY + 5;
-      doc.x = leftMargin;
-    };
-
-    // Helper for bullet points
-    const renderBullet = (text: string, linkUrl?: string) => {
-      if (!text) return;
-      const clean = sanitizeText(String(text).replace(/^[*•\-]\s*/, '').trim());
-      if (!clean) return;
-
-      ensurePageSpace(15);
-      const bulletX = leftMargin + 4;
-      const textX = leftMargin + 16;
-      const tWidth = contentWidth - 16;
-      const currentY = doc.y;
-
-      doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#4B5563').text('•', bulletX, currentY, { lineBreak: false });
-
-      const normUrl = linkUrl ? normalizeUrl(linkUrl) : undefined;
-      if (normUrl) {
-        doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#0055BB').text(clean, textX, currentY, {
-          width: tWidth,
-          lineGap: 1.5,
-          underline: true,
-        });
-        const rawH = doc.heightOfString(clean, { width: tWidth });
-        const h = isFinite(rawH) && rawH > 0 ? rawH : 12;
-        doc.link(textX, currentY, tWidth, h, normUrl);
-      } else {
-        doc.font('Helvetica').fontSize(t.bulletSize).fillColor('#1F2937').text(clean, textX, currentY, {
-          width: tWidth,
-          lineGap: 1.5,
-        });
-      }
-
-      doc.x = leftMargin;
-      doc.moveDown(0.12);
-    };
-
-    // 3. Section: PROFESSIONAL SUMMARY
-    if (cv.professionalSummary) {
-      const cleanSummary = sanitizeText(cv.professionalSummary);
-      if (cleanSummary) {
-        renderSectionHeader('PROFESSIONAL SUMMARY');
-        ensurePageSpace(20);
-        doc.font('Helvetica').fontSize(t.bodySize).fillColor('#1F2937').text(cleanSummary, leftMargin, doc.y, {
-          width: contentWidth,
-          lineGap: 1.5,
-        });
-        doc.x = leftMargin;
-        doc.moveDown(0.2);
-      }
-    }
-
-    // 4. Section: TECHNICAL SKILLS
-    const hasTechnicalSkills = cv.technicalSkills && cv.technicalSkills.length > 0;
-    const hasCoreCompetencies = cv.coreCompetencies && cv.coreCompetencies.length > 0;
-
-    if (hasTechnicalSkills || hasCoreCompetencies) {
-      renderSectionHeader('TECHNICAL SKILLS & COMPETENCIES');
-
-      if (hasTechnicalSkills) {
-        for (const cat of cv.technicalSkills) {
-          if (!cat) continue;
-          const catName = sanitizeText(cat.category);
-          const skillsList = Array.isArray(cat.skills)
-            ? cat.skills.map((s) => sanitizeText(s)).filter(Boolean).join(', ')
-            : '';
-          if (!catName && !skillsList) continue;
-
-          ensurePageSpace(15);
-          doc
-            .font('Helvetica-Bold')
-            .fontSize(t.expTitleSize)
-            .fillColor('#111827')
-            .text(`${catName}: `, leftMargin, doc.y, { continued: true })
-            .font('Helvetica')
-            .fillColor('#374151')
-            .text(skillsList);
-          doc.x = leftMargin;
-          doc.moveDown(0.12);
-        }
-      } else if (hasCoreCompetencies) {
-        const compList = cv.coreCompetencies.map((c) => sanitizeText(c)).filter(Boolean).join(', ');
-        if (compList) {
-          ensurePageSpace(15);
-          doc.font('Helvetica').fontSize(t.bodySize).fillColor('#1F2937').text(compList, leftMargin, doc.y, {
-            width: contentWidth,
-            lineGap: 1.5,
-          });
-          doc.x = leftMargin;
-        }
-      }
-      doc.moveDown(0.2);
-    }
-
-    // 5. Section: PROFESSIONAL EXPERIENCE
-    if (cv.workExperience && cv.workExperience.length > 0) {
-      renderSectionHeader('PROFESSIONAL EXPERIENCE');
-
-      for (const exp of cv.workExperience) {
-        if (!exp) continue;
-        ensurePageSpace(45);
-
-        const title = sanitizeText(exp.title);
-        const company = sanitizeText(exp.company);
-        const dateLoc = [sanitizeText(exp.dates), sanitizeText(exp.location)].filter(Boolean).join('   |   ');
-        const entryY = doc.y;
-
-        // Title and Company
-        const titleComp = company ? `${title}   |   ${company}` : title;
-        doc.font('Helvetica-Bold').fontSize(t.expTitleSize).fillColor('#111827').text(titleComp, leftMargin, entryY, {
-          width: contentWidth - 140,
-        });
-        const yAfterLeft = doc.y;
-
-        // Dates & Location right-aligned on the same header line
-        if (dateLoc) {
-          doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#4B5563').text(dateLoc, leftMargin, entryY, {
-            align: 'right',
-            width: contentWidth,
-          });
-        }
-        const yAfterRight = doc.y;
-
-        doc.y = Math.max(yAfterLeft, yAfterRight);
-        doc.x = leftMargin;
-        doc.moveDown(0.1);
-
-        if (Array.isArray(exp.highlights)) {
-          for (const hl of exp.highlights) {
-            renderBullet(hl);
-          }
-        }
-        doc.x = leftMargin;
-        doc.moveDown(0.2);
-      }
-    }
-
-    // 6. Section: FEATURED PROJECTS
-    if (cv.projects && cv.projects.length > 0) {
-      renderSectionHeader('FEATURED PROJECTS');
-
-      for (const proj of cv.projects) {
-        if (!proj) continue;
-        ensurePageSpace(40);
-
-        const pName = sanitizeText(proj.name);
-        const normLink = proj.link ? normalizeUrl(proj.link) : undefined;
-        const pDates = sanitizeText(proj.dates);
-        const projY = doc.y;
-
-        if (normLink) {
-          doc
-            .font('Helvetica-Bold')
-            .fontSize(t.expTitleSize)
-            .fillColor('#111827')
-            .text(pName, leftMargin, projY, { continued: true });
-          doc
-            .font('Helvetica')
-            .fontSize(9)
-            .fillColor('#0055BB')
-            .text(`   |   View Project`, { width: contentWidth - 120 });
-        } else {
-          doc
-            .font('Helvetica-Bold')
-            .fontSize(t.expTitleSize)
-            .fillColor('#111827')
-            .text(pName, leftMargin, projY, { width: contentWidth - 120 });
-        }
-        const yAfterLeft = doc.y;
-
-        if (pDates) {
-          doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#4B5563').text(pDates, leftMargin, projY, {
-            align: 'right',
-            width: contentWidth,
-          });
-        }
-        const yAfterRight = doc.y;
-
-        doc.y = Math.max(yAfterLeft, yAfterRight);
-        doc.x = leftMargin;
-        doc.moveDown(0.1);
-
-        if (Array.isArray(proj.technologies) && proj.technologies.length > 0) {
-          const techList = proj.technologies.map((t) => sanitizeText(t)).filter(Boolean).join(', ');
-          if (techList) {
-            ensurePageSpace(15);
-            doc
-              .font('Helvetica-Bold')
-              .fontSize(9)
-              .fillColor('#374151')
-              .text('Technologies: ', leftMargin, doc.y, { continued: true })
-              .font('Helvetica')
-              .fillColor('#4B5563')
-              .text(techList);
-            doc.x = leftMargin;
-            doc.moveDown(0.08);
-          }
-        }
-
-        if (proj.description) {
-          renderBullet(proj.description);
-        }
-        doc.x = leftMargin;
-        doc.moveDown(0.2);
-      }
-    }
-
-    // 7. Section: EDUCATION
-    if (cv.education && cv.education.length > 0) {
-      renderSectionHeader('EDUCATION');
-
-      for (const edu of cv.education) {
-        if (!edu) continue;
-        ensurePageSpace(35);
-
-        const degree = sanitizeText(edu.degree);
-        const inst = sanitizeText(edu.institution);
-        const eDates = sanitizeText(edu.dates);
-        const eduY = doc.y;
-
-        // Line 1: Degree Name (Left) & Dates (Right)
-        doc
-          .font('Helvetica-Bold')
-          .fontSize(t.expTitleSize)
-          .fillColor('#111827')
-          .text(degree, leftMargin, eduY, { width: contentWidth - 140 });
-        const yAfterDegree = doc.y;
-
-        if (eDates) {
-          doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#4B5563').text(eDates, leftMargin, eduY, {
-            align: 'right',
-            width: contentWidth,
-          });
-        }
-        const yAfterDates = doc.y;
-
-        doc.y = Math.max(yAfterDegree, yAfterDates);
-
-        // Line 2: Institution Name (Below degree to prevent overlap)
-        if (inst) {
-          doc
-            .font('Helvetica')
-            .fontSize(t.bodySize)
-            .fillColor('#374151')
-            .text(inst, leftMargin, doc.y, { width: contentWidth });
-        }
-
-        doc.x = leftMargin;
-        doc.moveDown(0.25);
-      }
-    }
-
-    // 8. Section: CERTIFICATIONS & CREDENTIALS
-    if (cv.certifications && cv.certifications.length > 0) {
-      renderSectionHeader('CERTIFICATIONS & CREDENTIALS');
-
-      for (const cert of cv.certifications) {
-        if (!cert) continue;
-        if (typeof cert === 'string') {
-          renderBullet(cert);
-        } else if (typeof cert === 'object') {
-          const parts = [sanitizeText(cert.name), sanitizeText(cert.issuer), sanitizeText(cert.date)].filter(Boolean);
-          renderBullet(parts.join('   |   '), cert.link);
-        }
-      }
-    }
-
-    doc.end();
-  });
 }
 
-/**
- * Harvard Classic — exact replica of the ATS-safe single-column template:
- * centered header (24px name, 3px letter-spacing), teal #0F766E headings
- * with solid rules, 9.5px justified body, 2-column skills grid,
- * role/company + right-aligned period, [year] projects.
- * US Letter, margins 0.45in top/bottom, 0.5in left/right.
- */
 
 /**
  * Draw one entry-header line: left text + right-aligned text on the same
@@ -911,9 +517,10 @@ function generateAtanuPdf(cv: TailoredCv): Promise<Buffer> {
         }
         if (normLink) {
           ensurePageSpace(12);
-          doc.font('Helvetica').fontSize(9.5).fillColor(ACCENT).text(displayUrl(proj.link), leftMargin, doc.y, {
-            width: contentWidth,
-          });
+          const ly = doc.y;
+          const disp = displayUrl(proj.link);
+          doc.font('Helvetica').fontSize(9.5).fillColor(ACCENT).text(disp, leftMargin, ly, { width: contentWidth });
+          doc.link(leftMargin, ly, Math.min(doc.widthOfString(disp), contentWidth), Math.max(doc.heightOfString(disp, { width: contentWidth }), 10), normLink);
           doc.x = leftMargin;
         }
         doc.moveDown(0.3); // 4px between projects
@@ -1193,8 +800,9 @@ function generateAtanuProPdf(cv: TailoredCv): Promise<Buffer> {
           const lx = leftMargin;
           const ly = doc.y;
           doc.font('Helvetica').fontSize(geo.bodySize).fillColor(ACCENT).text(sanitizeText(displayUrl(p.link)), lx, ly, { width: contentWidth });
-          const lw = doc.widthOfString(sanitizeText(displayUrl(p.link)));
-          const lh = doc.heightOfString(sanitizeText(p.link), { width: contentWidth });
+          const disp = sanitizeText(displayUrl(p.link));
+          const lw = doc.widthOfString(disp);
+          const lh = doc.heightOfString(disp, { width: contentWidth });
           doc.link(lx, ly, Math.min(lw, contentWidth), Math.max(lh, 10), link);
           doc.x = leftMargin;
         }
@@ -1405,7 +1013,10 @@ function generateHarvardPdf(cv: TailoredCv): Promise<Buffer> {
           ensurePageSpace(12);
           const link = normalizeUrl(proj.link);
           if (link) {
-            doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(displayUrl(proj.link), leftMargin, doc.y, { width: contentWidth });
+            const ly = doc.y;
+            const disp = displayUrl(proj.link);
+            doc.font('Helvetica').fontSize(10.5).fillColor(INK).text(disp, leftMargin, ly, { width: contentWidth });
+            doc.link(leftMargin, ly, Math.min(doc.widthOfString(disp), contentWidth), Math.max(doc.heightOfString(disp, { width: contentWidth }), 10), link);
             doc.x = leftMargin;
             doc.moveDown(0.1);
           }
@@ -1665,7 +1276,10 @@ function generateJakePdf(cv: TailoredCv): Promise<Buffer> {
           const link = normalizeUrl(proj.link);
           if (link) {
             ensurePageSpace(11);
-            doc.font('Helvetica').fontSize(9).fillColor('#111111').text(displayUrl(proj.link), leftMargin, doc.y, { width: contentWidth });
+            const ly = doc.y;
+            const disp = displayUrl(proj.link);
+            doc.font('Helvetica').fontSize(9).fillColor('#111111').text(disp, leftMargin, ly, { width: contentWidth });
+            doc.link(leftMargin, ly, Math.min(doc.widthOfString(disp), contentWidth), Math.max(doc.heightOfString(disp, { width: contentWidth }), 10), link);
             doc.x = leftMargin;
           }
         }
