@@ -477,6 +477,16 @@ function distinctivePhrase(text: string): string {
 // retry when search engines recover from rate limits.
 const resolutionCache = new Map<string, string>();
 
+// Per-run engine diagnostics for lastDebug (which engines answered and how).
+const engineStats: Record<string, { tried: number; ok: number; links: number }> = {};
+
+function recordEngine(name: string, ok: boolean, links = 0): void {
+  const s = engineStats[name] ?? (engineStats[name] = { tried: 0, ok: 0, links: 0 });
+  s.tried++;
+  if (ok) s.ok++;
+  s.links += links;
+}
+
 async function resolveRealPostUrl(text: string): Promise<string | null> {
   const phrase = distinctivePhrase(text);
   if (phrase.length < 20) return null;
@@ -491,46 +501,66 @@ async function resolveRealPostUrl(text: string): Promise<string | null> {
   const siteQuery = `site:linkedin.com/posts "${phrase}"`;
   // Bing's direct HTML silently drops site: — the plain phrase still hits.
   const plainQuery = `"${phrase}"`;
-  const engines: Array<{ build: (q: string, plain: string) => string; parse: (h: string) => string[] }> = [
-    // Google direct works from residential IPs (the user's machine) and is
-    // the most likely to hit the exact post; jina-rendered DDG/Bing work
-    // from any IP; direct DDG + direct Bing plain-phrase cover rate-limited
-    // moments. 7s timeout keeps resolution cheap.
+  // jina-rendered DDG/Bing work from any IP and are the only engines that
+  // answer from server IPs right now — try them FIRST. Google direct works
+  // from residential IPs when not rate-limited. jina renders pages, which
+  // can take 10-30s under load, so it gets a 30s budget + X-Timeout hint;
+  // direct engines keep 7s. Both the site:-scoped and the plain query are
+  // tried per engine because some engines (Bing, DDG) silently drop site:.
+  const engines: Array<{ name: string; build: (q: string, plain: string) => string; timeoutMs: number; headers?: Record<string, string>; parse: (h: string) => string[] }> = [
     {
+      name: 'jina-ddg',
+      build: (q, p) => `https://r.jina.ai/https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      timeoutMs: 30000,
+      headers: { 'X-Timeout': '30' },
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      name: 'jina-bing',
+      build: (q, p) => `https://r.jina.ai/https://www.bing.com/search?q=${encodeURIComponent(p)}&count=20`,
+      timeoutMs: 30000,
+      headers: { 'X-Timeout': '30' },
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      name: 'google',
       build: (q, _p) => `https://www.google.com/search?q=${encodeURIComponent(q)}&tbs=qdr:d&num=20&gbv=1`,
+      timeoutMs: 7000,
       parse: (h) => extractLinkedInPostUrls(h),
     },
     {
-      build: (q, _p) => `https://r.jina.ai/https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      name: 'ddg',
+      build: (_q, p) => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(p)}`,
+      timeoutMs: 7000,
       parse: (h) => extractLinkedInPostUrls(h),
     },
     {
-      build: (q, _p) => `https://r.jina.ai/https://www.bing.com/search?q=${encodeURIComponent(q)}&count=20`,
-      parse: (h) => extractLinkedInPostUrls(h),
-    },
-    {
-      build: (q, _p) => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
-      parse: (h) => extractLinkedInPostUrls(h),
-    },
-    {
+      name: 'bing',
       build: (_q, p) => `https://www.bing.com/search?q=${encodeURIComponent(p)}&count=20`,
+      timeoutMs: 7000,
       parse: (h) => extractLinkedInPostUrls(h),
     },
   ];
   for (const e of engines) {
-    try {
-      const res = await fetch(e.build(siteQuery, plainQuery), {
-        headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9', Cookie: GOOGLE_COOKIE },
-        signal: AbortSignal.timeout(7000),
-      });
-      if (!res.ok) continue;
-      const html = await res.text();
-      const real = e.parse(html).find((u) => u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/'));
-      if (real) {
-        resolutionCache.set(phrase, real);
-        return real;
-      }
-    } catch { /* try next engine */ }
+    for (const q of [siteQuery, plainQuery]) {
+      try {
+        const res = await fetch(e.build(q, plainQuery), {
+          headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9', Cookie: GOOGLE_COOKIE, ...e.headers },
+          signal: AbortSignal.timeout(e.timeoutMs),
+        });
+        if (!res.ok) {
+          recordEngine(e.name, false);
+          continue;
+        }
+        const html = await res.text();
+        const real = e.parse(html).find((u) => u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/'));
+        recordEngine(e.name, true, e.parse(html).length);
+        if (real) {
+          resolutionCache.set(phrase, real);
+          return real;
+        }
+      } catch { /* try next query/engine */ }
+    }
   }
   return null;
 }
@@ -691,7 +721,7 @@ async function apifyPostsSearch(keywords: string, limit: number): Promise<Job[]>
 }
 
 export class LinkedInPostsScraper {
-  lastDebug: { queriesTried: number; linksFound: number; via?: string; enginesUsed?: number } = { queriesTried: 0, linksFound: 0 };
+  lastDebug: { queriesTried: number; linksFound: number; via?: string; enginesUsed?: number; resolutionsAttempted?: number; engineStats?: Record<string, { tried: number; ok: number; links: number }> } = { queriesTried: 0, linksFound: 0 };
 
   async scrape(params: ScraperParams): Promise<Job[]> {
     const keywords = params.keywords?.trim();
@@ -762,6 +792,7 @@ export class LinkedInPostsScraper {
     // (the token) so the server upgrades any previously-stored truncated
     // copy IN PLACE instead of leaving a duplicate.
     let resolutionsLeft = 12;
+    let resolutionsAttempted = 0;
     for (const cand of candidates) {
       if (jobs.length >= limit) break;
       if (!isJobPosting(cand.text)) continue;
@@ -775,6 +806,7 @@ export class LinkedInPostsScraper {
 
       if (resolutionsLeft > 0 && cand.link.includes('news.google.com')) {
         resolutionsLeft--;
+        resolutionsAttempted++;
         const realUrl = await resolveRealPostUrl(cand.text);
         if (realUrl) {
           const post = await fetchPost(realUrl);
@@ -826,6 +858,8 @@ export class LinkedInPostsScraper {
         updatedAt: now,
       });
     }
+    this.lastDebug = { ...this.lastDebug, resolutionsAttempted, engineStats: { ...engineStats } };
+    for (const k of Object.keys(engineStats)) delete engineStats[k];
     return jobs;
   }
 }
