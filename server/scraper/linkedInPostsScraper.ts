@@ -12,8 +12,10 @@ import { loadConfig } from '../config.js';
 //       tech combos, remote-first modifiers (1–3 tags/keywords per query).
 //    2. Runs Google News RSS against EVERY query (the only engine that works
 //       from any IP — no captcha, honors site: + when:1d, ~100 items) and
-//       falls back to DDG/Bing/Google/company-pages only when a query comes
-//       back empty; engines that return nothing are skipped for the run.
+//       runs a budgeted fallback pass (DDG/Bing/Google/company-pages) even
+//       when GNRSS returns candidates — GNRSS links are Google tokens whose
+//       titles are truncated (~210 chars), so the REAL post page (full text:
+//       recruiter email/phone) only comes from the fallback engines.
 //    3. Fetches each post page (publicly viewable WITHOUT login), extracts
 //       author, text, hashtags, date and external apply link.
 //
@@ -283,11 +285,16 @@ export async function discoverPostUrls(keywords: string, limit: number): Promise
   const candidates: GnCandidate[] = [];
   // RESEARCH (docs/linkedin-posts-research.md): GNRSS is the ONLY engine that
   // reliably works from any IP — no captcha, honors site: + when:1d, ~100
-  // fresh items per query. So it is tried for EVERY query, and the other
-  // engines are fallbacks used only when a query comes back empty. Engines
-  // that return nothing are marked broken and skipped for the rest of the
-  // run (they mostly fail from datacenter IPs: Google anti-bot, DDG
-  // hard-captcha, Bing drops site:).
+  // fresh items per query. So it is tried for EVERY query. BUT GNRSS items
+  // are Google-News TOKEN links whose titles are truncated to ~210 chars
+  // ("...- LinkedIn") — the token cannot be resolved server-side, so the
+  // FULL post text (recruiter email/phone, apply link) is only reachable via
+  // the REAL post page. The fallback engines are the only source of real
+  // post URLs, so they now run as a budgeted enrichment pass EVEN when GNRSS
+  // returns candidates (previously only when GNRSS came back empty — which
+  // meant the email/phone the user sees in the source post never made it
+  // into the JD). Engines that return nothing are marked broken and skipped
+  // for the rest of the run.
   const fallbackEngines: ((q: string) => Promise<string[]>)[] = [
     searchJinaDuckDuckGo,
     searchJinaBing,
@@ -305,6 +312,12 @@ export async function discoverPostUrls(keywords: string, limit: number): Promise
   // NOT a good stop signal — most discovered URLs fail isJobPosting /
   // isWithin24h or the guest-page fetch 403s (DevSecOps: 45 links → 0 posts).
   const rawCap = limit * 2;
+  // Real-URL enrichment budget: cap total fallback engine attempts per run
+  // (one engine per query, first success wins) to stay polite. 6 rounds
+  // covers the common case — the query that surfaces the post on GNRSS also
+  // ranks it on the fallback engines.
+  const MAX_FALLBACK_ROUNDS = 6;
+  let fallbackRounds = 0;
 
   for (const query of queries) {
     if (queriesTried >= MAX_HITS) break;
@@ -317,9 +330,10 @@ export async function discoverPostUrls(keywords: string, limit: number): Promise
       urls = r.urls;
       cands = r.candidates;
     } catch { /* treat as empty → fallback */ }
-    if (!urls.length && !cands.length) {
+    if (fallbackRounds < MAX_FALLBACK_ROUNDS) {
       for (let i = 0; i < fallbackEngines.length; i++) {
         if (broken.has(i)) continue;
+        fallbackRounds++;
         try {
           const fu = await fallbackEngines[i](query);
           if (fu.length) {
@@ -384,6 +398,84 @@ function parseRelativeTime(label: string): string | undefined {
   return new Date(Date.now() - ms).toISOString();
 }
 
+// ── Full-text resolution for GNRSS candidates ────────────────────────────────
+// GNRSS items carry Google-News TOKEN links (not decodable server-side) and
+// titles truncated to ~210 chars ("...- LinkedIn"). Recruiters put their
+// email/phone at the END of long posts, so the truncated title never shows
+// them. The full text only exists on the REAL post page (guest-accessible,
+// full og:description — verified). Resolve the real URL by searching for a
+// distinctive quoted phrase of the post's own text, then fetch the page.
+const GOOGLE_COOKIE =
+  'CONSENT=YES+cb.20240101-01-p0.en+FX+111; SOCS=CAESEwgDEgk2NzM5NzcwMzUaAmVuIAEaBgiA_LyaBg';
+
+function distinctivePhrase(text: string): string {
+  let t = text
+    .replace(/#[A-Za-z0-9_]+/g, ' ')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s'\-–—:;,()]/gu, ' ') // strip emojis + symbols
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (t.length > 60) t = t.slice(0, 60).replace(/\s+\S*$/, '');
+  return t;
+}
+
+// Cache of successful resolutions: the same post surfaces via several
+// queries — resolve once. Failures are NOT cached, so later candidates/runs
+// retry when search engines recover from rate limits.
+const resolutionCache = new Map<string, string>();
+
+async function resolveRealPostUrl(text: string): Promise<string | null> {
+  const phrase = distinctivePhrase(text);
+  if (phrase.length < 20) return null;
+  const cached = resolutionCache.get(phrase);
+  if (cached !== undefined) return cached;
+  const siteQuery = `site:linkedin.com/posts "${phrase}"`;
+  // Bing's direct HTML silently drops site: — the plain phrase still hits.
+  const plainQuery = `"${phrase}"`;
+  const engines: Array<{ build: (q: string, plain: string) => string; parse: (h: string) => string[] }> = [
+    // Google direct works from residential IPs (the user's machine) and is
+    // the most likely to hit the exact post; jina-rendered DDG/Bing work
+    // from any IP; direct DDG + direct Bing plain-phrase cover rate-limited
+    // moments. 7s timeout keeps resolution cheap.
+    {
+      build: (q, _p) => `https://www.google.com/search?q=${encodeURIComponent(q)}&tbs=qdr:d&num=20&gbv=1`,
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      build: (q, _p) => `https://r.jina.ai/https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      build: (q, _p) => `https://r.jina.ai/https://www.bing.com/search?q=${encodeURIComponent(q)}&count=20`,
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      build: (q, _p) => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+    {
+      build: (_q, p) => `https://www.bing.com/search?q=${encodeURIComponent(p)}&count=20`,
+      parse: (h) => extractLinkedInPostUrls(h),
+    },
+  ];
+  for (const e of engines) {
+    try {
+      const res = await fetch(e.build(siteQuery, plainQuery), {
+        headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9', Cookie: GOOGLE_COOKIE },
+        signal: AbortSignal.timeout(7000),
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      const real = e.parse(html).find((u) => u.includes('linkedin.com/posts/') || u.includes('linkedin.com/feed/update/'));
+      if (real) {
+        resolutionCache.set(phrase, real);
+        return real;
+      }
+    } catch { /* try next engine */ }
+  }
+  return null;
+}
+
 async function fetchPost(url: string): Promise<ParsedPost | null> {
   let target = url;
   // Resolve LinkedIn short links (lnkd.in) to the real post page first.
@@ -408,11 +500,12 @@ async function fetchPost(url: string): Promise<ParsedPost | null> {
   const title = og('title').replace(/ \| LinkedIn$/i, '').trim();
   const text = og('description').trim();
 
-  // Author (guest pages): og:title is "<post text> | <AUTHOR> | <N> comments".
-  // Take the middle " | " segment (fallback: "on LinkedIn" split, then name).
+  // Author (guest pages): og:title is "<post text> | <AUTHOR> | <N> comments"
+  // or "<post text> | <AUTHOR>" — take the second " | " segment, unless it is
+  // itself the "N comments" counter (author-less posts).
   let author = 'LinkedIn';
   const pipeParts = title.split(' | ').map((p) => p.trim()).filter(Boolean);
-  if (pipeParts.length >= 2 && pipeParts[1] && !/^\d+ comments?$/i.test(pipeParts[pipeParts.length - 1] || '')) {
+  if (pipeParts.length >= 2 && pipeParts[1] && !/^\d+ comments?$/i.test(pipeParts[1])) {
     author = pipeParts[1];
   } else if (title.includes(' on LinkedIn')) {
     author = title.split(' on LinkedIn')[0].trim() || author;
@@ -576,6 +669,7 @@ export class LinkedInPostsScraper {
         postedDateParsed: post.date ? new Date(post.date).toISOString().slice(0, 10) : undefined,
         applyUrl: post.applyUrl,
         hashtags: post.hashtags,
+        recruiterName: post.author,
         jobType: 'Post',
         state: 'pending',
         createdAt: now,
@@ -587,6 +681,12 @@ export class LinkedInPostsScraper {
     // embedded apply link). Google News often only exposes a token link, so
     // the post is reconstructed from its own text — the apply link is used as
     // the job URL when the token link isn't a real post page.
+    //
+    // Full-text resolution: GNRSS titles are truncated (~210 chars), so the
+    // recruiter email/phone at the tail of long posts is missing. Before
+    // falling back to the truncated synthetic text, try to resolve the REAL
+    // post page (bounded per run) — full og:description with email/phone.
+    let resolutionsLeft = 5;
     for (const cand of candidates) {
       if (jobs.length >= limit) break;
       if (!isJobPosting(cand.text)) continue;
@@ -597,9 +697,43 @@ export class LinkedInPostsScraper {
       const dedupeKey = (title + '|' + (cand.applyUrl || '')).toLowerCase();
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
-      const idUrl = cand.applyUrl || cand.link;
+
+      if (resolutionsLeft > 0 && cand.link.includes('news.google.com')) {
+        resolutionsLeft--;
+        const realUrl = await resolveRealPostUrl(cand.text);
+        if (realUrl) {
+          const post = await fetchPost(realUrl);
+          if (post && isJobPosting(post.text) && isWithin24h(post.date)) {
+            const pFirst = post.text.split('\n').map((l) => l.trim()).find((l) => l.length > 10) || post.text.slice(0, 90);
+            const pTitle = pFirst.slice(0, 110);
+            if (!seen.has(pTitle.toLowerCase())) {
+              seen.add(pTitle.toLowerCase());
+              jobs.push({
+                id: `linkedinpost-${createHash('sha1').update(realUrl).digest('base64url').slice(0, 20)}`,
+                title: pTitle,
+                company: post.author,
+                location: '',
+                source: 'LinkedInPosts',
+                description: post.text.slice(0, 3000),
+                url: realUrl,
+                postedDate: post.date,
+                postedDateParsed: post.date ? new Date(post.date).toISOString().slice(0, 10) : undefined,
+                applyUrl: post.applyUrl,
+                hashtags: post.hashtags,
+                recruiterName: post.author,
+                jobType: 'Post',
+                state: 'pending',
+                createdAt: now,
+                updatedAt: now,
+              });
+              continue;
+            }
+            continue; // real post already in the list → skip the truncated duplicate
+          }
+        }
+      }
       jobs.push({
-        id: `linkedinpost-${createHash('sha1').update(idUrl).digest('base64url').slice(0, 20)}`,
+        id: `linkedinpost-${createHash('sha1').update(cand.applyUrl || cand.link).digest('base64url').slice(0, 20)}`,
         title,
         company: '',
         location: '',

@@ -187,7 +187,74 @@ describe('LinkedInPostsScraper', () => {
     expect(res.candidates.length).toBeGreaterThan(1);
   }, 30000);
 
-  it('falls back to other engines only when GNRSS returns empty, and skips engines that failed once', async () => {
+  it('runs the fallback engines even when GNRSS returns candidates (real-URL enrichment for full post text)', async () => {
+    setScraperPause(0);
+    const gnCalls: string[] = [];
+    const jinaDdgCalls: string[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        gnCalls.push(url);
+        // GNRSS yields a Google token (truncated title, no real URL).
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('We are hiring a Backend Engineer now — send your CV to jobs@acme.com') } as any;
+      }
+      if (url.includes('r.jina.ai') && url.includes('duckduckgo')) {
+        jinaDdgCalls.push(url);
+        // jina-DDG is the only fallback that finds the REAL post URL.
+        return { ok: true, status: 200, text: async () => '<a href="https://www.linkedin.com/posts/acme_backend-hiring-1234567890">post</a>' } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const res = await discoverPostUrls('Backend Engineer', 20);
+
+    // Fallbacks ran although GNRSS returned candidates every query.
+    expect(gnCalls.length).toBeGreaterThan(1);
+    expect(jinaDdgCalls.length).toBeGreaterThanOrEqual(1);
+    // The REAL post URL was discovered — it feeds fetchPost (full og:description).
+    expect(res.urls.some((u) => u.includes('linkedin.com/posts/acme'))).toBe(true);
+  }, 30000);
+
+  it('resolves the real post page from the candidate text (full text with recruiter email)', async () => {
+    setScraperPause(0);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('news.google.com')) {
+        // GNRSS: truncated title + Google token link (the real-world shape).
+        return { ok: true, status: 200, text: async () => GNRSS_ITEM('We are hiring a Network Engineer now — join our team! - LinkedIn') } as any;
+      }
+      if (url.includes('google.com/search')) {
+        // searchGoogle resolves the REAL post URL from the post's own text.
+        return { ok: true, status: 200, text: async () => '<a href="/url?q=https%3A%2F%2Fwww.linkedin.com%2Fposts%2Facme_network-hiring-1234567890">x</a>' } as any;
+      }
+      if (url.includes('linkedin.com/posts/acme')) {
+        // The real post page: FULL og:description including the recruiter email.
+        const desc = 'We are hiring a Network Engineer now — join our team! Full details: location Mohali, send your CV to jobs@acme.com';
+        return {
+          ok: true, status: 200,
+          text: async () =>
+            `<html><head>` +
+            `<meta property="og:title" content="We are hiring a Network Engineer now | Jane Recruiter | 3 comments">` +
+            `<meta property="og:description" content="${desc}">` +
+            `</head></html>`,
+        } as any;
+      }
+      return { ok: true, status: 200, text: async () => '<html></html>' } as any;
+    });
+
+    const s = new LinkedInPostsScraper();
+    const jobs = await s.scrape({ keywords: 'Network Engineer', maxJobsPerSource: 5, engine: 'free' } as any);
+
+    const j = jobs.find((x) => x.description.includes('jobs@acme.com'));
+    expect(j).toBeDefined();
+    expect(j!.url).toContain('linkedin.com/posts/acme');
+    expect(j!.recruiterName).toBe('Jane Recruiter');
+    expect(j!.company).toBe('Jane Recruiter');
+    // No truncated " - LinkedIn" duplicate for the same post.
+    expect(jobs.filter((x) => x.title.startsWith('We are hiring a Network Engineer')).length).toBe(1);
+  }, 30000);
+
+  it('falls back when GNRSS returns empty, and skips engines that failed once', async () => {
     setScraperPause(0);
     const calls: string[] = [];
     vi.mocked(globalThis.fetch).mockImplementation(async (input: any) => {
