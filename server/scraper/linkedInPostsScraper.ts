@@ -507,11 +507,14 @@ async function resolveRealPostUrl(text: string): Promise<string | null> {
   // can take 10-30s under load, so it gets a 30s budget + X-Timeout hint;
   // direct engines keep 7s. Both the site:-scoped and the plain query are
   // tried per engine because some engines (Bing, DDG) silently drop site:.
-  const engines: Array<{ name: string; build: (q: string, plain: string) => string; timeoutMs: number; headers?: Record<string, string>; parse: (h: string) => string[] }> = [
+  const engines: Array<{ name: string; build: (q: string, plain: string) => string; timeoutMs: number; ua?: string; headers?: Record<string, string>; parse: (h: string) => string[] }> = [
     {
       name: 'jina-ddg',
       build: (q, p) => `https://r.jina.ai/https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
       timeoutMs: 30000,
+      // jina fingerprint-blocks the full Chrome UA used elsewhere — it
+      // proxies the request itself, so a neutral UA is all it needs.
+      ua: 'Mozilla/5.0',
       headers: { 'X-Timeout': '30' },
       parse: (h) => extractLinkedInPostUrls(h),
     },
@@ -519,6 +522,7 @@ async function resolveRealPostUrl(text: string): Promise<string | null> {
       name: 'jina-bing',
       build: (q, p) => `https://r.jina.ai/https://www.bing.com/search?q=${encodeURIComponent(p)}&count=20`,
       timeoutMs: 30000,
+      ua: 'Mozilla/5.0',
       headers: { 'X-Timeout': '30' },
       parse: (h) => extractLinkedInPostUrls(h),
     },
@@ -545,7 +549,7 @@ async function resolveRealPostUrl(text: string): Promise<string | null> {
     for (const q of [siteQuery, plainQuery]) {
       try {
         const res = await fetch(e.build(q, plainQuery), {
-          headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9', Cookie: GOOGLE_COOKIE, ...e.headers },
+          headers: { 'User-Agent': e.ua ?? UA, 'Accept-Language': 'en-US,en;q=0.9', ...(e.ua ? {} : { Cookie: GOOGLE_COOKIE }), ...e.headers },
           signal: AbortSignal.timeout(e.timeoutMs),
         });
         if (!res.ok) {

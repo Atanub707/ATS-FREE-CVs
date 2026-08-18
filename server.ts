@@ -636,7 +636,27 @@ async function startServer() {
           quota,
         });
       }
-      const { added } = saveNewJobs(cappedPosts as any);
+      // Truncated LinkedIn-post jobs stored by earlier runs (Google-News
+      // token links, ~210-char titles) get UPGRADED IN PLACE when this run
+      // resolves their real post URL: full description (recruiter email/phone),
+      // real URL, recruiter name. Kept as one job — no duplicate.
+      const existingAll = getAllJobs();
+      const toUpgrade = cappedPosts.filter((j) => j.replacesUrl && existingAll.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase()));
+      const toSave = cappedPosts.filter((j) => !j.replacesUrl || !existingAll.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase()));
+      const { added } = saveNewJobs(toSave.map((j) => ({ ...j, replacesUrl: undefined })) as any);
+      let upgradedCount = 0;
+      for (const job of toUpgrade) {
+        const existing = existingAll.find((e) => e.url?.toLowerCase() === job.replacesUrl.toLowerCase());
+        if (!existing) continue;
+        const { replacesUrl: _replaced, ...full } = job;
+        updateJobInStorage({ ...existing, ...full, id: existing.id });
+        try {
+          upsertContactsFromJob({ ...existing, ...full, id: existing.id });
+          upgradedCount++;
+        } catch (err) {
+          console.error('Error extracting contacts from upgraded job:', err);
+        }
+      }
       const newUsed = engine === 'apify' ? addPostsDailyUsage(userId, cappedPosts.length) : quota.used;
       res.json({
         valid: true,
@@ -652,6 +672,7 @@ async function startServer() {
           hashtags: p.hashtags || [],
         })),
         addedCount: added.length,
+        upgradedCount,
         total: posts.length,
         quota: { used: newUsed, quota: quota.quota, remaining: Math.max(0, quota.quota - newUsed), resetAt: quota.resetAt },
       });
