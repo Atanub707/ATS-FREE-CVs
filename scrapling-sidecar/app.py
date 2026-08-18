@@ -40,11 +40,12 @@ FETCH_TIMEOUT_MS = 30_000
 
 def jina_fetch(url: str) -> str:
     """Fetch a URL through jina's render proxy (r.jina.ai). This is the only
-    channel that returns real SERP content from a datacenter IP."""
+    channel that returns real SERP content from a datacenter IP. jina
+    fingerprint-blocks the full Chrome UA — it needs the neutral one."""
     q = urllib.parse.quote(url)
     req = urllib.request.Request(
         f"https://r.jina.ai/{q}",
-        headers={"User-Agent": UA, "X-Timeout": "30"},
+        headers={"User-Agent": "Mozilla/5.0", "X-Timeout": "30"},
     )
     with urllib.request.urlopen(req, timeout=60) as r:
         return r.read().decode("utf-8", "ignore")
@@ -254,42 +255,55 @@ def fetch_post(url: str) -> Optional[dict]:
     }
 
 
-def serp_links_for_queries(queries: list[str], t0: float) -> tuple[list[str], int, set[str]]:
-    """Run the (≤4) SERP queries once per search — NOT per candidate — and
-    collect every unique LinkedIn post link. Keyless jina throttles at ~20
-    req/min/IP, so queries are paced; the stealth browser is the fallback
-    layer when jina is 403ing. Mirrors the proven free-engine strategy."""
+def serp_links_for_queries(phrases: list[str], t0: float) -> tuple[list[str], int, set[str]]:
+    """Resolve up to 4 phrases through jina with a global query budget
+    (keyless jina throttles at ~20 req/min/IP — queries are paced). Bing's
+    strength is the plain phrase (it silently drops site:); DDG's is the
+    site: query. Proven order: per phrase, jina@Bing plain → jina@DDG site:.
+    Stealth browser is the fallback layer when jina is down."""
     links: list[str] = []
     engines_used: set[str] = set()
     queries_tried = 0
-    for q in queries:
-        for name, template in JINA_ENGINES:
-            if len(links) >= 12 or time.time() - t0 > RUN_BUDGET_SECONDS:
+    for phrase in phrases:
+        if len(links) >= 12 or time.time() - t0 > RUN_BUDGET_SECONDS:
+            break
+        for template, q in [
+            (JINA_ENGINES[1][1], f'"{phrase}"'),          # jina@Bing: plain phrase
+            (JINA_ENGINES[0][1], f'site:linkedin.com/posts "{phrase}"'),  # jina@DDG: site:
+        ]:
+            if len(links) >= 12 or queries_tried >= 12 or time.time() - t0 > RUN_BUDGET_SECONDS:
                 break
             queries_tried += 1
             try:
                 txt = jina_fetch(template.format(q=urllib.parse.quote(q)))
-                engines_used.add(name)
+                engines_used.add("jina@Bing" if "bing" in template else "jina@DDG")
                 for u in extract_post_urls(txt):
                     if u not in links:
                         links.append(u)
             except Exception:
                 pass
-            time.sleep(4)  # respect the keyless jina burst limit
+            time.sleep(3)  # respect the keyless jina burst limit
+            if len(links) >= 3:
+                break
     if not links:
-        for q in queries:
-            for template in SEARCH_ENGINES:
-                if time.time() - t0 > RUN_BUDGET_SECONDS:
+        for phrase in phrases:
+            for q in [f'site:linkedin.com/posts "{phrase}"', f'"{phrase}"']:
+                for template in SEARCH_ENGINES:
+                    if time.time() - t0 > RUN_BUDGET_SECONDS:
+                        break
+                    queries_tried += 1
+                    try:
+                        page = StealthyFetcher.fetch(template.format(q=urllib.parse.quote(q)), headless=True, network_idle=True, timeout=FETCH_TIMEOUT_MS)
+                        engines_used.add("StealthyFetcher")
+                        for u in extract_post_urls(page.html_content):
+                            if u not in links:
+                                links.append(u)
+                    except Exception:
+                        continue
+                    if len(links) >= 3:
+                        break
+                if len(links) >= 3:
                     break
-                queries_tried += 1
-                try:
-                    page = StealthyFetcher.fetch(template.format(q=urllib.parse.quote(q)), headless=True, network_idle=True, timeout=FETCH_TIMEOUT_MS)
-                    engines_used.add("StealthyFetcher")
-                    for u in extract_post_urls(page.html_content):
-                        if u not in links:
-                            links.append(u)
-                except Exception:
-                    continue
     return links, queries_tried, engines_used
 
 
@@ -325,18 +339,11 @@ def search(req: SearchReq):
     ]
     debug = {"queriesTried": 1, "linksFound": 0, "postsFound": 0, "enginesUsed": 0}
 
-    # ≤4 SERP queries per search: the top candidate's phrase and the raw
-    # keywords, each as site: and plain. Links are collected once and reused.
-    queries: list[str] = []
-    top = candidates[0]["title"] if candidates else ""
-    for src in dict.fromkeys([top, keywords]):
-        if not src:
-            continue
-        queries.append(f'site:linkedin.com/posts "{src}"')
-        queries.append(f'"{src}"')
-    queries = queries[:4]
-
-    links, queries_tried, engines_used = serp_links_for_queries(queries, t0)
+    # Resolve up to 4 phrases: the raw keywords first (broad net, catches
+    # anything fresh), then the freshest candidate titles. Links are
+    # collected once and reused.
+    phrases = list(dict.fromkeys([keywords] + [c["title"] for c in candidates[:3]]))[:4]
+    links, queries_tried, engines_used = serp_links_for_queries(phrases, t0)
     debug["queriesTried"] += queries_tried
     debug["enginesUsed"] = len(engines_used)
     debug["linksFound"] = len(links)
