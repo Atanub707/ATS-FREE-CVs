@@ -845,6 +845,35 @@ export function saveNewJobs(newJobs: Job[]): { added: Job[]; skipped: number; ne
   return { added, skipped, newContacts };
 }
 
+// Save scraped jobs AND upgrade stored truncated copies in place. A job with
+// `replacesUrl` (the Google-News token of the truncated stored copy) replaces
+// that stored job instead of being saved as a duplicate — full description,
+// real URL, recruiter name, contacts re-extracted.
+export function persistJobsWithUpgrade(scrapedJobs: Job[]): { added: Job[]; skipped: number; newContacts: ReturnType<typeof upsertContactsFromJob>; upgradedCount: number } {
+  const all = getAllJobs();
+  const toUpgrade: Job[] = [];
+  const toSave: Job[] = [];
+  for (const j of scrapedJobs) {
+    if (j.replacesUrl && all.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase())) toUpgrade.push(j);
+    else toSave.push(j);
+  }
+  const { added, skipped, newContacts } = saveNewJobs(toSave.map((j) => ({ ...j, replacesUrl: undefined })));
+  let upgradedCount = 0;
+  for (const job of toUpgrade) {
+    const existing = all.find((e) => e.url?.toLowerCase() === job.replacesUrl.toLowerCase());
+    if (!existing) continue;
+    const { replacesUrl: _replaced, ...full } = job;
+    updateJobInStorage({ ...existing, ...full, id: existing.id });
+    try {
+      upsertContactsFromJob({ ...existing, ...full, id: existing.id });
+      upgradedCount++;
+    } catch (err) {
+      console.error('Error extracting contacts from upgraded job:', err);
+    }
+  }
+  return { added, skipped, newContacts, upgradedCount };
+}
+
 // ─────────────────── Interview sessions (history) ───────────────────
 
 export interface StoredInterview {

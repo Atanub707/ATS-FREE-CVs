@@ -73,6 +73,7 @@ import {
   deleteAllJobs,
   queryJobs,
   saveNewJobs,
+  persistJobsWithUpgrade,
   runStorageMigration,
   fixMislabeledWorkTypes,
   repairJobDates,
@@ -110,6 +111,7 @@ import {
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LinkedInPostsScraper } from './server/scraper/linkedInPostsScraper.js';
+import { scraplingSearch, sidecarPostsToJobs } from './server/scraper/scraplingBridge.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
@@ -586,8 +588,8 @@ async function startServer() {
       if (!userId) return res.status(401).json({ error: 'Not signed in.' });
       const keywords = String(req.body?.keywords || '').trim();
       if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
-      const engine = req.body?.engine === 'apify' ? 'apify' : 'free';
-      // Apify: show all ~100 posts the actor fetched. Free: cap at 20.
+      const engine = req.body?.engine === 'apify' ? 'apify' : req.body?.engine === 'scrapling' ? 'scrapling' : 'free';
+      // Apify: show all ~100 posts the actor fetched. Free/Scrapling: cap at 20.
       const limit = Math.min(engine === 'apify' ? 100 : 20, Math.max(1, Number(req.body?.limit) || 20));
       const quota = getPostsDailyUsage(userId);
       if (engine === 'apify' && quota.used >= quota.quota) {
@@ -597,34 +599,71 @@ async function startServer() {
           quota,
         });
       }
-      const scraper = new LinkedInPostsScraper();
-      const posts = await scraper.scrape({
-        keywords,
-        location: '',
-        sources: [],
-        datePostedFilter: '24h',
-        jobType: 'all',
-        maxJobsPerSource: limit,
-        engine,
-      } as any);
-      // Job-posting search only — anything else returns "not valid".
-      if (posts.length === 0) {
-        const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : quota.quota;
-        // RESEARCH: distinguish "engines blocked/rate-limited" from "engines
-        // found links but none were job postings in the last 24h".
-        const discoveryFailed = scraper.lastDebug.linksFound === 0;
-        return res.status(200).json({
-          valid: false,
-          discoveryFailed,
-          message: discoveryFailed
-            ? `Search engines returned no results from this server — likely rate-limited or blocked (${scraper.lastDebug.queriesTried} queries tried). Try again in a minute.`
-            : 'not valid — engines found posts but none were job postings from the last 24 hours. Try broader keywords.',
-          debug: scraper.lastDebug,
-          posts: [],
-          addedCount: 0,
-          total: 0,
-          quota: { ...quota, remaining },
-        });
+
+      let posts: Job[] = [];
+      let debug: Record<string, unknown> = {};
+      if (engine === 'scrapling') {
+        // Scrapling engine: the Python sidecar runs the whole pipeline (GNRSS
+        // discovery → stealth-browser search resolution → post fetch).
+        const sidecar = await scraplingSearch(keywords, limit);
+        if (!sidecar.ok) {
+          return res.status(502).json({
+            valid: false,
+            error: sidecar.error,
+            debug: sidecar.debug || {},
+            posts: [],
+            addedCount: 0,
+            total: 0,
+          });
+        }
+        debug = { ...sidecar.debug };
+        posts = sidecarPostsToJobs(sidecar.posts || []);
+        if (posts.length === 0) {
+          const discoveryFailed = (sidecar.debug?.linksFound ?? 0) === 0;
+          return res.status(200).json({
+            valid: false,
+            discoveryFailed,
+            message: discoveryFailed
+              ? `Scrapling sidecar found no post links (${sidecar.debug?.queriesTried ?? 0} queries tried). Try again in a minute or switch to the Free engine.`
+              : 'not valid — Scrapling found posts but none were job postings from the last 24 hours. Try broader keywords.',
+            debug,
+            posts: [],
+            addedCount: 0,
+            total: 0,
+            quota: { ...quota, remaining: quota.quota },
+          });
+        }
+      } else {
+        const scraper = new LinkedInPostsScraper();
+        posts = await scraper.scrape({
+          keywords,
+          location: '',
+          sources: [],
+          datePostedFilter: '24h',
+          jobType: 'all',
+          maxJobsPerSource: limit,
+          engine,
+        } as any);
+        debug = { ...scraper.lastDebug };
+        // Job-posting search only — anything else returns "not valid".
+        if (posts.length === 0) {
+          const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : quota.quota;
+          // RESEARCH: distinguish "engines blocked/rate-limited" from "engines
+          // found links but none were job postings in the last 24h".
+          const discoveryFailed = scraper.lastDebug.linksFound === 0;
+          return res.status(200).json({
+            valid: false,
+            discoveryFailed,
+            message: discoveryFailed
+              ? `Search engines returned no results from this server — likely rate-limited or blocked (${scraper.lastDebug.queriesTried} queries tried). Try again in a minute.`
+              : 'not valid — engines found posts but none were job postings from the last 24 hours. Try broader keywords.',
+            debug: scraper.lastDebug,
+            posts: [],
+            addedCount: 0,
+            total: 0,
+            quota: { ...quota, remaining },
+          });
+        }
       }
       // Apify engine: cap the search at the remaining daily quota (10/day max).
       const remaining = engine === 'apify' ? Math.max(0, quota.quota - quota.used) : posts.length;
@@ -640,27 +679,11 @@ async function startServer() {
       // token links, ~210-char titles) get UPGRADED IN PLACE when this run
       // resolves their real post URL: full description (recruiter email/phone),
       // real URL, recruiter name. Kept as one job — no duplicate.
-      const existingAll = getAllJobs();
-      const toUpgrade = cappedPosts.filter((j) => j.replacesUrl && existingAll.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase()));
-      const toSave = cappedPosts.filter((j) => !j.replacesUrl || !existingAll.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase()));
-      const { added } = saveNewJobs(toSave.map((j) => ({ ...j, replacesUrl: undefined })) as any);
-      let upgradedCount = 0;
-      for (const job of toUpgrade) {
-        const existing = existingAll.find((e) => e.url?.toLowerCase() === job.replacesUrl.toLowerCase());
-        if (!existing) continue;
-        const { replacesUrl: _replaced, ...full } = job;
-        updateJobInStorage({ ...existing, ...full, id: existing.id });
-        try {
-          upsertContactsFromJob({ ...existing, ...full, id: existing.id });
-          upgradedCount++;
-        } catch (err) {
-          console.error('Error extracting contacts from upgraded job:', err);
-        }
-      }
+      const { added, upgradedCount } = persistJobsWithUpgrade(cappedPosts);
       const newUsed = engine === 'apify' ? addPostsDailyUsage(userId, cappedPosts.length) : quota.used;
       res.json({
         valid: true,
-        debug: scraper.lastDebug,
+        debug,
         posts: posts.map((p) => ({
           id: p.id,
           title: p.title,
@@ -1304,27 +1327,7 @@ Return valid JSON only — NO markdown, NO code fences:
       // token links, ~210-char titles) get UPGRADED IN PLACE when this run
       // resolves their real post URL: full description (recruiter email/phone),
       // real URL, recruiter name. Kept as one job — no duplicate.
-      const all = getAllJobs();
-      const toUpgrade: Job[] = [];
-      const toSave: Job[] = [];
-      for (const j of scrapedJobs) {
-        if (j.replacesUrl && all.some((e) => e.url?.toLowerCase() === j.replacesUrl.toLowerCase())) toUpgrade.push(j);
-        else toSave.push(j);
-      }
-      const { added, skipped, newContacts } = saveNewJobs(toSave.map((j) => ({ ...j, replacesUrl: undefined })));
-      let upgradedCount = 0;
-      for (const job of toUpgrade) {
-        const existing = all.find((e) => e.url?.toLowerCase() === job.replacesUrl.toLowerCase());
-        if (!existing) continue;
-        const { replacesUrl: _replaced, ...full } = job;
-        updateJobInStorage({ ...existing, ...full, id: existing.id });
-        try {
-          upsertContactsFromJob({ ...existing, ...full, id: existing.id });
-        } catch (err) {
-          console.error('Error extracting contacts from upgraded job:', err);
-        }
-        upgradedCount++;
-      }
+      const { added, skipped, newContacts, upgradedCount } = persistJobsWithUpgrade(scrapedJobs);
 
       res.json({
         success: true,

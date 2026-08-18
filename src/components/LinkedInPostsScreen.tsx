@@ -85,6 +85,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
   const [feed, setFeed] = useState<PostResult[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [engine, setEngine] = useState<'free' | 'scrapling'>('free');
 
   useEffect(() => {
     fetch('/api/config')
@@ -133,7 +134,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       const res = await fetch('/api/linkedin-posts/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: q, limit: 20, engine: 'free' }),
+        body: JSON.stringify({ keywords: q, limit: 20, engine }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -147,7 +148,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       const window = 'from the last 24 hours ';
       if (d.valid === false) {
         setMessage(d.discoveryFailed
-          ? `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
+          ? engine === 'scrapling'
+            ? `Scrapling sidecar found no post links (${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute or switch to the Free engine.`
+            : `Search engines returned no results from this server (likely rate-limited or blocked — ${d.debug?.queriesTried ?? 0} queries tried). Try again in a minute.`
           : 'No recent job postings matched this search. Try a broader job role, e.g. "DevOps Engineer".');
       } else if (d.total === 0) {
         setMessage(`No job postings found ${window}for this search. Try broader keywords or search again later.`);
@@ -216,23 +219,47 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
             </button>
           </form>
 
-          {/* Engine indicator — Free engine active. Apify engine is locked for
-              now (unlock later); the toggle stays hidden until it ships. */}
+          {/* Engine selector — Free engine (built-in, no token) vs Scrapling
+              engine (experimental, runs a stealth browser in a local container).
+              Apify engine is locked for now; the toggle stays hidden until it ships. */}
           <div className="lp-engine" role="group" aria-label="Search engine">
-            <span className="lp-engine-btn on" aria-current="true">
+            <button
+              type="button"
+              className={`lp-engine-btn ${engine === 'free' ? 'on' : ''}`}
+              onClick={() => setEngine('free')}
+              disabled={busy}
+              aria-pressed={engine === 'free'}
+              title="Built-in search engines — no token needed"
+            >
               <span className="lp-engine-dot">◉</span> Free engine
               <span className="lp-engine-sub">built-in · no token</span>
-            </span>
-            <span className="lp-quota free">Free · unlimited</span>
+            </button>
+            <button
+              type="button"
+              className={`lp-engine-btn ${engine === 'scrapling' ? 'on' : ''}`}
+              onClick={() => setEngine('scrapling')}
+              disabled={busy}
+              aria-pressed={engine === 'scrapling'}
+              title="Stealth browser in a local container — harder for sites to block"
+            >
+              <span className="lp-engine-dot">◉</span> Scrapling engine
+              <span className="lp-engine-sub">experimental · stealth browser</span>
+            </button>
+            <span className="lp-quota free">{engine === 'free' ? 'Free · unlimited' : 'Local container'}</span>
             <span className="lp-engine-locked" title="Apify engine will unlock later">✦ Apify engine — coming soon</span>
           </div>
+          {engine === 'scrapling' && (
+            <p className="lp-engine-note">Scrapling engine resolves posts with a stealth browser (DuckDuckGo/Bing/Google) — slower per search, but much harder for sites to rate-limit or block.</p>
+          )}
           <p className="lp-hint">Job postings only · last 24 hours · unlimited · results are added to your job list with a “LinkedIn Posts” tag</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
         {message && <div className="lp-msg">{message}</div>}
         {state === 'done' && debug && debug.linksFound === 0 && (
-          <p className="lp-debug">Diagnostics: {debug.queriesTried} queries tried · {debug.enginesUsed ?? 0} engine(s) reached · {debug.linksFound} LinkedIn post links returned. Sources: Google News RSS + DuckDuckGo/Bing (via render proxy) — retry in a minute if the engines are rate-limiting.</p>
+          <p className="lp-debug">Diagnostics: {debug.queriesTried} queries tried · {debug.enginesUsed ?? 0} engine(s) reached · {debug.linksFound} LinkedIn post links returned.{engine === 'scrapling'
+            ? ' Scrapling sidecar: stealth-browser search on DuckDuckGo/Bing/Google — retry in a minute if it is rate-limited.'
+            : ' Sources: Google News RSS + DuckDuckGo/Bing (via render proxy) — retry in a minute if the engines are rate-limiting.'}</p>
         )}
 
         {state === 'done' && posts.length > 0 && (
@@ -324,6 +351,7 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-quota.out{color:#DC2626; background:#FEF2F2; border-color:#FECACA;}
         .lp-quota.free{color:#15803D; background:#F0FDF4; border-color:#BBF7D0;}
         .lp-engine-locked{font-size:11px; font-weight:800; color:#94A3B8; background:#F1F5F9; border:1px dashed #CBD5E1; border-radius:999px; padding:6px 13px; cursor:not-allowed;}
+        .lp-engine-note{font-size:11px; color:#64748B; margin-top:9px; font-weight:600; max-width:520px; line-height:1.6;}
         .lp-debug{max-width:620px; margin:12px auto 0; font-size:10.5px; color:#94A3B8; text-align:center; line-height:1.6;}
         .lp-setup{max-width:620px; margin:0 auto 22px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:15px 18px;}
         .lp-setup b{display:block; font-size:12.5px; font-weight:800; color:#92400E; margin-bottom:4px;}
