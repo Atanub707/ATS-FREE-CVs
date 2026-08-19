@@ -31,7 +31,6 @@ export default function App() {
   const isJobPortalsOpen = pathname === '/job-portals';
   const isAiSystemOpen = pathname === '/ai-interview';
   const isLinkedInPostsOpen = pathname === '/linkedin-posts';
-  const goHome = useCallback(() => navigate('/'), [navigate]);
 
   // Unknown paths (stale bookmarks, typos) land on the dashboard instead of
   // a blank screen. Done BEFORE any screen renders.
@@ -138,6 +137,17 @@ export default function App() {
       setStats(await statsRes.json());
     }
   }, [activeStateTab, sourceFilter, searchTerm, sortBy, page, pageSize]);
+
+  // Back/Close from any screen: land on the dashboard with FRESH data from
+  // the server (newly saved LinkedIn posts, scraped jobs, updated scores)
+  // and the newest page — never a stale in-memory view.
+  const goHome = useCallback(() => {
+    navigate('/');
+    if (currentUser) {
+      if (page !== 1) setPage(1); // triggers the filters effect → refetch
+      else fetchJobs();           // already page 1 — fetch now
+    }
+  }, [navigate, currentUser, page, fetchJobs]);
 
   // Initial Fetch (session + config + first page)
   const fetchAllData = async () => {
