@@ -472,17 +472,29 @@ async function startServer() {
   };
 
   // Update check: pull the latest version of this repo's main branch straight
-  // from GitHub (raw file, no API key, no CORS). The client shows a banner
-  // whenever the installed version is behind the pushed one. GitHub webhooks
-  // can't reach self-hosted Docker installs (no public inbound URL), so
-  // installs poll this endpoint instead — same UX, no inbound traffic.
+  // from GitHub (no API key, no CORS). The contents API reads the git blob
+  // directly, so the banner shows the moment a push lands (raw.githubusercontent
+  // is CDN-cached and can lag minutes). The client shows a banner whenever
+  // the installed version is behind the pushed one. GitHub webhooks can't
+  // reach self-hosted Docker installs (no public inbound URL), so installs
+  // poll this endpoint instead — same UX, no inbound traffic.
   app.get('/api/update-check', async (_req, res) => {
     const installed = readInstalledVersion();
     const repo = 'https://github.com/Atanub707/Tailor-AI';
     try {
-      const r = await fetch('https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/package.json', { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) return res.json({ updateAvailable: false, installed, repo });
-      const latest = (await r.json()).version || '';
+      const apiRes = await fetch('https://api.github.com/repos/Atanub707/Tailor-AI/contents/package.json?ref=main', {
+        headers: { 'User-Agent': 'tailor-ai', Accept: 'application/vnd.github+json' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (apiRes.ok) {
+        const api = await apiRes.json();
+        const latest = (JSON.parse(Buffer.from(api.content, 'base64').toString('utf8')).version || '');
+        return res.json({ updateAvailable: versionGt(latest, installed), installed, latest, repo });
+      }
+      // Fallback: raw file (CDN-cached, may lag briefly after a push).
+      const rawRes = await fetch('https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/package.json', { signal: AbortSignal.timeout(8000) });
+      if (!rawRes.ok) return res.json({ updateAvailable: false, installed, repo });
+      const latest = (await rawRes.json()).version || '';
       return res.json({ updateAvailable: versionGt(latest, installed), installed, latest, repo });
     } catch {
       return res.json({ updateAvailable: false, installed, repo });
