@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.8.0 (2026-08-19)
+
+### ✨ Features
+- **One-click auto-update.** The update banner now has a real **"Update & Restart"** button: the app pulls the latest `main` from GitHub itself, reinstalls dependencies when the lockfile changed, and restarts automatically (~15–30 s, data untouched). No terminal commands anymore.
+- Installs now mount the live source (`docker-compose` volume) + `git` inside the image; `restart: unless-stopped` brings the app back on the new code.
+
+### ⚠️ Known Issues
+- Auto-update only works on **git-checkout installs** (the standard install). Installations without git fall back to the manual instructions shown in the banner.
+
+### 🔄 Breaking Changes
+- **One-time re-install required** to enable auto-update on existing installs (the compose mounts changed): `git pull && docker compose build && docker compose up -d` once. After that, every future release is one click inside the app.
+
+### 📦 How to Update
+- New installs: run your installer once — updates are one click in the app from then on.
+- Existing installs: `git pull && docker compose build && docker compose up -d` ONCE, then the "Update & Restart" button takes over for all future versions.
+
 ## v1.7.3 (2026-08-19)
 
 ### ✨ Features
