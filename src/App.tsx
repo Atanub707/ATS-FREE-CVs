@@ -61,6 +61,8 @@ export default function App() {
 
   // Server-side list state
   const [totalJobs, setTotalJobs] = useState(0);
+  const [updateInfo, setUpdateInfo] = useState<{ latest: string; installed: string; repo: string } | null>(null);
+  const [updateDismissed, setUpdateDismissed] = useState(false);
   const [stats, setStats] = useState<{ total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> }>({
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
@@ -182,6 +184,19 @@ export default function App() {
 
   useEffect(() => {
     fetchAllData();
+  }, []);
+
+  // Check GitHub once per app open: if a newer version was pushed, the
+  // dashboard shows "pull the update" — dismissible per version.
+  useEffect(() => {
+    fetch('/api/update-check')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.updateAvailable) return;
+        setUpdateInfo({ latest: d.latest, installed: d.installed, repo: d.repo });
+        setUpdateDismissed(localStorage.getItem('ats.updateDismissed') === d.latest);
+      })
+      .catch(() => {});
   }, []);
 
   // Refetch whenever filters/pagination change
@@ -451,6 +466,15 @@ export default function App() {
         />
       ) : (
         <>
+          <style>{`
+            .update-banner{display:flex; align-items:center; gap:12px; padding:8px 16px; background:#052E16; color:#D1FAE5;
+              font-size:13px; font-weight:600; flex-wrap:wrap;}
+            .update-banner b{color:#6EE7B7;}
+            .update-banner a{color:#34D399; font-weight:800; text-decoration:underline; text-underline-offset:2px;}
+            .update-banner button{margin-left:auto; background:none; border:none; color:#A7F3D0; font-size:13px; font-weight:800;
+              cursor:pointer; padding:2px 8px; border-radius:6px;}
+            .update-banner button:hover{background:#064E3B; color:#fff;}
+          `}</style>
           {/* Header Navigation */}
           <Navbar
             user={currentUser}
@@ -468,6 +492,20 @@ export default function App() {
             recruiterBadge={recruiterBadge}
             onTour={startTour}
           />
+
+          {/* Update banner — a newer version was pushed to GitHub */}
+          {updateInfo && !updateDismissed && (
+            <div className="update-banner">
+              <span>
+                New version <b>v{updateInfo.latest}</b> is available — you're on v{updateInfo.installed}.
+              </span>
+              <a href={updateInfo.repo} target="_blank" rel="noreferrer">Pull the update</a>
+              <button
+                onClick={() => { setUpdateDismissed(true); localStorage.setItem('ats.updateDismissed', updateInfo.latest); }}
+                title="Hide this update notice (v{latest} stays hidden until the next version)"
+              >✕</button>
+            </div>
+          )}
 
           {/* Live Job Scraper Bar */}
           <ScraperBar

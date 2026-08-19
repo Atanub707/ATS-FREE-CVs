@@ -7,6 +7,7 @@ import multer from 'multer';
 import * as pdfParseModule from 'pdf-parse';
 import mammoth from 'mammoth';
 import { promises as dns } from 'node:dns';
+import { readFileSync } from 'node:fs';
 
 async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
   try {
@@ -448,6 +449,45 @@ async function startServer() {
   }
 
   // --- API ROUTES ---
+
+  // Installed version of this app (read from the package.json shipped in the image).
+  const readInstalledVersion = (): string => {
+    try {
+      const pkg = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+      return pkg.version || '0.0.0';
+    } catch {
+      return '0.0.0';
+    }
+  };
+
+  // Compare dotted version strings (with optional leading "v"), e.g. v1.7.0 > v1.6.9.
+  const versionGt = (a: string, b: string): boolean => {
+    const parse = (v: string) => String(v).replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+    const [pa, pb] = [parse(a), parse(b)];
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const diff = (pa[i] || 0) - (pb[i] || 0);
+      if (diff !== 0) return diff > 0;
+    }
+    return false;
+  };
+
+  // Update check: pull the latest version of this repo's main branch straight
+  // from GitHub (raw file, no API key, no CORS). The client shows a banner
+  // whenever the installed version is behind the pushed one. GitHub webhooks
+  // can't reach self-hosted Docker installs (no public inbound URL), so
+  // installs poll this endpoint instead — same UX, no inbound traffic.
+  app.get('/api/update-check', async (_req, res) => {
+    const installed = readInstalledVersion();
+    const repo = 'https://github.com/Atanub707/Tailor-AI';
+    try {
+      const r = await fetch('https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/package.json', { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return res.json({ updateAvailable: false, installed, repo });
+      const latest = (await r.json()).version || '';
+      return res.json({ updateAvailable: versionGt(latest, installed), installed, latest, repo });
+    } catch {
+      return res.json({ updateAvailable: false, installed, repo });
+    }
+  });
 
   // Configuration routes
   app.get('/api/config', (req, res) => {
