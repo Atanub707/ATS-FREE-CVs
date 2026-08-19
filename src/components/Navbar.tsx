@@ -12,6 +12,7 @@ interface NavbarProps {
   onTour?: () => void;
   recruiterBadge?: number;
   user?: { id: string; email: string; name: string; isGuest: boolean } | null;
+  installedVersion?: string;
   onLogout?: () => void;
 }
 
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTour,
   recruiterBadge = 0,
   user,
+  installedVersion,
   onLogout,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -244,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Footer */}
                 <div className="mt-1.5 border-t border-[var(--color-hairline)] px-2.5 pt-2 pb-1.5 flex justify-between text-[10.5px]" style={{ color: 'var(--color-faint)' }}>
-                  <span>v1.2.0 · local</span>
+                  <span>v{installedVersion || '1.2.0'} · local</span>
                   <span>Data stays on this machine</span>
                 </div>
               </div>

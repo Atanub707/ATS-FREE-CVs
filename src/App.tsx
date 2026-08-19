@@ -62,6 +62,7 @@ export default function App() {
   // Server-side list state
   const [totalJobs, setTotalJobs] = useState(0);
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; installed: string; repo: string } | null>(null);
+  const [installedVersion, setInstalledVersion] = useState<string>('');
   const [updateDismissed, setUpdateDismissed] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
@@ -219,6 +220,7 @@ export default function App() {
     fetch('/api/update-check')
       .then((r) => r.json())
       .then((d) => {
+        if (d?.installed) setInstalledVersion(d.installed);
         if (!d?.updateAvailable) return;
         setUpdateInfo({ latest: d.latest, installed: d.installed, repo: d.repo });
         setUpdateDismissed(localStorage.getItem('ats.updateDismissed') === d.latest);
@@ -524,6 +526,7 @@ export default function App() {
             onOpenChat={() => navigate('/ai-interview')}
             onOpenLinkedInPosts={() => navigate('/linkedin-posts')}
             recruiterBadge={recruiterBadge}
+            installedVersion={installedVersion}
             onTour={startTour}
           />
 

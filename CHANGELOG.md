@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.8.1 (2026-08-19)
+
+### 🐛 Fixes
+- **User menu footer shows the real installed version** (was hardcoded "v1.2.0" since that release). It now reads the actual app version from the server (e.g. "v1.8.1 · local").
+
 ## v1.8.0 (2026-08-19)
 
 ### ✨ Features
