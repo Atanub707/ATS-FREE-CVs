@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.7.0 (2026-08-19)
+
+### ✨ Features
+- **Update checker — the app now tells installed users when a new version is pushed.** On every app open the dashboard polls GitHub (`/api/update-check`) and shows a dismissible banner: "New version vX is available — pull the update", with a direct link to the repo. No webhooks needed (self-hosted Docker installs have no public inbound URL), installs simply compare their installed version against the latest pushed `package.json`.
+- **LinkedIn Posts — results stay on the search screen only.** Searches no longer dump anything into the dashboard job list; each post gets an explicit "Save to my job list" button (idempotent, shows "Saved ✓").
+- **LinkedIn Posts — search history persists server-side** (`lp_history` table in the app's SQLite, per user): results stay on the screen across refresh, closing the screen, or switching devices — grouped by date with a "Clear" action.
+- **Back from any screen now shows FRESH data**: the dashboard re-fetches jobs + stats from the server and resets to page 1 (newly saved posts, scraped jobs and updated scores are always visible; never a stale in-memory view).
+
+### 🐛 Fixes
+- LinkedIn Posts results no longer vanish when leaving and reopening the screen (was: in-browser storage only).
+- Removed the Scrapling engine completely (per-product decision) — the Free engine is the only active path; the Apify engine remains locked as "coming soon".
+
+### ⚠️ Known Issues
+- The update banner only appears after the app's server can reach `raw.githubusercontent.com` (no change in behavior offline — it just stays silent).
+- Update banners are per-install dismissed; a new pushed version re-shows the banner.
+
+### 🔄 Breaking Changes
+- The Scrapling engine option is gone from the LinkedIn Posts screen (Free engine only).
+
+### 📦 How to Update
+- If the app shows the update banner (or you want the latest): `git pull && docker compose build && docker compose up -d` — data is untouched.
+
 ## v1.6.0 (2026-08-17)
 
 ### ✨ Features
