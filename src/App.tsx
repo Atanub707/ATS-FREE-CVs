@@ -214,18 +214,23 @@ export default function App() {
     }
   };
 
-  // Check GitHub once per app open: if a newer version was pushed, the
-  // dashboard shows "pull the update" — dismissible per version.
+  // Check GitHub on app open AND every 30 minutes while the app is open: if
+  // a newer version was pushed, the banner appears — dismissible per version.
   useEffect(() => {
-    fetch('/api/update-check')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.installed) setInstalledVersion(d.installed);
-        if (!d?.updateAvailable) return;
-        setUpdateInfo({ latest: d.latest, installed: d.installed, repo: d.repo });
-        setUpdateDismissed(localStorage.getItem('ats.updateDismissed') === d.latest);
-      })
-      .catch(() => {});
+    const checkForUpdates = () => {
+      fetch('/api/update-check')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.installed) setInstalledVersion(d.installed);
+          if (!d?.updateAvailable) return;
+          setUpdateInfo({ latest: d.latest, installed: d.installed, repo: d.repo });
+          setUpdateDismissed(localStorage.getItem('ats.updateDismissed') === d.latest);
+        })
+        .catch(() => {});
+    };
+    checkForUpdates();
+    const t = setInterval(checkForUpdates, 30 * 60 * 1000);
+    return () => clearInterval(t);
   }, []);
 
   // Refetch whenever filters/pagination change

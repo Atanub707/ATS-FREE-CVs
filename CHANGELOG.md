@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.8.2 (2026-08-19)
+
+### ✨ Features
+- **Update check now runs every 30 minutes while the app is open** (previously only on app open) — even a user who keeps the dashboard open for hours sees the "New version available" banner within half an hour of a push. The **Update & Restart** button does the whole update automatically (pull → reinstall deps if needed → restart), no terminal needed.
+
 ## v1.8.1 (2026-08-19)
 
 ### 🐛 Fixes
