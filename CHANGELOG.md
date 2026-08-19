@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 (2026-08-19)
+
+### 🐛 Fixes
+- **Recruiters — manual email**: the "Master CV" button and the attachment chip now show the CV's real name (the PDF name you set on the Master CV screen, e.g. `Atanu_Biswas_DevSecOps_SRE_CV.pdf`) instead of the generic "Master CV" label. Previously the name was only loaded when composing to a specific contact, so the manual compose path fell back to the literal "Master CV".
+
 ## v1.7.0 (2026-08-19)
 
 ### ✨ Features
