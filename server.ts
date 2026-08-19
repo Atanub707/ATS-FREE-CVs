@@ -643,11 +643,8 @@ async function startServer() {
           quota,
         });
       }
-      // Truncated LinkedIn-post jobs stored by earlier runs (Google-News
-      // token links, ~210-char titles) get UPGRADED IN PLACE when this run
-      // resolves their real post URL: full description (recruiter email/phone),
-      // real URL, recruiter name. Kept as one job — no duplicate.
-      const { added, upgradedCount } = persistJobsWithUpgrade(cappedPosts);
+      // Search results are NOT auto-saved — they live on the search screen
+      // only. Saving happens explicitly per-post via POST /api/linkedin-posts/save.
       const newUsed = engine === 'apify' ? addPostsDailyUsage(userId, cappedPosts.length) : quota.used;
       res.json({
         valid: true,
@@ -662,14 +659,45 @@ async function startServer() {
           description: (p.description || '').slice(0, 500),
           hashtags: p.hashtags || [],
         })),
-        addedCount: added.length,
-        upgradedCount,
+        addedCount: 0,
+        upgradedCount: 0,
         total: posts.length,
         quota: { used: newUsed, quota: quota.quota, remaining: Math.max(0, quota.quota - newUsed), resetAt: quota.resetAt },
       });
     } catch (err: any) {
       console.error('LinkedIn posts search error:', err);
       res.status(500).json({ error: err?.message || 'Could not search LinkedIn posts.' });
+    }
+  });
+
+  // Save ONE LinkedIn post from the search screen to the user's job list
+  // (dashboard). Idempotent: already-saved posts are skipped.
+  app.post('/api/linkedin-posts/save', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      const p = req.body?.post;
+      if (!p?.title || !p?.url) return res.status(400).json({ error: 'Post is required.' });
+      const job: Job = {
+        id: String(p.id || `linkedinpost-${crypto.createHash('sha1').update(String(p.url)).digest('base64url').slice(0, 20)}`),
+        title: String(p.title).slice(0, 110),
+        company: String(p.company || 'Unknown Company').slice(0, 100),
+        url: String(p.url),
+        applyUrl: String(p.applyUrl || ''),
+        location: '',
+        postedDate: String(p.postedDate || new Date().toISOString()),
+        description: String(p.description || '').slice(0, 3000),
+        hashtags: Array.isArray(p.hashtags) ? p.hashtags.map(String).slice(0, 10) : [],
+        source: 'LinkedInPosts',
+        jobType: 'Post',
+        state: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const { added } = persistJobsWithUpgrade([job]);
+      res.json({ saved: added.length > 0, alreadySaved: added.length === 0, id: job.id });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not save post.' });
     }
   });
 

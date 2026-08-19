@@ -46,7 +46,7 @@ const groupByDay = (items: PostResult[]): { label: string; items: PostResult[] }
   return [...groups.entries()].map(([label, list]) => ({ label, items: list }));
 };
 
-const PostCard: React.FC<{ p: PostResult }> = ({ p }) => (
+const PostCard: React.FC<{ p: PostResult; onSave?: (p: PostResult) => void; saved?: boolean; saving?: boolean }> = ({ p, onSave, saved, saving }) => (
   <div className="lp-card">
     <div className="lp-card-top">
       <span className="lp-avatar">{p.company?.charAt(0)?.toUpperCase() || 'L'}</span>
@@ -70,6 +70,15 @@ const PostCard: React.FC<{ p: PostResult }> = ({ p }) => (
           Apply link <ArrowSquareOut size={12} weight="bold" />
         </a>
       )}
+      {onSave && (
+        saved ? (
+          <span className="lp-link saved" title="Saved to your job list">Saved ✓</span>
+        ) : (
+          <button type="button" className="lp-link save" onClick={() => onSave(p)} disabled={saving} title="Save to your job list (dashboard)">
+            {saving ? 'Saving…' : 'Save to my job list'}
+          </button>
+        )
+      )}
     </div>
   </div>
 );
@@ -78,7 +87,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [query, setQuery] = useState('');
   const [state, setState] = useState<SearchState>('idle');
   const [posts, setPosts] = useState<PostResult[]>([]);
-  const [addedCount, setAddedCount] = useState(0);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
@@ -140,12 +150,10 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         throw new Error(d?.error || 'Search failed.');
       }
       setPosts(d.posts || []);
-      setAddedCount(d.addedCount || 0);
       setDebug(d.debug || null);
       setState('done');
-      loadFeed();
       const window = 'from the last 24 hours ';
-if (d.valid === false) {
+      if (d.valid === false) {
         // Prefer the server's precise, engine-aware message (it distinguishes
         // "engines rate-limited/blocked" from "found posts but all older than
         // 24h") — fall back to a generic hint only if the server omitted it.
@@ -156,14 +164,38 @@ if (d.valid === false) {
         ));
       } else if (d.total === 0) {
         setMessage(`No job postings found ${window}for this search. Try broader keywords or search again later.`);
-      } else if (d.addedCount > 0) {
-        setMessage(`Found ${d.total} job postings ${window}— ${d.addedCount} new ones added to your job list.`);
       } else {
-        setMessage(`Found ${d.total} job postings ${window}(all already in your job list).`);
+        setMessage(`Found ${d.total} job postings ${window}— results stay on this screen. Save the ones you want with “Save to my job list”.`);
       }
     } catch (e: any) {
       setError(e?.message || 'Could not search LinkedIn posts.');
       setState('error');
+    }
+  };
+
+  // Explicit per-post save into the user's job list (dashboard). Search
+  // results are never auto-saved — this is the only way in.
+  const savePost = async (p: PostResult) => {
+    if (savingId) return;
+    setSavingId(p.id);
+    setError(null);
+    try {
+      const res = await fetch('/api/linkedin-posts/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post: p }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d?.error || 'Could not save post.');
+      setSavedIds((prev) => new Set(prev).add(p.id));
+      setMessage(d.alreadySaved
+        ? `“${p.title}” was already in your job list.`
+        : `“${p.title}” saved to your job list.`);
+      loadFeed();
+    } catch (e: any) {
+      setError(e?.message || 'Could not save post.');
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -231,7 +263,7 @@ if (d.valid === false) {
             <span className="lp-quota free">Free · unlimited</span>
             <span className="lp-engine-locked" title="Apify engine will unlock later">✦ Apify engine — coming soon</span>
           </div>
-          <p className="lp-hint">Job postings only · last 24 hours · unlimited · results are added to your job list with a “LinkedIn Posts” tag</p>
+          <p className="lp-hint">Job postings only · last 24 hours · unlimited · results stay on this screen — save the ones you want to your job list</p>
         </div>
 
         {error && <div className="lp-error">{error}</div>}
@@ -244,11 +276,17 @@ if (d.valid === false) {
           <div className="lp-results">
             <div className="lp-results-head">
               <b>{posts.length} job postings from the last 24 hours</b>
-              <span>{addedCount > 0 ? `+${addedCount} new in your job list` : 'all already saved'}</span>
+              <span>results stay here — save the ones you want</span>
             </div>
             <div className="lp-grid">
               {posts.map((p) => (
-                <PostCard key={p.id} p={p} />
+                <PostCard
+                  key={p.id}
+                  p={p}
+                  onSave={savePost}
+                  saved={savedIds.has(p.id)}
+                  saving={savingId === p.id}
+                />
               ))}
             </div>
           </div>
@@ -370,6 +408,10 @@ if (d.valid === false) {
         .lp-link:hover{background:#DBEAFE;}
         .lp-link.apply{color:#7C3AED; background:#F5F3FF; border-color:#E9D5FF;}
         .lp-link.apply:hover{background:#EDE9FE;}
+        .lp-link.save{color:#15803D; background:#F0FDF4; border-color:#BBF7D0; cursor:pointer; font-family:inherit; transition:all .18s ease;}
+        .lp-link.save:hover{background:#DCFCE7;}
+        .lp-link.save:disabled{opacity:.6; cursor:wait;}
+        .lp-link.saved{color:#15803D; background:#F0FDF4; border-color:#BBF7D0; font-weight:800;}
         @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important; transition:none !important;}}
       `}</style>
     </div>
