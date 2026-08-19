@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MagnifyingGlass, ArrowSquareOut, Sparkle } from '@phosphor-icons/react';
 import { ArrowLeft } from 'lucide-react';
 
@@ -14,6 +14,40 @@ interface PostResult {
 }
 
 type SearchState = 'idle' | 'searching' | 'done' | 'error';
+
+// Search results persist on THIS screen across visits — stored in the browser
+// (localStorage), grouped by date. They are never auto-added to the job list
+// (dashboard); explicit per-post saves go there via POST /api/linkedin-posts/save.
+const HISTORY_KEY = 'ats.linkedinPosts.history.v1';
+const SAVED_KEY = 'ats.linkedinPosts.saved.v1';
+const MAX_HISTORY = 200;
+
+const loadJSON = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+const saveJSON = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // storage disabled / full — history stays in memory for this session
+  }
+};
+const mergeHistory = (existing: PostResult[], fresh: PostResult[]): PostResult[] => {
+  const seen = new Set(existing.map((p) => p.id));
+  const merged = [...existing];
+  for (const p of fresh) {
+    if (!seen.has(p.id)) {
+      merged.unshift(p);
+      seen.add(p.id);
+    }
+  }
+  return merged.slice(0, MAX_HISTORY);
+};
 
 const RELATIVE = (iso?: string): string => {
   if (!iso) return '';
@@ -93,8 +127,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
-  const [feed, setFeed] = useState<PostResult[]>([]);
-  const [feedLoading, setFeedLoading] = useState(true);
+  // Search-history cache: survives closing/reopening this screen (this browser).
+  const [history, setHistory] = useState<PostResult[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   useEffect(() => {
     fetch('/api/config')
@@ -103,33 +138,13 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       .catch(() => setSetup(null));
   }, []);
 
-  // The saved feed persists in the database — surviving refresh. Loaded on
-  // mount, grouped by date, and refreshed after every search.
-  const loadFeed = useCallback(async () => {
-    try {
-      const res = await fetch('/api/jobs?source=LinkedInPosts&sortBy=createdAt&sortOrder=desc&page=1&limit=100');
-      if (!res.ok) return;
-      const d = await res.json();
-      setFeed(
-        (d.jobs || []).map((j: any) => ({
-          id: j.id,
-          title: j.title,
-          company: j.company,
-          url: j.url,
-          applyUrl: j.applyUrl,
-          postedDate: j.postedDate,
-          description: j.description,
-          hashtags: j.hashtags || [],
-        }))
-      );
-    } finally {
-      setFeedLoading(false);
-    }
-  }, []);
-
+  // Restore previous search results + saved markers from localStorage so the
+  // screen shows what was found before — grouped by date, newest first.
   useEffect(() => {
-    loadFeed();
-  }, [loadFeed]);
+    setHistory(loadJSON<PostResult[]>(HISTORY_KEY, []));
+    setSavedIds(new Set(loadJSON<string[]>(SAVED_KEY, [])));
+    setHistoryLoaded(true);
+  }, []);
 
   const search = async (raw?: string) => {
     const q = (raw ?? query).trim();
@@ -152,6 +167,15 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       setPosts(d.posts || []);
       setDebug(d.debug || null);
       setState('done');
+      // Keep every found post on this screen, grouped by date, across visits.
+      const fresh = d.posts || [];
+      if (fresh.length > 0) {
+        setHistory((prev) => {
+          const merged = mergeHistory(prev, fresh);
+          saveJSON(HISTORY_KEY, merged);
+          return merged;
+        });
+      }
       const window = 'from the last 24 hours ';
       if (d.valid === false) {
         // Prefer the server's precise, engine-aware message (it distinguishes
@@ -187,11 +211,12 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d?.error || 'Could not save post.');
-      setSavedIds((prev) => new Set(prev).add(p.id));
+      const next = new Set(savedIds).add(p.id);
+      setSavedIds(next);
+      saveJSON(SAVED_KEY, [...next]);
       setMessage(d.alreadySaved
         ? `“${p.title}” was already in your job list.`
         : `“${p.title}” saved to your job list.`);
-      loadFeed();
     } catch (e: any) {
       setError(e?.message || 'Could not save post.');
     } finally {
@@ -292,14 +317,27 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
           </div>
         )}
 
-        {/* Persistent feed — saved in the DB, grouped by date, survives refresh */}
-        {!feedLoading && feed.length > 0 && (
+        {/* Search history — all posts found on this screen, kept across
+            visits (this browser), grouped by date. Not auto-added to the
+            dashboard; only explicitly saved posts go there. */}
+        {historyLoaded && history.length > 0 && (
           <div className="lp-feed">
             <div className="lp-feed-title">
-              <b>Your saved feed</b>
-              <span>{feed.length} posts saved · kept in the database</span>
+              <b>Your search results</b>
+              <span>{history.length} post{history.length === 1 ? '' : 's'} kept on this screen</span>
+              <button
+                type="button"
+                className="lp-feed-clear"
+                onClick={() => {
+                  setHistory([]);
+                  saveJSON(HISTORY_KEY, []);
+                }}
+                title="Clear all search results from this screen"
+              >
+                Clear
+              </button>
             </div>
-            {groupByDay(feed).map((g) => (
+            {groupByDay(history).map((g) => (
               <div className="lp-feed-day" key={g.label}>
                 <div className="lp-feed-day-hdr">
                   <span className="lp-feed-dot" aria-hidden="true"></span>
@@ -308,7 +346,13 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
                 </div>
                 <div className="lp-grid">
                   {g.items.map((p) => (
-                    <PostCard key={p.id} p={p} />
+                    <PostCard
+                      key={p.id}
+                      p={p}
+                      onSave={savePost}
+                      saved={savedIds.has(p.id)}
+                      saving={savingId === p.id}
+                    />
                   ))}
                 </div>
               </div>
@@ -384,6 +428,9 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
         .lp-feed-title{display:flex; align-items:baseline; gap:10px; margin-bottom:6px; padding:0 2px;}
         .lp-feed-title b{font-size:16px; font-weight:800;}
         .lp-feed-title span{font-size:11px; color:#94A3B8; font-weight:600;}
+        .lp-feed-clear{margin-left:auto; font-size:10.5px; font-weight:800; color:#64748B; background:#F1F5F9;
+          border:1px solid #E2E8F0; border-radius:999px; padding:4px 12px; cursor:pointer; font-family:inherit; transition:all .18s ease;}
+        .lp-feed-clear:hover{color:#DC2626; background:#FEF2F2; border-color:#FECACA;}
         .lp-feed-day{margin-top:20px;}
         .lp-feed-day-hdr{display:flex; align-items:center; gap:8px; margin-bottom:12px; padding:0 2px;}
         .lp-feed-day-hdr b{font-size:12.5px; font-weight:800; color:#334155;}
