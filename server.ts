@@ -111,7 +111,6 @@ import {
 } from './server/storage/fileStorage.js';
 import { ScraperFactory } from './server/scraper/scraperFactory.js';
 import { LinkedInPostsScraper } from './server/scraper/linkedInPostsScraper.js';
-import { scraplingSearch, sidecarPostsToJobs } from './server/scraper/scraplingBridge.js';
 import { LlmMatcher } from './server/matcher/llmMatcher.js';
 import { hasApiKeyConfigured, mapLlmError } from './server/llm/apiKeyGuard.js';
 import { LlmCvTailor } from './server/builder/llmCvTailor.js';
@@ -588,8 +587,8 @@ async function startServer() {
       if (!userId) return res.status(401).json({ error: 'Not signed in.' });
       const keywords = String(req.body?.keywords || '').trim();
       if (!keywords) return res.status(400).json({ error: 'Keywords are required.' });
-      const engine = req.body?.engine === 'apify' ? 'apify' : req.body?.engine === 'scrapling' ? 'scrapling' : 'free';
-      // Apify: show all ~100 posts the actor fetched. Free/Scrapling: cap at 20.
+      const engine = req.body?.engine === 'apify' ? 'apify' : 'free';
+      // Apify: show all ~100 posts the actor fetched. Free: cap at 20.
       const limit = Math.min(engine === 'apify' ? 100 : 20, Math.max(1, Number(req.body?.limit) || 20));
       const quota = getPostsDailyUsage(userId);
       if (engine === 'apify' && quota.used >= quota.quota) {
@@ -602,38 +601,7 @@ async function startServer() {
 
       let posts: Job[] = [];
       let debug: Record<string, unknown> = {};
-      if (engine === 'scrapling') {
-        // Scrapling engine: the Python sidecar runs the whole pipeline (GNRSS
-        // discovery → stealth-browser search resolution → post fetch).
-        const sidecar = await scraplingSearch(keywords, limit);
-        if (!sidecar.ok) {
-          return res.status(502).json({
-            valid: false,
-            error: sidecar.error,
-            debug: sidecar.debug || {},
-            posts: [],
-            addedCount: 0,
-            total: 0,
-          });
-        }
-        debug = { ...sidecar.debug };
-        posts = sidecarPostsToJobs(sidecar.posts || []);
-        if (posts.length === 0) {
-          const discoveryFailed = (sidecar.debug?.linksFound ?? 0) === 0;
-          return res.status(200).json({
-            valid: false,
-            discoveryFailed,
-            message: discoveryFailed
-              ? `Scrapling sidecar found no post links (${sidecar.debug?.queriesTried ?? 0} queries tried). Try again in a minute or switch to the Free engine.`
-              : `Scrapling found ${sidecar.debug?.linksFound ?? 0} posts but none were job postings from the last 24 hours — the search index for this keyword is stale right now. Retry later or try a different role.`,
-            debug,
-            posts: [],
-            addedCount: 0,
-            total: 0,
-            quota: { ...quota, remaining: quota.quota },
-          });
-        }
-      } else {
+      {
         const scraper = new LinkedInPostsScraper();
         posts = await scraper.scrape({
           keywords,

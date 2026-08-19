@@ -9,14 +9,4 @@ services:
       - ./config.ini:/app/config.ini
     environment:
       - DISABLE_HMR=true
-      - SCRAPLING_SIDECAR_URL=http://scrapling:5001
-    depends_on:
-      - scrapling
-    restart: unless-stopped
-
-  scrapling:
-    build: ./scrapling-sidecar
-    container_name: ats-scrapling-sidecar
-    ports:
-      - "5001:5001"
     restart: unless-stopped
