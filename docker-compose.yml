@@ -5,8 +5,15 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      # Live source mount — lets the app pull updates and restart itself.
+      - ./:/app
+      # node_modules stays in the image-built volume (not shadowed by the mount).
+      - ats_node_modules:/app/node_modules
       - ./data:/app/data
       - ./config.ini:/app/config.ini
     environment:
       - DISABLE_HMR=true
     restart: unless-stopped
+
+volumes:
+  ats_node_modules:

@@ -63,6 +63,9 @@ export default function App() {
   const [totalJobs, setTotalJobs] = useState(0);
   const [updateInfo, setUpdateInfo] = useState<{ latest: string; installed: string; repo: string } | null>(null);
   const [updateDismissed, setUpdateDismissed] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
   const [stats, setStats] = useState<{ total: number; pending: number; matched: number; tailored: number; applied: number; scoredCount: number; avgScore: number; byState: Record<string, number> }>({
     total: 0, pending: 0, matched: 0, tailored: 0, applied: 0, scoredCount: 0, avgScore: 0, byState: {},
   });
@@ -185,6 +188,30 @@ export default function App() {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // One-click auto-update: the server pulls latest main and restarts itself.
+  // We poll /api/update-check while it's down and reload the moment it's back.
+  const handleUpdateNow = async () => {
+    setUpdating(true);
+    setUpdateError(null);
+    try {
+      const res = await fetch('/api/update', { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d?.error || 'Update failed.');
+      setUpdateMsg('Updating… the app will restart automatically.');
+      setTimeout(() => window.location.reload(), 60000);
+      const t = setInterval(() => {
+        fetch('/api/update-check')
+          .then((r) => {
+            if (r.ok) { clearInterval(t); window.location.reload(); }
+          })
+          .catch(() => {});
+      }, 5000);
+    } catch (err: any) {
+      setUpdating(false);
+      setUpdateError(err?.message || 'Could not reach the update service.');
+    }
+  };
 
   // Check GitHub once per app open: if a newer version was pushed, the
   // dashboard shows "pull the update" — dismissible per version.
@@ -471,9 +498,16 @@ export default function App() {
               font-size:13px; font-weight:600; flex-wrap:wrap;}
             .update-banner b{color:#6EE7B7;}
             .update-banner a{color:#34D399; font-weight:800; text-decoration:underline; text-underline-offset:2px;}
+            .update-banner .update-cta{background:#059669; color:#fff; border:none; font-weight:800; font-size:12px;
+              padding:5px 14px; border-radius:8px; cursor:pointer;}
+            .update-banner .update-cta:hover{background:#047857;}
+            .update-banner .update-cta:disabled{opacity:.6; cursor:wait;}
+            .update-banner .update-msg{color:#A7F3D0; font-size:12.5px;}
+            .update-banner .update-err{color:#FCA5A5; font-size:12.5px;}
             .update-banner button{margin-left:auto; background:none; border:none; color:#A7F3D0; font-size:13px; font-weight:800;
               cursor:pointer; padding:2px 8px; border-radius:6px;}
             .update-banner button:hover{background:#064E3B; color:#fff;}
+            .update-banner .update-cta{margin-left:0;}
           `}</style>
           {/* Header Navigation */}
           <Navbar
@@ -499,8 +533,17 @@ export default function App() {
               <span>
                 New version <b>v{updateInfo.latest}</b> is available — you're on v{updateInfo.installed}.
               </span>
-              <a href={updateInfo.repo} target="_blank" rel="noreferrer">Pull the update</a>
+              {updateMsg ? (
+                <span className="update-msg">{updateMsg}</span>
+              ) : (
+                <button className="update-cta" onClick={handleUpdateNow} disabled={updating}>
+                  {updating ? 'Updating…' : 'Update & Restart'}
+                </button>
+              )}
+              {updateError && <span className="update-err">{updateError}</span>}
+              <a href={updateInfo.repo} target="_blank" rel="noreferrer">View on GitHub</a>
               <button
+                className="update-x"
                 onClick={() => { setUpdateDismissed(true); localStorage.setItem('ats.updateDismissed', updateInfo.latest); }}
                 title="Hide this update notice (v{latest} stays hidden until the next version)"
               >✕</button>

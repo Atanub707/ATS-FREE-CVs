@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Build tools to compile better-sqlite3 against this image's glibc
 # (prebuilt binaries may require a newer glibc than bookworm ships)
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+# git lets the app auto-update itself (pull + restart).
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ git && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm install --loglevel=error \

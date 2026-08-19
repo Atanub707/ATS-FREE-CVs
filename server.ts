@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import crypto from 'crypto';
+import { execSync } from 'node:child_process';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -498,6 +499,36 @@ async function startServer() {
       return res.json({ updateAvailable: versionGt(latest, installed), installed, latest, repo });
     } catch {
       return res.json({ updateAvailable: false, installed, repo });
+    }
+  });
+
+  // One-click auto-update: pull the latest main from GitHub, reinstall deps if
+  // the lockfile changed, then exit — Docker's restart:unless-stopped brings
+  // the app back up on the new code. Data lives outside git (data/, config.ini
+  // are gitignored), so it is never touched. Works because installs mount the
+  // live source at /app (docker-compose) — this only runs on git checkouts.
+  app.post('/api/update', (_req, res) => {
+    try {
+      const isRepo = execSync('git -C /app rev-parse --is-inside-work-tree 2>/dev/null || echo no', { encoding: 'utf8' }).trim();
+      if (isRepo !== 'true') {
+        return res.status(400).json({ error: 'Auto-update unavailable on this install (not a git checkout). Update manually: git pull && docker compose build && docker compose up -d.' });
+      }
+      // Respond first; the heavy work happens after the client got the OK.
+      res.json({ ok: true, message: 'Updating — the app will restart automatically in a few seconds.' });
+      const lockBefore = (() => {
+        try { return crypto.createHash('sha256').update(readFileSync('/app/package-lock.json')).digest('hex'); } catch { return ''; }
+      })();
+      execSync('git -C /app fetch origin main && git -C /app reset --hard origin/main', { stdio: 'inherit', timeout: 120000 });
+      const lockAfter = (() => {
+        try { return crypto.createHash('sha256').update(readFileSync('/app/package-lock.json')).digest('hex'); } catch { return ''; }
+      })();
+      if (lockBefore !== lockAfter) {
+        execSync('npm install --loglevel=error', { cwd: '/app', stdio: 'inherit', timeout: 600000 });
+      }
+      // Let the response flush, then hand over to Docker's restart policy.
+      setTimeout(() => process.exit(0), 2000);
+    } catch (err: any) {
+      try { res.status(500).json({ error: `Update failed: ${err?.message || 'unknown error'}` }); } catch { /* response already sent */ }
     }
   });
 
