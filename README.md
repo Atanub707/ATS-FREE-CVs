@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/Atanub707/Tailor-AI/raw/main/media/screenshot.png" width="100%" alt="Tailor CV Dashboard"/>
+  <img src="https://github.com/Atanub707/Tailor-AI/raw/main/media/screenshot.png" width="100%" alt="Tailor AI Dashboard"/>
 </p>
 
-<h1 align="center">Tailor CV</h1>
+<h1 align="center">Tailor AI</h1>
 
 <p align="center">
   <strong>AI-powered job search & CV tailoring — 17+ sources, ATS scoring, and tailored CVs. Runs 100% on your machine.</strong>
@@ -14,11 +14,13 @@
   <img src="https://img.shields.io/badge/Tailwind-4.x-06D6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4"/>
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT"/>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome"/>
+  <img src="https://img.shields.io/badge/Self--hosted-100%25_local-2563EB" alt="Self-hosted, 100% local"/>
+  <img src="https://img.shields.io/badge/Auto--update-One--click-059669" alt="One-click auto-update"/>
 </p>
 
 ---
 
-## What is Tailor CV?
+## What is Tailor AI?
 
 A self-hosted job-hunting tool that:
 
@@ -27,9 +29,17 @@ A self-hosted job-hunting tool that:
 - **Tailors your CV** to any specific job description and exports an ATS-optimized PDF
 - **Finds recruiter job posts** on LinkedIn in real time (free engine, no token needed)
 - **Extracts recruiters** and drafts cold emails via your own SMTP
+- **One-click updates** — the app checks GitHub itself (every 30 minutes while open) and shows an in-app "Update & Restart" button when a new version is released. No terminal, no commands.
 - Keeps **everything local** — jobs, CV, history, and API keys never leave your machine
 
 **Screens have dedicated URLs:** `/` dashboard · `/settings` · `/recruiters` · `/master-cv` · `/manual-jd` · `/job-portals` · `/ai-interview` · `/linkedin-posts` — reload and you stay where you were.
+
+---
+
+## 🎬 Demo
+
+*Coming soon — a 30-second screen recording: search → score → tailor → download.*
+*(Meanwhile: install it and try the live app in under 2 minutes below.)*
 
 ---
 
@@ -72,11 +82,15 @@ irm https://raw.githubusercontent.com/Atanub707/Tailor-AI/main/scripts/install.p
 curl -fsSL https://github.com/Atanub707/Tailor-AI/raw/main/scripts/install.sh | bash
 ```
 
-The installer is **idempotent**: checks/installs Docker Desktop, starts the engine, downloads Tailor CV, and opens `http://localhost:3000`. Re-run it anytime — finished steps are skipped. No code-signing, no SmartScreen warnings.
+The installer is **idempotent**: checks/installs Docker Desktop, starts the engine, downloads Tailor AI (git clone), and opens `http://localhost:3000`. Re-run it anytime — finished steps are skipped. No code-signing, no SmartScreen warnings.
 
 **Start the app again later:** the app runs in Docker in the background, so there's no start command — after closing the tab or rebooting, just open **http://localhost:3000** once Docker Desktop is running (the app auto-starts with Docker).
 
 ### Update
+
+**Easy way (v1.8+):** the app checks for updates itself — when a new version is released, a banner appears in the app with an **Update & Restart** button. One click, done.
+
+**Script way** (same result, manual):
 
 ```powershell
 # Windows — PowerShell
