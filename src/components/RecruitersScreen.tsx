@@ -641,7 +641,7 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
                   attachMode === 'master' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
                 }`}
               >
-                <FileText size={13} /> <span className="truncate max-w-[120px]">{masterCvName || 'Master CV'}</span>
+                <FileText size={13} /> Master CV
               </button>
               <button
                 type="button"

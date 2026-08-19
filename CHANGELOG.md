@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.2 (2026-08-19)
+
+### 🐛 Fixes
+- **Recruiters — manual email**: the button is back to its clear "Master CV" label (it briefly showed the CV filename instead); clicking it still attaches the CV, and the attachment chip shows the CV's real name (e.g. `Atanu_Biswas_DevSecOps_SRE_CV.pdf`).
+
 ## v1.7.1 (2026-08-19)
 
 ### 🐛 Fixes
