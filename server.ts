@@ -74,6 +74,10 @@ import {
   queryJobs,
   saveNewJobs,
   persistJobsWithUpgrade,
+  getLpHistory,
+  mergeLpHistory,
+  markLpHistorySaved,
+  clearLpHistory,
   runStorageMigration,
   fixMislabeledWorkTypes,
   repairJobDates,
@@ -643,8 +647,25 @@ async function startServer() {
           quota,
         });
       }
-      // Search results are NOT auto-saved — they live on the search screen
-      // only. Saving happens explicitly per-post via POST /api/linkedin-posts/save.
+      // Search results are NOT auto-saved as jobs — they live on the search
+      // screen only, persisted per user in the lp_history table so they
+      // survive refresh/browser/device. Explicit saves go via
+      // POST /api/linkedin-posts/save.
+      if (posts.length > 0) {
+        mergeLpHistory(
+          userId,
+          posts.map((p) => ({
+            id: p.id,
+            title: p.title,
+            company: p.company,
+            url: p.url,
+            applyUrl: p.applyUrl,
+            postedDate: p.postedDate,
+            description: p.description,
+            hashtags: p.hashtags || [],
+          }))
+        );
+      }
       const newUsed = engine === 'apify' ? addPostsDailyUsage(userId, cappedPosts.length) : quota.used;
       res.json({
         valid: true,
@@ -695,9 +716,33 @@ async function startServer() {
         updatedAt: new Date().toISOString(),
       };
       const { added } = persistJobsWithUpgrade([job]);
+      markLpHistorySaved(userId, job.id);
       res.json({ saved: added.length > 0, alreadySaved: added.length === 0, id: job.id });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Could not save post.' });
+    }
+  });
+
+  // LinkedIn Posts search history — per user, server-side. Returns every post
+  // found on the search screen so it survives refresh/browser/device.
+  app.get('/api/linkedin-posts/history', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      res.json({ posts: getLpHistory(userId) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not load LinkedIn Posts history.' });
+    }
+  });
+
+  app.delete('/api/linkedin-posts/history', (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) return res.status(401).json({ error: 'Not signed in.' });
+      clearLpHistory(userId);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Could not clear LinkedIn Posts history.' });
     }
   });
 

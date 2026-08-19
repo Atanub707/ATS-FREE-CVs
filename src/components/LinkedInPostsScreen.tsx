@@ -15,28 +15,11 @@ interface PostResult {
 
 type SearchState = 'idle' | 'searching' | 'done' | 'error';
 
-// Search results persist on THIS screen across visits — stored in the browser
-// (localStorage), grouped by date. They are never auto-added to the job list
-// (dashboard); explicit per-post saves go there via POST /api/linkedin-posts/save.
-const HISTORY_KEY = 'ats.linkedinPosts.history.v1';
-const SAVED_KEY = 'ats.linkedinPosts.saved.v1';
+// Search results persist SERVER-SIDE (per user, SQLite lp_history table) —
+// they stay on this screen across refresh, browser, and device, and are never
+// auto-added to the job list (dashboard). Explicit per-post saves go there
+// via POST /api/linkedin-posts/save.
 const MAX_HISTORY = 200;
-
-const loadJSON = <T,>(key: string, fallback: T): T => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-const saveJSON = (key: string, value: unknown) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // storage disabled / full — history stays in memory for this session
-  }
-};
 const mergeHistory = (existing: PostResult[], fresh: PostResult[]): PostResult[] => {
   const seen = new Set(existing.map((p) => p.id));
   const merged = [...existing];
@@ -127,7 +110,8 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
   const [error, setError] = useState<string | null>(null);
   const [debug, setDebug] = useState<{ queriesTried: number; linksFound: number } | null>(null);
   const [setup, setSetup] = useState<{ cookie: boolean; apify: boolean } | null>(null);
-  // Search-history cache: survives closing/reopening this screen (this browser).
+  // Search-history cache: persisted server-side per user, so it survives
+  // refresh, closing/reopening this screen, and any browser/device.
   const [history, setHistory] = useState<PostResult[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
@@ -138,12 +122,18 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       .catch(() => setSetup(null));
   }, []);
 
-  // Restore previous search results + saved markers from localStorage so the
-  // screen shows what was found before — grouped by date, newest first.
+  // Restore previous search results + saved markers from the server so the
+  // screen always shows what was found before — grouped by date, newest first.
   useEffect(() => {
-    setHistory(loadJSON<PostResult[]>(HISTORY_KEY, []));
-    setSavedIds(new Set(loadJSON<string[]>(SAVED_KEY, [])));
-    setHistoryLoaded(true);
+    fetch('/api/linkedin-posts/history')
+      .then((r) => r.json())
+      .then((d) => {
+        const posts: PostResult[] = d?.posts || [];
+        setHistory(posts);
+        setSavedIds(new Set(posts.filter((p) => (p as any).saved).map((p) => p.id)));
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoaded(true));
   }, []);
 
   const search = async (raw?: string) => {
@@ -167,14 +157,11 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       setPosts(d.posts || []);
       setDebug(d.debug || null);
       setState('done');
-      // Keep every found post on this screen, grouped by date, across visits.
+      // Keep every found post on this screen (server persists it per user),
+      // grouped by date, across visits.
       const fresh = d.posts || [];
       if (fresh.length > 0) {
-        setHistory((prev) => {
-          const merged = mergeHistory(prev, fresh);
-          saveJSON(HISTORY_KEY, merged);
-          return merged;
-        });
+        setHistory((prev) => mergeHistory(prev, fresh));
       }
       const window = 'from the last 24 hours ';
       if (d.valid === false) {
@@ -213,7 +200,6 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
       if (!res.ok) throw new Error(d?.error || 'Could not save post.');
       const next = new Set(savedIds).add(p.id);
       setSavedIds(next);
-      saveJSON(SAVED_KEY, [...next]);
       setMessage(d.alreadySaved
         ? `“${p.title}” was already in your job list.`
         : `“${p.title}” saved to your job list.`);
@@ -328,9 +314,12 @@ export const LinkedInPostsScreen: React.FC<{ onClose: () => void }> = ({ onClose
               <button
                 type="button"
                 className="lp-feed-clear"
-                onClick={() => {
+                onClick={async () => {
+                  try {
+                    await fetch('/api/linkedin-posts/history', { method: 'DELETE' });
+                  } catch { /* server clear failed — still clear locally */ }
                   setHistory([]);
-                  saveJSON(HISTORY_KEY, []);
+                  setSavedIds(new Set());
                 }}
                 title="Clear all search results from this screen"
               >

@@ -407,6 +407,11 @@ export function getDb(): Database.Database {
       last_seen TEXT,
       phone TEXT
     );
+    CREATE TABLE IF NOT EXISTS lp_history (
+      user_id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at TEXT
+    );
   `);
   migrateToUsers(db);
   migrateRecoveryColumns(db);
@@ -872,6 +877,80 @@ export function persistJobsWithUpgrade(scrapedJobs: Job[]): { added: Job[]; skip
     }
   }
   return { added, skipped, newContacts, upgradedCount };
+}
+
+// ─────────────────── LinkedIn Posts search history (server-side) ───────────────────
+// Search results persist per user in SQLite (NOT as jobs): they survive any
+// browser, refresh, or device. Explicit per-post saves still go to the jobs
+// table via persistJobsWithUpgrade; the `saved` flag here mirrors that.
+
+export interface LpHistoryPost {
+  id: string;
+  title: string;
+  company: string;
+  url: string;
+  applyUrl?: string;
+  postedDate?: string;
+  description?: string;
+  hashtags?: string[];
+  saved?: boolean;
+}
+
+const LP_HISTORY_LIMIT = 200;
+
+export function getLpHistory(userId: string): LpHistoryPost[] {
+  try {
+    const row = getDb().prepare('SELECT data FROM lp_history WHERE user_id = ?').get(userId) as { data: string } | undefined;
+    return row ? (JSON.parse(row.data) as LpHistoryPost[]) : [];
+  } catch (err) {
+    console.error('getLpHistory error:', err);
+    return [];
+  }
+}
+
+export function saveLpHistory(userId: string, posts: LpHistoryPost[]): void {
+  try {
+    getDb()
+      .prepare(
+        `INSERT INTO lp_history (user_id, data, updated_at) VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`
+      )
+      .run(userId, JSON.stringify(posts.slice(0, LP_HISTORY_LIMIT)), new Date().toISOString());
+  } catch (err) {
+    console.error('saveLpHistory error:', err);
+  }
+}
+
+export function mergeLpHistory(userId: string, fresh: LpHistoryPost[]): LpHistoryPost[] {
+  if (fresh.length === 0) return getLpHistory(userId);
+  const existing = getLpHistory(userId);
+  const seen = new Set(existing.map((p) => p.id));
+  const merged = [...existing];
+  for (const p of fresh) {
+    if (!seen.has(p.id)) {
+      merged.unshift(p);
+      seen.add(p.id);
+    }
+  }
+  const capped = merged.slice(0, LP_HISTORY_LIMIT);
+  saveLpHistory(userId, capped);
+  return capped;
+}
+
+export function markLpHistorySaved(userId: string, postId: string): void {
+  const posts = getLpHistory(userId);
+  const idx = posts.findIndex((p) => p.id === postId);
+  if (idx === -1) return;
+  posts[idx] = { ...posts[idx], saved: true };
+  saveLpHistory(userId, posts);
+}
+
+export function clearLpHistory(userId: string): void {
+  try {
+    getDb().prepare('DELETE FROM lp_history WHERE user_id = ?').run(userId);
+  } catch (err) {
+    console.error('clearLpHistory error:', err);
+  }
 }
 
 // ─────────────────── Interview sessions (history) ───────────────────
