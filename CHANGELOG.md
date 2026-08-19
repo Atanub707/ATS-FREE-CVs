@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.3 (2026-08-19)
+
+### ✨ Features
+- **Recruiters** — "Manual Email" button renamed to **Create Email** and the contact counter next to it removed for a cleaner header.
+
 ## v1.7.2 (2026-08-19)
 
 ### 🐛 Fixes

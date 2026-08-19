@@ -357,9 +357,8 @@ export const RecruitersScreen: React.FC<RecruitersScreenProps> = ({ isOpen, onCl
         </div>
         <div className="rc-spacer" />
         <button className="rc-btn2 manual" onClick={openManualCompose} title="Compose a fresh email to any address — no contact needed">
-          <Mail size={13} /> Manual Email
+          <Mail size={13} /> Create Email
         </button>
-        <span className="rc-count">{visible.length} contact{visible.length === 1 ? '' : 's'}</span>
       </header>
 
       {/* Content */}
