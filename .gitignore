@@ -11,3 +11,6 @@ config.ini
 *.sqlite
 *.sqlite.json
 *.zip
+
+# internal planning — not for public repo
+docs/auto-apply-plan.md
